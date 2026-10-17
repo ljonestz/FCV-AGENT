@@ -582,6 +582,58 @@ def test_negative_review_without_any_target_cannot_certify_core(verdict):
     assert "SEMANTIC_REVIEW_TARGET_UNRESOLVED" in result["validation"]["reason_codes"]
 
 
+def test_empty_revise_preserves_explicit_core_passes_with_attention():
+    responses = _responses()
+    candidates = []
+    for number in range(1, 6):
+        candidate = deepcopy(responses[3]["recommendation_candidates"][0])
+        candidate["recommendation_id"] = f"REC-{number:03}"
+        candidate["title"] = f"Confirm bounded site decision {number}"
+        candidates.append(candidate)
+    responses[3]["recommendation_candidates"] = candidates
+    identifiers = [candidate["recommendation_id"] for candidate in candidates]
+    review = {
+        "verdict": "revise", "reason_codes": [], "object_ids": [], "issues": [],
+        "passed_core_ids": identifiers,
+        "core_reviews": [_core_review(identifier) for identifier in identifiers],
+    }
+    assessment = FakeClient(responses, [])
+    reviewer = FakeClient([review], [])
+    result = run_verified_climate_pipeline(
+        **_arguments(), clients=PipelineClients(assessment, reviewer),
+    )
+
+    assert {item["recommendation_id"] for item in result["priorities"]} == set(identifiers)
+    assert result["validation"]["status"] == "attention"
+    assert "SEMANTIC_REVIEW_VERDICT_INVALID" in result["validation"]["reason_codes"]
+    assert "RECOMMENDATIONS_ALL_SUPPRESSED" not in result["validation"]["reason_codes"]
+    assert result["recommendation_diagnostics"]["reviewer_verdict"] == "revise"
+    assert result["recommendation_diagnostics"]["semantic_review_object_ids"] == []
+    assert result["manifest"]["suppressed_counts"]["recommendations"] == 0
+    assert len(assessment.calls) == 4 and len(reviewer.calls) == 1
+
+
+@pytest.mark.parametrize("change", ["block", "missing_issues", "missing_reasons", "unknown_core"])
+def test_empty_negative_review_does_not_bypass_invalid_envelope(change):
+    review = {
+        "verdict": "revise", "reason_codes": [], "object_ids": [], "issues": [],
+        "passed_core_ids": ["REC-001"], "core_reviews": [_core_review()],
+    }
+    if change == "block":
+        review["verdict"] = "block"
+    elif change == "missing_issues":
+        del review["issues"]
+    elif change == "missing_reasons":
+        del review["reason_codes"]
+    else:
+        review["core_reviews"].append(_core_review("unknown"))
+    result = run_verified_climate_pipeline(
+        **_arguments(), clients=PipelineClients(FakeClient(_responses(), []), FakeClient([review], [])),
+    )
+    assert result["priorities"] == []
+    assert "SEMANTIC_REVIEW_TARGET_UNRESOLVED" in result["validation"]["reason_codes"]
+
+
 def test_admission_suppression_exposes_bounded_reason_codes():
     responses = _responses()
     recommendation = responses[3]["recommendation_candidates"][0]
@@ -764,7 +816,7 @@ def test_manifest_is_privacy_safe_and_scoped_to_the_run():
     assert first["manifest"]["run_id"] == "run-test"
     assert second["manifest"]["run_id"] == "run-two"
     assert first["manifest"]["source_count"] == 1
-    assert first["manifest"]["renderer_version"] == "climate-reader-v2.21"
+    assert first["manifest"]["renderer_version"] == "climate-reader-v2.22"
     assert first["manifest"]["extraction_version"] == "source-blocks-v3"
     assert (
         first["manifest"]["prompt_versions"]["fact_extraction"]

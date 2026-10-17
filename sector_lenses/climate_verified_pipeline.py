@@ -1531,8 +1531,15 @@ def run_verified_climate_pipeline(
             review_reasons.append('SEMANTIC_REVIEW_TARGET_UNRESOLVED')
         if (reviewer_verdict != "pass" and not semantic_review_object_ids
                 and not disputed_readiness_ids):
-            review_reasons.append("SEMANTIC_REVIEW_TARGET_UNRESOLVED")
-            semantic_review_object_ids = sorted(priority_ids)
+            if (reviewer_verdict == "revise" and not review_reasons
+                    and review.get("reason_codes") == []
+                    and review.get("object_ids") == [] and review.get("issues") == []
+                    and set(core_admission.passed_core_ids) == priority_ids):
+                # Keep explicit core passes available without certifying the contradictory verdict.
+                review_reasons.append("SEMANTIC_REVIEW_VERDICT_INVALID")
+            else:
+                review_reasons.append("SEMANTIC_REVIEW_TARGET_UNRESOLVED")
+                semantic_review_object_ids = sorted(priority_ids)
         reasons.extend(review_reasons)
         recommendation_reasons.extend(review_reasons)
         if reviewer_verdict != "pass":
@@ -2020,10 +2027,10 @@ def run_verified_climate_pipeline(
         run_id=run_id,
         schema_version=CLIMATE_VERIFIED_SCHEMA_VERSION,
         prompt_versions=PROMPT_VERSIONS,
-        reviewer_version="climate-review-v2.2",
+        reviewer_version="climate-review-v2.3",
         extraction_version="source-blocks-v3",
         normalization_version="climate-normalization-v2.13",
-        renderer_version="climate-reader-v2.21",
+        renderer_version="climate-reader-v2.22",
         model_aliases=model_aliases,
         sampling={"max_transient_retries": 1,
                   "correction_transient_retries": 0,

@@ -1281,6 +1281,38 @@ def test_some_withheld_priorities_have_a_short_review_notice_in_exports():
         assert "AUTHORITY_UNSUPPORTED" not in content
 
 
+@pytest.mark.parametrize("priority_count", [1, 4])
+def test_inconclusive_review_keeps_priorities_with_warning_in_exports(priority_count):
+    assessment = _assessment()
+    assessment["priorities"] = assessment["priorities"][:priority_count]
+    assessment["facts"] = [{"claim_id": "PF-001"}]
+    assessment["analysis"] = {"residual_gaps": [
+        {"gap_id": f"RG-{number}", "statement": f"Unresolved design question {number}.",
+         "gap_type": "not_yet_specified", "project_anchor_ids": ["PF-001"]}
+        for number in range(3)
+    ]}
+    assessment["recommendation_diagnostics"] = {
+        "admitted_count": len(assessment["priorities"]),
+        "final_priority_count": len(assessment["priorities"]),
+        "reviewer_verdict": "revise",
+        "reason_codes": ["SEMANTIC_REVIEW_VERDICT_INVALID"],
+    }
+    model = build_reader_model(assessment)
+    assert len(model["summary_gaps"]) == 3
+    assert len(model["priorities"]) == len(assessment["priorities"])
+    assert model["recommendation_status"] == "partial"
+    assert "inconclusive" in model["recommendation_message"]
+    stream = BytesIO()
+    write_reader_docx(model, stream)
+    stream.seek(0)
+    word = "\n".join(paragraph.text for paragraph in Document(stream).paragraphs)
+    for content in (word, render_reader_html(model)):
+        assert "Recommendations need review" in content
+        assert model["recommendation_message"] in content
+        assert "Some proposed actions were withheld" not in content
+        assert "SEMANTIC_REVIEW_VERDICT_INVALID" not in content
+
+
 def test_no_candidate_result_keeps_neutral_complete_status():
     assessment = _assessment()
     assessment["priorities"] = []

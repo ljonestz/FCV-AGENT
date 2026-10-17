@@ -1,3 +1,25 @@
+### 2026-10-17 Contradictory review handled without blanket suppression
+
+Initial conditional review now retains explicitly passed cores for supervised
+review only for an empty revise (explicit empty issues/targets/reason codes), full
+valid core coverage and no admission errors. Keep revise/attention and the existing
+SEMANTIC_REVIEW_VERDICT_INVALID diagnostic; never turn this into pass. Explicit
+block, substantive reasons, unknown targets and malformed coverage still withhold.
+No extra call, prompt/schema/field/budget change. Runtime admission v2.3, renderer
+v2.22; compiler v2.23, conditional prompt v2.21, reader-review prompt v1.11 unchanged.
+
+Verification: 1,806 passed, four known hanging browser checks excluded, 339.83s.
+No complete browser-suite pass. Connected checks: 252; expanded warning cases: two passed.
+
+Existing partial status and browser/HTML/Word warnings say review was inconclusive
+and sources must be checked before sharing. The exact saved five candidates and
+conditional response retained five cores in an offline fake-client replay; the
+separate reader failure stayed a fallback. Packet/drift/hash checks passed;
+publication=false. See current HANDOFF and the offline follow-up in
+docs/20261017_supervised-readiness-smoke-result.md. No new paid call or deployment.
+The failed live Smoke remains failed; Quality and human source approval remain
+pending. Preserve original artifacts, consumed locks, branch/worktree and untracked test.
+
 ### 2026-10-17 Paid readiness Smoke stopped before Quality
 
 Read docs/20261017_supervised-readiness-smoke-result.md and current HANDOFF first.

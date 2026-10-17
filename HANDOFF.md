@@ -1,3 +1,37 @@
+### 2026-10-17 Offline repair for contradictory aggregate review
+
+User authorized addressing the Smoke contradiction. The initial review fallback
+now preserves all explicitly passed cores only when verdict=revise, issues/targets/
+reason codes are explicitly empty arrays, every core passes admission and no
+admission errors exist. It retains revise and validation attention, recording
+SEMANTIC_REVIEW_VERDICT_INVALID. Block, substantive reasons, unknown targets and
+malformed/missing coverage keep their prior withholding behavior. No extra call,
+repair loop, schema, prompt or budget change. Runtime admission metadata v2.3;
+renderer v2.22. Compiler/reviewer/reader-review prompts remain v2.23/v2.21/v1.11.
+
+Existing partial status displays Recommendations need review across browser,
+HTML and Word: automated recommendation review was inconclusive; check sources
+before sharing. No false claim that actions were withheld when all five remain.
+The warning survives the separate short-priority-list fallback.
+
+Verification: 1,806 passed, four known hanging Chromium-driver tests explicitly
+excluded, 339.83 seconds. No complete browser-suite pass is claimed. Connected
+pipeline/reader/core-admission checks: 252 passed; expanded warning cases: two passed.
+
+Offline replay of the exact saved five candidates and conditional response retained
+all five and their original action/narrative/limitation/caution text. Upstream inputs
+were reconstructed from admitted saved records; this is not fresh generation or
+a complete raw replay. The independent reader meaning failure/fallback remains.
+Network blocked; packet200, stale-reader409, hashes and publication=false checked.
+Local Edge notice and second priority/Practical considerations inspected. Artifacts
+prefix 20261017_review-contradiction-replay- in the existing untracked output folder.
+
+No paid call, deployment or merge for this fix. Preview last verified on 853771e,
+blocking settings restored as below; the new fix is not deployed. Full live Quality
+acceptance, the financing feedback/known REC-004 miss and named external review of
+the actual packet/report hashes remain outstanding. Do not reuse the consumed
+Smoke lock or run another paid assessment without fresh approval.
+
 ### 2026-10-17 Paid readiness campaign stopped after incomplete Smoke
 
 User approved the concrete preview-only deployment, temporary guard opening and

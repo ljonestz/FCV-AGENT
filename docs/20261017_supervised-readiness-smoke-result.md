@@ -146,3 +146,65 @@ Offline scripts: `20261017_diagnose-readiness-smoke.py` and
 `20261017_verify-readiness-smoke.py` completed successfully with zero provider
 requests. Preserve pre-existing untracked `tests/test_climate_final_reader.py`
 and all historical output. Do not stage raw artifacts or these local run helpers.
+
+## Later offline repair of the contradiction
+
+The user authorized addressing this failure. The change is confined to initial
+review fallback and shared reader warning projection. An otherwise empty revise
+can retain cores only when all core IDs explicitly pass valid source/record
+admission, there are no admission errors, and reason codes, object IDs and issues
+are explicitly empty arrays. A block, a substantive global concern, unknown
+targets or missing/malformed coverage still uses existing withholding behavior.
+Correction-review acceptance requirements are unchanged.
+
+The result retains the raw revise verdict, validation attention and
+SEMANTIC_REVIEW_VERDICT_INVALID. It does not certify a pass or start another model
+call. The shared reader marks recommendations partial and uses the existing
+Recommendations need review surfaces in browser, HTML and Word. Its notice says
+automated recommendation review was inconclusive and asks for source checks before
+sharing. It does not incorrectly say actions were withheld when all remain. A
+short priority list cannot overwrite this warning with a generic coverage message.
+
+No schema, field, prompt, call budget or normal-FCV behavior changed. Runtime
+admission metadata is climate-review-v2.3 and renderer climate-reader-v2.22;
+recommendation compiler v2.23, conditional-review prompt v2.21 and final-reader
+review prompt v1.11 remain. Publication approval stays false.
+
+Two regressions failed before implementation: the five-core case suppressed all
+five, and the reader incorrectly labelled retained recommendations complete.
+Four malformed/block boundary cases already passed. The connected pipeline,
+reader/export and core-admission suite passed 252 checks. Two expanded warning
+cases additionally cover a short list with several grounded gaps.
+
+Final broader suite: 1,806 passed, four known hanging Chromium-driver tests
+explicitly excluded, 339.83 seconds. No complete browser-suite pass is claimed.
+JUnit artifact: output/20261016-ipf-pilot-live-preflight/20261017_review-contradiction-final-tests.xml.
+
+The exact saved candidates and contradictory conditional response were replayed
+with fake clients and socket access blocked. Upstream payloads were reconstructed
+from admitted canonical records because raw upstream model responses are not all
+available. Drafting was already merged in the saved candidates. This is a software
+replay, not fresh generation or an identical replay of the whole live run.
+
+All five candidates retained their original minimum action, narrative, limitation
+and caution. The revise/attention result stayed visible and the separate final-reader
+meaning failure remained a fallback. Packet generation returned 200; a cloned stale
+reader returned 409; packet hashes and publication=false verified. Replay used the
+real JSON boundary and existing canonical snapshot helper. Original Smoke files
+were hashed before/after and were unchanged.
+
+New untracked artifacts in the same output folder use prefix
+20261017_review-contradiction-replay-: canonical.json, reader.json, browser.html,
+report.html, review-packet.zip and audit.json. Snapshot SHA256:
+e24fe6ec080ce7622a7614b1ad38b2ea0db8ef9d4460e75d8325cca7c3b13c69.
+The helper is 20261017_replay-review-contradiction.py. All provider access was blocked.
+Local Edge inspection confirmed the notice, all five priorities and the second
+priority's Practical considerations. Screenshots inspected:
+output/playwright/.playwright-cli/page-2026-10-17T17-50-01-964Z.png and
+page-2026-10-17T17-51-11-574Z.png. Word warning and priority text checked in the packet;
+no visual Word-layout acceptance is claimed.
+
+The historical live Smoke remains incomplete. No paid call or deployment was made
+for this repair. The independent reader financing feedback, earlier consequential
+REC-004 detection miss, full Quality/live export acceptance and named human
+version/file-bound approval remain outstanding.

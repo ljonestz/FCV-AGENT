@@ -69,6 +69,10 @@ INCOMPLETE_RECOMMENDATION_MESSAGE = (
     "Recommendations Note as complete; rerun the analysis or contact support."
 )
 PARTIAL_RECOMMENDATION_MESSAGE = "Some proposed actions were withheld. This note needs further review before it is used."
+INCONCLUSIVE_REVIEW_MESSAGE = (
+    "Automated recommendation review was inconclusive. Check these recommendations "
+    "against the source documents before sharing."
+)
 # Headline rating shown above the core-question cards: how sensitive the project
 # is to interacting climate and FCV risks, on a five-point scale
 # derived from the (retained) internal `sensitivity` judgment. Higher is better
@@ -884,14 +888,20 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
         and "RECOMMENDATIONS_ALL_SUPPRESSED" in diagnostic_reasons
     )
     admitted_count = diagnostics.get("admitted_count", 0)
+    inconclusive_review = bool(priorities) and (
+        diagnostics.get("reviewer_verdict") == "revise"
+        and isinstance(diagnostic_reasons, (list, tuple))
+        and "SEMANTIC_REVIEW_VERDICT_INVALID" in diagnostic_reasons
+    )
     partially_reviewed = bool(priorities) and (
         diagnostics.get("reviewer_verdict") in {"revise", "block"}
         and isinstance(admitted_count, int) and admitted_count > len(priorities)
-    )
+    ) or inconclusive_review
     recommendation_status = "incomplete" if all_suppressed else "partial" if partially_reviewed else "complete"
     recommendation_message = (
         INCOMPLETE_RECOMMENDATION_MESSAGE
         if all_suppressed
+        else INCONCLUSIVE_REVIEW_MESSAGE if inconclusive_review
         else PARTIAL_RECOMMENDATION_MESSAGE if partially_reviewed
         else NO_RECOMMENDATION_MESSAGE if not priorities else ""
     )
@@ -979,7 +989,8 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
         )
         reader_priorities.append(reader_priority)
     summary_gaps = _summary_gap_items(assessment, reader_priorities)
-    if len(summary_gaps) >= 3 and len(reader_priorities) < 3 and recommendation_status != "incomplete":
+    if (len(summary_gaps) >= 3 and len(reader_priorities) < 3
+            and recommendation_status != "incomplete" and not inconclusive_review):
         recommendation_status = "partial"
         recommendation_message = (
             "Fewer than three priorities were validated despite several material findings. "
