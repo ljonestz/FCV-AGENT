@@ -767,6 +767,11 @@ _reader_issue = STAGE_OUTPUT_SCHEMAS['reader_review']['properties']['issues']['i
 _reader_issue['properties']['quoted_text'] = _string(
     'Exact unique substring in the affected current final_reader record identifying the challenged assertion.')
 _reader_issue['required'].append('quoted_text')
+_reader_issue['properties']['severity'] = _enum(('minor', 'consequential'))
+_reader_issue['properties']['decision_impact'] = _string(
+    'Explain the preparation decision or project understanding materially changed; for minor issues explain why it is unchanged.')
+_reader_issue['required'].extend(['severity', 'decision_impact'])
+
 STAGE_OUTPUT_SCHEMAS['reader_correction'] = _object({
     'corrections': {'type': 'array', 'items': _object({
         'object_id': _string('Exact requested SUM or NARR ID; no other records.'),

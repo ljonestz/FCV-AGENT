@@ -1,3 +1,18 @@
+### 2026-10-17 Proportionate review candidate prepared for supervised handover
+
+Read docs/20261017_proportionate-review-readiness.md. User authorized autonomous
+app-wide readiness work, up to three full paid app reviews and five smaller calls;
+offline first, use fewer. No new campaign paid submission yet. Reader review v1.13,
+conditional review v2.22, admission v2.4, renderer v2.24. Minor-only findings retain
+prose with visible review notice and avoid repair; consequential issues withhold
+only affected sections after the existing bounded repair. Structural failures and
+block remain closed. Native reports no longer display the unreviewed executive
+precursor beside reviewed prose. Browser/HTML/Word/snapshot agree; normal FCV unchanged.
+Offline: 1,828 passed, four known Chromium hangs excluded; final presentation checks
+109 passed plus two browser/manifest checks. Saved real review replay retains two
+useful answers without changing revise. Full live candidate acceptance still pending.
+Preview-only Smoke then Quality planned; no production deployment/merge, publication=false.
+
 ### 2026-10-17 Useful conditional dividends and limitations-only reports
 
 User endorsed the opening/priority style but requested stronger, useful interpretation

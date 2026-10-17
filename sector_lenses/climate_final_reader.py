@@ -5,7 +5,7 @@ from copy import deepcopy
 import re
 
 from sector_lenses.climate_verified_schemas import (
-    _SUMMARY_MONTHS, validate_summary_fragment, validate_summary_overview,
+    _SUMMARY_MONTHS, SEMANTIC_REVIEW_REASON_CODES, validate_summary_fragment, validate_summary_overview,
 )
 
 
@@ -308,9 +308,96 @@ def apply_reader_corrections(payload: dict, response: object, targets: set[str],
     return corrected
 
 
+def valid_reader_revision(review: dict, final_reader: object) -> bool:
+    """Reject incomplete diagnostics before spending the single text correction."""
+    if review.get('verdict') != 'revise':
+        return False
+    issues, identifiers, codes = (review.get(key) for key in ('issues', 'object_ids', 'reason_codes'))
+    if not all(isinstance(value, list) and 0 < len(value) <= 12
+               for value in (issues, identifiers, codes)):
+        return False
+    if (not all(isinstance(identifier, str) for identifier in identifiers)
+            or len(set(identifiers)) != len(identifiers)
+            or not all(isinstance(code, str) and code in SEMANTIC_REVIEW_REASON_CODES for code in codes)):
+        return False
+    if not isinstance(final_reader, dict) or not all(
+            isinstance(final_reader.get(key), list) and all(isinstance(r, dict) for r in final_reader[key])
+            for key in ("summary_paragraphs", "assessment_narratives")):
+        return False
+    records = {}
+    if isinstance(final_reader, dict):
+        for record in (
+            final_reader.get("summary_paragraphs", [])
+            + final_reader.get("assessment_narratives", [])
+        ):
+            identifier = record.get("object_id")
+            if isinstance(identifier, str):
+                records[identifier] = record
+    issue_ids, issue_codes = [], set()
+    for issue in issues:
+        if (not isinstance(issue, dict) or not isinstance(issue.get('object_id'), str)
+                or not isinstance(issue.get('explanation'), str) or not issue['explanation'].strip()
+                or not isinstance(issue.get('quoted_text'), str) or not issue['quoted_text'].strip()
+                or not isinstance(issue.get('reason_codes'), list) or not issue['reason_codes']
+                or not all(isinstance(code, str) and code in SEMANTIC_REVIEW_REASON_CODES
+                           for code in issue['reason_codes'])):
+            return False
+        if 'severity' in issue and (issue['severity'] not in ('minor', 'consequential')
+                or not isinstance(issue.get('decision_impact'), str) or not issue['decision_impact'].strip()):
+            return False
+        record = records.get(issue['object_id'])
+        if record is None:
+            return False
+        texts = ([record.get('text')] if isinstance(record.get('text'), str)
+                 else record.get('paragraphs'))
+        if (not isinstance(texts, list)
+                or not all(isinstance(text, str) for text in texts)
+                or sum(issue['quoted_text'] in text for text in texts) != 1
+                or not all(text.find(issue['quoted_text']) == text.rfind(issue['quoted_text'])
+                           for text in texts)):
+            return False
+        issue_ids.append(issue['object_id'])
+        issue_codes.update(issue['reason_codes'])
+    return (len(set(issue_ids)) == len(issue_ids)
+            and set(issue_ids) == set(identifiers) and issue_codes == set(codes))
+
+
 def reviewed_final_reader(payload: object, review: object, assessment: dict[str, object]) -> tuple[list[str], list[dict]]:
-    """Require an explicit clean semantic pass, including at saved-result export."""
-    if (not isinstance(review, dict) or review.get("verdict") != "pass"
-            or any(review.get(key) != [] for key in ('object_ids', 'reason_codes', 'issues'))):
+    """Keep reviewed usable sections; a partial review never certifies publication."""
+    summary, narratives = validate_final_reader(payload, assessment)
+    if not summary or not narratives or not isinstance(review, dict):
         return [], []
-    return validate_final_reader(payload, assessment)
+    if review.get('verdict') == 'pass':
+        return (summary, narratives) if all(review.get(k) == [] for k in ('object_ids', 'reason_codes', 'issues')) else ([], [])
+    if not valid_reader_revision(review, payload):
+        return [], []
+    withheld = {issue['object_id'] for issue in review['issues'] if issue.get('severity', 'consequential') != 'minor'}
+    # The opening is a single argument; removing one paragraph can reverse its balance.
+    if any(identifier.startswith('SUM-') for identifier in withheld):
+        summary = []
+    return summary, [record for record in narratives if record['object_id'] not in withheld]
+
+
+def reader_review_notice(payload: object, review: object, assessment: dict[str, object]) -> str:
+    """One honest status notice shared by browser, exports and saved reader hashing."""
+    if (isinstance(review, dict) and review.get('verdict') == 'pass'
+            and all(review.get(k) == [] for k in ('object_ids', 'reason_codes', 'issues'))
+            and all(validate_final_reader(payload, assessment))):
+        return ''
+    summary, narratives = reviewed_final_reader(payload, review, assessment)
+    if not summary and not narratives:
+        return 'Automated narrative review did not establish usable prose. Source-based findings are shown where available; human review is required.'
+    labels = {'SUM': 'opening', 'NARR-design': 'climate risks and delivery',
+              'NARR-dividends': 'peace and social dividends', 'NARR-inclusion': 'fair benefits'}
+    minor, consequential = [], []
+    for issue in review['issues']:
+        label = labels['SUM'] if issue['object_id'].startswith('SUM-') else labels[issue['object_id']]
+        target = minor if issue.get('severity') == 'minor' else consequential
+        if label not in target:
+            target.append(label)
+    messages = []
+    if minor:
+        messages.append('Minor uncertainties remain in ' + ', '.join(minor) + '; the narrative is retained for human review.')
+    if consequential:
+        messages.append('Potentially consequential claims need source confirmation in ' + ', '.join(consequential) + '; the affected narrative is withheld, while other reviewed sections remain available.')
+    return ' '.join(messages)

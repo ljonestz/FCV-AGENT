@@ -816,7 +816,7 @@ def test_manifest_is_privacy_safe_and_scoped_to_the_run():
     assert first["manifest"]["run_id"] == "run-test"
     assert second["manifest"]["run_id"] == "run-two"
     assert first["manifest"]["source_count"] == 1
-    assert first["manifest"]["renderer_version"] == "climate-reader-v2.23"
+    assert first["manifest"]["renderer_version"] == "climate-reader-v2.24"
     assert first["manifest"]["extraction_version"] == "source-blocks-v3"
     assert (
         first["manifest"]["prompt_versions"]["fact_extraction"]
@@ -836,7 +836,7 @@ def test_manifest_is_privacy_safe_and_scoped_to_the_run():
     )
     assert (
         first["manifest"]["prompt_versions"]["conditional_review"]
-        == "climate-review-v2.21"
+        == "climate-review-v2.22"
     )
     assert (
         first["manifest"]["prompt_versions"]["drafting_compiler"]
@@ -2169,7 +2169,9 @@ def test_reader_correction_cannot_rewrite_untargeted_records():
          'issues': [{'object_id': 'NARR-dividends', 'reason_codes': ['PROJECT_FACT_UNSUPPORTED'],
                      'quoted_text': READER_QUOTE, 'explanation': 'Qualify the benefit.'}]}], [])
     result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(assessment, reviewer))
-    assert result['summary_overview_status'] == 'fallback'
+    assert result['summary_overview_status'] == 'generated'
+    assert len(result['assessment_narratives']) == 2
+    assert 'NARR-dividends' not in [r['object_id'] for r in result['assessment_narratives']]
     assert len(result['priorities']) == 1
     assert len(reviewer.calls) == 2
     assert result['diagnostic_trace']['final_reader']['correction']['issues'][0]['reason_codes'] == ['READER_CORRECTION_TARGET_INVALID']
@@ -2188,7 +2190,9 @@ def test_reader_correction_cannot_add_other_admitted_evidence():
          'issues': [{'object_id': 'NARR-dividends', 'reason_codes': ['PROJECT_FACT_UNSUPPORTED'],
                      'quoted_text': READER_QUOTE, 'explanation': 'Qualify the benefit.'}]}], [])
     result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(assessment, reviewer))
-    assert result['summary_overview_status'] == 'fallback'
+    assert result['summary_overview_status'] == 'generated'
+    assert len(result['assessment_narratives']) == 2
+    assert 'NARR-dividends' not in [r['object_id'] for r in result['assessment_narratives']]
     assert len(result['priorities']) == 1
     assert 'FINAL_READER_CORRECTION_SCOPE_INVALID' in result['manifest']['validation_reason_codes']
     assert len(reviewer.calls) == 2
@@ -2324,7 +2328,9 @@ def test_native_reader_rejected_patch_preserves_initial_for_diagnosis():
     result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(
         FakeClient(responses + [original, patch], []), reviewer))
     assert result['final_reader'] == original
-    assert result['summary_overview_status'] == 'fallback'
+    assert result['summary_overview_status'] == 'generated'
+    assert len(result['assessment_narratives']) == 2
+    assert 'NARR-dividends' not in [r['object_id'] for r in result['assessment_narratives']]
     assert result['diagnostic_trace']['final_reader']['correction']['issues'][0]['reason_codes'] == ['READER_CORRECTION_FIELDS_INVALID']
     assert len(result['priorities']) == 1
 
@@ -2394,7 +2400,9 @@ def test_reader_correction_payload_exposes_exact_existing_precision_and_rejects_
     prompt = build_verified_stage_prompt('reader_correction', correction_payload)
     assert 'allowed_numeric_date_tokens_by_id' in prompt
     assert 'full listed date phrase' in ' '.join(prompt.split())
-    assert result['summary_overview_status'] == 'fallback'
+    assert result['summary_overview_status'] == 'generated'
+    assert len(result['assessment_narratives']) == 2
+    assert 'NARR-dividends' not in [r['object_id'] for r in result['assessment_narratives']]
     issues = result['diagnostic_trace']['final_reader']['correction']['issues']
     assert issues[0]['reason_codes'] == [
         'READER_CORRECTION_SUMMARY_NUMBER_UNSUPPORTED'

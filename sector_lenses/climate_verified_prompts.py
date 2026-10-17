@@ -611,7 +611,14 @@ Return: {"drafting_sets":[{"recommendation_id":"REC-001","drafting_blocks":[{"dr
 def _review_prompt(payload: dict[str, object]) -> str:
     allowed_reason_codes = ", ".join(SEMANTIC_REVIEW_REASON_CODES)
     return _common(
-        """Act as a source-first verifier, not an editor. Check existing mitigation
+        """Review for consequential errors in a supervised operational pilot. Do not reject
+useful actions for minor wording inconsistencies, editorial preferences or qualified
+inferences whose premises are supported. Flag errors that materially change project
+understanding or a preparation decision, including invented commitments, funding,
+mandates, beneficiary eligibility, phase scope or achieved outcomes. A plainly wrong
+factual premise is not cured by conditional language. Evaluate each core separately;
+do not suppress unrelated useful recommendations because one core needs correction.
+Act as a source-first verifier, not an editor. Check existing mitigation
 before residual gaps; project-fact provenance; country-evidence entitlements;
 recommendation proportionality; instrument scope, timing, and authority; rating
 coherence; duplication; and unintended consequences. Verify the residual-gap premise against its cited project facts, including whether any claimed contradiction compares like with like. A false or unsupported premise is RESIDUAL_GAP_UNSUPPORTED on the parent REC ID; omit that ID from passed_core_ids. Identify defects in both the premise and the proposed response. Asking the task team to specify an unresolved indicator, protocol, capacity, or adaptation measure is a valid purpose of a recommendation and is not itself a reason to revise or block. Do not broadly rewrite. Review each core recommendation independently from drafting_artifacts. Core recommendations omit optional drafting blocks; their titles, decisions, actions and narratives still contain factual premises that must be checked. Review every core decision even when its draft fails. An issue in optional wording targets its exact supplied artifact object_id (REC-...::current_document or ::operational_instrument), never its parent action unless the decision itself also fails. Parent REC- IDs identify core defects. Missing optional wording is not a core defect. Do not include gap, fact, response or pathway IDs. Return passed_core_ids containing every independently accepted core REC ID, including when drafts fail. An unlisted core decision is not accepted. Review every core decision and artifact; identify every failing object.
@@ -899,6 +906,17 @@ Separate a documented fact, a qualified analytical inference and a proposed acti
 A conditional mechanism can be analytically useful without being in the source;
 its factual premises, scope and uncertainty must remain sound. Evaluate all reader
 records, including status claims, rather than stopping after the first objection.
+Calibrate for a supervised operational pilot. Classify each real issue as minor or
+consequential and explain its decision_impact. Minor means a localized ambiguity
+or imprecision that does not materially alter project understanding or the proposed
+preparation decision. Consequential means an unsupported claim could materially
+change a decision or clearly misstate the project: invented funding, mandates,
+beneficiaries or commitments, wrong component/phase scope, achieved results claimed
+from plans, or reversed meaning. When consequence is uncertain, use consequential.
+Stylistic preferences and supported qualified inferences are not issues at all.
+Use revise for localized issues, even consequential ones; identify every affected
+record. Reserve block for pervasive or fundamental unreliability. Never soften an
+invented factual premise merely because surrounding benefits are conditional.
 A pass certifies all paragraphs. Return verdict pass/revise/block, reason_codes from the native enum,
 object_ids and issues with short explanations. Target exact SUM-... or NARR-... IDs.
 Use empty arrays for pass. For revise/block, provide nonempty reason_codes on every issue, a specific explanation, unique object_ids matching the issues, and top-level reason_codes equal to their union. Identify all affected paragraph IDs for any failure.

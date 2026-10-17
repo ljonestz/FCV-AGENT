@@ -11,7 +11,7 @@ from typing import Any
 
 from docx import Document
 
-from sector_lenses.climate_final_reader import reviewed_final_reader
+from sector_lenses.climate_final_reader import reviewed_final_reader, reader_review_notice
 
 from climate_question_bank import CLIMATE_LITERATURE_REFERENCES
 from sector_lenses.climate_judgments import ALLOWED
@@ -637,9 +637,9 @@ def _assessment_themes(gaps: list[dict], questions: list[dict], priorities: list
                 or not isinstance(refs, list) or not refs or not all(isinstance(ref, str) for ref in refs)
                 or set(refs) - known_ids or (not final_contract and not set(refs) & fact_ids)):
             continue
-        if not 40 <= len(" ".join(paragraphs).split()) <= 180:
+        if not final_contract and not 40 <= len(" ".join(paragraphs).split()) <= 180:
             continue
-        if not all(validate_summary_fragment(paragraph, canonical_text=canonical, allow_paraphrase=True) for paragraph in paragraphs):
+        if not final_contract and not all(validate_summary_fragment(paragraph, canonical_text=canonical, allow_paraphrase=True) for paragraph in paragraphs):
             continue
         accepted[theme] = [paragraph.strip() for paragraph in paragraphs]
         accepted_refs[theme] = set(refs)
@@ -1006,6 +1006,7 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
         "judgments": judgments,
         "summary_overview": summary_overview,
         "summary_overview_status": summary_overview_status,
+        "reader_review_notice": reader_review_notice(assessment.get("final_reader"), assessment.get("reader_review"), assessment) if assessment.get("reader_contract") == "final-reader-v1" else "",
         "climate_sensitivity_rating": climate_sensitivity_rating,
         "core_questions": core_questions,
         "existing_responses": existing_responses,
@@ -1474,23 +1475,27 @@ def render_reader_html(model: dict[str, object], *, snapshot_sha256: str | None 
             "<p>Suggested document wording is not shown because the "
             "document type or financing route could not be confirmed reliably.</p>"
         )
+    if _text(model.get("reader_review_notice")):
+        parts.append('<p class="climate-review-notice">' + html.escape(_text(model["reader_review_notice"])) + "</p>")
     parts.append(_paired_ratings_html(model))
     for paragraph in model.get("summary_overview", []) or [model.get("overview_summary", "")]:
         if _text(paragraph):
             parts.append('<p class="climate-overview-summary">' + html.escape(_text(paragraph)) + '</p>')
-    parts.append(_heading(2, HEADINGS[0]))
-    for _exec_para in re.split(r"\n\s*\n+", _text(model.get("executive_readout")).strip()):
-        _exec_para = _exec_para.strip()
-        if not _exec_para:
-            continue
-        _m = re.match(r"^(.*?[.!?])(\s+)([\s\S]*)$", _exec_para)
-        if _m:
-            parts.append(
-                f"<p><strong>{html.escape(_m.group(1))}</strong>"
-                f"{html.escape(_m.group(2) + _m.group(3))}</p>"
-            )
-        else:
-            parts.append(f"<p><strong>{html.escape(_exec_para)}</strong></p>")
+    # Native reports use the independently reviewed opening, not its unreviewed precursor.
+    if model.get('reader_contract') != 'final-reader-v1':
+        parts.append(_heading(2, HEADINGS[0]))
+        for _exec_para in re.split(r"\n\s*\n+", _text(model.get("executive_readout")).strip()):
+            _exec_para = _exec_para.strip()
+            if not _exec_para:
+                continue
+            _m = re.match(r"^(.*?[.!?])(\s+)([\s\S]*)$", _exec_para)
+            if _m:
+                parts.append(
+                    f"<p><strong>{html.escape(_m.group(1))}</strong>"
+                    f"{html.escape(_m.group(2) + _m.group(3))}</p>"
+                )
+            else:
+                parts.append(f"<p><strong>{html.escape(_exec_para)}</strong></p>")
 
     parts.append(_heading(2, "Assessment findings"))
     parts.append(_themes_html(model))
@@ -1722,21 +1727,25 @@ def write_reader_docx(model: dict[str, object], path: str | Path, *, snapshot_sh
     document.add_paragraph("Contributing to responsiveness is often a sign of going above and beyond. "
                            "The expected contribution depends on the project's scope.")
     document.add_paragraph(SENSITIVITY_RATING_CAVEAT)
+    if _text(model.get("reader_review_notice")):
+        document.add_paragraph(_text(model["reader_review_notice"]))
     for paragraph in model.get("summary_overview", []) or [model.get("overview_summary", "")]:
         if _text(paragraph):
             document.add_paragraph(_text(paragraph))
-    document.add_heading(HEADINGS[0], level=1)
-    for _exec_para in re.split(r"\n\s*\n+", _text(model.get("executive_readout")).strip()):
-        _exec_para = _exec_para.strip()
-        if not _exec_para:
-            continue
-        _m = re.match(r"^(.*?[.!?])(\s+)([\s\S]*)$", _exec_para)
-        _paragraph = document.add_paragraph()
-        if _m:
-            _paragraph.add_run(_m.group(1)).bold = True
-            _paragraph.add_run(_m.group(2) + _m.group(3))
-        else:
-            _paragraph.add_run(_exec_para).bold = True
+    # Native reports use the independently reviewed opening, not its unreviewed precursor.
+    if model.get('reader_contract') != 'final-reader-v1':
+        document.add_heading(HEADINGS[0], level=1)
+        for _exec_para in re.split(r"\n\s*\n+", _text(model.get("executive_readout")).strip()):
+            _exec_para = _exec_para.strip()
+            if not _exec_para:
+                continue
+            _m = re.match(r"^(.*?[.!?])(\s+)([\s\S]*)$", _exec_para)
+            _paragraph = document.add_paragraph()
+            if _m:
+                _paragraph.add_run(_m.group(1)).bold = True
+                _paragraph.add_run(_m.group(2) + _m.group(3))
+            else:
+                _paragraph.add_run(_exec_para).bold = True
 
     document.add_heading("Assessment findings", level=1)
     for theme in _records(model.get("assessment_themes")):
