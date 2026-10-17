@@ -1,3 +1,30 @@
+### 2026-10-17 Recommendation details prose
+
+User-approved presentation change: Climate Recommendation details now uses the
+existing limitation/caution paragraphs, conditional further work and compact
+lead/confidence or distinct timing notes. Repeated action/completion rows and
+drafting-status/guidance IDs are removed from the disclosure; suggested wording
+keeps its destination. Browser, HTML and DOCX agree. Canonical data, visible
+actions, normal FCV, schemas and admission checks are unchanged. Recommendation
+compiler v2.22, renderer v2.20; conditional review v2.21 and reader review v1.11.
+Fresh v2.22 generation remains untested. See
+docs/20261017_recommendation-details-prose.md for evidence and preview hashes.
+
+356 focused checks passed; broader suite 1,794 passed, four known hanging browser
+checks excluded. Local Edge disclosure and all nine Word pages inspected. New
+untracked preview prefix: output/20261016-ipf-pilot-live-preflight/
+20261017_recommendation-details-. This is an editorial review copy with two
+explicit REC-004 prose edits, not a fresh model result or human approval. Packet
+hashes verified; stale reader rejected. Native Summary remains a fallback.
+
+The real REC-004 semantic miss remains unresolved in automated detection. Human
+source review of consequential claims, handling of the known financing finding,
+and external version/file-bound approval are needed before sharing. Full live
+pipeline/export acceptance remains outstanding. No provider call, deployment or
+merge; publication=false. No further paid call authorized. Preview last recorded
+at 98048797116a; production unchanged. Preserve this branch/worktree and untracked
+output/ and tests/test_climate_final_reader.py.
+
 ### 2026-10-17 Recommendation-review detection still fails
 
 See docs/20261017_recommendation-review-calibration.md. Normal conditional review

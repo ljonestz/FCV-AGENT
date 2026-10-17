@@ -499,6 +499,13 @@ block (added later) supplies the ready-to-use text - keep the three distinct so
 the reader is not told the same thing three times. Add no new claims and no
 unsupported digits. Do not repeat the evidence package or add prose outside the
 requested fields.
+The Recommendation details disclosure uses limitation and caution as complementary
+paragraphs. Write complete, connected prose: limitation explains what remains
+unconfirmed and the preparation context; caution explains the practical boundary
+or condition the team should preserve. Do not repeat the visible action, its
+decision or completion checklist in these paragraphs. Avoid telegraphic labels,
+internal identifiers, status values and evidence-chain recaps. Keep material
+qualifications and distinguish proposed arrangements from existing commitments.
 
 Return: {"recommendation_candidates":[{"recommendation_id":"REC-001","title":"...","pathway_ids":[],"existing_response_ids":[],"residual_gap_ids":[],"project_anchor_ids":[],"decision":"...","minimum_action":"...","enhanced_action":null,"enhanced_activation":null,"routing_status":"verified_existing|verified_with_scope_change|standard_document_advisory|not_applicable","instrument_claim_ids":[],"responsible_function":"...","authority_basis":"project_commitment|policy|directive|procedure|none_verified","recommendation_basis":"project_evidence|country_context|guidance|analytical_judgment","completion_evidence":"...","completion_evidence_status":"output|decision_record|updated_section|team_to_define","confidence":"high|medium|low","limitation":"...","caution":"...","narrative":"...","supported_numeric_tokens":[],"score":{"materiality":0,"gap_strength":0,"leverage_urgency":0,"evidence":0,"feasibility":0},"gate_results":{"connection":true,"residuality":true,"materiality":true,"actionability":true,"timing":true,"distinctiveness":true}}],"readiness_flags":[{"flag_id":"RF-001","category":"incomplete_climate_screening|document_inconsistency|unresolved_indicator|processing_route_question|missing_operational_home|material_placeholder","flag":"...","why_it_matters":"...","document_basis_ids":[],"residual_gap_ids":[],"suggested_verification":"..."}]}""",
         payload,

@@ -1019,32 +1019,30 @@ def test_html_and_docx_share_headings_and_priority_order():
     # Drafting blocks stay; model-internal routing metadata and raw evidence
     # codes are no longer rendered in the visible priority card.
     for expected in (
-        "Current document drafting",
-        "Operational instrument drafting",
+        "Suggested drafting for the current document",
+        "Suggested drafting for an operational instrument",
         "Suggested targeted text for the current project document.",
         "Distinct operational instrument text for continuity.",
-        "GUIDE-PCN-DESIGN",
-        "GUIDE-FCV-CONTINUITY",
     ):
         assert expected in html
         assert expected in document_text
-    for removed in ("standard_document_advisory", "none_verified", "project_evidence"):
+    for removed in ("standard_document_advisory", "none_verified", "project_evidence", "GUIDE-PCN-DESIGN", "GUIDE-FCV-CONTINUITY"):
         assert removed not in html
         assert removed not in document_text
     assert not any(
         paragraph.text.rstrip().endswith(("[", "{", "..."))
         for paragraph in document.paragraphs
     )
-    assert html.count("Operational instrument drafting") == 1
-    assert document_text.count("Operational instrument drafting") == 1
-    assert html.index("Current document drafting") < html.index(
-        "Operational instrument drafting"
+    assert html.count("Suggested drafting for an operational instrument") == 1
+    assert document_text.count("Suggested drafting for an operational instrument") == 1
+    assert html.index("Suggested drafting for the current document") < html.index(
+        "Suggested drafting for an operational instrument"
     )
 
 
 
 
-def test_html_and_docx_render_canonical_project_cycle_after_actions():
+def test_html_and_docx_keep_cycle_data_without_repeating_actions():
     assessment = _assessment()
     assessment["operation_context"] = {"document_type": "PCN"}
     model = build_reader_model(assessment)
@@ -1058,12 +1056,10 @@ def test_html_and_docx_render_canonical_project_cycle_after_actions():
     )
 
     for rendered in (html, document_text):
-        assert "Where this fits in the project cycle" in rendered
-        assert "At concept stage" in rendered
-        assert "During preparation" in rendered
-        assert rendered.index("Minimum action") < rendered.index(
-            "Where this fits in the project cycle"
-        )
+        assert "Where this fits in the project cycle" not in rendered
+        assert "At concept stage" not in rendered
+        assert "During preparation" not in rendered
+    assert model['priorities'][0]['project_cycle']['primary_label'] == 'At concept stage'
 
 def _reader_with_balanced_hierarchy_content() -> dict[str, object]:
     assessment = _assessment()

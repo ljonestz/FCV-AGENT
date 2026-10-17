@@ -2933,7 +2933,7 @@ for (const invalid of ['', '   ', null, 42, {{result:'detailed'}}]) {{
     assert result.returncode == 0, result.stderr
 
 
-def test_climate_verified_detailed_renderer_uses_canonical_summary_and_project_cycle():
+def test_climate_verified_detailed_renderer_keeps_distinct_timing_as_a_note():
     source = INDEX.read_text(encoding="utf-8")
     renderer = "\n".join((
         _extract_js_function(source, "renderPriorityProjectCycle"),
@@ -2965,7 +2965,6 @@ const html = renderClimateVerifiedAssessment({{
 }});
 for (const expected of [
   'Canonical priority bridge.',
-  'Where this fits in the project cycle',
   'At concept stage',
   'Confirm the delivery sequence.',
   'During preparation',
@@ -2973,8 +2972,8 @@ for (const expected of [
 ]) {{
   if (!html.includes(expected)) throw new Error('missing '+expected+' | '+html);
 }}
-if ((html.match(/class="priority-project-cycle"/g)||[]).length !== 1) {{
-  throw new Error('canonical project cycle must render exactly once | '+html);
+if ((html.match(/class="climate-priority-detail-timing"/g)||[]).length !== 1 || html.includes('Where this fits in the project cycle')) {{
+  throw new Error('distinct timing must appear once as a compact note | '+html);
 }}
 """
     result = subprocess.run(

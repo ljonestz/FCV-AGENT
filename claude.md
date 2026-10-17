@@ -1,3 +1,22 @@
+### 2026-10-17 Recommendation details prose
+
+Climate Recommendation details is prose-led in browser, HTML and DOCX. Render the
+existing limitation/caution paragraphs, preserve conditional further work and
+distinct timing, and use a compact suggested-lead/confidence note. Do not restore
+the repeated structured field dump, status enums or guidance IDs. Suggested
+drafting retains its document/section destination. Canonical fields, evidence,
+visible actions, schemas and admission checks remain unchanged; normal FCV is
+unaffected. Compiler v2.22 requests complementary detail prose, renderer v2.20;
+conditional review remains v2.21, final-reader review v1.11. Fresh generation is
+not tested. See docs/20261017_recommendation-details-prose.md and current HANDOFF.
+
+Verification: 356 focused and 1,794 broader checks passed, with four known hanging
+browser tests excluded; local Edge disclosure and nine Word pages inspected.
+No provider call or deployment. The known REC-004 financing exclusion remains a
+semantic detection miss despite the model pass. Named human source review and
+external snapshot/file-bound approval remain necessary; publication=false and
+full live pipeline/export acceptance remains outstanding.
+
 ### 2026-10-16 Advisory native reader length
 
 Native Climate reader word targets are editorial guidance: Summary 160-230 and

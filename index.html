@@ -5155,7 +5155,6 @@
       if(!destinationHtml&&!text)return '';
       return `<section class="climate-drafting-block"><h4>${esc(label)}</h4>${destinationHtml}${text}</section>`;
     };
-    const primaryFields=[['Recommendation','decision'],['Minimum action','minimum_action'],['Enhanced action (optional)','enhanced_action'],['When to escalate','enhanced_activation'],['Who acts','responsible_function'],['How to confirm completion','completion_evidence'],['Confidence','confidence'],['Limitation','limitation'],['Caution','caution']];
     const recommendationsIncomplete=r.recommendation_status==='incomplete';
     const noPriorityMessage=recommendationsIncomplete
       ?(r.recommendation_message||'The recommendation stage could not be completed. Do not treat this Recommendations Note as complete; rerun the analysis or contact support.')
@@ -5165,11 +5164,6 @@
     const prioritySummary=r.priority_summary&&typeof r.priority_summary==='object'?r.priority_summary:{};
     const prioritySummaryHtml=priorities.length?`<p class="climate-priority-summary">${esc(prioritySummary.statement||`Drawing on the assessment findings, the analysis identifies ${priorities.length} main operational ${priorityNoun} for strengthening climate resilience, conflict sensitivity and implementation readiness in this project. These are followed by secondary points to check before the applicable review and issues to keep under review as preparation advances.`)}</p>`:'';
     const priorityHtml=priorities.length?priorities.map((priority,index)=>{
-      const field=(label,key)=>{
-        const raw=priority[key];
-        const value=Array.isArray(raw)?raw.join(', '):raw;
-        return value?`<p><strong>${esc(label)}:</strong> ${esc(value)}</p>`:'';
-      };
       const currentDraft=draftingRoute.confirmed&&priority.current_document_drafting&&typeof priority.current_document_drafting==='object'?priority.current_document_drafting:null;
       const operationalDraft=draftingRoute.confirmed&&priority.operational_instrument_drafting&&typeof priority.operational_instrument_drafting==='object'?priority.operational_instrument_drafting:null;
       const draftHtml=draftingBlock('Suggested drafting for the current document',currentDraft)+draftingBlock('Suggested drafting for an operational instrument',operationalDraft);
@@ -5178,8 +5172,24 @@
       const action=paragraphs.length>1?paragraphs.slice(1):[priority.minimum_action||priority.decision||''];
       const zone=(title,items,style)=>items.filter(Boolean).length?`<section class="pc-zone ${style}"><h4 class="pc-zone-title">${title}</h4>${items.filter(Boolean).map(p=>`<p class="pc-narr">${esc(p)}</p>`).join('')}</section>`:'';
       const bodyHtml=zone('Why this matters',why,'zone-why')+zone('What the team could do',action,'zone-act');
-      const breakdown=primaryFields.map(([label,key])=>field(label,key)).join('');
-      const detailHtml=`<details class="climate-priority-detail"><summary>Recommendation details</summary>${breakdown}${draftHtml}${renderPriorityProjectCycle(priority)}</details>`;
+      const normalize=text=>String(text||'').trim().replace(/\s+/g,' ').toLowerCase();
+      const visibleParagraphs=[...why,...action].map(normalize);
+      const visible=visibleParagraphs.join(' ');
+      const seen=new Set();
+      const detailProse=['limitation','caution'].map(key=>String(priority[key]||'').trim()).filter(text=>{
+        const normalized=normalize(text);
+        if(!text||visibleParagraphs.includes(normalized)||seen.has(normalized))return false;
+        seen.add(normalized);return true;
+      }).map(text=>`<p class="climate-priority-detail-prose">${esc(text)}</p>`).join('');
+      const further=[priority.enhanced_action,priority.enhanced_activation].map(text=>String(text||'').trim());
+      const followup=further[0]&&further.some(text=>text&&!visible.includes(normalize(text)))?`<p class="climate-priority-detail-followup"><strong>Optional further work:</strong> ${esc(further.filter(Boolean).join(' '))}</p>`:'';
+      const notes=[['Suggested lead','responsible_function'],['Confidence','confidence']].filter(([,key])=>priority[key]).map(([label,key])=>esc(`${label}: ${priority[key]}`)).join(' | ');
+      const noteHtml=notes?`<p class="climate-priority-detail-note"><small>${notes}</small></p>`:'';
+      const cycle=priority.project_cycle||{};
+      const known=normalize([...why,...action,priority.minimum_action,priority.completion_evidence].filter(Boolean).join(' '));
+      const timing=['primary','secondary'].filter(prefix=>cycle[`${prefix}_label`]&&cycle[`${prefix}_text`]&&!known.includes(normalize(cycle[`${prefix}_text`]))).map(prefix=>esc(`${cycle[`${prefix}_label`]}: ${cycle[`${prefix}_text`]}`)).join(' | ');
+      const timingHtml=timing?`<p class="climate-priority-detail-timing"><small>${timing}</small></p>`:'';
+      const detailHtml=`<details class="climate-priority-detail"><summary>Recommendation details</summary>${detailProse}${followup}${noteHtml}${timingHtml}${draftHtml}</details>`;
       return `<details id="climate-priority-${Number(priority.rank)||index+1}" class="climate-priority-card" open><summary><h3 class="pc-title"><span class="pc-rank">${esc(priority.rank||index+1)}</span><span class="pc-title-text">${esc(priority.title||'Untitled action')}</span></h3></summary><div class="climate-priority-body">${bodyHtml}${detailHtml}</div></details>`;
     }).join(''):`<p>${esc(noPriorityMessage)}</p>`;
     const flags=Array.isArray(r.review_readiness_flags)?r.review_readiness_flags.slice(0,4):[];

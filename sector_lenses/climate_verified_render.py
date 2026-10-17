@@ -129,21 +129,6 @@ POINTS_TO_CHECK_INTRO = (
     "review. They are not the main recommendations above, and none is a "
     "reason to stop the project - think of them as a checklist."
 )
-# Reader-facing priority rows only. Model-internal routing/authority fields and
-# coded reference lists (routing_status, authority_basis, recommendation_basis,
-# *_ids) remain available to validation but are excluded from visible surfaces.
-PRIORITY_FIELDS = (
-    ("Decision", "decision"),
-    ("Minimum action", "minimum_action"),
-    ("Enhanced action", "enhanced_action"),
-    ("Activation condition", "enhanced_activation"),
-    ("Who", "responsible_function"),
-    ("Completion evidence", "completion_evidence"),
-    ("Completion evidence status", "completion_evidence_status"),
-    ("Confidence", "confidence"),
-    ("Limitation", "limitation"),
-    ("Caution", "caution"),
-)
 SMOKE_RUNTIME_WARNING = (
     "Smoke test: validates workflow completion only; "
     "not a quality benchmark."
@@ -1352,18 +1337,11 @@ def _drafting_html(label: str, value: object) -> str:
         return ""
     parts = ['<section class="climate-drafting-block">']
     parts.append(_heading(4, label))
-    for field_label, key in (
-        ("Target document", "target_document"),
-        ("Target section", "target_section"),
-        ("Drafting status", "drafting_status"),
-        ("Guidance basis", "guidance_ids"),
-    ):
-        field_value = _field_text(block.get(key))
-        if field_value:
-            parts.append(
-                f"<p><strong>{html.escape(field_label)}:</strong> "
-                f"{html.escape(field_value)}</p>"
-            )
+    destination = " - ".join(_text(block.get(key)) for key in
+                              ("target_document", "target_section") if _text(block.get(key)))
+    if destination:
+        parts.append('<p class="climate-drafting-destination">For: '
+                     + html.escape(destination) + '</p>')
     parts.append(
         '<div class="climate-drafting-text">'
         + html.escape(_text(block.get("text")))
@@ -1372,29 +1350,6 @@ def _drafting_html(label: str, value: object) -> str:
     parts.append("</section>")
     return "".join(parts)
 
-
-
-def _project_cycle_html(value: object) -> str:
-    cycle = _mapping(value)
-    primary_label = _text(cycle.get("primary_label"))
-    primary_text = _text(cycle.get("primary_text"))
-    if not primary_label or not primary_text:
-        return ""
-    parts = ['<section class="climate-project-cycle">']
-    parts.append(_heading(4, "Where this fits in the project cycle"))
-    parts.append(
-        f"<p><strong>{html.escape(primary_label)}:</strong> "
-        f"{html.escape(primary_text)}</p>"
-    )
-    secondary_label = _text(cycle.get("secondary_label"))
-    secondary_text = _text(cycle.get("secondary_text"))
-    if secondary_label and secondary_text:
-        parts.append(
-            f"<p><strong>{html.escape(secondary_label)}:</strong> "
-            f"{html.escape(secondary_text)}</p>"
-        )
-    parts.append("</section>")
-    return "".join(parts)
 
 
 def _purpose_band_html(class_name: str, label: str, text: str, icon: str) -> str:
@@ -1422,6 +1377,41 @@ def _priority_sections(priority: dict[str, object]) -> list[tuple[str, list[str]
     action = paragraphs[1:] or [_text(priority.get("minimum_action") or priority.get("decision"))]
     return [("Why this matters", [p for p in why if p]),
             ("What the team could do", [p for p in action if p])]
+
+
+def _priority_detail_content(priority: dict[str, object]) -> tuple[list[str], str, list[tuple[str, str]]]:
+    """Show authored qualifications, retaining conditional work absent from the body."""
+    def normalize(text: str) -> str:
+        return " ".join(text.split()).lower()
+    visible = [normalize(p) for _, paragraphs in _priority_sections(priority) for p in paragraphs]
+    body = " ".join(visible)
+    paragraphs = []
+    seen = set()
+    for key in ("limitation", "caution"):
+        text = _text(priority.get(key))
+        normalized = normalize(text)
+        if text and normalized not in visible and normalized not in seen:
+            paragraphs.append(text)
+            seen.add(normalized)
+    further = [_text(priority.get(key)) for key in ("enhanced_action", "enhanced_activation")]
+    followup = " ".join(text for text in further if text) if further[0] and any(
+        text and normalize(text) not in body for text in further) else ""
+    notes = [(label, _text(priority.get(key))) for label, key in
+             (("Suggested lead", "responsible_function"), ("Confidence", "confidence"))
+             if _text(priority.get(key))]
+    return paragraphs, followup, notes
+
+
+def _priority_detail_timing(priority: dict[str, object]) -> list[tuple[str, str]]:
+    """Keep distinct timing advice, without repeating action/completion rows."""
+    cycle = _mapping(priority.get("project_cycle"))
+    known = " ".join([p for _, paragraphs in _priority_sections(priority) for p in paragraphs]
+                     + [_text(priority.get(key)) for key in ("minimum_action", "completion_evidence")])
+    known = " ".join(known.split()).lower()
+    return [(label, text) for prefix in ("primary", "secondary")
+            if (label := _text(cycle.get(prefix + "_label")))
+            and (text := _text(cycle.get(prefix + "_text")))
+            and " ".join(text.split()).lower() not in known]
 
 
 def render_reader_html(model: dict[str, object], *, snapshot_sha256: str | None = None) -> str:
@@ -1520,33 +1510,26 @@ def render_reader_html(model: dict[str, object], *, snapshot_sha256: str | None 
                     parts.append('<p class="pc-narr">' + html.escape(paragraph) + '</p>')
                 parts.append('</section>')
         parts.append('<details class="climate-priority-detail"><summary>Recommendation details</summary>')
-        for label, key in PRIORITY_FIELDS:
-            value = _field_text(priority.get(key))
-            if value:
-                parts.append(
-                    f"<p><strong>{html.escape(label)}:</strong> "
-                    f"{html.escape(value)}</p>"
-                )
-            if key == "minimum_action":
-                current_drafting = (
-                    priority.get("current_document_drafting")
-                    if _drafting_route_gate(operation_context, priority)["can_render"]
-                    else None
-                )
-                parts.append(_drafting_html(
-                    "Current document drafting",
-                    current_drafting,
-                ))
-                operational_drafting = (
-                    priority.get("operational_instrument_drafting")
-                    if drafting_route["confirmed"]
-                    else None
-                )
-                parts.append(_drafting_html(
-                    "Operational instrument drafting",
-                    operational_drafting,
-                ))
-        parts.append(_project_cycle_html(priority.get("project_cycle")))
+        detail_paragraphs, followup, notes = _priority_detail_content(priority)
+        for paragraph in detail_paragraphs:
+            parts.append('<p class="climate-priority-detail-prose">' + html.escape(paragraph) + '</p>')
+        if followup:
+            parts.append('<p class="climate-priority-detail-followup"><strong>Optional further work:</strong> '
+                         + html.escape(followup) + '</p>')
+        if notes:
+            parts.append('<p class="climate-priority-detail-note"><small>'
+                         + ' | '.join(html.escape(label + ': ' + value) for label, value in notes)
+                         + '</small></p>')
+        timing = _priority_detail_timing(priority)
+        if timing:
+            parts.append('<p class="climate-priority-detail-timing"><small>'
+                         + ' | '.join(html.escape(label + ': ' + value) for label, value in timing)
+                         + '</small></p>')
+        current_drafting = priority.get("current_document_drafting") if _drafting_route_gate(
+            operation_context, priority)["can_render"] else None
+        parts.append(_drafting_html("Suggested drafting for the current document", current_drafting))
+        operational_drafting = priority.get("operational_instrument_drafting") if drafting_route["confirmed"] else None
+        parts.append(_drafting_html("Suggested drafting for an operational instrument", operational_drafting))
         parts.append("</details></div></details>")
 
     # Secondary points remain visible, prose-led and locally numbered.
@@ -1699,25 +1682,11 @@ def _docx_drafting(document: Document, label: str, value: object) -> None:
     if not block:
         return
     document.add_heading(label, level=3)
-    _docx_field(document, "Target document", block.get("target_document"))
-    _docx_field(document, "Target section", block.get("target_section"))
-    _docx_field(document, "Drafting status", block.get("drafting_status"))
-    _docx_field(document, "Guidance basis", block.get("guidance_ids"))
+    destination = " - ".join(_text(block.get(key)) for key in
+                              ("target_document", "target_section") if _text(block.get(key)))
+    if destination:
+        document.add_paragraph("For: " + destination)
     document.add_paragraph(_text(block.get("text")))
-
-
-def _docx_project_cycle(document: Document, value: object) -> None:
-    cycle = _mapping(value)
-    primary_label = _text(cycle.get("primary_label"))
-    primary_text = _text(cycle.get("primary_text"))
-    if not primary_label or not primary_text:
-        return
-    document.add_heading("Where this fits in the project cycle", level=3)
-    _docx_field(document, primary_label, primary_text)
-    secondary_label = _text(cycle.get("secondary_label"))
-    secondary_text = _text(cycle.get("secondary_text"))
-    if secondary_label and secondary_text:
-        _docx_field(document, secondary_label, secondary_text)
 
 
 def write_reader_docx(model: dict[str, object], path: str | Path, *, snapshot_sha256: str | None = None) -> Path:
@@ -1821,28 +1790,21 @@ def write_reader_docx(model: dict[str, object], path: str | Path, *, snapshot_sh
                 for paragraph in paragraphs:
                     document.add_paragraph(paragraph)
         document.add_heading("Recommendation details", level=3)
-        for label, key in PRIORITY_FIELDS:
-            _docx_field(document, label, priority.get(key))
-            if key == "minimum_action":
-                current_drafting = (
-                    priority.get("current_document_drafting")
-                    if _drafting_route_gate(operation_context, priority)["can_render"]
-                    else None
-                )
-                _docx_drafting(
-                    document, "Current document drafting",
-                    current_drafting,
-                )
-                operational_drafting = (
-                    priority.get("operational_instrument_drafting")
-                    if drafting_route["confirmed"]
-                    else None
-                )
-                _docx_drafting(
-                    document, "Operational instrument drafting",
-                    operational_drafting,
-                )
-        _docx_project_cycle(document, priority.get("project_cycle"))
+        detail_paragraphs, followup, notes = _priority_detail_content(priority)
+        for paragraph in detail_paragraphs:
+            document.add_paragraph(paragraph)
+        if followup:
+            _docx_field(document, "Optional further work", followup)
+        if notes:
+            document.add_paragraph(' | '.join(label + ': ' + value for label, value in notes))
+        timing = _priority_detail_timing(priority)
+        if timing:
+            document.add_paragraph(' | '.join(label + ': ' + value for label, value in timing))
+        current_drafting = priority.get("current_document_drafting") if _drafting_route_gate(
+            operation_context, priority)["can_render"] else None
+        _docx_drafting(document, "Suggested drafting for the current document", current_drafting)
+        operational_drafting = priority.get("operational_instrument_drafting") if drafting_route["confirmed"] else None
+        _docx_drafting(document, "Suggested drafting for an operational instrument", operational_drafting)
 
     minor_points = _records(model.get("minor_climate_points"))
     doc_flags = _records(model.get("review_readiness_flags"))
