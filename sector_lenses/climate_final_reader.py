@@ -358,8 +358,9 @@ def valid_reader_revision(review: dict, final_reader: object) -> bool:
             return False
         issue_ids.append(issue['object_id'])
         issue_codes.update(issue['reason_codes'])
+    # Complete anchored findings control disposition; surplus aggregate codes remain visible metadata warnings.
     return (len(set(issue_ids)) == len(issue_ids)
-            and set(issue_ids) == set(identifiers) and issue_codes == set(codes))
+            and set(issue_ids) == set(identifiers) and issue_codes <= set(codes))
 
 
 def reviewed_final_reader(payload: object, review: object, assessment: dict[str, object]) -> tuple[list[str], list[dict]]:
@@ -400,4 +401,7 @@ def reader_review_notice(payload: object, review: object, assessment: dict[str, 
         messages.append('Minor uncertainties remain in ' + ', '.join(minor) + '; the narrative is retained for human review.')
     if consequential:
         messages.append('Potentially consequential claims need source confirmation in ' + ', '.join(consequential) + '; the affected narrative is withheld, while other reviewed sections remain available.')
+    issue_codes = {code for issue in review['issues'] for code in issue['reason_codes']}
+    if issue_codes != set(review['reason_codes']):
+        messages.append('Automated review metadata is inconsistent; confirm the findings against the sources before sharing.')
     return ' '.join(messages)

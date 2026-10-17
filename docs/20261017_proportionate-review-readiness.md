@@ -60,3 +60,27 @@ New campaign records are separate from every consumed historical allowance. Pres
 submission locks and report actual usage; a full-run authorization is not a guaranteed
 dollar ceiling. Restore preview spending blocker after testing. Never deploy production
 or merge automatically. Keep publication_approved=false and record unresolved risks.
+
+
+## Smoke follow-up: redundant review metadata
+
+Preview Smoke on 63ad51a completed all stages, retained five priorities, exported
+HTML/Word/session/packet successfully and rejected reader drift with HTTP409.
+Eight native calls returned; conservative guard reservations USD0.900999 of USD2.
+The existing browser tab retained its historical assessment ID; distinguish this
+run by candidate, timestamp and packet hash. Use Start new analysis before Quality.
+No model retry or second Smoke submission occurred.
+
+The reviewer returned three minor anchored findings but included an extra top-level
+RATING_INCOHERENT code absent from every issue. Strict equality of redundant code
+lists discarded otherwise mechanically valid prose. The follow-up accepts complete,
+uniquely anchored issue records when their codes are covered by the top-level list,
+while showing an explicit metadata-inconsistency notice for surplus aggregate codes.
+Missing issue codes, unknown enum codes, target disagreement, stale quotes, invalid
+severity and block still fail closed. Raw review remains revise and is not rewritten.
+This is metadata handling, not a claim that the reviewer detected all substantive errors.
+
+The exact saved Smoke replay now retains its opening and three answers, with both
+minor-uncertainty and metadata notices. No new paid call was used for diagnosis.
+280 connected offline checks passed. Admission v2.5 and renderer v2.25 identify this
+change; prompts unchanged. A fresh Quality run remains necessary for end-to-end evidence.

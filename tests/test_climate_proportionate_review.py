@@ -24,7 +24,7 @@ def review_for(final, identifier='NARR-inclusion', severity='minor'):
     issue = {'object_id': identifier, 'reason_codes': ['PROJECT_FACT_UNSUPPORTED'],
              'explanation': 'The wording needs a scope qualification.', 'quoted_text': text,
              'severity': severity, 'decision_impact': 'No change to the proposed action.' if severity == 'minor' else 'Could change which activities receive funding.'}
-    return {'verdict': 'revise', 'object_ids': [identifier], 'reason_codes': issue['reason_codes'], 'issues': [issue]}
+    return {'verdict': 'revise', 'object_ids': [identifier], 'reason_codes': list(issue['reason_codes']), 'issues': [issue]}
 
 
 def test_minor_retains_prose_and_visible_review_across_exports(assessment, tmp_path):
@@ -172,3 +172,14 @@ if(!html.includes('Minor &lt;uncertainty&gt; remains.'))throw new Error('Summary
 """
     result = subprocess.run(['node','-'],input=script,text=True,capture_output=True)
     assert result.returncode == 0, result.stderr
+
+
+def test_redundant_aggregate_code_does_not_discard_complete_minor_findings(assessment):
+    final = assessment['final_reader']
+    review = review_for(final)
+    review['reason_codes'].append('RATING_INCOHERENT')
+    summary, narratives = reviewed_final_reader(final, review, assessment)
+    assert summary and len(narratives) == 3
+    assessment['reader_review'] = review
+    assert 'metadata' in build_reader_model(assessment)['reader_review_notice']
+    assert review['verdict'] == 'revise' and 'RATING_INCOHERENT' in review['reason_codes']
