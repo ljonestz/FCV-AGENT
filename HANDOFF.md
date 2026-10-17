@@ -1,3 +1,24 @@
+### 2026-10-17 Recommendation-review detection still fails
+
+See docs/20261017_recommendation-review-calibration.md. Normal conditional review
+v2.20 missed the known REC-004 financing exclusion and objected to REC-002/003.
+Source inspection supports the named sites and distinguishes proposed arrangements
+from existing commitments. Recommendation/compiler review prompts now v2.21:
+independent premises, inclusion/exclusion evidence, proposal scope and linked
+footnotes. No schema/admission/renderer changes. The paid v2.21 recheck removed the
+two objections but still passed REC-004. TARGETED DETECTION FAILED despite model
+verdict pass. Keep the known finding for named human source review; do not claim
+the automatic gate is reliable or discard all otherwise useful advice.
+
+One additional $1 explicitly approved and consumed for the recheck. Total campaign
+reservations $2.427104 of $3 (not invoices); no further call authorized. The reduced
+replay was blocked offline before any submission. Full acceptance/deployment was
+deferred; preview remains 98048797116a, publication=false. Earlier sentence and
+proposition adjudication attempts also missed real defects; do not repeat them as
+an assumed fix. Current generation instruction changes remain untested live.
+Verification: 200 focused tests and 1,790 broader tests passed; four known hanging
+Chromium-driver checks excluded. No complete browser-suite or full acceptance pass.
+
 ### 2026-10-17 Bounded calibration result
 
 See docs/20261017_calibration-live-results.md. Three isolated calls on aa653e0:

@@ -411,6 +411,12 @@ permits it. If neither destination is safe, fail actionability or timing; do not
 ask the task team to confirm routing. Credit existing mitigation before defining
 the residual improvement. Minimum action must be proportionate. Enhanced action
 requires a specific activation condition.
+Treat residual gaps as analysis to check, not independent proof of their factual
+premises. Trace any asserted inclusion or exclusion from a financing source,
+mandate or service to the project facts and source passages. An unspecified
+allocation does not establish that an asset or group is excluded. Where coverage
+is unknown, ask how the arrangement would cover the relevant assets or groups
+without asserting that it excludes them. Preserve the useful document decision.
 Rank an FCV issue here only when its causal link to a specific climate pressure
 or climate adaptation/mitigation outcome is evidenced. A general protection or
 inclusion benefit, or co-location with a climate investment, is not enough.
@@ -586,6 +592,18 @@ If the document gives criteria or protections, credit them and test only the nar
 missing dimension. A false blanket omission is RESIDUAL_GAP_UNSUPPORTED on its REC ID.
 An unsupported relationship between otherwise true facts is PROJECT_FACT_UNSUPPORTED.
 Do not pass a core decision merely because the proposed action would be useful.
+Separate the proposed change from assertions about the existing project before
+checking scope. Advice to develop arrangements for source-identified sites is not
+an assertion that those arrangements already exist or that site selection is final.
+Preserve provisional status where the source makes it provisional. Read linked
+footnotes with their parent statements: a footnote can establish which sites a
+component names; its placement alone does not make that evidence insufficient.
+Conversely, a caveat about later preparation does not qualify a separate assertion
+that an asset or group is outside a funding source, mandate or service. Require
+source support for that exclusion, not merely silence about detailed allocations.
+A residual-gap statement is not independent evidence for its own premise. If the
+source leaves coverage unspecified, retain the useful clarification question but
+target the unsupported exclusion for bounded correction on its parent REC ID.
 For each core action, verify separately its site-to-activity routing and its
 recipient-to-financing scope against the original source_blocks. An action that
 assumes an existing study covers a site still fails if that coverage is not
