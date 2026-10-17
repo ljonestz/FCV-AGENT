@@ -1,3 +1,20 @@
+### 2026-10-17 Bounded calibration result
+
+See docs/20261017_calibration-live-results.md. Three isolated calls on aa653e0:
+saved corrected reader now passes; synthetic batch catches exactly three planted
+defects and leaves four qualified inferences unflagged; all five raw recommendation
+candidates name a document/section/edit in the visible action. No retries. The
+existing guard reserved $1.154676 under a $2 ceiling, not a verified invoice.
+Offline schema, exact-quote, target-set and saved-reader application checks passed.
+
+Do not label this full acceptance: REC-004 inherits RG-006's unsupported assertion
+that local airstrips sit outside the airport revenue stream. The useful maintenance
+question can remain, but that exclusion is not established by PF-023/PF-024. Raw
+candidates have not undergone downstream semantic review. Preserve this concern
+for the normal review boundary; no raw output was edited or manually approved.
+Preview remains 98048797116a, production unchanged, publication=false. No further
+call queued. Artifacts and hashes are recorded in the dated results note.
+
 ### 2026-10-17 Reader calibration and visible action specificity
 
 User authorized whole-record reviewer calibration and closer alignment with normal
