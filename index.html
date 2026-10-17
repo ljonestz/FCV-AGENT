@@ -6391,6 +6391,7 @@ ${body}
     localStorage.removeItem('fcv_express_stageHists');
     localStorage.removeItem('fcv_express_curS');
     localStorage.removeItem('fcv_express_lensState');
+    if(typeof window.startNewAssessmentSession==='function')window.startNewAssessmentSession();
     document.getElementById('upload-panel').style.display='block';
     document.getElementById('analysis-panel').style.display='none';
     document.getElementById('landing-hero').style.display='block';

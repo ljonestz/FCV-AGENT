@@ -183,3 +183,24 @@ def test_redundant_aggregate_code_does_not_discard_complete_minor_findings(asses
     assessment['reader_review'] = review
     assert 'metadata' in build_reader_model(assessment)['reader_review_notice']
     assert review['verdict'] == 'revise' and 'RATING_INCOHERENT' in review['reason_codes']
+
+
+def test_new_analysis_rotates_id_after_clearing_old_storage():
+    import subprocess
+    from tests.test_climate_lens_frontend import INDEX, _extract_js_function
+    reset = _extract_js_function(INDEX.read_text(encoding='utf-8'), 'reset')
+    script = """
+const events=[];
+const element={value:'',innerHTML:'',style:{},classList:{remove:()=>{}}};
+const document={getElementById:()=>element};
+const localStorage={removeItem:key=>events.push('remove:'+key)};
+const window={startNewAssessmentSession:()=>events.push('new-id'),scrollTo:()=>{}};
+const renderLensSelector=()=>{}, clearUI=()=>{}, updateSessionBar=()=>events.push('bar');
+""" + reset + """
+reset();
+if(events.filter(x=>x==='new-id').length!==1)throw new Error('Assessment ID not rotated once');
+if(events.lastIndexOf('remove:fcv_express_lensState')>events.indexOf('new-id'))throw new Error('New session storage cleared');
+if(events.indexOf('new-id')>events.indexOf('bar'))throw new Error('Session bar still uses old ID');
+"""
+    result = subprocess.run(['node','-'],input=script,text=True,capture_output=True)
+    assert result.returncode == 0, result.stderr

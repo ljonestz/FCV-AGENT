@@ -84,3 +84,11 @@ The exact saved Smoke replay now retains its opening and three answers, with bot
 minor-uncertainty and metadata notices. No new paid call was used for diagnosis.
 280 connected offline checks passed. Admission v2.5 and renderer v2.25 identify this
 change; prompts unchanged. A fresh Quality run remains necessary for end-to-end evidence.
+
+
+A separate shared-session defect was confirmed: reset cleared all UI/run state but
+never called the existing startNewAssessmentSession helper. The one-line fix rotates
+the ID after old scoped storage is cleared and before the session bar refreshes.
+This applies to normal FCV and Climate session lifecycle, without changing analysis.
+The regression exercises the actual JavaScript reset function; 21 new boundary tests
+pass. A live reset/round-trip check is included before Quality submission.
