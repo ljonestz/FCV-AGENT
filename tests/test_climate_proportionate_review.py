@@ -158,3 +158,17 @@ def test_native_reports_do_not_reintroduce_unreviewed_executive(assessment, tmp_
     assert 'UNREVIEWED_EXECUTIVE_SENTINEL' not in render_reader_html(model)
     assert 'UNREVIEWED_EXECUTIVE_SENTINEL' not in '\n'.join(p.text for p in Document(write_reader_docx(model,tmp_path/'native.docx')).paragraphs)
     assert assessment['executive_readout'] == 'UNREVIEWED_EXECUTIVE_SENTINEL'
+
+
+def test_summary_view_shows_same_escaped_review_notice():
+    import subprocess
+    from tests.test_climate_lens_frontend import INDEX, _extract_js_function, _js_escape_helper
+    renderer = _extract_js_function(INDEX.read_text(encoding='utf-8'), 'renderClimateVerifiedSummary')
+    script = _js_escape_helper() + """
+const climateSummaryStrengths=()=>[], climateSummaryPriorityItems=()=>[], renderClimateSummaryGaps=()=>'', renderClimateWatchDisclosure=()=>'', renderClimateRelevantGuidance=()=>'', renderStage3AdvisoryTransition=()=>'';
+""" + renderer + """
+const html=renderClimateVerifiedSummary({reader_review_notice:'Minor <uncertainty> remains.'});
+if(!html.includes('Minor &lt;uncertainty&gt; remains.'))throw new Error('Summary review notice missing');
+"""
+    result = subprocess.run(['node','-'],input=script,text=True,capture_output=True)
+    assert result.returncode == 0, result.stderr

@@ -6990,6 +6990,7 @@ ${body}
 
   function renderClimateVerifiedSummary(reader){
     const r=reader&&typeof reader==='object'?reader:{};
+    const readerReviewNotice=r.reader_review_notice?`<p class="climate-review-notice" role="note">${esc(r.reader_review_notice)}</p>`:'';
     const analysisHtml=r.analysis_status==='partial'&&r.analysis_message?`<div class="finalized-pad-notice"><div class="fpn-body"><strong>Assessment evidence is incomplete.</strong><p>${esc(r.analysis_message)}</p></div></div>`:'';
     const operationContextHtml=(()=>{
       const context=r.operation_context&&typeof r.operation_context==='object'?r.operation_context:null;
@@ -7022,7 +7023,7 @@ ${body}
     const closingText=recommendationsIncomplete
       ?'Recommendations are incomplete. Review the Detailed analysis and rerun the assessment or contact support before relying on this note.'
       :(priorities.length?'For supporting evidence and completion signals behind each priority, continue to Detailed analysis.':'Continue to Detailed analysis for the supporting evidence and points to check from this assessment.');
-    return `<div class="concise-readout climate-verified-summary"><p class="climate-review-status" role="note">Draft - human review required. Named approval of this version must be recorded separately before sharing. This app does not record human approval.</p><div class="concise-read-time">Five-minute readout</div>${analysisHtml}${operationContextHtml}<div class="concise-section-label">Overall assessment</div><div class="climate-summary-overview">${overviewHtml}</div>${signal}<div class="concise-section-label">What is already working</div><div class="concise-strengths">${strengthsHtml}</div>${gapsHtml||bridge}${renderStage3AdvisoryTransition('climate')}<div class="concise-section-label">Priority actions for the task team</div>${countHtml}${prioritiesHtml}${watchHtml}${guidanceHtml}<p class="concise-closing">${esc(closingText)}</p></div>`;
+    return `<div class="concise-readout climate-verified-summary"><p class="climate-review-status" role="note">Draft - human review required. Named approval of this version must be recorded separately before sharing. This app does not record human approval.</p><div class="concise-read-time">Five-minute readout</div>${analysisHtml}${operationContextHtml}${readerReviewNotice}<div class="concise-section-label">Overall assessment</div><div class="climate-summary-overview">${overviewHtml}</div>${signal}<div class="concise-section-label">What is already working</div><div class="concise-strengths">${strengthsHtml}</div>${gapsHtml||bridge}${renderStage3AdvisoryTransition('climate')}<div class="concise-section-label">Priority actions for the task team</div>${countHtml}${prioritiesHtml}${watchHtml}${guidanceHtml}<p class="concise-closing">${esc(closingText)}</p></div>`;
   }
 
   function handleStage3ViewKeydown(event){
