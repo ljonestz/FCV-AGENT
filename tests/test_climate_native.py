@@ -835,11 +835,14 @@ def _stage2_prompt(instrument_type="IPF", priority_questions=None):
                 "title": "South Sudan Climate Risk Profile",
                 "url": "https://www.worldbank.org/en/topic/climatechange",
                 "source_type": "world-bank",
+            }, {
+                'id': 'climate-source-2', 'title': 'UN flood evidence',
+                'url': 'https://www.un.org/flood-evidence', 'source_type': 'un',
             }],
             "claims": [{
                 "id": "climate-claim-1",
                 "claim": "Flood timing affects named landing sites.",
-                "source_ids": ["climate-source-1"],
+                "source_ids": ["climate-source-1", "climate-source-2"],
                 "project_elements": ["Sub-component 1.2"],
                 "geographies": ["Jonglei"],
                 "affected_groups": ["Displaced households"],

@@ -116,7 +116,8 @@ def test_playbook_request_is_bounded_and_recovers_with_retry_without_stale_write
 def test_context_rating_meanings_are_six_tier_and_responsiveness_is_not_a_quality_proxy():
     source = _source()
     assert "LEVELS.length" in source
-    assert "limited direct FCV action" in source.lower() or "not a proxy for overall project quality" in source.lower()
+    assert "contributing to responsiveness is often a sign of going above and beyond" in source.lower()
+    assert "the expected contribution depends on the project's scope" in source.lower()
     assert "View research briefing" in source
     assert "View sources" not in source
 

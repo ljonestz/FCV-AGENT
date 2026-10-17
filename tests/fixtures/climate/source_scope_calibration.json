@@ -1,0 +1,411 @@
+{
+  "provenance": {
+    "kind": "synthetic_contrast_pairs",
+    "origin": "Generalized from the two remaining failures in the 2026-10-15 reasoning comparison. All names/provisions are synthetic; historical full-context cases and labels remain unchanged."
+  },
+  "cases": [
+    {
+      "case_id": "regional-provision-qualified-access",
+      "stage": "conditional_review",
+      "provenance": [
+        {
+          "kind": "synthetic_counterfactual",
+          "use": "Source/claim scope discrimination; not evidence about an actual project."
+        }
+      ],
+      "payload": {
+        "source_blocks": [
+          {
+            "block_id": "B-PROVISION",
+            "text": "The project redirects resources from a cancelled market to another market so regional communities continue to benefit. Flood damage previously disrupted market access."
+          }
+        ],
+        "facts": [
+          {
+            "claim_id": "PF-PROVISION",
+            "subject": "Project provisions",
+            "predicate": "include",
+            "object_value": "The project redirects resources from a cancelled market to another market so regional communities continue to benefit. Flood damage previously disrupted market access.",
+            "epistemic_status": "explicit",
+            "source_block_ids": [
+              "B-PROVISION"
+            ],
+            "supporting_excerpt": "The project redirects resources from a cancelled market to another market so regional communities continue to benefit. Flood damage previously disrupted market access.",
+            "confidence": "high"
+          }
+        ],
+        "analysis": {
+          "existing_responses": [
+            {
+              "response_id": "ER-PROVISION",
+              "project_fact_ids": [
+                "PF-PROVISION"
+              ],
+              "pathway_ids": [
+                "PW-ACCESS"
+              ],
+              "description": "The project redirects resources from a cancelled market to another market so regional communities continue to benefit. Flood damage previously disrupted market access.",
+              "limitation": "Access for cancelled-market traders requires a scope-specific comparison."
+            }
+          ],
+          "pathways": [
+            {
+              "pathway_id": "PW-ACCESS",
+              "direction": "climate_to_fcv",
+              "chain": [
+                "Flood damage disrupts market access",
+                "Replacement services may be harder for some traders to reach",
+                "Checking access could help preserve livelihoods"
+              ],
+              "project_anchor_ids": [
+                "PF-PROVISION"
+              ],
+              "evidence_ids": [
+                "PF-PROVISION"
+              ],
+              "confidence": "low"
+            }
+          ],
+          "residual_gaps": [
+            {
+              "gap_id": "RG-ACCESS",
+              "gap_type": "evidence_gap",
+              "statement": "The project redirects resources to maintain regional benefits after cancellation, but the document does not describe how traders linked to the cancelled market can access replacement services during flood-related closures. This is an evidence gap, not proof that access is absent. Regional communities and cancelled-market traders cannot be assumed to be identical.",
+              "pathway_ids": [
+                "PW-ACCESS"
+              ],
+              "project_anchor_ids": [
+                "PF-PROVISION"
+              ],
+              "existing_response_ids": [
+                "ER-PROVISION"
+              ],
+              "evidence_ids": [
+                "PF-PROVISION"
+              ],
+              "confidence": "low"
+            }
+          ]
+        },
+        "context_evidence": [],
+        "judgments": {},
+        "recommendations": [
+          {
+            "recommendation_id": "REC-ACCESS",
+            "title": "Clarify access for traders linked to the cancelled market",
+            "decision": "Clarify how traders linked to the cancelled market can use replacement services during flood-related closures.",
+            "minimum_action": "State the access arrangements in the current project document, or identify what remains to be checked.",
+            "narrative": "The project redirects resources to maintain regional benefits after cancellation, but the document does not describe how traders linked to the cancelled market can access replacement services during flood-related closures. This is an evidence gap, not proof that access is absent. Regional communities and cancelled-market traders cannot be assumed to be identical.",
+            "limitation": "Do not infer that cancelled-market traders are displaced people or beneficiaries at another site.",
+            "project_anchor_ids": [
+              "PF-PROVISION"
+            ],
+            "pathway_ids": [
+              "PW-ACCESS"
+            ],
+            "existing_response_ids": [
+              "ER-PROVISION"
+            ],
+            "residual_gap_ids": [
+              "RG-ACCESS"
+            ],
+            "routing_status": "standard_document_advisory",
+            "recommendation_basis": "analytical_judgment",
+            "authority_basis": "none_verified",
+            "confidence": "low"
+          }
+        ],
+        "drafting_artifacts": [],
+        "readiness_flags": [],
+        "operation_context": {
+          "document_type": "AF",
+          "instrument_type": "IPF",
+          "country_scope": "multi",
+          "is_mpa": false,
+          "has_ipf_component": false,
+          "preparation_regime": "unresolved_policy_source",
+          "processing_model": "unknown",
+          "es_regime": "ESF_ESS1_TO_ESS10",
+          "warning_codes": [
+            "MULTI_COUNTRY_BANK_WITHHELD"
+          ],
+          "evidence_notes": [
+            "document_marker:PID",
+            "instrument_marker:IPF"
+          ]
+        },
+        "current_document": "AF",
+        "operational_guidance": []
+      },
+      "expected": {
+        "accepted": true,
+        "object_ids": [],
+        "passed_core_ids": [
+          "REC-ACCESS"
+        ]
+      },
+      "adjudication": "Regional continuity does not establish the access mechanism for the particular affected population."
+    },
+    {
+      "case_id": "explicit-access-contradicts-absence",
+      "stage": "conditional_review",
+      "provenance": [
+        {
+          "kind": "synthetic_counterfactual",
+          "use": "Source/claim scope discrimination; not evidence about an actual project."
+        }
+      ],
+      "payload": {
+        "source_blocks": [
+          {
+            "block_id": "B-PROVISION",
+            "text": "The project redirects resources from a cancelled market to another market so regional communities continue to benefit. Flood damage previously disrupted market access. The access plan specifies that registered traders from the cancelled market receive transport vouchers and reserved stalls at the replacement market during flood-related closures."
+          }
+        ],
+        "facts": [
+          {
+            "claim_id": "PF-PROVISION",
+            "subject": "Project provisions",
+            "predicate": "include",
+            "object_value": "The project redirects resources from a cancelled market to another market so regional communities continue to benefit. Flood damage previously disrupted market access. The access plan specifies that registered traders from the cancelled market receive transport vouchers and reserved stalls at the replacement market during flood-related closures.",
+            "epistemic_status": "explicit",
+            "source_block_ids": [
+              "B-PROVISION"
+            ],
+            "supporting_excerpt": "The project redirects resources from a cancelled market to another market so regional communities continue to benefit. Flood damage previously disrupted market access. The access plan specifies that registered traders from the cancelled market receive transport vouchers and reserved stalls at the replacement market during flood-related closures.",
+            "confidence": "high"
+          }
+        ],
+        "analysis": {
+          "existing_responses": [
+            {
+              "response_id": "ER-PROVISION",
+              "project_fact_ids": [
+                "PF-PROVISION"
+              ],
+              "pathway_ids": [
+                "PW-ACCESS"
+              ],
+              "description": "The project redirects resources from a cancelled market to another market so regional communities continue to benefit. Flood damage previously disrupted market access. The access plan specifies that registered traders from the cancelled market receive transport vouchers and reserved stalls at the replacement market during flood-related closures.",
+              "limitation": "Access for cancelled-market traders requires a scope-specific comparison."
+            }
+          ],
+          "pathways": [
+            {
+              "pathway_id": "PW-ACCESS",
+              "direction": "climate_to_fcv",
+              "chain": [
+                "Flood damage disrupts market access",
+                "Replacement services may be harder for some traders to reach",
+                "Checking access could help preserve livelihoods"
+              ],
+              "project_anchor_ids": [
+                "PF-PROVISION"
+              ],
+              "evidence_ids": [
+                "PF-PROVISION"
+              ],
+              "confidence": "low"
+            }
+          ],
+          "residual_gaps": [
+            {
+              "gap_id": "RG-ACCESS",
+              "gap_type": "evidence_gap",
+              "statement": "The project redirects resources to maintain regional benefits after cancellation, but the document does not describe how traders linked to the cancelled market can access replacement services during flood-related closures. This is an evidence gap, not proof that access is absent. Regional communities and cancelled-market traders cannot be assumed to be identical.",
+              "pathway_ids": [
+                "PW-ACCESS"
+              ],
+              "project_anchor_ids": [
+                "PF-PROVISION"
+              ],
+              "existing_response_ids": [
+                "ER-PROVISION"
+              ],
+              "evidence_ids": [
+                "PF-PROVISION"
+              ],
+              "confidence": "low"
+            }
+          ]
+        },
+        "context_evidence": [],
+        "judgments": {},
+        "recommendations": [
+          {
+            "recommendation_id": "REC-ACCESS",
+            "title": "Clarify access for traders linked to the cancelled market",
+            "decision": "Clarify how traders linked to the cancelled market can use replacement services during flood-related closures.",
+            "minimum_action": "State the access arrangements in the current project document, or identify what remains to be checked.",
+            "narrative": "The project redirects resources to maintain regional benefits after cancellation, but the document does not describe how traders linked to the cancelled market can access replacement services during flood-related closures. This is an evidence gap, not proof that access is absent. Regional communities and cancelled-market traders cannot be assumed to be identical.",
+            "limitation": "Do not infer that cancelled-market traders are displaced people or beneficiaries at another site.",
+            "project_anchor_ids": [
+              "PF-PROVISION"
+            ],
+            "pathway_ids": [
+              "PW-ACCESS"
+            ],
+            "existing_response_ids": [
+              "ER-PROVISION"
+            ],
+            "residual_gap_ids": [
+              "RG-ACCESS"
+            ],
+            "routing_status": "standard_document_advisory",
+            "recommendation_basis": "analytical_judgment",
+            "authority_basis": "none_verified",
+            "confidence": "low"
+          }
+        ],
+        "drafting_artifacts": [],
+        "readiness_flags": [],
+        "operation_context": {
+          "document_type": "AF",
+          "instrument_type": "IPF",
+          "country_scope": "multi",
+          "is_mpa": false,
+          "has_ipf_component": false,
+          "preparation_regime": "unresolved_policy_source",
+          "processing_model": "unknown",
+          "es_regime": "ESF_ESS1_TO_ESS10",
+          "warning_codes": [
+            "MULTI_COUNTRY_BANK_WITHHELD"
+          ],
+          "evidence_notes": [
+            "document_marker:PID",
+            "instrument_marker:IPF"
+          ]
+        },
+        "current_document": "AF",
+        "operational_guidance": []
+      },
+      "expected": {
+        "accepted": false,
+        "object_ids": [
+          "REC-ACCESS"
+        ],
+        "passed_core_ids": [],
+        "reason_codes_by_object": {
+          "REC-ACCESS": [
+            "RESIDUAL_GAP_UNSUPPORTED",
+            "EXISTING_MITIGATION_MISREPRESENTED"
+          ]
+        }
+      },
+      "adjudication": "The explicit voucher/stall mechanism contradicts the claimed absence of a described access arrangement; preserve the remaining question of effectiveness. This does not establish access for unregistered traders or prove effectiveness; those narrower questions remain valid."
+    },
+    {
+      "case_id": "general-instruments-specific-claim",
+      "stage": "reader_review",
+      "provenance": [
+        {
+          "kind": "synthetic_counterfactual",
+          "use": "Source/claim scope discrimination; not evidence about an actual project."
+        }
+      ],
+      "payload": {
+        "support_records": {
+          "PF-PROVISION": {
+            "claim_id": "PF-PROVISION",
+            "subject": "Project provisions",
+            "predicate": "include",
+            "object_value": "The project plans replacement market services to support trader livelihoods, including vulnerable traders. The project identifies vulnerable-group exclusion as a risk. An environmental and social management framework and a stakeholder engagement plan are in place.",
+            "epistemic_status": "explicit",
+            "source_block_ids": [
+              "B-PROVISION"
+            ],
+            "supporting_excerpt": "The project plans replacement market services to support trader livelihoods, including vulnerable traders. The project identifies vulnerable-group exclusion as a risk. An environmental and social management framework and a stakeholder engagement plan are in place.",
+            "confidence": "high"
+          }
+        },
+        "source_passages": [
+          {
+            "block_id": "B-PROVISION",
+            "text": "The project plans replacement market services to support trader livelihoods, including vulnerable traders. The project identifies vulnerable-group exclusion as a risk. An environmental and social management framework and a stakeholder engagement plan are in place."
+          }
+        ],
+        "accepted_recommendation_ids": [],
+        "final_reader": {
+          "summary_paragraphs": [],
+          "assessment_narratives": [
+            {
+              "object_id": "NARR-inclusion",
+              "theme": "inclusion",
+              "paragraphs": [
+                "The project documents safeguards against vulnerable-group exclusion. If vulnerable traders can access the replacement services, this could help preserve livelihoods; actual access and effectiveness remain unverified."
+              ],
+              "evidence_ids": [
+                "PF-PROVISION"
+              ]
+            }
+          ]
+        }
+      },
+      "expected": {
+        "accepted": false,
+        "object_ids": [
+          "NARR-inclusion"
+        ],
+        "reason_codes_by_object": {
+          "NARR-inclusion": [
+            "PROJECT_FACT_UNSUPPORTED"
+          ]
+        }
+      },
+      "adjudication": "Risk recognition and generic instruments do not establish a risk-specific protection. Narrow only the factual clause; preserve the conditional livelihood analysis."
+    },
+    {
+      "case_id": "explicit-protection-bounded-claim",
+      "stage": "reader_review",
+      "provenance": [
+        {
+          "kind": "synthetic_counterfactual",
+          "use": "Source/claim scope discrimination; not evidence about an actual project."
+        }
+      ],
+      "payload": {
+        "support_records": {
+          "PF-PROVISION": {
+            "claim_id": "PF-PROVISION",
+            "subject": "Project provisions",
+            "predicate": "include",
+            "object_value": "The project plans replacement market services to support trader livelihoods, including vulnerable traders. The project identifies vulnerable-group exclusion as a risk. An environmental and social management framework and a stakeholder engagement plan are in place. The stakeholder engagement plan requires accessible registration and targeted outreach for vulnerable traders to prevent their exclusion from project-supported market services.",
+            "epistemic_status": "explicit",
+            "source_block_ids": [
+              "B-PROVISION"
+            ],
+            "supporting_excerpt": "The project plans replacement market services to support trader livelihoods, including vulnerable traders. The project identifies vulnerable-group exclusion as a risk. An environmental and social management framework and a stakeholder engagement plan are in place. The stakeholder engagement plan requires accessible registration and targeted outreach for vulnerable traders to prevent their exclusion from project-supported market services.",
+            "confidence": "high"
+          }
+        },
+        "source_passages": [
+          {
+            "block_id": "B-PROVISION",
+            "text": "The project plans replacement market services to support trader livelihoods, including vulnerable traders. The project identifies vulnerable-group exclusion as a risk. An environmental and social management framework and a stakeholder engagement plan are in place. The stakeholder engagement plan requires accessible registration and targeted outreach for vulnerable traders to prevent their exclusion from project-supported market services."
+          }
+        ],
+        "accepted_recommendation_ids": [],
+        "final_reader": {
+          "summary_paragraphs": [],
+          "assessment_narratives": [
+            {
+              "object_id": "NARR-inclusion",
+              "theme": "inclusion",
+              "paragraphs": [
+                "The project documents safeguards against vulnerable-group exclusion. If vulnerable traders can access the replacement services, this could help preserve livelihoods; actual access and effectiveness remain unverified."
+              ],
+              "evidence_ids": [
+                "PF-PROVISION"
+              ]
+            }
+          ]
+        }
+      },
+      "expected": {
+        "accepted": true,
+        "object_ids": []
+      },
+      "adjudication": "The source explicitly links outreach/registration to vulnerable-trader exclusion. Describing the provision does not assert proven effectiveness."
+    }
+  ]
+}

@@ -1,0 +1,164 @@
+CONTINUATION PROMPT: FCV-AGENT CLIMATE REVIEW AND PRODUCTION READINESS
+Prepared 2026-10-15 after the two-call claim-level reviewer experiment.
+
+You are continuing an existing repair. Read this entire handover before acting.
+Do not restart the investigation, repeat paid runs, or claim production readiness.
+
+USER OBJECTIVE AND PREFERENCES
+Deliver reliable Climate-FCV analysis suitable for production without suppressing
+useful qualified inference or proposed actions. Small length overruns (around 20
+words) are unimportant compared with analytical quality. Correct specific factual
+errors where possible, preserve valid analysis and unaffected records, and avoid
+whole-output rejection for optional wording. The user has spent several days and
+many paid runs on this; another prompt-tuning/retest loop is not an adequate plan.
+The user requested this handover to resume in another session, not further work now.
+
+WORKSPACE AND GIT
+Repo: C:/Users/wb559324/OneDrive - WBG/Documents/GitHub/FCV-AGENT
+Active worktree:
+C:/Users/wb559324/OneDrive - WBG/Documents/GitHub/FCV-AGENT/.worktrees/climate-opcs-parity
+Branch: fix/climate-opcs-parity
+Latest substantive result commit: 35836071a9fb82e323e8daa9365a3f5ab5fc67bd
+Prototype commit: edb8444c470e8585c8db4d24f12a578fff651d0e
+This handover is committed separately after those results. Check current HEAD.
+Draft PR83: https://github.com/ljonestz/FCV-AGENT/pull/83
+Preserve the branch and worktree. Do not merge or deploy. Prior untracked output/
+and tests/test_climate_final_reader.py are intentionally unstaged; do not sweep them
+into a commit. Raw model responses and browser logs stay out of Git.
+
+READ FIRST (paths relative to active worktree unless absolute)
+1. AGENTS.md, claude.md and HANDOFF.md.
+2. docs/20261015_climate-claim-model-results.md (latest authoritative outcome).
+3. docs/20261015_climate-claim-repair-design.md and
+   docs/20261015_climate-claim-repair-validation.md.
+4. docs/20261015_climate-source-scope-review-results.md (previous paid failure).
+5. scripts/climate_claim_repair_prototype.py and its two test files:
+   tests/test_climate_claim_repair_prototype.py
+   tests/test_climate_claim_repair_replay.py
+6. C:/Users/wb559324/.claude/FCV_BUILD_PARITY.md before shared Render/ITS changes.
+Read applicable skills and repository plans before implementation. The local plan
+is docs/superpowers/plans/2026-10-15-climate-claim-repair-prototype.md (ignored).
+
+WHAT EXISTS
+A standalone offline adapter around existing apply_reader_corrections:
+- prepare_review_input: application-owned reader/source registry and text digests.
+- plan_claim_repairs: unique finding IDs, exact claim spans, source quotes, claim
+  role, disposition and full record coverage; multiple findings per paragraph.
+- apply_claim_repairs: exact authorized edits or explicit disputes; preserve
+  untouched text/evidence; existing overlap/numeric/date protections reused.
+- finalize_claim_repairs: distinct execution label, current-reader digest, all
+  records and all prior findings adjudicated with source evidence; unresolved
+  material issues withhold acceptance. Optional precision is nonblocking.
+Every result sets publication_approved=false. The adapter is NOT integrated into
+production. Labels do not authenticate independence; digests do not authenticate
+caller-owned state. The future orchestrator must enforce one pass and spend limits.
+Exact source quotes prove traceability, not entailment or completeness.
+
+OFFLINE EVIDENCE
+170 focused/connected tests passed in 8.35 seconds before the paid experiment.
+A curated replay of the actual saved five-record reader applied two factual edits
+and preserved the access paragraph, evidence and unrelated records. The committed
+fixture uses clearly labelled synthetic source paraphrases. Curated adjudication
+is not model validation. The older runtime full suite (1,677 passed in 1,274.80s)
+is historical; it was not rerun for the isolated prototype or documentation.
+
+LATEST PAID EXPERIMENT: OVERALL FAILED
+Exactly two authorized calls, no retries, no automatic editor, no full assessment.
+Model: claude-sonnet-5-5; adaptive thinking/high effort; 8,192 output-token cap;
+180-second timeout. Both calls ended normally.
+
+Call 1: discovery on five original reader records and 34 source passages.
+Returned empty findings for EVERY record. Missed both frozen factual defects:
+- planned flood-resilient construction described as an immediate flood-ready benefit;
+- general ESF instruments/risk recognition described as exclusion-specific safeguards.
+The adapter admits this structurally complete empty review. This is a semantic
+miss, not Render failure, invalid JSON or a correction transport defect.
+
+Call 2: independent adjudication of the complete manually corrected reader plus
+three prior findings. Correctly accepted the two narrow corrections and rejected
+the mistaken access objection. Regional benefit intent does not establish preserved
+access for people near all cancelled sites; the qualified question remains valid.
+Source quotes, schemas, fingerprints, coverage and actual finalizer all passed.
+
+Crucial limitation: call 2 used frozen MANUAL corrections and known findings,
+independently of call 1. It did not demonstrate an automatic detection/edit/review
+chain. Correct adjudication when an issue is presented does not prove discovery.
+This one sample is not a reliability estimate, and core recommendations were not
+part of this latest test.
+
+Usage: 32,758 input / 5,275 output tokens; 50.491 seconds total provider time.
+Production and ITS acceptance remain held. No app code/settings/deployment changed.
+
+LOCAL EVIDENCE TO REUSE, NOT REGENERATE
+output/20261015-claim-model-preflight/requests.json and manifest.json
+output/20261015-claim-model-preflight/run.py
+output/20261015-claim-model-responses.json
+output/20261015-claim-model-evaluation.json
+output/20261015-claim-model-bundle.json and matching ZIP
+output/20261015-claim-repair-saved-replay-verified.json
+output/20261015_claim_repair_saved_replay.py
+output/20261015-explicit-premise-review-preflight/cases.json
+output/20261015-source-scope-review-responses.json
+output/playwright/20261015-claim-model-terminal-final.txt
+The preflight readiness.json records the earlier blocked approval state; it is
+historical. Explicit approval was subsequently given and BOTH calls completed.
+Response SHA256:
+d73738f1444714d83a15e6883454a86a6f826fa3ed993abba4d6bdaa387466b0
+
+SPENDING AND OPERATIONS
+No remaining paid authority from this experiment. Do not reuse older authorizations
+for six small calls, two full runs, or an additional full run: those belong to
+historical phases and do not authorize new spending here. Prepare any future bounded
+experiment concretely before seeking fresh approval. No further full paid assessment
+is justified by the present result. Do not resubmit existing start scripts.
+The initial exact-payload egress approval block was explicitly resolved by the user;
+it is not a current blocker. It did not grant unlimited future calls.
+
+Render service used for isolated /tmp job: srv-d6de99jh46gs73d0jjrg (FCV-AGENT).
+Last verified deployed SHA: 1168a8f2ab2af0bcc6a3a174c4b2eeacd9403205.
+Remote job directory: /tmp/fcv-claim-model-20261015-0642badbc445 (may be ephemeral).
+Existing dedicated authenticated Edge session: climate-backend-readiness.
+Leave it open; verify connectivity before use. Never extract provider credentials.
+The experiment used existing environment credentials within Render only.
+
+WHAT THE NEXT SESSION SHOULD DO
+Start with a concise design decision, not another paid run or cosmetic prompt patch.
+Inspect saved evidence to assess whether dependable factual-claim coverage can be
+achieved with a small change, or whether a supervised release is the practical path.
+An explicit claim inventory/source comparison is a possible hypothesis, NOT an
+approved implementation or proven fix; prior explicit-premise prompting also failed.
+Do not mistake mandatory filled fields for evidence of semantic completeness.
+
+Present a short, concrete recommendation covering:
+- How factual claims will be found and checked without constraining valid inference.
+- What genuinely changes the failure mechanism compared with prior attempts.
+- The smallest offline work and falsifiable acceptance criteria needed next.
+- Whether human factual review is required for a near-term supervised pilot.
+A human-review release is a recommendation only; the user has not approved that
+product change. Do not silently weaken acceptance or claim autonomous readiness.
+
+If implementation is subsequently approved, retain exact scoped edits, source-linked
+adjudication and untouched evidence. Freeze expected cases before model testing and
+keep true defects, valid analysis, faithful paraphrase and documented mitigation in
+the case set. Do not change labels merely to make a model output pass. Beyond reader
+judgment, automatic editor behavior, core recommendations, end-to-end cost/latency,
+UI and detailed HTML/DOCX exports still need acceptance before production release.
+An ITS handover Word document was requested upon success; success has NOT occurred,
+so do not create a misleading production-ready handover. This file is a session
+continuation prompt, not an ITS acceptance certificate.
+
+WINDOWS PRACTICAL NOTES
+Python: C:/WBG/Python313/python.exe -X utf8
+rg.exe is blocked; use git ls-files, git grep, Select-String and scoped listings.
+PowerShell is constrained; Python pathlib works for new files where Set-Content or
+shell redirection has failed. Use git diff/status --ignore-submodules=all to avoid
+unrelated Windows Git submodule process errors. Git index changes/push and browser
+control require normal/elevated tool permissions. Do not bypass policy.
+Playwright CLI:
+C:/Program Files/nodejs/node.exe
+C:/Users/wb559324/npm-cache/_npx/9833c18b2d85bc59/node_modules/playwright-core/lib/tools/cli-client/cli.js
+Browser cwd: active worktree/output/playwright. Use run-code --filename for large
+scripts; save output with Python subprocess if shell redirection fails. Terminal
+fill() did not execute text; the documented clipboard-paste interaction worked.
+Do not repeat a paid submission to recover a browser connection; retrieve existing
+job status first. Recheck dated paths and service state before relying on them.

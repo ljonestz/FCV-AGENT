@@ -81,6 +81,7 @@ class DraftingValidationContext:
         str, tuple[tuple[str, str], ...]
     ] = field(default_factory=dict)
     instrument_type: str = "Unknown"
+    has_ipf_component: bool = False
 
 
 def _normalized_target(block: DraftingBlock) -> tuple[str, str]:
@@ -539,6 +540,9 @@ def normalize_unverified_drafting_actor(
 
     updates: dict[str, object] = {}
     for field_name in (
+        "title",
+        "narrative",
+        "responsible_function",
         "decision",
         "minimum_action",
         "enhanced_action",
@@ -614,7 +618,14 @@ def validate_recommendation(
     known_ids: set[str],
     *,
     drafting_context: DraftingValidationContext | None = None,
+    include_drafting: bool = True,
+    require_current_drafting: bool = True,
 ) -> tuple[ValidationIssue, ...]:
+    # Advisory decisions retain every core gate even when no optional wording
+    # can be published. Strip blocks before checks that scan combined text.
+    if not include_drafting:
+        candidate = replace(candidate, current_document_drafting=None,
+                            operational_instrument_drafting=None)
     issues: list[ValidationIssue] = []
     linked_ids = (
         candidate.pathway_ids
@@ -671,7 +682,7 @@ def validate_recommendation(
         )
         if block is not None
     )
-    if candidate.current_document_drafting is None:
+    if include_drafting and require_current_drafting and candidate.current_document_drafting is None:
         issues.append(
             _issue(
                 "DRAFTING_CURRENT_MISSING",
@@ -770,7 +781,29 @@ def validate_recommendation(
                 r"environmental and social standard(?:s)?|ess(?:[1-9]|10)?|"
                 r"program action plan|disbursement[- ]linked indicators?|dlis?)\b"
             )
-        if forbidden_pattern and forbidden_pattern.search(operational_text):
+        terminology_text = operational_text
+        if forbidden_pattern and context_instrument in {"pforr", "p4r"} and drafting_context.has_ipf_component:
+            # Permit only separately evidenced, explicitly component-scoped sentences.
+            component_facts = " ".join(
+                drafting_context.project_fact_text.get(identifier, "").casefold()
+                for identifier in linked_fact_ids
+                if "ipf component" in drafting_context.project_fact_text.get(identifier, "").casefold()
+            )
+            if component_facts:
+                sentences = re.split(r"(?<=[.!?])\s+", operational_text)
+                terminology_text = " ".join(
+                    sentence for sentence in sentences
+                    if not (
+                        "ipf component" in sentence
+                        and "whole program" not in sentence
+                        and "entire program" not in sentence
+                        and all(
+                            term.group(0) in component_facts
+                            for term in forbidden_pattern.finditer(sentence)
+                        )
+                    )
+                )
+        if forbidden_pattern and forbidden_pattern.search(terminology_text):
             issues.append(
                 _issue(
                     "INSTRUMENT_TERMINOLOGY_MISMATCH",

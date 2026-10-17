@@ -1,0 +1,131 @@
+{
+  "schema_version": "quality13-full-context-acceptance-v1",
+  "objective": "Replay the complete saved quality13 semantic decision context offline and compare recorded decisions with independently source-backed expectations.",
+  "decision_semantics": {
+    "core": "Final admission after the saved bounded core correction. REC-004 is judged in its corrected form; the initial rejection remains separately visible in the raw replay.",
+    "readiness": "Final admitted readiness flags after the saved conditional review.",
+    "reader": "The single saved meaning review of the initial reader output; no corrected reader output reached a second meaning review."
+  },
+  "artifacts": {
+    "quality13_state": {
+      "path": "output/playwright/20261015-quality13-071143-state.json",
+      "sha256": "bfd7afabaa3739ea8955c884bad6284f117c06f02577d43fff8350f1827a853b"
+    },
+    "quality13_session": {
+      "path": "output/playwright/20261015-quality13-session.json",
+      "sha256": "31a28f3be8dc44c8b9eb7626ce1595fab3efeaf263711f525e1c0746640a198b"
+    },
+    "quality12_state": {
+      "path": "output/playwright/20261014-quality12-225519-state.json",
+      "sha256": "e1e71d36065145bf456e1fa7ba5ad695fcc415eb70430343628e0b6bca867b1f"
+    },
+    "quality12_session": {
+      "path": "output/playwright/20261015-quality12-session.json",
+      "sha256": "4a99d043089d4d9a75296bd93aab67d007e1dffc756e9b52fd3e06b3b992a82b"
+    },
+    "public_source": {
+      "path": "test_documents/P174814-great-lakes-pid-20261007.pdf",
+      "sha256": "70238ba18f619c36e0d678468779427134c5a3c77572c6e6cdfb3fd7457579c3",
+      "extracted_text_sha256": "a2cd1e4df028b094ae855f15fac9aaf50e251ef8214761fe8b0b4dfb1bf98a31"
+    }
+  },
+  "expectations": {
+    "core": {
+      "REC-001": {
+        "decision": "reject",
+        "reason_family": "site_activity_scope",
+        "reason": "The action routes Kasindi through market feasibility studies that the source limits to Kasumbalesa and Kipushi.",
+        "source_refs": ["file page 10 paragraph 22", "file page 13 paragraph 27"]
+      },
+      "REC-002": {
+        "decision": "accept",
+        "reason_family": "qualified_continuity_gap",
+        "reason": "The source documents flood-resilient specifications but does not establish operating, maintenance, and flood-continuity arrangements.",
+        "source_refs": ["file page 7 paragraph 13", "file page 10 paragraph 23"]
+      },
+      "REC-003": {
+        "decision": "reject",
+        "reason_family": "beneficiary_linkage",
+        "reason": "The source does not connect people at cancelled sites to Component 1 or Component 3 benefits at retained sites.",
+        "source_refs": ["file page 7 paragraph 12", "file page 10 paragraph 22"]
+      },
+      "REC-004": {
+        "decision": "accept",
+        "reason_family": "qualified_outreach_gap",
+        "reason": "Selection, registration, and remapping are documented, while the route from those measures to climate-smart support for women and small-scale traders remains a qualified design question.",
+        "source_refs": ["file page 10 paragraph 22", "file page 13 paragraph 27"]
+      },
+      "REC-005": {
+        "decision": "reject",
+        "reason_family": "recipient_financing_scope",
+        "reason": "The action creates one funding-priority rule across a Burundi AF grant and DRC restructuring within the existing DRC envelope, although the source separates recipients and financing actions.",
+        "source_refs": ["file page 7 paragraphs 11-13"]
+      }
+    },
+    "readiness": {
+      "DIF-001": {
+        "decision": "reject",
+        "reason_family": "noncomparable_scope",
+        "reason": "Six suspended sites and four named inaccessible sites are not established as counts of the same scope.",
+        "source_refs": ["file page 5 paragraph 4", "file page 8 paragraph 15", "file page 10 paragraph 22"]
+      },
+      "DIF-002": {
+        "decision": "accept",
+        "reason_family": "material_allocation_difference",
+        "reason": "Component 1 and Component 3 amounts differ materially across the cited passages and are not rounding variants.",
+        "source_refs": ["file page 8 paragraph 14", "file page 10 paragraph 21"]
+      },
+      "DIF-003": {
+        "decision": "reject",
+        "reason_family": "rounded_equivalence",
+        "reason": "US$59 million plus US$1 million and US$59.025 million plus US$0.975 million are rounded and precise presentations of the same US$60 million allocation.",
+        "source_refs": ["file page 7 paragraph 11", "file page 10 paragraph 21"]
+      },
+      "DIF-004": {
+        "decision": "reject",
+        "reason_family": "compatible_status_statements",
+        "reason": "A requirement that ESCPs should be updated can coexist with a later statement that an ESCP has been updated; the passages do not establish a contradiction.",
+        "source_refs": ["file page 11 risk summary", "file page 13 paragraph 28"]
+      }
+    },
+    "reader": {
+      "SUM-001": {
+        "decision": "accept",
+        "reason_family": "coordinated_list",
+        "reason": "The sentence lists Component 1 registration and Component 3 support separately and does not assign registration to Component 3; cancellation and restructuring around conflict are source-backed.",
+        "source_refs": ["file page 7 paragraph 12", "file page 10 paragraph 22"]
+      },
+      "SUM-002": {
+        "decision": "accept",
+        "reason_family": "supported_summary",
+        "reason": "The paragraph keeps documented and proposed measures distinct and is supported by its cited records.",
+        "source_refs": ["file pages 7-13"]
+      },
+      "NARR-design": {
+        "decision": "accept",
+        "reason_family": "documented_resource_shift",
+        "reason": "The source explicitly cancels activities and redirects remaining Goma border-post funds to Kasindi while adding Haut-Katanga activities.",
+        "source_refs": ["file page 7 paragraph 12", "file page 10 paragraph 22"]
+      },
+      "NARR-dividends": {
+        "decision": "reject",
+        "reason_family": "implementation_status",
+        "reason": "Flood-ready overstates revised specifications as completed readiness; the qualified trust inference and conditional contribution of proposed actions are not separate unsupported claims.",
+        "required_reason_codes": ["PROJECT_FACT_UNSUPPORTED"],
+        "forbidden_reason_codes": ["RESIDUAL_GAP_UNSUPPORTED"],
+        "source_refs": ["file page 7 paragraph 13", "file page 9 paragraphs 19-20"]
+      },
+      "NARR-inclusion": {
+        "decision": "accept",
+        "reason_family": "supported_inclusion_limits",
+        "reason": "The paragraph distinguishes documented measures from remaining access and disaggregation questions.",
+        "source_refs": ["file pages 9-13"]
+      }
+    }
+  },
+  "limits": [
+    "The saved conditional-review diagnostic is capped at 60000 characters. The replay reconstructs the full semantic context from the public source and saved registers, but normalized drafting-artifact prose is not byte-for-byte recoverable and is not scored.",
+    "Expected labels are human, source-backed acceptance criteria. A mocked response matching them would test evaluator wiring only and would not prove model semantic performance.",
+    "This harness makes no provider or network call and cannot establish how a changed prompt or model would decide the cases."
+  ]
+}

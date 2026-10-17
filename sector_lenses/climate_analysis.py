@@ -47,6 +47,9 @@ class ContextEvidenceRef:
     source_kind: str = "context"
     context_class: str | None = None
     preview_status: str | None = None
+    source_details: tuple[dict[str, str], ...] = ()
+    evidence_gap: str | None = None
+    time_horizons: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -168,6 +171,12 @@ def validate_analysis_registers(
             )
 
     for gap in gaps:
+        if set(gap.evidence_ids) - (known_fact_ids | known_context_ids):
+            issues.append(ValidationIssue(
+                "GAP_EVIDENCE_REF_INVALID",
+                f"{gap.gap_id} has unknown supporting evidence.",
+                gap.gap_id, True,
+            ))
         if gap.gap_type not in ALLOWED_GAP_TYPES:
             issues.append(
                 ValidationIssue(

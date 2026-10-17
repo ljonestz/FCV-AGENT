@@ -877,6 +877,11 @@ def test_climate_stage2_requires_project_specific_causal_contract():
         }],
     }
 
+    climate_research['sources'].append({
+        'id': 'climate-source-2', 'source_type': 'un', 'title': 'Flood evidence',
+        'url': 'https://www.un.org/flood-evidence',
+    })
+    climate_research['claims'][0]['source_ids'].append('climate-source-2')
     prompt = app_module.build_lens_stage_context(
         state,
         2,
@@ -2186,21 +2191,22 @@ def test_workflow_bridge_does_not_kill_slow_but_streaming_run():
     import time as _time
 
     def workflow_events():
-        for i in range(4):
-            _time.sleep(0.15)
+        for i in range(5):
+            # Leave scheduler headroom on loaded Windows runners.
+            _time.sleep(0.25)
             yield f"data: chunk-{i}\n\n"
 
     with app_module.app.test_request_context("/api/run-express"):
         out = list(
             app_module._stream_workflow_events(
                 workflow_events, "assess-w",
-                poll_interval=0.05, idle_deadline=0.2,
+                poll_interval=0.05, idle_deadline=1.0,
             )
         )
-    # All four workflow chunks delivered; no error/deadline event.
+    # Total duration exceeds the idle deadline; every chunk is still delivered.
     assert [c for c in out if c.startswith("data: chunk-")] == [
         "data: chunk-0\n\n", "data: chunk-1\n\n",
-        "data: chunk-2\n\n", "data: chunk-3\n\n",
+        "data: chunk-2\n\n", "data: chunk-3\n\n", "data: chunk-4\n\n",
     ]
     assert not any('"error"' in chunk for chunk in out)
 
@@ -2427,18 +2433,16 @@ def test_verified_climate_ui_contract_is_ranked_and_multidimensional():
     )
 
     assert "renderClimateVerifiedAssessment" in html
-    # Core climate-FCV questions: a compact reads strip (calibration values) plus
-    # literature-grounded, evidence-gated question cards replace the old four
-    # judgment boxes.
-    assert "Core climate-FCV questions" in html
+    # Detailed uses three narrative answers; canonical questions stay internal.
+    assert "Supporting question analysis" not in html
     # Headline sensitivity rating (from server data) replaces the old reads strip.
     assert "climate_sensitivity_rating" in html
     assert "csr.question" in html
-    assert "csr.scale" in html
+    assert "d.scale.length" in html
     assert "The tool's overall reads" not in html
     assert "core_questions" in html
-    assert "For further insights on why this matters" in html
-    assert "Points to check before the decision meeting" in html
+    assert "Does the project address interacting climate and FCV risks" in html
+    assert "Points to check before the applicable review" in html
     start = html.index("function renderClimateVerifiedAssessment")
     end = html.index("\n  function ", start + 20)
     body = html[start:end]
@@ -2456,15 +2460,15 @@ def test_verified_climate_ui_contract_is_ranked_and_multidimensional():
     assert "recommendation_admitted_count" not in body
     assert "semantic_reviewer_verdict" not in body
     assert "held back on review" not in body
-    assert "No operational priorities were identified in this assessment. Review the core questions and points to check below." in body
+    assert "No operational priorities were identified in this assessment. Review the assessment findings and points to check below." in body
     assert "current_document_drafting" in body
     assert "operational_instrument_drafting" in body
     assert "Suggested drafting for the current document" in body
     assert "Suggested drafting for an operational instrument" in body
     # The card leads with the model narrative; the useful structured fields fold
-    # into a "Recommendation details" collapsible, and app-internal routing/coded
+    # into a "Practical considerations" collapsible, and app-internal routing/coded
     # references are dropped from the user view entirely.
-    assert "Recommendation details" in body
+    assert "Practical considerations" in body
     assert "pc-narr" in body
     assert "priority_summary" in body
     assert "prioritySummary.statement" in body
@@ -2474,8 +2478,8 @@ def test_verified_climate_ui_contract_is_ranked_and_multidimensional():
     assert "drafting_language" not in body
     assert "recommendation_reason_codes" not in body
     assert body.index("minorPointsHtml") < body.index("docFlagsHtml")
-    assert 'class="climate-sens-rating climate-overview-panel"' in body
-    assert '<details class="climate-priority-card"' in body
+    assert "climateVerifiedRatingCards(r)" in body
+    assert 'class="climate-priority-card"' in body
     assert "Method, limitations, and sources" in body
 
 
@@ -2556,11 +2560,18 @@ def test_verified_climate_docx_route_uses_canonical_reader():
         "run_id": "route-run",
         "bank_release_id": "2026.08",
         "evidence_status": "preview; not approved",
+        "core_questions": [{
+            "question_id": "cq2-infra-horizon",
+            "question": "Will delivery support fair access?",
+            "summary": "Access remains a project-specific issue.",
+            "source": "Defueling Conflict",
+            "watch": "Check representation.",
+        }],
         "executive_readout": (sentence * 50).strip(),
         "judgments": {
             "relevance": {"value": "high", "rationale": "Material."},
             "sensitivity": {"value": "moderate", "rationale": "Partial."},
-            "responsiveness": {"value": "emerging", "rationale": "Emerging."},
+            "responsiveness": {"value": "moderate", "rationale": "Emerging."},
             "operationalization": {"value": "partial", "rationale": "Partial."},
         },
         "priorities": [],
@@ -2568,10 +2579,16 @@ def test_verified_climate_docx_route_uses_canonical_reader():
         "validation": {"status": "passed"},
     }
 
+    from sector_lenses.climate_verified_render import build_reader_model, attach_provenance
+    from sector_lenses.pipeline import normalize_climate_assessment
+    assessment['runtime_mode'] = 'smoke'
+    normalized = normalize_climate_assessment(assessment)
+    reader = attach_provenance(build_reader_model(normalized), normalized)
+    reader['runtime_mode'] = 'smoke'
+    reader['technical_annex']['runtime_mode'] = 'smoke'
     response = app_module.app.test_client().post(
         "/api/download-report", json={
-            "climate_assessment": assessment,
-            "climate_reader": {"runtime_mode": "smoke"},
+            "climate_assessment": assessment, "climate_reader": reader,
         }
     )
 
@@ -2579,9 +2596,13 @@ def test_verified_climate_docx_route_uses_canonical_reader():
     from docx import Document
     document = Document(io.BytesIO(response.data))
     text = "\n".join(item.text for item in document.paragraphs)
-    assert "Core climate-FCV questions" in text
+    assert "Core climate-FCV questions" not in text
+    assert "Assessment findings" in text
     assert "Candidate country evidence: preview; not approved." in text
     assert "Smoke test: validates workflow completion only" in text
+    assert "Relevant WBG guidance for this project" in text
+    assert "Method, limitations, and sources" in text
+    assert "FORGED" not in text
 
 
 def test_browser_exports_verified_climate_assessment_object():
@@ -2621,7 +2642,7 @@ def test_climate_only_express_route_returns_verified_v2_without_legacy_stage(mon
         "judgments": {
             "relevance": {"value": "high", "rationale": "Material."},
             "sensitivity": {"value": "moderate", "rationale": "Partial."},
-            "responsiveness": {"value": "emerging", "rationale": "Emerging."},
+            "responsiveness": {"value": "moderate", "rationale": "Emerging."},
             "operationalization": {"value": "partial", "rationale": "Partial."},
         },
         "priorities": [],
@@ -2703,3 +2724,20 @@ def test_verified_climate_failure_log_includes_bounded_schema_reason(caplog):
 
     assert "provider_failure_code=schema_rejected" in caplog.text
     assert "schema_path=properties.recommendation_candidates.items.type" in caplog.text
+
+
+def test_reader_failure_bridge_emits_diagnostics_before_blocking(monkeypatch):
+    from sector_lenses.climate_verified_runtime import ClimateReaderIntegrityError
+    error = ClimateReaderIntegrityError("READER_INTEGRITY: CURRENT_DRAFTING_INCOMPLETE",
+        assessment={"schema_version": "climate-verified-v2.1", "run_id": "blocked", "priorities": []},
+        reason_codes=("CURRENT_DRAFTING_INCOMPLETE",))
+    def failed(**kwargs):
+        raise error
+    monkeypatch.setattr(app_module, "run_verified_from_doc_parts", failed)
+    stream = app_module._iter_verified_climate_assessment(doc_parts=[], climate_grounding={},
+        clients=object(), run_id="blocked")
+    event = next(stream)
+    assert event == {"climate_verified_failure": error.diagnostic_payload}
+    assert "result" not in event and "climate_assessment" not in event
+    with pytest.raises(ClimateReaderIntegrityError):
+        next(stream)

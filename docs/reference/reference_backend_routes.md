@@ -555,3 +555,70 @@ Gap admission accepts nonempty grounded text up to 100 words. The drafting targe
 `run_fcv_web_research` keeps the existing single Anthropic web-search request and delegates prompt construction and provider-block normalization to `fcv_core_research.py`. Results carry `brief`, `country`, `sources`, `status`, and the existing `ccdr_context`. Provider citations preserve URLs, excerpts and supplied dates; unavailable dates and uncertain country attribution remain explicit. No server-side article fetching is added. Stage 1 cache keys include the bounded project profile and lens budget; entries expire after six hours, are capped at 128, and source-free/unavailable results are not cached. Existing SSE research brief transport is unchanged. Word export strips only repeated leading Watch List headings.
 
 Watch List heading normalization uses linear line parsing in Python and JavaScript so adversarial whitespace cannot cause regex backtracking.
+
+
+Source-notice wording follow-up: _climate_source_warning_messages preserves
+bundle codes while omitting routine primary-selection bookkeeping from the
+banner. Regional coverage and unresolved document precedence have plain messages.
+Full source/pipeline regression and the subsequent focused wording checks are
+recorded in docs/20261012_climate-opcs-parity-validation.md.
+
+Verified Climate Word export follow-up13October: after rebuilding and validating
+the canonical reader, /api/download-report attaches the existing provenance helper.
+Matched project guidance and method/source notes now mirror the live reader.
+Provenance comes from the normalized assessment and curated references, never the
+incoming climate_reader. Only its bounded quality/smoke runtime indicator is retained.
+
+
+### 2026-10-16 Climate report snapshot
+
+`POST /api/climate-report-snapshot` accepts `climate_assessment` (verified-v2.1)
+and a complete `climate_reader`. It projects and validates the canonical reader,
+attaches evidence, then compares JSON values exactly. Returns reader, sha256, and
+publication_approved=false; mismatches return HTTP 409 with
+READER_SNAPSHOT_MISMATCH, missing inputs or reader integrity errors return 422.
+No model call, persistence or approval occurs. The hash binds supplied values,
+including available source/model/prompt metadata, but does not independently
+verify their provenance or require absent metadata.
+
+`POST /api/download-report` uses the same check for verified Climate reports.
+An omitted reader retains legacy canonical export; any supplied reader must match.
+Runtime mode comes from the assessment. Browser HTML export must pass the snapshot
+check and verify its local pair did not change while waiting. This is a Render
+endpoint contract; the shared reader projection remains provider independent.
+
+
+### 2026-10-16 External human review packet
+
+`POST /api/climate-review-packet` requires the complete verified-v2.1 assessment
+and displayed reader, and reuses the snapshot endpoint's validation (409 drift,
+422 missing/invalid inputs). Returns a ZIP with report.docx, report.html,
+snapshot.json, manifest.json, review_record_template.json and REVIEW_INSTRUCTIONS.txt.
+Manifest schema climate-external-review-v1 always has status draft and
+publication_approved=false. Review template identity, timestamp and external
+workflow reference start null; decision starts pending. File hashes cover actual
+DOCX, HTML and canonical snapshot bytes. Packet creation asserts snapshot hash
+matches the validated snapshot before returning. No database, authentication,
+approval import, model call or server-side packet storage occurs.
+
+Reports display unconditional draft status; packet reports also display the
+snapshot ID. External authenticated approval must reference exact file hashes.
+Edited/re-exported files require checking against that external record, not trusting
+a mutable local manifest. Source document files are not bundled automatically.
+
+### 2026-10-16 Opt-in preview spend reservations
+
+All four Anthropic clients accept the same opt-in HTTP request hook when
+FCV_PILOT_BUDGET_MICROUSD and FCV_PILOT_BUDGET_DB are both set. Default is off.
+The hook reserves before each send, including retries, using text bytes plus4096
+framing headroom and full output cap at pinned known rates with a2x margin.
+SQLite updates are atomic across clients/workers and reservations are never
+refunded. Unknown request fields, server tools/MCP/compaction, nontext blocks,
+caching and unpriced routing are rejected before send. This is a controlled
+single-instance preview-campaign guard, not an account billing system.
+
+The ledger survives worker restarts but NOT Render ephemeral-filesystem replacement.
+Use fixed phase-specific allowances whose sum never exceeds the authorized total;
+after any mid-phase replacement subtract all previous reservations before starting
+another ledger. Blocked optional research must be disclosed; it is not equivalent
+to a full web-grounded acceptance run. Production remains default-off.

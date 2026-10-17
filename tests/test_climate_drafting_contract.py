@@ -527,6 +527,58 @@ def test_drafting_actor_noop_when_absent() -> None:
     assert normalized is candidate
 
 
+def test_actor_normalization_covers_title_narrative_and_responsible_function():
+    candidate = replace(_candidate(),
+                        title="Ask the focal point to record the update",
+                        narrative="The coordination unit records the update.",
+                        responsible_function="Steering committee")
+    normalized, repairs = normalize_unverified_drafting_actor(candidate, _context())
+    assert repairs == ("DRAFTING_ACTOR_GENERALIZED",)
+    assert "focal point" not in normalized.title.casefold()
+    assert "coordination unit" not in normalized.narrative.casefold()
+    assert normalized.responsible_function == "Responsible project function"
+    assert "DRAFTING_ACTOR_UNVERIFIED" not in {
+        issue.code for issue in validate_recommendation(
+            normalized, KNOWN_IDS, drafting_context=_context())}
+
+
+def test_actor_normalization_preserves_a_verified_actor_and_other_guards():
+    candidate = replace(_candidate(), narrative="The steering committee records the update.")
+    context = replace(_context(), project_fact_text={"PF-001": "The steering committee records updates."})
+    normalized, repairs = normalize_unverified_drafting_actor(candidate, context)
+    assert normalized is candidate and repairs == ()
+    unsupported = replace(candidate, operational_instrument_drafting=_draft(
+        document="Emergency Operations Manual", section="Activation"))
+    normalized, _ = normalize_unverified_drafting_actor(unsupported, context)
+    assert "DRAFTING_INSTRUMENT_UNVERIFIED" in {
+        issue.code for issue in validate_recommendation(
+            normalized, KNOWN_IDS, drafting_context=context) if issue.blocking}
+
+
+def test_af_advisory_destination_can_be_proposed_but_invented_instrument_is_blocked():
+    from sector_lenses.climate_operational_guidance import select_operational_guidance
+    guidance = select_operational_guidance(doc_type="AF", instrument_type="IPF")
+    route = next(item for item in guidance if ("af", "results framework") in item.permitted_targets)
+    context = replace(_context(), current_document="AF", instrument_type="IPF",
+                      guidance_ids=frozenset(item.guidance_id for item in guidance),
+                      standard_targets=frozenset(target for item in guidance for target in item.permitted_targets),
+                      guidance_targets={item.guidance_id: item.permitted_targets for item in guidance})
+    candidate = replace(_candidate(), current_document_drafting=_draft(
+        document="af", section="results framework", guidance_id=route.guidance_id))
+    assert not [issue for issue in validate_recommendation(
+        candidate, KNOWN_IDS, drafting_context=context) if issue.blocking]
+    unsafe = replace(candidate, current_document_drafting=replace(
+        candidate.current_document_drafting, target_section="Emergency approval authority"))
+    assert "DRAFTING_CURRENT_TARGET_INVALID" in {
+        issue.code for issue in validate_recommendation(
+            unsafe, KNOWN_IDS, drafting_context=context) if issue.blocking}
+    unsafe = replace(candidate, operational_instrument_drafting=_draft(
+        document="Emergency Operations Manual", section="Activation", guidance_id=route.guidance_id))
+    assert "DRAFTING_INSTRUMENT_UNVERIFIED" in {
+        issue.code for issue in validate_recommendation(
+            unsafe, KNOWN_IDS, drafting_context=context) if issue.blocking}
+
+
 def test_unverified_completion_actor_is_generalized_before_validation() -> None:
     candidate = replace(
         _candidate(),
@@ -631,3 +683,19 @@ def test_known_instrument_without_a_valid_target_still_blocks_current_drafting()
         issue.code == "DRAFTING_CURRENT_TARGET_INVALID" and issue.blocking
         for issue in issues
     )
+
+
+def test_hybrid_ipf_terms_need_component_scope_and_matching_evidence():
+    candidate = replace(_candidate(), decision="Update the IPF component ESCP.")
+    ctx = replace(
+        _context(), instrument_type="PforR", has_ipf_component=True,
+        project_fact_text={"PF-001": "The IPF component has an ESCP."},
+    )
+    def codes(item, scope):
+        return {issue.code for issue in validate_recommendation(item, KNOWN_IDS, drafting_context=scope)}
+    assert "INSTRUMENT_TERMINOLOGY_MISMATCH" not in codes(candidate, ctx)
+    assert "INSTRUMENT_TERMINOLOGY_MISMATCH" in codes(candidate, replace(ctx, has_ipf_component=False))
+    assert "INSTRUMENT_TERMINOLOGY_MISMATCH" in codes(candidate, replace(ctx, project_fact_text={}))
+    assert "INSTRUMENT_TERMINOLOGY_MISMATCH" in codes(replace(candidate, decision="Apply the ESCP to the whole program."), ctx)
+    assert "INSTRUMENT_TERMINOLOGY_MISMATCH" in codes(replace(candidate, decision="Update the IPF component ESCP. Apply ESS1 to the program."), ctx)
+    assert "INSTRUMENT_TERMINOLOGY_MISMATCH" in codes(candidate, replace(ctx, instrument_type="DPF"))

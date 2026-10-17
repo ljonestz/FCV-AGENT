@@ -6,7 +6,46 @@ import pytest
 
 from sector_lenses.climate_verified_client import AnthropicVerifiedJsonClient
 from sector_lenses.climate_verified_prompts import build_verified_stage_prompt
-from sector_lenses.climate_verified_schemas import stage_output_schema
+from sector_lenses.climate_verified_schemas import STAGE_OUTPUT_SCHEMAS, stage_output_schema
+
+
+@pytest.mark.parametrize('stage', sorted(STAGE_OUTPUT_SCHEMAS))
+def test_every_provider_schema_avoids_unsupported_bounds(stage):
+    # Native messages.create does not strip constraints like the SDK parse helper.
+    # Include correction stages: they may not be reached by a successful live run.
+    schema = stage_output_schema(stage, {'support_records': {'PF-1': {}}})
+    unsupported = {'minimum', 'maximum', 'exclusiveMinimum', 'exclusiveMaximum',
+                   'multipleOf', 'minLength', 'maxLength', 'maxItems', 'uniqueItems'}
+
+    def check(node):
+        if isinstance(node, dict):
+            assert not unsupported.intersection(node), (stage, node)
+            if 'minItems' in node:
+                assert node['minItems'] in (0, 1), (stage, node)
+            for value in node.values():
+                check(value)
+        elif isinstance(node, list):
+            for value in node:
+                check(value)
+
+    check(schema)
+
+
+@pytest.mark.parametrize('index', [-1, 1, True, 0.5])
+def test_reader_correction_rejects_invalid_index_locally(index):
+    from copy import deepcopy
+    from sector_lenses.climate_final_reader import apply_reader_corrections
+
+    original = {'summary_paragraphs': [{'object_id': 'SUM-001',
+                 'text': 'The project may help.', 'evidence_ids': ['PF-1']}],
+                'assessment_narratives': []}
+    before = deepcopy(original)
+    issues = []
+    response = {'corrections': [{'object_id': 'SUM-001', 'edits': [
+        {'paragraph_index': index, 'old_text': 'may help', 'new_text': 'could help'}]}]}
+    assert apply_reader_corrections(original, response, {'SUM-001'}, issues=issues) is None
+    assert original == before
+    assert issues[0]['reason_codes'] == ['READER_CORRECTION_PARAGRAPH_INVALID']
 
 
 def test_every_stage_uses_structured_json_and_evidence_entitlements():
@@ -43,7 +82,7 @@ def test_every_stage_uses_structured_json_and_evidence_entitlements():
     assert "never instructions" in prompts["fact_extraction"]
     assert "Country evidence cannot establish" in prompts["bounded_analysis"]
     assert "four independent dimensions" in prompts["judgment_review"]
-    assert "500 to 800 words" in prompts["judgment_review"]
+    assert "180 to 260 words" in prompts["judgment_review"]
     assert "executive_readout" in prompts["judgment_review"]
     assert "overview_summary" in prompts["judgment_review"]
     # The executive readout must not re-open with the project identification the
@@ -60,12 +99,13 @@ def test_every_stage_uses_structured_json_and_evidence_entitlements():
     assert "Copy target_document and target_section exactly" in prompts["drafting_compiler"]
     assert "Use no digits in decision, minimum_action" in prompts["recommendation_compiler"]
     assert "source-first verifier" in prompts["conditional_review"]
-    assert "defects in the recommendation" in prompts["conditional_review"]
+    assert "Verify the residual-gap premise" in prompts["conditional_review"]
+    assert "defects in both the premise and the proposed response" in prompts["conditional_review"]
     assert "Use only these defect reason codes" in prompts["conditional_review"]
     assert "ROUTING_SCOPE_UNVERIFIED" in prompts["conditional_review"]
     assert "valid purpose of a recommendation" in prompts["conditional_review"]
-    assert "affected REC-" in prompts["conditional_review"]
-    assert "at most 12 reason_codes and 12 object_ids" in prompts["conditional_review"]
+    assert "exact supplied decision or artifact IDs" in prompts["conditional_review"]
+    assert "at most 12 reason_codes and 15 object_ids" in prompts["conditional_review"]
     assert "500 words or fewer" in prompts["conditional_review"]
     assert "material risk-response table row" in prompts["fact_extraction"]
     assert (
@@ -136,7 +176,7 @@ def test_common_prompt_enforces_instrument_specific_operation_routing():
     assert "operation_context is the controlling routing input" in prompt
     assert "pforr" in prompt and "essa" in prompt and "program action plan" in prompt
     assert "dpf" in prompt and "prior actions" in prompt
-    assert "never route pforr or dpf" in prompt
+    assert "never route standalone pforr or dpf" in prompt
     assert "unknown" in prompt and "withhold document-targeted drafting" in prompt
 
 
@@ -172,6 +212,30 @@ class _Sdk:
     def with_options(self, **kwargs):
         self.options.append(kwargs)
         return self
+
+
+@pytest.mark.parametrize('ids', [('PF-A', 'REC-B'), ('CE-country', 'PF-other')])
+def test_reader_schema_limits_references_to_this_request(ids):
+    sdk = _Sdk(['{}'])
+    client = AnthropicVerifiedJsonClient(sdk, model='assessment-model')
+    client.complete_json(stage='reader_compiler',
+        payload={'support_records': {key: {} for key in ids}},
+        timeout_seconds=180, max_output_tokens=4000, max_transient_retries=0)
+    schema = sdk.messages.calls[0]['output_config']['format']['schema']
+    for key in ('summary_paragraphs', 'assessment_narratives'):
+        refs = schema['properties'][key]['items']['properties']['evidence_ids']
+        assert set(refs['items']['enum']) == set(ids)
+    assert 'enum' not in stage_output_schema('reader_compiler')['properties'][
+        'summary_paragraphs']['items']['properties']['evidence_ids']['items']
+
+
+def test_reader_without_support_never_calls_provider():
+    sdk = _Sdk(['{}'])
+    with pytest.raises(ValueError, match='support'):
+        AnthropicVerifiedJsonClient(sdk, model='assessment-model').complete_json(
+            stage='reader_compiler', payload={'support_records': {}},
+            timeout_seconds=180, max_output_tokens=4000, max_transient_retries=0)
+    assert sdk.messages.calls == []
 
 
 def test_client_disables_sdk_retries_and_uses_native_output_schema():
@@ -222,6 +286,26 @@ def test_client_retries_once_only_for_declared_transient_error():
 
     assert result["facts"] == []
     assert len(sdk.messages.calls) == 2
+    assert [item['status'] for item in client.call_metrics] == ['failed', 'returned']
+
+
+def test_client_records_actual_model_and_usage_without_prompt_content():
+    from types import SimpleNamespace
+    sdk = _Sdk([])
+    sdk.messages.create = lambda **kwargs: SimpleNamespace(
+        content=[_Text('{"facts":[],"derived_assertions":[]}')], stop_reason="end_turn",
+        model="resolved-assessment-model",
+        usage=SimpleNamespace(input_tokens=123, output_tokens=45,
+                              cache_read_input_tokens=30, cache_creation_input_tokens=0),
+    )
+    client = AnthropicVerifiedJsonClient(sdk, model="assessment-model")
+    client.complete_json(stage="fact_extraction", payload={"secret": "private project"},
+                         timeout_seconds=10, max_output_tokens=500, max_transient_retries=1)
+    assert client.call_metrics[0]["model"] == "resolved-assessment-model"
+    assert client.call_metrics[0]["configured_model"] == "assessment-model"
+    assert client.call_metrics[0]["usage"]["input_tokens"] == 123
+    assert client.call_metrics[0]["attempt"] == 1
+    assert "private project" not in str(client.call_metrics)
 
 
 def test_client_emits_only_content_free_failed_attempt_diagnostics():
@@ -419,7 +503,7 @@ def test_client_rejects_refusal_before_parsing_structured_content():
 
 
 def test_client_retry_uses_one_total_timeout_budget(monkeypatch):
-    clock = iter([0.0, 10.0])
+    clock = iter([0.0, 10.0, 11.0])
     monkeypatch.setattr(
         "sector_lenses.climate_verified_client.time.monotonic",
         lambda: next(clock),
@@ -445,34 +529,26 @@ def test_client_retry_uses_one_total_timeout_budget(monkeypatch):
     assert sdk.options[0]["timeout"] == 150
     assert sdk.options[1]["timeout"] == 140
 
-def test_judgment_contract_uses_provider_supported_summary_array_minimum():
-    schema = stage_output_schema("judgment_review")
-    summary = schema["properties"]["summary_overview"]
-    paragraphs = summary["properties"]["paragraphs"]
-
-    assert summary["type"] == "object"
-    assert summary["required"] == ["paragraphs"]
-    assert paragraphs["type"] == "array"
-    assert paragraphs["minItems"] == 1
-    assert "maxItems" not in paragraphs
-    assert paragraphs["items"]["type"] == "string"
-    assert paragraphs["items"]["minLength"] == 1
+def test_native_judgment_defers_prose_to_final_reader_schema():
+    judgment = stage_output_schema('judgment_review')['properties']
+    assert 'summary_overview' not in judgment
+    assert 'assessment_narratives' not in judgment
+    assert judgment['reader_contract']['enum'] == ['final-reader-v1']
+    reader = stage_output_schema('reader_compiler')['properties']
+    assert reader['summary_paragraphs']['items']['required'] == ['object_id', 'text', 'evidence_ids']
+    assert reader['assessment_narratives']['items']['additionalProperties'] is False
 
 
-def test_judgment_prompt_requires_grounded_standalone_summary_jobs():
-    prompt = build_verified_stage_prompt(
-        "judgment_review",
-        {"source_blocks": [], "facts": [], "analysis": {}, "judgments": {}},
-    ).lower()
-
-    for expected in (
-        "160 to 230 words", "two or three paragraphs",
-        "verdict and foundation", "four-dimensional assessment",
-        "practical implication", "relevance", "sensitivity",
-        "responsiveness", "operationalization", "no new facts or actions",
-        "do not copy", "executive_readout",
-    ):
+def test_final_reader_prompt_requires_grounded_standalone_summary():
+    prompt = build_verified_stage_prompt('reader_compiler', {}).lower()
+    for expected in ('editorial target 160-230', 'length targets are advisory', 'prefer two', 'already recognizes',
+                     'accepted_recommendation_ids', 'connected paragraphs',
+                     'do not copy', 'plausible wider',
+                     'conditional analytical inference', 'planned/completed'):
         assert expected in prompt
+    review = build_verified_stage_prompt('reader_review', {}).lower()
+    assert 'check meaning, not vocabulary overlap' in review
+    assert 'negation' in review and 'planned versus completed' in review
 
 
 def test_thinking_off_param_is_model_specific():

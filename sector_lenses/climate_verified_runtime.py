@@ -7,6 +7,7 @@ Context uploads and the country bank cross the boundary as contextual evidence.
 from __future__ import annotations
 
 import hashlib
+import json
 import re
 from datetime import datetime
 from dataclasses import dataclass
@@ -67,6 +68,40 @@ class PreparedClimateSources:
     blocks: tuple[SourceBlock, ...]
     warning_codes: tuple[str, ...]
     structured_fields: tuple[SourceBlock, ...] = ()
+    beneficiary_countries: tuple[str, ...] = ()
+
+
+def extract_beneficiary_countries(text: str) -> tuple[str, ...]:
+    """Read the explicit PID field before source normalization loses table lines.
+
+    Only the first value line is authoritative here; the adjacent geographic
+    identifier may name neighboring countries that are not beneficiaries.
+    Ambiguous layouts fall back to the existing metadata extraction path.
+    """
+    match = re.search(
+        r"(?im)^[ \t]*Beneficiary Country/Countries[ \t]*"
+        r"(?P<inline_geo>Geographical Identifier)?[ \t]*\r?\n"
+        r"\s*(?:Geographical Identifier[ \t]*\r?\n\s*)?(?P<value>[^\r\n]+)",
+        str(text or "")[:8_000],
+    )
+    if not match:
+        return ()
+    value = match.group("value").strip()
+    if match.group("inline_geo"):
+        # PDF plain-text extraction can concatenate both columns. Recognize a
+        # distinct upper-case corridor code; otherwise leave the layout unresolved.
+        corridor = re.search(r"\s+[A-Z]{2,4}\s+[-–]\s+[^\d]+$", value)
+        if not corridor:
+            return ()
+        value = value[:corridor.start()].strip()
+    if not value or len(value) > 250 or re.search(r"\d|[:/]|practice area|borrower", value, re.I):
+        return ()
+    # Preserve commas in inverted official names, e.g. Congo, Democratic Republic of.
+    names = re.split(
+        r";|,(?!\s*(?:Democratic Republic of|Republic of|Dem\.|Rep\.|Fed\.|RB\b))",
+        value, flags=re.I,
+    )
+    return tuple(dict.fromkeys(name.strip() for name in names if name.strip()))
 
 
 @dataclass(frozen=True)
@@ -241,6 +276,13 @@ def resolve_verified_operation_context(
     document = str(doc_type or "Unknown").strip() or "Unknown"
     instrument = str(instrument_type or "Unknown").strip() or "Unknown"
 
+    instrument = {"ipf-ddo": "IPF", "p4r": "PforR", "dpo": "DPF"}.get(
+        instrument.casefold(), instrument,
+    )
+    if instrument.casefold() not in {"ipf", "pforr", "dpf", "unknown"}:
+        instrument = "Unknown"
+        warnings.append("INSTRUMENT_HINT_UNSUPPORTED")
+
     document_markers = (
         (r"\bprogram document\b", "Program Document"),
         (r"\bprogram paper\b", "Program Paper"),
@@ -281,6 +323,20 @@ def resolve_verified_operation_context(
             warnings.append("DOCUMENT_HINT_OVERRIDDEN")
         document = detected_document
         notes.append(f"document_marker:{document}")
+
+    # Mid-cycle purpose takes precedence over the paper's generic cover title.
+    mid_cycle = []
+    for pattern, value in (
+        (r"\badditional financing\b|(?:^|[\W_])af(?:[\W_]|$)", "AF"),
+        (r"\brestructuring paper\b", "Restructuring"),
+    ):
+        if re.search(pattern, filenames) or re.search(pattern, source_head[:500]):
+            mid_cycle.append(value)
+    if len(mid_cycle) == 1:
+        document = mid_cycle[0]
+    elif len(mid_cycle) > 1:
+        document = "Unknown"
+        warnings.append("DOCUMENT_ROUTE_AMBIGUOUS")
 
     pforr = _context_matches(
         r"\bprogram(?:-| )for(?:-| )results(?: financing)?\b|\bpforr\b|\bp4r\b",
@@ -340,9 +396,31 @@ def resolve_verified_operation_context(
         filenames,
         source_head,
     )
+    # Concept descriptions can follow a long country context. Require a current-
+    # operation statement in the body, not a reference to another project's MPA.
+    if not is_mpa:
+        is_mpa = bool(re.search(
+            r"\b(?:the|this)\s+(?:proposed\s+)?"
+            r"(?:project|operation|program|programme)\s+"
+            r"(?:development\s+objective\s+of\s+|"
+            r"(?:is|constitutes|forms|represents)\s+"
+            r"(?:(?:the|a|an)\s+)?"
+            r"(?:(?:(?:first|second|third|initial|next|\d+)\s+)?phase\s+of\s+|part\s+of\s+)?"
+            r"(?:(?:the|a|an)\s+)?)"
+            r"(?:mpa\b|multiphase\s+programmatic\s+approach\b)",
+            source_text,
+        ))
+        if is_mpa:
+            notes.append("mpa_marker:primary_operation_description")
+    if is_mpa and instrument.casefold() == "dpf":
+        warnings.append("MPA_INSTRUMENT_INCOMPATIBLE")
+    if instrument.casefold() == "dpf" and document.casefold() == "pad":
+        document = "Program Document"
+        notes.append("document_normalized:DPF Program Document")
+
     country_scope = (
         "multi"
-        if _context_matches(
+        if len(prepared.beneficiary_countries) > 1 or _context_matches(
             r"\bmulti(?:-| )country\b|\bregional (?:project|program|programme|operation)\b|"
             r"\bparticipating countries\b",
             filenames,
@@ -356,9 +434,9 @@ def resolve_verified_operation_context(
     normalized_document = document.casefold()
     marker_preparation_regime = (
         "new_model"
-        if normalized_document in {"project paper", "program paper", "program document"}
+        if normalized_document == "program paper"
         else "legacy_transitional"
-        if normalized_document in {"pcn", "pid", "pad"}
+        if normalized_document in {"pcn", "pad"}
         else "unresolved_policy_source"
     )
     preparation_regime = marker_preparation_regime
@@ -374,30 +452,73 @@ def resolve_verified_operation_context(
             and marker_preparation_regime != preparation_regime
         ):
             warnings.append("PREPARATION_MARKER_DATE_CONFLICT")
-    processing_model = "unknown"
-    if re.search(r"\btechnical design\b", source_head) and re.search(
-        r"\bimplementation readiness\b", source_head
+    processing_models = set()
+    if re.search(r"\bone[- ]step processing\b", source_head):
+        processing_models.add("one_step")
+    if re.search(r"\btwo[- ]step processing\b", source_head) or (
+        re.search(r"\btechnical design\b", source_head)
+        and re.search(r"\bimplementation readiness\b", source_head)
     ):
-        processing_model = "two_step"
-    elif re.search(r"\bone review\b", source_head):
-        processing_model = "one_review"
+        processing_models.add("two_step")
+    if re.search(r"\bone review\b", source_head) and not processing_models:
+        processing_models.add("one_review")
+    processing_model = (
+        next(iter(processing_models)) if len(processing_models) == 1 else "unknown"
+    )
+    if len(processing_models) > 1:
+        warnings.append("PROCESSING_MODEL_CONFLICT")
+    if not processing_models and preparation_regime == "new_model":
+        def rating(label: str) -> str | None:
+            values = set(re.findall(
+                label + r"\s*[:|]\s*(low|moderate|substantial|high)\b",
+                source_head,
+            ))
+            return next(iter(values)) if len(values) == 1 else None
+
+        # Only labelled project ratings are inputs; prose about risks is not a rating.
+        processing_model = regime_router.classify_processing_model(
+            instrument,
+            rating(r"(?:overall sort(?: risk)?|sort overall(?: risk)?|overall risk)(?: rating)?"),
+            rating(r"environmental and social risk(?: classification| rating)?"),
+            is_af=normalized_document == "af",
+            is_first_mpa_phase=bool(re.search(
+                r"\bfirst (?:mpa )?phase\b|\bmpa phase (?:1|i)\b", source_head,
+            )) if is_mpa else False,
+            is_fmrf=bool(re.search(r"\bfmrf\b|full mutual reliance framework", source_head)),
+            hybrid_ipf_component_esrc=(
+                rating(r"ipf component (?:esrc|environmental and social risk)"
+                       r"(?: classification| rating)?") or "unknown"
+            ) if hybrid_ipf else None,
+        ) if instrument.casefold() in {"ipf", "pforr", "dpf"} else "unknown"
+
+    # Unknown MPA phase can conceal mandatory first-phase two-step processing.
+    if is_mpa and not processing_models and processing_model == "one_step" and normalized_document != "af":
+        if not re.search(r"\b(?:second|third|later|subsequent) phase\b|\bmpa phase [2-9]\b", source_head):
+            processing_model = "unknown"
 
     normalized_instrument = instrument.casefold()
     if normalized_instrument in {"pforr", "p4r", "dpf", "dpo"}:
         es_regime = "INSTRUMENT_SPECIFIC"
     elif normalized_instrument == "ipf":
-        if re.search(
+        if re.search(r"\b(?:op|bp)\s*4\.03\b", source_text):
+            es_regime = "PERFORMANCE_STANDARDS_OP_BP_4_03"
+        elif re.search(r"\b(?:safeguard policies|op 4\.01|bp 4\.01)\b", source_text):
+            if re.search(r"\b(?:esf|esrs|escp|environmental and social framework)\b", source_text):
+                es_regime = "UNRESOLVED"
+                warnings.append("ES_REGIME_CONFLICT")
+            else:
+                es_regime = "LEGACY_SAFEGUARDS"
+        elif re.search(
             r"\b(?:esf|esrs|escp|environmental and social framework)\b",
-            source_head,
+            source_text,
         ):
             es_regime = "ESF_ESS1_TO_ESS10"
-        elif re.search(
-            r"\b(?:safeguard policies|op 4\.01|bp 4\.01)\b",
-            source_head,
-        ):
-            es_regime = "LEGACY_SAFEGUARDS"
         else:
-            es_regime = "UNRESOLVED"
+            # AF can retain a parent's safeguards: require explicit E&S evidence.
+            es_regime = regime_router.classify_es_regime(
+                instrument, preparation_regime=preparation_regime,
+                ois_creation_date=ois_creation_date,
+            ) if normalized_document not in {"af", "restructuring"} else "UNRESOLVED"
     else:
         es_regime = "UNRESOLVED"
 
@@ -551,6 +672,7 @@ def prepare_verified_sources(
         and str(item.get("raw_text") or "").strip()
     )
     warnings: list[str] = []
+    beneficiary_countries: tuple[str, ...] = ()
     if primary_count > 1:
         warnings.append("PRIMARY_DOCUMENT_PRECEDENCE_UNRESOLVED")
     elif primary_count == 1:
@@ -596,6 +718,7 @@ def prepare_verified_sources(
             if not is_primary:
                 warnings.append("PACKAGE_FACT_AUTHORITY_WITHHELD")
             continue
+        beneficiary_countries = extract_beneficiary_countries(raw_text)
         for paragraph_index, text in enumerate(_chunks(raw_text, block_size)):
             normalized_hash = _sha256(
                 f"{document_id}|p:{paragraph_index}|{text}"
@@ -645,6 +768,7 @@ def prepare_verified_sources(
         blocks=bounded,
         warning_codes=tuple(dict.fromkeys(warnings)),
         structured_fields=tuple(structured_fields),
+        beneficiary_countries=beneficiary_countries,
     )
 
 
@@ -699,6 +823,18 @@ def _uploaded_context_evidence(
     return tuple(selected)
 
 
+
+class ClimateReaderIntegrityError(ValueError):
+    """Carry a completed result for caller-only inspection, never publication."""
+
+    def __init__(self, message: str, *, assessment: dict[str, object],
+                 reason_codes: tuple[str, ...]) -> None:
+        # Keep raw project/review text out of exception messages and server logs.
+        super().__init__(message)
+        self.diagnostic_payload = {"diagnostic_only": True, "assessment": assessment,
+                                   "reason_codes": list(reason_codes)}
+
+
 def run_verified_from_doc_parts(
     *,
     doc_parts: object,
@@ -739,6 +875,8 @@ def run_verified_from_doc_parts(
         operation_context=operation_record,
     )
     assessment.setdefault("operation_context", operation_record)
+    # Build from the same JSON values that exports and saved sessions receive.
+    assessment = json.loads(json.dumps(assessment, ensure_ascii=False, allow_nan=False))
     normalized = normalize_climate_assessment(assessment)
     reader = build_reader_model(normalized)
     reader_issues = validate_reader_model(reader)
@@ -754,8 +892,9 @@ def run_verified_from_doc_parts(
                 str(reader.get("executive_readout") or "").split()
             )
             detail_suffix = f"; executive_words={executive_words}"
-        raise ValueError(
-            "READER_INTEGRITY: " + ", ".join(reader_issues) + detail_suffix
+        raise ClimateReaderIntegrityError(
+            "READER_INTEGRITY: " + ", ".join(reader_issues) + detail_suffix,
+            assessment=normalized, reason_codes=reader_issues,
         )
     return {
         "assessment": normalized,

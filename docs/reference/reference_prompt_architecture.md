@@ -518,3 +518,203 @@ strength alignment remains a generation instruction and a content-review check.
 Live acceptance exposed uncited synthesis leaking into analysis. `core_research_analysis_context` now supplies only country-attributable provider passages to both Stage 1 workflows; the full qualified briefing stays visible and exportable. Timing guidance requires later developments to remain watch items, not historical gaps, and forbids inferring site-specific events from broad country excerpts.
 
 Country matching normalizes typographic possessives before ASCII folding, so a national-news title such as "Somalia’s ..." is not falsely downgraded to ambiguous regional context. The regression includes the exact title returned during live research and retains the namesake-country cases.
+
+
+### 2026-10-12 verified Climate diagnostics
+
+Judgment prompt v2.6 explicitly names all four summary dimensions; compiler v2.5
+uses the task team when a specific responsible actor is not verified. Reviewer
+v2.7 adds diagnostic issues (affected REC ID, specific codes, short explanation)
+to its strict native schema. Existing verdict/object-ID suppression is unchanged.
+Saved assessment diagnostic_trace stores bounded, truncation-labelled snapshots;
+the public reader/export never incorporates them. No model repair call is added.
+
+
+### 2026-10-12 second quality trial and post-run fixes
+
+The authorized trial on 152656b retained one of three priorities; two correctly
+failed scope/authority review. Production remains held. Post-run fixes accept
+ordinary grounded summary prose, reject project-document titles on country-homepage
+URLs and avoid treating page_age as publication date. Climate scope/CERC and
+conditional proposal guards are strengthened (analysis v2.3, compiler v2.6,
+drafting v1.1, review v2.8; judgments v2.6). Reader status partial adds a short
+needs-review notice across app, copied Summary and exports. See the current
+validation document for trace, evidence and live-acceptance limits.
+
+
+### Native research-context continuation correction
+
+The metadata-only research fallback dropped native web-search result blocks and
+therefore the provider's encrypted source context. The existing structuring call
+now continues the original user/assistant search messages intact, retains the
+search tool definition/beta, and sets tool_choice to none to prevent another
+search. Retrieved content remains untrusted evidence. No model call was added.
+Tests preserve exact native-content identity, two-call count, bounded final prompt
+and content-free logs; 55 research/grounding/context checks pass. This matches the
+provider's documented search continuation protocol. The live effect has not been
+checked by another paid run. The quality/production hold remains in place.
+
+
+### 2026-10-12 approved Climate dividends rating questions
+
+Judgments v2.7 require recognition plus response to interacting climate/FCV risks,
+and an evidenced mechanism for wider peace/social dividends through climate-related
+investment and delivery. Recognizing risks alone cannot justify strong sensitivity;
+generic social benefits cannot justify responsiveness. Rates are scope-relative,
+not a theoretical maximum or proven peace impact. Retains five levels and unscored
+not_expected/unclear. Compiler v2.7 asks for one qualified limitation sentence <=35
+words; an optional dividend opportunity is not a required correction. No extra call.
+
+### 2026-10-12 quality3 calibration follow-up
+
+All six verified Climate stages distinguish routine sensitivity from evidenced
+wider peace/social dividends. Required/planned instrument updates cannot become
+completed commitments. Review-date context makes past estimated approval dates
+historical, without asserting the project's present status. Drafting returns the
+paragraph itself and its verified target_section; it does not invent placement
+relative to unseen paragraphs or indicators. Judgment openings use direct grounded
+verdicts instead of interpretive metaphors. Summary's entity guard recognizes
+ordinary capitalized stopwords; unsupported terms, numbers and entities still fail.
+The trial's original summary remains rejected by another grounding check.
+
+Research requires verbatim source_excerpt with native citations outside JSON.
+The existing calls preserve encrypted source context and join citation-split JSON
+without newlines; source passage matching precedes claim admission. Strict native
+output schemas remain on the six verified stages, not this citation-bearing research
+request. Versions: facts 2.3, analysis 2.4, judgments 2.8, recommendations 2.8,
+review 2.9, drafting 1.2. No repair or additional model call.
+
+
+### 2026-10-12 expanded gaps and candidate coverage
+
+Reader v2.6 adds optional summary_gaps: up to five complete qualified residual-gap
+statements, independent of action count. Kept-priority links come first, then
+design findings before contextual evidence gaps. The projection checks typed
+project/pathway/response/evidence references and explicit-negative support for
+confirmed omissions, deduplicates IDs/text, and keeps whole qualifications.
+Evidence-trail assembly includes those gap IDs, preserving their supporting prose
+in detailed HTML/Word. Legacy readers use existing limitation fields; only fresh
+or rebuilt readers gain summary_gaps. Archives are not regraded or regenerated.
+
+Analysis v2.5 explains each gap in two/three sentences, 35-65 words: what remains,
+its project-specific consequence and evidence/scope qualifier. Compiler v2.9
+considers every admitted gap and may return up to five material distinct actions,
+grouping only gaps resolved by the same action. No quota or lowered review gate.
+The Climate Summary now displays all five supported priorities, matching normal
+FCV's cap. Unknown gap evidence IDs are rejected before compilation. Exact source
+words within hyphenated expressions no longer falsely fail entity grounding;
+unsupported entities still fail. No dependency, extra provider call, repair loop
+or native generation-schema field. Other prompt versions are unchanged.
+
+
+Final pre-paid refinements: Stage 1 now passes its existing explicit PID beneficiary
+countries and country scope into both search and bounded structuring. Neighboring
+countries in geographic identifiers are excluded. Regional searches prioritize an
+uncovered beneficiary within the existing two-search limit; incomplete coverage
+must remain partial. Profile/page text is evidence, never instructions, and document
+excerpts must not become public search queries. No new provider or metadata call.
+The Summary no longer credits high risk relevance as a project strength; genuine
+very_strong responsiveness retains its positive interpretation. Literal source
+words/acronyms in compounds, including Flood-resilient and C-ESMP, pass the shared
+whole-word grounding check; unsupported entities remain rejected. Methodology
+wording describes source-linked checks and expert corroboration without promising
+that generation cannot invent a claim. Other gates and five-point values remain.
+
+
+### 2026-10-13 post-quality4 handoff repair
+
+Analysis v2.6 clarifies exact fact/context IDs and project-only mechanisms when
+context evidence is empty. Reader v2.7 adds a plain analysis_status/message for
+withheld evidence, shown in both views and HTML/Word. Source packets enrich
+metadata with later native citations and prioritize quoted passages within the
+same four-source cap, using cumulative pause-turn content. Sonnet search uses
+between_tools/3000 tokens and bounded cited quotes; the existing Haiku structurer,
+two-search/150s limit and independent evidence/review gates remain. No extra call
+or fetch. See docs/20261012_climate-opcs-parity-validation.md for the unaccepted
+quality4 result, original private artifacts, tests and remaining paid allowance.
+
+
+2026-10-13 final readout safeguards: reader v2.8 withholds a whole narrative that
+introduces responsiveness absent from the reviewed action fields; complete field
+presentation retains every action/qualification and grades are unchanged.
+Compiler/reviewer v2.10 align titles with minimum actions and distinguish ordinary
+measurement from wider dividends. Source proof retains only cited sources and
+explicit provider publication dates; unknown dates stay unknown. Climate gaps
+carry a concise optional-dividend scope note. No new model/fetch call; original
+paid archives remain unchanged. Final trial/check evidence is recorded in
+`docs/20261012_climate-opcs-parity-validation.md`.
+
+
+### 2026-10-13 action-led Climate candidate (rollout held)
+
+The verified reader derives `assessment_themes` from admitted gap statements and
+question/evidence links, with `priority_ranks` or explicit evidence follow-up. Detailed
+retains full questions in supporting analysis; Word uses an appendix. Summary retains
+five complete gaps. Paired five-point ratings replace the old export panel. Climate
+Detailed no longer renders the normal route's duplicate priority stepper/cards.
+Judgment prompt v2.9 targets 180–260 words of operational context; recommendation
+prompt v2.11 targets three to five substantive decisions where evidence warrants them.
+An explicit explained revise verdict permits one bounded compiler correction plus
+independent re-review through the same validation and original deadline. Original
+review and correction diagnostics remain separate; accepted actions survive repair
+failure. Reader version v2.9. No new paid generation has validated this candidate.
+See `docs/20261013_climate-action-led-validation.md` for acceptance and saved replay.
+
+
+### 2026-10-13 narrative findings follow-up
+
+The existing judgment call now returns assessment_narratives (design/dividends/inclusion),
+one or two connected paragraphs per theme, targeting 70-130 words and citing verified
+register IDs. Shared reader admission requires unique themes, known citations including
+a project fact, complete plain prose and number/entity/action checks. This narrative
+path permits natural paraphrase; the existing strict Summary vocabulary gate is unchanged.
+Original canonical gaps and recommendation links remain available as supporting detail.
+Browser and HTML use question headings, prose and native disclosures; Word preserves
+prose with original detail in its supporting appendix. Sections 04-07 use distinct cards
+in HTML. Common prompt calibration assesses conditional potential and enabling conditions,
+without penalizing missing peace/dividends terminology. Executive provider schema is
+aligned to the existing 180-260 word instruction. No extra generation call or dependency.
+
+Prompt versions: facts2.4, analysis2.7, judgments2.10, recommendations2.12, review2.11,
+drafting1.3; reader2.10. Fresh provider output remains unvalidated; PR83 stays draft.
+
+
+### 2026-10-13 reader simplification (supersedes visible supporting detail above)
+
+User-approved follow-up removes per-theme project-detail disclosures and the
+supporting question/watch appendix from Detailed, HTML and Word. Internal evidence
+and canonical questions remain available for validation and audit. The three
+question-led narrative answers remain. Method shows coverage, limitations and
+sources without repeating pathways. Priority cards now use Why this matters and
+What the team could do, with implementation/drafting in Recommendation details.
+Word mirrors those headings with a detail block. Legacy narrative/field fallback
+preserves complete text. Mobile card padding is reduced. Summary watches unchanged.
+Judgment and recommendation instructions require natural prose without framework
+recaps, label-and-colon verdicts, semicolons or literal Done looks like cues.
+Versions: judgments2.11, recommendations2.13, reader2.11. No added model calls.
+See docs/20261013_climate-reader-simplification-validation.md for evidence and limits.
+
+
+### 2026-10-13 standalone brief review
+
+Context/findings/priority prose instructions now develop a connected brief instead
+of repeating project history and gap inventories. A reproduced capitalization
+false positive rejected sentence-initial Links and silently restored old dividends
+wording. Analytical paraphrase now permits bounded generic sentence openings and
+inflections of existing permitted prose terms. Multiword names/acronyms, figures,
+dates, markup and action checks remain. Strict Summary mode is unchanged.
+Versions judgments2.12, recommendations2.14, reader2.12. No added provider calls
+or schema fields. New editorial preview asserts admission of all three narratives.
+See docs/20261013_climate-cohesive-brief-validation.md. Fresh paid generation remains
+unvalidated and PR83 remains draft.
+# 2026-10-13 verified Climate Summary admission alignment
+
+Reader2.14 removes the obsolete requirement that native Summary paragraphs name
+all four rating dimensions literally. Judgments2.12 already asks for connected
+plain-language prose without those label recaps. Two/three paragraphs,160–230 words,
+verdict/implication, no copied executive readout, source vocabulary, name, number,
+date, markup and action checks remain. This change adds no provider call and does
+not admit the quality6 native Summary, which still fails a separate vocabulary check.
+See the quality6 validation handover for failed analytical acceptance and the saved
+assessment replay. Recommendation correction diagnostics now retain bounded response
+and pre-review rejection reasons; correction scope and independent review are unchanged.

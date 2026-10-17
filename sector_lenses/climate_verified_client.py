@@ -69,6 +69,8 @@ class AnthropicVerifiedJsonClient:
         self._model = model
         self._is_transient = is_transient or _never_transient
         self._diagnostic_sink = diagnostic_sink
+        self.call_metrics: list[dict[str, object]] = []
+        self.last_output_tokens: int | None = None
 
     def _thinking_off(self) -> dict[str, str]:
         """Return the 'turn thinking off' config for this model. Sonnet 5.5
@@ -130,10 +132,17 @@ class AnthropicVerifiedJsonClient:
         max_output_tokens: int,
         max_transient_retries: int,
     ) -> dict[str, object]:
+        schema = stage_output_schema(stage, payload)
         prompt = build_verified_stage_prompt(stage, payload)
+        self.last_output_tokens = None
+        scope = payload.get('call_scope', 'reader' if stage.startswith('reader_') else 'initial')
+        if scope not in {'initial', 'core_correction', 'draft_correction', 'reader', 'reader_correction'}:
+            scope = 'initial'
+        configured_model = self._model if re.fullmatch(r'[a-zA-Z0-9_.-]{1,100}', self._model or '') else 'configured'
         response = None
         started = time.monotonic()
         remaining = timeout_seconds
+        attempt_started = started
         for attempt in range(max_transient_retries + 1):
             if remaining < 1:
                 raise TimeoutError(f"{stage} exceeded its retry budget")
@@ -158,14 +167,23 @@ class AnthropicVerifiedJsonClient:
                     output_config={
                         "format": {
                             "type": "json_schema",
-                            "schema": stage_output_schema(stage),
+                            "schema": schema,
                         }
                     },
                 )
                 break
             except Exception as error:
-                elapsed_seconds = time.monotonic() - started
+                attempt_finished = time.monotonic()
+                elapsed_seconds = attempt_finished - started
                 remaining = max(0, int(timeout_seconds - elapsed_seconds))
+                self.call_metrics.append({
+                    'stage': stage, 'scope': scope, 'configured_model': configured_model,
+                    'model': None, 'attempt': attempt + 1, 'status': 'failed',
+                    'usage': {}, 'usage_available': False,
+                    'elapsed_ms': int((attempt_finished - attempt_started) * 1000),
+                    'exception_type': type(error).__name__, 'status_code': getattr(error, 'status_code', None),
+                    'max_output_tokens': max_output_tokens,
+                })
                 self._emit_failure_diagnostic(
                     stage=stage,
                     attempt=attempt + 1,
@@ -179,8 +197,28 @@ class AnthropicVerifiedJsonClient:
                     raise
                 if remaining < 1:
                     raise self._retry_budget_error(stage, error) from error
+                attempt_started = attempt_finished
         if response is None:
             raise RuntimeError(f"No response returned for {stage}")
+        usage = getattr(response, 'usage', None)
+        counts = {}
+        for name in ('input_tokens', 'output_tokens', 'cache_read_input_tokens', 'cache_creation_input_tokens'):
+            value = usage.get(name) if isinstance(usage, dict) else getattr(usage, name, None)
+            if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
+                counts[name] = min(value, 99_999_999)
+        actual_model = getattr(response, 'model', None)
+        model = actual_model if isinstance(actual_model, str) and re.fullmatch(r'[a-zA-Z0-9_.-]{1,100}', actual_model) else configured_model
+        self.last_output_tokens = counts.get('output_tokens')
+        self.call_metrics.append({
+            'stage': stage, 'scope': scope, 'configured_model': configured_model,
+            'model': model, 'actual_model_available': bool(isinstance(actual_model, str) and re.fullmatch(r'[a-zA-Z0-9_.-]{1,100}', actual_model)),
+            'attempt': attempt + 1, 'status': 'returned',
+            'stop_reason': getattr(response, 'stop_reason', 'unknown') if getattr(response, 'stop_reason', '') in {'end_turn', 'max_tokens', 'refusal', 'stop_sequence'} else 'unknown',
+            'usage': counts, 'usage_available': bool(counts),
+            'elapsed_ms': int((time.monotonic() - attempt_started) * 1000),
+            'timeout_seconds': timeout_seconds, 'max_output_tokens': max_output_tokens,
+            'thinking': self._thinking_off()['type'],
+        })
         content = getattr(response, "content", None)
         if not isinstance(content, list) or not content:
             raise ValueError(f"{stage} returned no text content")

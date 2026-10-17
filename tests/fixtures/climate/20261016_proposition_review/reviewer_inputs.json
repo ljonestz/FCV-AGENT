@@ -1,0 +1,271 @@
+{
+  "fixture_version": "proposition-review-v1",
+  "synthetic": true,
+  "note": "Manually decomposed synthetic contrast cases. No real project evidence or model-generated judgments. Offsets are zero-based Python character indices; end is exclusive.",
+  "cases": [
+    {
+      "case_id": "C04",
+      "sentence_id": "C04-S01",
+      "sentence": "The project plans a care centre; the project plans sex-disaggregated jobs indicators; the project documents an exclusion-specific safeguard.",
+      "propositions": [
+        {
+          "proposition_id": "C04-P01",
+          "span_start": 0,
+          "span_end": 31,
+          "quoted_text": "The project plans a care centre"
+        },
+        {
+          "proposition_id": "C04-P02",
+          "span_start": 33,
+          "span_end": 84,
+          "quoted_text": "the project plans sex-disaggregated jobs indicators"
+        },
+        {
+          "proposition_id": "C04-P03",
+          "span_start": 86,
+          "span_end": 139,
+          "quoted_text": "the project documents an exclusion-specific safeguard"
+        }
+      ],
+      "source_registry": {
+        "S2": "SYNTHETIC: The project plans a care centre and sex-disaggregated jobs indicators. It identifies exclusion of vulnerable groups as a social risk and lists general environmental and social instruments. No exclusion-specific measure is described in this source."
+      }
+    },
+    {
+      "case_id": "C09",
+      "sentence_id": "C09-S01",
+      "sentence": "Most recorded displacement was caused by climate-related disasters.",
+      "propositions": [
+        {
+          "proposition_id": "C09-P01",
+          "span_start": 0,
+          "span_end": 66,
+          "quoted_text": "Most recorded displacement was caused by climate-related disasters"
+        }
+      ],
+      "source_registry": {
+        "S5": "SYNTHETIC: Climate-related disasters caused 92 percent of recorded displacement; other causes accounted for the remaining 8 percent."
+      }
+    },
+    {
+      "case_id": "C02",
+      "sentence_id": "C02-S01",
+      "sentence": "The project plans climate-smart farm support; the border posts are already operational.",
+      "propositions": [
+        {
+          "proposition_id": "C02-P01",
+          "span_start": 0,
+          "span_end": 44,
+          "quoted_text": "The project plans climate-smart farm support"
+        },
+        {
+          "proposition_id": "C02-P02",
+          "span_start": 46,
+          "span_end": 86,
+          "quoted_text": "the border posts are already operational"
+        }
+      ],
+      "source_registry": {
+        "S1": "SYNTHETIC: The project plans climate-smart farm support. Construction of the border posts is planned; the posts are not yet operational."
+      }
+    },
+    {
+      "case_id": "C11",
+      "sentence_id": "C11-S01",
+      "sentence": "The design identifies transport costs as a barrier; the project should offer transport grants.",
+      "propositions": [
+        {
+          "proposition_id": "C11-P01",
+          "span_start": 0,
+          "span_end": 50,
+          "quoted_text": "The design identifies transport costs as a barrier"
+        },
+        {
+          "proposition_id": "C11-P02",
+          "span_start": 52,
+          "span_end": 93,
+          "quoted_text": "the project should offer transport grants"
+        }
+      ],
+      "source_registry": {
+        "S6": "SYNTHETIC: The design identifies transport costs as a barrier. No transport grant has been approved. Introducing one is a possible design change."
+      }
+    },
+    {
+      "case_id": "C05",
+      "sentence_id": "C05-S01",
+      "sentence": "The project provides an accessible grievance channel; its effectiveness in preventing exclusion is unknown.",
+      "propositions": [
+        {
+          "proposition_id": "C05-P01",
+          "span_start": 0,
+          "span_end": 52,
+          "quoted_text": "The project provides an accessible grievance channel"
+        },
+        {
+          "proposition_id": "C05-P02",
+          "span_start": 54,
+          "span_end": 106,
+          "quoted_text": "its effectiveness in preventing exclusion is unknown"
+        }
+      ],
+      "source_registry": {
+        "S3": "SYNTHETIC: The project provides an accessible grievance channel for excluded applicants. No outcome evaluation has been completed, so its effectiveness in preventing exclusion is unknown."
+      }
+    },
+    {
+      "case_id": "C08",
+      "sentence_id": "C08-S01",
+      "sentence": "Regional activities continue at retained sites; all traders near cancelled sites have lost access to benefits.",
+      "propositions": [
+        {
+          "proposition_id": "C08-P01",
+          "span_start": 0,
+          "span_end": 46,
+          "quoted_text": "Regional activities continue at retained sites"
+        },
+        {
+          "proposition_id": "C08-P02",
+          "span_start": 48,
+          "span_end": 109,
+          "quoted_text": "all traders near cancelled sites have lost access to benefits"
+        }
+      ],
+      "source_registry": {
+        "S4": "SYNTHETIC: Regional activities continue at retained sites. The source does not establish whether traders near cancelled sites can access those activities."
+      }
+    },
+    {
+      "case_id": "C01",
+      "sentence_id": "C01-S01",
+      "sentence": "The project plans climate-smart farm support; the border posts are planned for construction.",
+      "propositions": [
+        {
+          "proposition_id": "C01-P01",
+          "span_start": 0,
+          "span_end": 44,
+          "quoted_text": "The project plans climate-smart farm support"
+        },
+        {
+          "proposition_id": "C01-P02",
+          "span_start": 46,
+          "span_end": 91,
+          "quoted_text": "the border posts are planned for construction"
+        }
+      ],
+      "source_registry": {
+        "S1": "SYNTHETIC: The project plans climate-smart farm support. Construction of the border posts is planned; the posts are not yet operational."
+      }
+    },
+    {
+      "case_id": "C12",
+      "sentence_id": "C12-S01",
+      "sentence": "The design identifies transport costs as a barrier; the project provides transport grants.",
+      "propositions": [
+        {
+          "proposition_id": "C12-P01",
+          "span_start": 0,
+          "span_end": 50,
+          "quoted_text": "The design identifies transport costs as a barrier"
+        },
+        {
+          "proposition_id": "C12-P02",
+          "span_start": 52,
+          "span_end": 89,
+          "quoted_text": "the project provides transport grants"
+        }
+      ],
+      "source_registry": {
+        "S6": "SYNTHETIC: The design identifies transport costs as a barrier. No transport grant has been approved. Introducing one is a possible design change."
+      }
+    },
+    {
+      "case_id": "C03",
+      "sentence_id": "C03-S01",
+      "sentence": "The project plans a care centre; the project plans sex-disaggregated jobs indicators; the project identifies vulnerable-group exclusion as a risk.",
+      "propositions": [
+        {
+          "proposition_id": "C03-P01",
+          "span_start": 0,
+          "span_end": 31,
+          "quoted_text": "The project plans a care centre"
+        },
+        {
+          "proposition_id": "C03-P02",
+          "span_start": 33,
+          "span_end": 84,
+          "quoted_text": "the project plans sex-disaggregated jobs indicators"
+        },
+        {
+          "proposition_id": "C03-P03",
+          "span_start": 86,
+          "span_end": 145,
+          "quoted_text": "the project identifies vulnerable-group exclusion as a risk"
+        }
+      ],
+      "source_registry": {
+        "S2": "SYNTHETIC: The project plans a care centre and sex-disaggregated jobs indicators. It identifies exclusion of vulnerable groups as a social risk and lists general environmental and social instruments. No exclusion-specific measure is described in this source."
+      }
+    },
+    {
+      "case_id": "C10",
+      "sentence_id": "C10-S01",
+      "sentence": "All recorded displacement was caused by climate-related disasters.",
+      "propositions": [
+        {
+          "proposition_id": "C10-P01",
+          "span_start": 0,
+          "span_end": 65,
+          "quoted_text": "All recorded displacement was caused by climate-related disasters"
+        }
+      ],
+      "source_registry": {
+        "S5": "SYNTHETIC: Climate-related disasters caused 92 percent of recorded displacement; other causes accounted for the remaining 8 percent."
+      }
+    },
+    {
+      "case_id": "C07",
+      "sentence_id": "C07-S01",
+      "sentence": "Regional activities continue at retained sites; traders near cancelled sites may lose access to benefits.",
+      "propositions": [
+        {
+          "proposition_id": "C07-P01",
+          "span_start": 0,
+          "span_end": 46,
+          "quoted_text": "Regional activities continue at retained sites"
+        },
+        {
+          "proposition_id": "C07-P02",
+          "span_start": 48,
+          "span_end": 104,
+          "quoted_text": "traders near cancelled sites may lose access to benefits"
+        }
+      ],
+      "source_registry": {
+        "S4": "SYNTHETIC: Regional activities continue at retained sites. The source does not establish whether traders near cancelled sites can access those activities."
+      }
+    },
+    {
+      "case_id": "C06",
+      "sentence_id": "C06-S01",
+      "sentence": "The project provides an accessible grievance channel; the channel has eliminated exclusion.",
+      "propositions": [
+        {
+          "proposition_id": "C06-P01",
+          "span_start": 0,
+          "span_end": 52,
+          "quoted_text": "The project provides an accessible grievance channel"
+        },
+        {
+          "proposition_id": "C06-P02",
+          "span_start": 54,
+          "span_end": 90,
+          "quoted_text": "the channel has eliminated exclusion"
+        }
+      ],
+      "source_registry": {
+        "S3": "SYNTHETIC: The project provides an accessible grievance channel for excluded applicants. No outcome evaluation has been completed, so its effectiveness in preventing exclusion is unknown."
+      }
+    }
+  ]
+}

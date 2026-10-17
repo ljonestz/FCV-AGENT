@@ -1,0 +1,271 @@
+CONTINUATION / TAKEOVER HANDOVER: FCV-AGENT CLIMATE CLAIM-ADJUDICATION
+Prepared 2026-10-16. Read this entire file before acting. Do not restart the
+investigation, repeat paid runs, deploy, merge, or claim production readiness.
+This supersedes the direction (not the constraints) of 20261015_climate-next-
+session-handover.txt; that file's spending/parity/operational rules still apply.
+
+==============================================================================
+0. ONE-PARAGRAPH SITUATION
+==============================================================================
+We are trying to make Climate-FCV review reliably DETECT factual errors without
+suppressing valid qualified analysis. Prior work established that the model is
+reliable when a candidate claim is PRESENTED for judgement but unreliable when
+asked to VOLUNTEER defects (a recall collapse). This session built an offline
+"enumerate -> adjudicate" harness that converts detection into per-claim
+judgement (the mode the model does well), ran ONE authorized bounded paid test
+(it FAILED for a now-understood structural reason), fixed that reason offline
+(v2, coverage-forced), and verified v2 offline. The next action is to EXECUTE the
+prepared v2 call on the Render service and score it. Detection is NOT yet proven.
+
+==============================================================================
+1. OBJECTIVE AND USER PREFERENCES
+==============================================================================
+- Deliver reliable Climate-FCV factual-error detection that preserves valid
+  qualified inference and proposed actions. Correct specific factual errors;
+  do not reject whole outputs over optional wording. Small length overruns are
+  unimportant vs analytical quality.
+- The user has spent many days / many paid runs. Another blind prompt-tune/retest
+  loop is NOT an acceptable plan. Think first; change the failure mechanism.
+- Act on sensible defaults; only stop before (a) spending money / outward actions
+  or (b) severe security/destructive ops. A bounded paid call is a money action
+  and needs explicit, per-run, fresh approval (the user approved the v1 run and a
+  single v2 call; do not generalize beyond that).
+- Never claim production/ITS readiness. publication_approved stays false. Do not
+  create a "production-ready" ITS handover; success has NOT occurred.
+
+==============================================================================
+2. WORKSPACE AND GIT
+==============================================================================
+Repo:     C:/Users/wb559324/OneDrive - WBG/Documents/GitHub/FCV-AGENT
+Worktree: .../FCV-AGENT/.worktrees/climate-opcs-parity   (USE THIS)
+Branch:   fix/climate-opcs-parity   Draft PR83: github.com/ljonestz/FCV-AGENT/pull/83
+Preserve branch + worktree. Do not merge/deploy. output/ and
+tests/test_climate_final_reader.py are intentionally UNSTAGED; do not sweep them in.
+Raw model responses, browser logs and real source text stay OUT of git.
+
+Commits added this session (newest last):
+  80abdd7 feat: enumerate-then-adjudicate harness for claim detection
+  e45663c feat: require entailing source quote for supported factual claims
+  3e14d6a docs: record failed first enumerate-adjudicate bounded run
+  9c2ec3d docs: note v2 coverage-forced request prepared for next run
+Committed files of interest:
+  scripts/climate_claim_adjudication_harness.py          (the harness)
+  tests/test_climate_claim_adjudication_harness.py       (13 tests, all pass)
+  docs/20261015_climate-claim-adjudication-decision.md   (diagnosis + design)
+  docs/20261015_climate-claim-adjudication-run-results.md (v1 failure + v2 note)
+Earlier prototype (prior session, committed): edb8444 + 3583607; prototype at
+  scripts/climate_claim_repair_prototype.py (+ its tests). The harness REUSES its
+  validated primitives (ContractError, _digest, _unique_quote, _sources,
+  _reader_records, _validate_source_checks) and feeds its repair pipeline.
+
+==============================================================================
+3. DIAGNOSIS (why detection failed before) -- do not relitigate
+==============================================================================
+Evidence (saved under output/, from prior session):
+- The 34-source registry DOES contain the contradicting facts.
+- The SAME registry let an adjudication call correctly reason about the exact
+  defective claim when it was PRESENTED (prior "call 2").
+- A full-context reviewer earlier FOUND both defects before the conservative
+  reframing; the conservative "find defects" reframing then returned EMPTY.
+Conclusion: recall collapse from fusing detection + precision into one
+conservative "volunteer the defects" prompt; the empty set is the cheapest
+compliant answer. Fix = stop volunteering; judge every enumerated claim.
+
+==============================================================================
+4. WHAT WAS BUILT (committed, offline, test-driven)
+==============================================================================
+scripts/climate_claim_adjudication_harness.py:
+  - enumerate_claims(reader) -> deterministic sentence-level claim inventory
+    (claim_id = "<object_id>#p<para>#s<sent>"); no judgement, so no empty-set
+    escape hatch.
+  - adjudicate_claims(inventory, source_registry, adjudication) -> validates a
+    per-claim judgement and emits the existing repair-pipeline "review". Enforces:
+    every claim judged exactly once (coverage); a contradicted/not_established
+    FACTUAL assertion MUST be a defect (closes recall hatch); a supported claim
+    cannot be a defect; a supported factual_assertion MUST cite >=1 exact
+    entailing source quote (closes the "mark all supported" hatch); defect spans
+    must be unique substrings; source_ids must exist; qualified inference /
+    proposed actions may be non-defects and may omit support quotes (preserves
+    valid analysis).
+  - score_against_expected(result, expected) -> {passed, missed_defects,
+    false_positives}. passed = all true defects found AND zero false positives.
+Tests: tests/test_climate_claim_adjudication_harness.py (13, all green with the
+prototype + replay suites: 27 passed). Design rationale in the decision doc.
+
+==============================================================================
+5. THE FROZEN REAL CASE (uncommitted, in output/)
+==============================================================================
+Built by output/20261015_claim_adjudication_realcase_prep.py from the saved
+Great Lakes 5-record reader; written to
+output/20261015-claim-adjudication-realcase/:
+  inventory.json  30 enumerated claims across SUM-001, SUM-002, NARR-design,
+                  NARR-dividends, NARR-inclusion.
+  sources.json    34 source passages (real project text; keep out of git).
+  expected.json   TRUE DEFECTS (must be found):
+                    NARR-dividends p0  fragment "immediate benefit"
+                      (claim NARR-dividends#p0#s0: planned facilities described
+                       as an immediate/flood-ready benefit)
+                    NARR-inclusion p0  fragment "safeguards against vulnerable
+                      group exclusion" (claim NARR-inclusion#p0#s2: generic ESF
+                      instruments described as exclusion-specific safeguard)
+                  PROTECTED (must NOT be flagged -- valid analysis):
+                    SUM-002 p0 "most displacement attributed to climate-related
+                      disasters" (faithful weaker paraphrase of 92 percent)
+                    NARR-inclusion p1 "may lose access to benefits" (valid
+                      qualified access question)
+                    NARR-design p1 "is not stated" (valid qualified inference)
+ACCEPTANCE: harness.score_against_expected(result, expected)['passed'] is True.
+
+==============================================================================
+6. THE V1 PAID RUN -- FAILED (do not repeat as-is)
+==============================================================================
+One authorized call on the Render service (model claude-sonnet-5-5, adaptive/high
+thinking, 8192 cap, 180s, max_retries=0). end_turn. 16,214 in / 5,735 out tokens.
+Result: returned 1 of 30 judgments, verdict supported, EMPTY placeholder
+source_id/quoted_text, 0 defects, both true defects MISSED. Response sha256
+713e0709a937752e22923162f9519c9fbf3492e3c0f3322bf4ba3b89ced4c5c5.
+The harness CORRECTLY rejected it (empty source_id; 1/30 coverage). Root cause:
+the v1 list schema had no coverage floor, so the model satisfied it trivially with
+one placeholder and stopped (the handover's exact "mandatory fields != semantic
+completeness" warning). Inconclusive about detection ability; the request did not
+force coverage. v1 artifacts (stale) remain in output/20261015-claim-
+adjudication-preflight/ (response.json, the OLD response_blob.txt, result.json).
+
+==============================================================================
+7. THE V2 REQUEST -- PREPARED, VERIFIED OFFLINE, UNSENT (RUN THIS NEXT)
+==============================================================================
+Fix: force full coverage structurally. The adjudication schema is now a
+KEYED-OBJECT: judgments is an object whose REQUIRED keys are all 30 claim_ids, so
+the model must return a judgment for every claim (cannot collapse to one). Empty /
+fabricated quotes are still blocked (minLength + exact-substring checks). The
+committed harness is unchanged (list-based, already coverage-checked); the decode
+script converts the keyed object to a list before validating.
+
+Built by (offline, re-runnable):
+  output/20261015_claim_adjudication_preflight_prep.py   -> prompt.txt, schema.json,
+       manifest.json, README.txt  (in output/20261015-claim-adjudication-preflight/)
+  output/20261015_claim_adjudication_build_command.py    -> run_command.sh (the
+       single-line, CRLF-safe, self-contained on-service command) + run_command_meta.json
+Config: claude-sonnet-5-5, adaptive/high, max_tokens 16384, timeout 300s,
+max_retries=0, ONE call. Fresh job dir /tmp/fcv-claim-adjudication-20261015-v2
+(the v1 lock would otherwise block a same-name rerun).
+Fingerprints: prompt_sha256 9a347a524c25b57aa5366b81f43401a394df6f7c841501d6baa5fbad8fe6c040
+              schema_sha256 c2ea08ef3eba194034fc44ea48fff591e4f3a6b5a2d82776da1af920ee9e44a7
+              bundle_sha256 f8da42e954247cb1b24ff616814cc4736858717dd8a5f72aa467a9541de4f30a
+              command length 30668 chars.
+Offline verification done: a full 30-key oracle response finds both true defects
+and scores passed=True; an under-covered response is rejected by the harness.
+The command verifies prompt+bundle checksums BEFORE any API call and creates a
+one-run lock, so a corrupted/partial paste CANNOT spend and cannot double-run.
+
+==============================================================================
+8. HOW TO EXECUTE THE V2 CALL (credentials live ONLY on the Render service)
+==============================================================================
+Never run the provider call locally and never extract credentials. The call must
+run inside the Render service using its existing ANTHROPIC_API_KEY env var.
+Render service: srv-d6de99jh46gs73d0jjrg (FCV-AGENT), region oregon.
+Channels tried / status:
+  - Render MCP: NO shell/exec tool. The only exec path is creating a cron/job
+    service = a deploy (forbidden) + would need the payload/key. Not usable.
+  - SSH (srv-...@ssh.oregon.render.com): no SSH public key is registered on the
+    service, and the auto-mode classifier blocks remote-shell-into-prod. Not usable
+    unless the user sets up a key AND explicitly authorizes it.
+  - Render dashboard Web Shell (xterm) at
+    dashboard.render.com/web/srv-d6de99jh46gs73d0jjrg/shell : THIS is the working
+    channel, but claude-in-chrome could NOT reliably drive it: the shell websocket
+    keeps the page non-idle so CDP injection times out; navigator.clipboard
+    .readText() hangs; synthetic Ctrl+V does not reach xterm; typing 30KB is
+    impractical. So a HUMAN or Codex must paste into that shell.
+Recommended execution (human/Codex, in the authenticated Web Shell):
+  1. Load the command to clipboard (from the worktree):
+       cat "output/20261015-claim-adjudication-preflight/run_command.sh" | clip
+     (or open it: notepad "output/.../run_command.sh", Ctrl+A, Ctrl+C)
+  2. In the Web Shell FIRST run:  bind 'set enable-bracketed-paste off'
+     (without this, a 30KB paste leaks xterm bracketed-paste markers \E[200~ /
+     ~ and the command breaks into pieces -- observed and harmless, no spend).
+  3. Paste (right-click->Paste or Ctrl+Shift+V; plain Ctrl+V is ignored by xterm),
+     confirm the line ends "... | base64 -d | python3", press Enter. Wait up to
+     ~2-3 min. It prints ADJDIR, ADJSHA, usage, and a long ADJBEGIN...ADJEND line.
+  4. Copy the WHOLE terminal output into
+       output/20261015-claim-adjudication-preflight/response_blob.txt
+     REPLACING the stale v1 contents.
+
+==============================================================================
+9. HOW TO DECODE AND SCORE (offline, after the run)
+==============================================================================
+Run:
+  C:/WBG/Python313/python.exe -X utf8 \
+    output/20261015_claim_adjudication_decode_score.py
+It extracts the ADJBEGIN...ADJEND blob from response_blob.txt, verifies the
+response sha, converts the keyed judgments object to the list form, validates with
+the committed harness (adjudicate_claims) and scores it (score_against_expected),
+writing output/20261015-claim-adjudication-preflight/result.json and printing
+{passed, missed_defects, false_positives}.
+INTERPRETATION:
+  passed True  -> detection worked on this one case: both true defects found, zero
+                  false positives, full coverage, valid evidence. This is ONE
+                  sample, not a reliability estimate. Record it; do NOT claim
+                  production readiness.
+  passed False or harness ContractError -> a negative result. Read WHY (missed
+    defect? false positive on protected analysis? bad coverage/quote?). Do NOT
+    blindly retry. If the model again under-produces or placeholder-fills despite
+    the keyed schema, the next design move is batching (adjudicate claims in small
+    groups or one-per-call) and/or isolating the adaptive-thinking vs json_schema
+    interaction -- all OFFLINE first, then one bounded call with fresh approval.
+
+==============================================================================
+10. SPENDING, AUTHORITY, OPERATIONS
+==============================================================================
+- One v2 call only. No retries. Fresh explicit approval is required before ANY
+  further paid call beyond the single approved v2 run. No full assessment is
+  justified. Do not resubmit v1 or older start scripts.
+- No deploy, no merge, no app/settings change. Deployed SHA last verified
+  1168a8f2ab2af0bcc6a3a174c4b2eeacd9403205 (do not change it).
+- Before shared Render/ITS changes read C:/Users/wb559324/.claude/FCV_BUILD_PARITY.md.
+
+==============================================================================
+11. DIRECTION AFTER THE V2 RESULT
+==============================================================================
+If v2 PASSES: that validates reader-level detection on one case only. Still
+unaccepted before any release: automatic editor behaviour, core-recommendation
+review, end-to-end cost/latency, UI, HTML/DOCX exports, and -- critically --
+enumeration recall (did we list every claim? the model cannot self-certify this).
+Recommend a SUPERVISED pilot with a human factual-review gate, not autonomous
+release. Expand the frozen case set (more true defects, more valid-analysis decoys)
+and test coverage on additional readers before trusting it.
+If v2 FAILS: see section 9 (batching / thinking-interaction), offline first.
+Either way: keep exact scoped edits, source-linked adjudication and untouched
+evidence; freeze expected cases before any model test; never change expected labels
+just to make an output pass.
+
+==============================================================================
+12. ENVIRONMENT QUIRKS (Windows / OneDrive) -- expect these
+==============================================================================
+- Python: C:/WBG/Python313/python.exe -X utf8
+- The Edit AND Bash tools intermittently lose results here ("[Tool result missing
+  due to internal error]"); the Edit tool sometimes silently no-ops. After any
+  lost result, VERIFY state out-of-band (Grep/git/re-read) before continuing.
+- Never whole-file Set-Content rewrite a large file on the OneDrive path. New-file
+  writes via the Write tool or atomic Python writes are safe.
+- git add + commit must be in ONE chained call (staging is lost between calls).
+- rg.exe is blocked; use Grep tool / git ls-files / Select-String.
+- Do not commit Co-Authored-By trailers.
+
+==============================================================================
+13. KEY PATHS (all relative to the worktree unless absolute)
+==============================================================================
+Harness:        scripts/climate_claim_adjudication_harness.py
+Harness tests:  tests/test_climate_claim_adjudication_harness.py
+Prototype:      scripts/climate_claim_repair_prototype.py
+Decision doc:   docs/20261015_climate-claim-adjudication-decision.md
+Results doc:    docs/20261015_climate-claim-adjudication-run-results.md
+Realcase build: output/20261015_claim_adjudication_realcase_prep.py
+Preflight build:output/20261015_claim_adjudication_preflight_prep.py   (v2)
+Command build:  output/20261015_claim_adjudication_build_command.py     (v2)
+Decode/score:   output/20261015_claim_adjudication_decode_score.py
+Run command:    output/20261015-claim-adjudication-preflight/run_command.sh (v2)
+Frozen target:  output/20261015-claim-adjudication-realcase/{inventory,sources,expected}.json
+Response (fill):output/20261015-claim-adjudication-preflight/response_blob.txt
+Prior handover: 20261015_climate-next-session-handover.txt (constraints still apply)
+
+END.

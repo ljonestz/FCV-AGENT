@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import base64
 from io import BytesIO
+from pathlib import Path
 
 import pytest
 from docx import Document
 
-from app import extract_docx_content
+from app import extract_docx_content, extract_pdf_text
 from sector_lenses.climate_verified_runtime import (
     PreparedClimateSources,
     prepare_verified_sources,
@@ -234,7 +235,7 @@ def test_runtime_preserves_candidate_preview_and_uses_grounding_adapter(monkeypa
             "judgments": {
                 "relevance": {"value": "high", "rationale": "Material."},
                 "sensitivity": {"value": "moderate", "rationale": "Partial."},
-                "responsiveness": {"value": "emerging", "rationale": "Emerging."},
+                "responsiveness": {"value": "moderate", "rationale": "Emerging."},
                 "operationalization": {"value": "partial", "rationale": "Partial."},
             },
             "priorities": [],
@@ -305,7 +306,7 @@ def test_runtime_blocks_reader_integrity_failure(monkeypatch):
             "judgments": {
                 "relevance": {"value": "high", "rationale": "Material."},
                 "sensitivity": {"value": "moderate", "rationale": "Partial."},
-                "responsiveness": {"value": "emerging", "rationale": "Emerging."},
+                "responsiveness": {"value": "moderate", "rationale": "Emerging."},
                 "operationalization": {"value": "partial", "rationale": "Partial."},
             },
             "priorities": [],
@@ -410,6 +411,68 @@ def test_mpa_retains_wrapper_and_routes_through_unique_base_instrument():
     assert context.document_type == "Project Paper"
 
 
+@pytest.mark.parametrize("statement", [
+    "The Project Development Objective of MPA Phase 1 is to improve access.",
+    "The proposed operation is the second phase of a Multiphase Programmatic Approach.",
+    "This project forms part of the MPA.",
+])
+def test_mpa_self_description_after_cover_context_is_detected(statement):
+    context = _resolved_context(
+        "Project Information Document.pdf",
+        "Investment Project Financing (IPF)\n\n"
+        + ("Country context describes transport constraints. " * 220)
+        + "\n\n" + statement,
+    )
+    assert context.is_mpa is True
+    assert context.instrument_type == "IPF"
+
+
+@pytest.mark.parametrize("statement", [
+    "Another project is the first phase of an MPA.",
+    "This project builds on lessons from an earlier MPA.",
+    "This project is not part of an MPA.",
+    "The project may become part of an MPA in future.",
+])
+def test_late_mpa_reference_does_not_reclassify_current_operation(statement):
+    context = _resolved_context(
+        "Project Information Document.pdf",
+        "Investment Project Financing (IPF)\n\n"
+        + ("Country context describes transport constraints. " * 220)
+        + "\n\n" + statement,
+    )
+    assert context.is_mpa is False
+
+
+def test_somalia_live_acceptance_pdf_retains_mpa_and_ipf_guidance():
+    from sector_lenses.climate_operational_guidance import select_operational_guidance
+
+    path = Path(__file__).resolve().parents[1] / "test_documents" / "live_acceptance" / (
+        "somalia-stairp-p513127-concept-pid-20260207.pdf"
+    )
+    text, pages = extract_pdf_text(base64.b64encode(path.read_bytes()).decode(), path.name)
+    assert pages > 0
+    context = _resolved_context(path.name, text)
+    assert context.document_type == "PID"
+    assert context.instrument_type == "IPF"
+    assert context.is_mpa is True
+    guidance = select_operational_guidance(
+        doc_type=context.document_type,
+        instrument_type=context.instrument_type,
+        is_mpa=context.is_mpa,
+    )
+    assert "GUIDE-MPA-PROGRAM-LAYER" in {entry.guidance_id for entry in guidance}
+
+
+def test_supporting_document_mpa_does_not_reclassify_primary_operation():
+    prepared = prepare_verified_sources([
+        {"label": "PROJECT DOCUMENT", "name": "PID.pdf",
+         "raw_text": "Investment Project Financing (IPF). Standalone project."},
+        {"label": "CONTEXT DOCUMENT", "name": "MPA lessons.pdf",
+         "raw_text": "This project is the first phase of an MPA."},
+    ])
+    assert resolve_verified_operation_context(prepared).is_mpa is False
+
+
 def test_pforr_with_ipf_component_keeps_pforr_as_base_instrument():
     context = _resolved_context(
         "Hybrid PforR Program Paper.docx",
@@ -436,13 +499,13 @@ def test_explicit_regional_operation_is_multi_country_and_withholds_single_count
     assert "MULTI_COUNTRY_BANK_WITHHELD" in context.warning_codes
 
 
-def test_new_model_document_marker_sets_preparation_model_without_inventing_processing_model():
+def test_project_paper_title_alone_does_not_establish_preparation_model():
     context = _resolved_context(
         "IPF Project Paper.docx",
         "Project Paper\nInvestment Project Financing.",
     )
 
-    assert context.preparation_regime == "new_model"
+    assert context.preparation_regime == "unresolved_policy_source"
     assert context.processing_model == "unknown"
 
 
@@ -477,7 +540,7 @@ def test_explicit_ois_date_overrides_dpf_program_document_regime_marker():
     assert context.instrument_type == "DPF"
     assert context.document_type == "Program Document"
     assert context.preparation_regime == "legacy_transitional"
-    assert "PREPARATION_MARKER_DATE_CONFLICT" in context.warning_codes
+    assert "PREPARATION_MARKER_DATE_CONFLICT" not in context.warning_codes
 
 
 def test_structured_financing_field_outranks_incidental_instrument_mentions():
@@ -706,3 +769,20 @@ def test_production_doc_parts_structured_ipf_outranks_incidental_pforr_label():
         for block in prepared.structured_fields
     )
     assert all(block.field_name is None for block in prepared.blocks)
+
+
+def test_reader_failure_preserves_paid_result_only_as_diagnostics(monkeypatch):
+    from sector_lenses.climate_verified_runtime import ClimateReaderIntegrityError
+    failed = {"schema_version": "climate-verified-v2.1", "run_id": "failed-result",
+              "executive_readout": "UNAPPROVED_RAW_MARKER", "priorities": [],
+              "validation": {"status": "attention"}}
+    monkeypatch.setattr("sector_lenses.climate_verified_runtime.run_verified_climate_pipeline",
+                        lambda **kwargs: failed)
+    with pytest.raises(ClimateReaderIntegrityError) as caught:
+        run_verified_from_doc_parts(doc_parts=_doc_parts(), climate_grounding={},
+                                   clients=object(), run_id="failed-result")
+    assert "UNAPPROVED_RAW_MARKER" not in str(caught.value)
+    payload = caught.value.diagnostic_payload
+    assert payload["diagnostic_only"] is True
+    assert payload["assessment"]["executive_readout"] == "UNAPPROVED_RAW_MARKER"
+    assert "EXECUTIVE_LENGTH_INVALID" in payload["reason_codes"]

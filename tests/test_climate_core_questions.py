@@ -95,7 +95,7 @@ def test_reader_model_carries_core_questions_and_sensitivity_rating():
     assert rating["scale"] == [
         "Very Limited", "Limited", "Moderate", "Strong", "Very Strong",
     ]
-    assert "sensitive" in rating["question"].lower()
+    assert "recognize and address interacting" in rating["question"].lower()
     assert rating["caveat"]
 
 
@@ -114,37 +114,36 @@ def test_sensitivity_rating_maps_each_value():
         assert (rating["label"], rating["level"]) == (label, level)
 
 
-def test_core_questions_render_in_html_and_docx():
+def test_core_questions_stay_internal_to_simplified_exports():
     model = build_reader_model(_assessment_with_core_questions())
     html = render_reader_html(model)
-    assert "Core climate-FCV questions" in html
-    assert "How sensitive is this project to climate and FCV considerations?" in html
+    assert "Core climate-FCV questions" not in html
+    assert "How well does the project recognize and address interacting climate and FCV risks?" in html
     assert ">Strong<" in html and "Moderate" in html and "Limited" in html  # scale
-    assert "Is infrastructure sized for future climate conditions?" in html
-    assert "For further insights on why this matters" in html
+    assert "Is infrastructure sized for future climate conditions?" not in html
+    assert "For further insights on why this matters" not in html
     # Watch notes are relocated to the standalone Watch section (no inline line).
-    assert "What to keep an eye on" in html
+    assert "What to keep an eye on" not in html
     assert "What to watch" not in html
     assert "The tool's overall reads" not in html  # old strip removed
     stream = BytesIO()
     write_reader_docx(model, stream)
     stream.seek(0)
-    text = "\n".join(p.text for p in Document(stream).paragraphs)
-    assert "Core climate-FCV questions" in text
-    assert "How sensitive is this project" in text
-    assert "Rating: Strong" in text
-    assert "Is infrastructure sized for future climate conditions?" in text
+    document = Document(stream)
+    text = "\n".join([p.text for p in document.paragraphs] + [cell.text for table in document.tables for row in table.rows for cell in row.cells])
+    assert "Core climate-FCV questions" not in text
+    assert "How well does the project recognize and address" in text
+    assert "Strong (4 of 5)" in text
+    assert "Is infrastructure sized for future climate conditions?" not in text
 
 
-def test_core_question_summary_renders_as_paragraphs():
+def test_core_question_summary_is_preserved_in_internal_reader():
     assessment = _assessment_with_core_questions()
-    assessment["core_questions"][0]["summary"] = "First paragraph here.\n\nSecond paragraph here."
-    html = render_reader_html(build_reader_model(assessment))
-    assert "First paragraph here." in html and "Second paragraph here." in html
-    assert html.count("First paragraph here.") == 1
-    # Two separate <p> blocks, not one run-on.
-    assert "First paragraph here.</p>" in html
-    assert "Second paragraph here." in html
+    text = "First paragraph here.\n\nSecond paragraph here."
+    assessment["core_questions"][0]["summary"] = text
+    model = build_reader_model(assessment)
+    assert model["core_questions"][0]["summary"] == text
+    assert "First paragraph here." not in render_reader_html(model)
 
 
 def test_reader_without_core_questions_still_renders():
@@ -154,7 +153,7 @@ def test_reader_without_core_questions_still_renders():
     model = build_reader_model(assessment)
     assert model["core_questions"] == []
     html = render_reader_html(model)
-    assert "Core climate-FCV questions" in html
-    assert "How sensitive is this project" in html  # rating still shown
+    assert "Core climate-FCV questions" not in html
+    assert "How well does the project recognize and address" in html  # rating still shown
     stream = BytesIO()
     write_reader_docx(model, stream)  # must not raise

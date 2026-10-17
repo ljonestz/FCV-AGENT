@@ -20,6 +20,14 @@ def _fixture() -> dict:
     return json.loads(FIXTURE.read_text(encoding="utf-8"))
 
 
+def test_explicit_unavailable_selection_keeps_its_reason(tmp_path):
+    bank = load_climate_bank(_write(tmp_path, _fixture()))
+    for code in ("bank_country_unavailable", "bank_scope_unsupported"):
+        packet = materialize_bank_manifest(bank, {"bank_status": "unavailable", "warning_code": code})
+        assert packet["bank_status"] == "unavailable"
+        assert packet["warning_code"] == code
+
+
 def _write(tmp_path: Path, release: dict) -> Path:
     path = tmp_path / "runtime.json"
     path.write_text(json.dumps(release), encoding="utf-8")
