@@ -1,3 +1,20 @@
+### 2026-10-17 Reader calibration and visible action specificity
+
+User authorized whole-record reviewer calibration and closer alignment with normal
+FCV's concrete document-edit advice. Recommendation prompt v2.20 now leads the
+visible action paragraph with the current document, permitted section and specific
+project element to change. Reader review v1.11 checks qualifications across the
+record and the supplied source passage, while still rejecting invented premises,
+targeting and completed-status claims. No new gate, schema or renderer change.
+See docs/20261017_reader-calibration-and-action-specificity.md for the rationale,
+positive/negative calibration cases and visible-action evaluation criteria.
+No new paid call or deployment; the last real review remains revise. Publication
+approval remains false. Model behavior and end-to-end acceptance remain unproven.
+Verification: 1,790 tests passed in 446.80 seconds; the four previously hanging
+Chromium-driver tests were explicitly deselected. Focused checks first found only
+the expected recommendation-version assertion, updated and verified passing.
+Diff whitespace check passed. These checks do not prove improved model judgments.
+
 ### 2026-10-17 Saved reader meaning review
 
 See docs/20261017_reader-meaning-live-check.md. The single approved review ran:

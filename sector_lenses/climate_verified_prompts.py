@@ -446,6 +446,18 @@ plain, flowing prose (about 110-220 words), separated by a blank line.
 Make the action usable in document preparation: name the current document and
 the relevant section from operational_guidance.permitted_targets, then specify
 the decision, criterion, responsibility or evidence to add or revise there.
+Each action should identify one concrete document change, rather than a general
+topic for attention. In minimum_action and the opening sentence of the narrative's
+action paragraph, name the current document, permitted section and the specific
+project element to change: for example an evidenced selection criterion, component
+description, indicator definition or assignment of responsibility. State the
+content to add or revise and the decision it would inform. The visible narrative
+must stand alone; do not leave this specificity only in the drafting dropdown.
+Use direct task-team language such as 'Revise ... to explain ...', while making
+clear that this is advice rather than an existing commitment or mandatory rule.
+Choose the relevant edit for each recommendation, not the same checklist for all.
+Use permitted section labels as proposed destinations, not proof that those exact
+headings occur in the upload. Do not invent page numbers or subsection titles.
 Use source-backed project components, assets and locations where relevant. A bare
 instruction to clarify, strengthen or add a sentence is not enough: state what
 the clarification must resolve. Completion_evidence should describe the resulting
@@ -454,7 +466,12 @@ Distinguish the edit possible now from later design or appraisal work. Give late
 work a concrete dependency, such as site selection or design becoming available,
 only where relevant to the proposal; do not invent a review requirement or deadline.
 For a concept document, specify the design question and proposed preparation task
-without demanding completed appraisal detail. Where a review stage is unverified,
+without demanding completed appraisal detail. Describe the preparation decision
+or evidence dependency instead of assigning an unverified formal gate.
+Keep later work distinct from the current edit: say what design
+question it resolves and where its result would be used, only when supported.
+Do not turn document advice into detailed implementation procedures or require a
+new instrument merely to make an action sound specific. Where a review stage is unverified,
 omit generic gate language from individual recommendations; the report already
 states the overall routing limitation. These are drafting instructions, not extra
 admission gates or reasons to suppress a useful recommendation.
@@ -749,6 +766,18 @@ Check that benefits and fairness claims have a project-specific causal explanati
 credit existing measures and distinguish unseen instrument content from failed
 protection. Do not require impacts to be proven for a qualified potential benefit.
 Check all paragraphs; no broad editorial rewriting.
+Assess each SUM/NARR record as a whole, including qualifications in its other
+paragraphs, before deciding what a sentence asserts. An explicit qualification
+about the same activity applies across that record when its scope is clear;
+do not treat the sentence as an unconditional commitment by reading it in isolation.
+A general disclaimer does not cure a contradictory factual assertion, an invented
+beneficiary group or a change from proposed to completed status. Modal words alone
+do not supply missing factual premises. Do not transfer a qualification or a
+beneficiary claim from a separate activity merely because it is nearby.
+Before raising an issue, compare the claimed relationship with both the cited
+fact and its supplied source passage, and explain why any relevant qualification
+does not resolve the objection. Do not request extra specificity or repeat a
+qualification solely as an editorial preference; flag actual unsupported meaning.
 For each objection identify the exact unsupported proposition, its cited support,
 and the changed entity, relationship, scope, status or attribution. A vocabulary
 difference alone is not a defect when the source entails the reader's statement.

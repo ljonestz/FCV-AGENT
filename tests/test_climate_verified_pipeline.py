@@ -780,7 +780,7 @@ def test_manifest_is_privacy_safe_and_scoped_to_the_run():
     )
     assert (
         first["manifest"]["prompt_versions"]["recommendation_compiler"]
-        == "climate-recommendations-v2.19"
+        == "climate-recommendations-v2.20"
     )
     assert (
         first["manifest"]["prompt_versions"]["conditional_review"]
