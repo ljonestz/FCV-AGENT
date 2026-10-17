@@ -1143,12 +1143,12 @@ def test_html_uses_balanced_hierarchy_without_reader_clutter():
     assert html.count('<span class="climate-item-number">01</span>') == 2
     assert '<span class="climate-item-number">02</span>' not in html
     assert html.index("Relevant WBG guidance for this project") < html.index(
-        "Method, limitations, and sources"
+        "Limitations"
     )
     assert "Use this source to identify positive peace outcomes." in html
     assert "Use this source to identify positive peace outcomes." in html
     assert "The analysis depends on the uploaded document&#x27;s detail." in html
-    assert "Sources &amp; further reading" in html
+    assert "Sources &amp; further reading" not in html
     assert "Candidate country evidence: preview; not approved." in html
     for removed in (
         "Evidence status", "Technical annex", "Evidence key", "Run diagnostics",
@@ -1188,13 +1188,13 @@ def test_docx_matches_balanced_reader_content_and_keeps_all_priorities():
     assert "01 Can shared institutions reduce resource tensions?" not in text
     assert "02 Will delivery remain workable during floods?" not in text
     assert text.index("Relevant WBG guidance for this project") < text.index(
-        "Method, limitations, and sources"
+        "Limitations"
     )
     assert "Use this source to identify positive peace outcomes." in text
     assert "Use this source to identify positive peace outcomes." in text
     assert "https://www.worldbank.org/peace-dividends" in text
     assert "The analysis depends on the uploaded document's detail." in text
-    assert "Sources & further reading" in text
+    assert "Sources & further reading" not in text
     assert "Candidate country evidence: preview; not approved." in text
     for removed in (
         "Evidence status", "Technical annex", "Evidence key", "Run diagnostics",

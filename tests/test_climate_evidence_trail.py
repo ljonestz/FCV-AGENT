@@ -133,7 +133,7 @@ def test_evidence_limitations_project_through_attached_reader_to_html_and_docx()
         "No separate conflict assessment was uploaded."
     )
     html = render_reader_html(model)
-    assert "<h4>Limitations</h4>" in html
+    assert "<h2>Limitations</h2>" in html
     assert "The concept note does not include final site designs." in html
     assert "No separate conflict assessment was uploaded." in html
     stream = BytesIO()
@@ -145,21 +145,21 @@ def test_evidence_limitations_project_through_attached_reader_to_html_and_docx()
     assert "No separate conflict assessment was uploaded." in docx_text
 
 
-def test_method_sources_render_without_internal_evidence_or_diagnostics():
+def test_limitations_render_without_internal_evidence_or_diagnostics():
     model = _reader_with_trail()
     html = render_reader_html(model)
-    assert "Method, limitations, and sources" in html
+    assert "Limitations" in html
     assert "flood-prone fisheries" not in html
     assert "Evidence key" not in html
     assert "Run diagnostics" not in html
-    assert ("Sources &amp; further reading" in html) or ("Sources & further reading" in html)
-    assert "FCV-Sensitive Climate Action Framework" in html  # a static framework
+    assert "Sources &amp; further reading" not in html
+    assert model["sources"]  # Preserved internally for review, not a duplicate catalogue.
     stream = BytesIO()
     write_reader_docx(model, stream)
     stream.seek(0)
     text = "\n".join(p.text for p in Document(stream).paragraphs)
-    assert "Method, limitations, and sources" in text
-    assert "FCV-Sensitive Climate Action Framework" in text
+    assert "Limitations" in text
+    assert "Sources & further reading" not in text
     assert "flood-prone fisheries" not in text
     assert "Evidence key" not in text
     assert "Run diagnostics" not in text
@@ -184,8 +184,8 @@ def test_provenance_normalises_em_en_dashes_in_evidence_trail():
     assert "not specified" in key["RG-1"]["text"]
 
 
-def test_lay_comprehensibility_method_and_sources():
-    """Compact method retains source descriptions while pathway detail stays internal."""
+def test_limitations_omit_duplicate_source_descriptions():
+    """The reader retains limitations; provenance stays internal."""
     model = _reader_with_trail()
     html = render_reader_html(model)
     stream = BytesIO()
@@ -197,11 +197,11 @@ def test_lay_comprehensibility_method_and_sources():
         # The compact reader omits the detailed pathway appendix.
         assert "short chain from a cause to an effect" not in text
         assert "traced to its source" not in text
-        # Source descriptions render for a lay reader.
-        assert "do no harm" in text                       # FCV-Sensitive description
-        assert "pathway to peace" in text                 # Defueling Conflict description
-        # Name-only sources (url=None) are explicitly marked, never fabricated.
-        assert "no public link is shown until one is confirmed" in text
+        # Duplicate source descriptions do not render in the limitations section.
+        assert "do no harm" not in text                       # FCV-Sensitive description
+        assert "pathway to peace" not in text                 # Defueling Conflict description
+        # Internal name-only sources do not produce another reference catalogue.
+        assert "no public link is shown until one is confirmed" not in text
         # Parity: the TTL-friendly points-to-check label is used on every surface.
         assert "Points to check before the applicable review" in text
         assert "Review readiness flags for task-team verification" not in text

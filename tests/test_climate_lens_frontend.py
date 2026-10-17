@@ -880,7 +880,7 @@ def test_climate_detailed_reader_keeps_rating_above_core_questions_and_plain_met
     ))
 
     assert renderer.index("${ratingsInSidebar?'':ratingHtml}") < renderer.index("climateReportSection('Ranked operational priorities'")
-    assert "Method, limitations, and sources" in renderer
+    assert "Limitations" in renderer
     assert "technical_annex" not in renderer
 
 
@@ -2013,7 +2013,7 @@ for (const removed of [
 }}
 const orderedSections = [
   'Overview', 'Ranked operational priorities',
-  'Points to check before the applicable review', 'How this analysis was produced'
+  'Points to check before the applicable review', 'Limitations'
 ];
 let previous = -1;
 for (const section of orderedSections) {{
@@ -2038,9 +2038,8 @@ for (const expected of [
   'Complete drafting paragraph for priority four.',
   'Retain the complete priority-four drafting language.',
   'identifies 4 main operational priorities',
-  'Method, limitations, and sources',
+  'Limitations',
   'The uploaded concept note does not yet include final implementation protocols.',
-  'Sources &amp; further reading',
   'Candidate country evidence: preview; not approved.'
 ]) {{
   if (!html.includes(expected)) throw new Error('missing preserved reader detail: ' + expected + ' | ' + html);
@@ -2060,7 +2059,7 @@ if ((html.match(/class="climate-priority-card" open/g)||[]).length !== 4) {{
 if ((html.match(/class="climate-item-number"/g)||[]).length !== 4) {{
   throw new Error('checks must be visibly numbered | ' + html);
 }}
-for (const removed of ['Evidence status:', 'Evidence key', 'Run diagnostics', 'final operational priorities are presented:']) {{
+for (const removed of ['How this analysis was produced', 'The analysis used project evidence and the country bank.', 'Sources &amp; further reading', 'Evidence status:', 'Evidence key', 'Run diagnostics', 'final operational priorities are presented:']) {{
   if (html.includes(removed)) throw new Error('reader clutter remains: ' + removed + ' | ' + html);
 }}
 const headingPattern = new RegExp('<header class="climate-section-heading"><span class="climate-section-number">([0-9]{{2}})</span><h2>([^<]+)</h2></header>', 'g');
@@ -2069,7 +2068,7 @@ const expectedHeadings = [
   ['01', 'Overview'],
   ['02', 'Ranked operational priorities'],
   ['03', 'Points to check before the applicable review'],
-  ['04', 'How this analysis was produced']
+  ['04', 'Limitations']
 ];
 if (JSON.stringify(headings) !== JSON.stringify(expectedHeadings)) {{
   throw new Error('numbered section sequence is not gap-free: ' + JSON.stringify(headings) + ' | ' + html);
@@ -2081,7 +2080,7 @@ if (JSON.stringify(headings) !== JSON.stringify(expectedHeadings)) {{
     assert result.returncode == 0, result.stderr
 
 
-def test_verified_reader_fallback_numbers_methodology_last_without_unsafe_values():
+def test_verified_reader_fallback_numbers_limitations_last_without_unsafe_values():
     source = INDEX.read_text(encoding="utf-8")
     renderer = "\n".join((
         _extract_js_function(source, "renderPriorityProjectCycle"),
@@ -2103,7 +2102,7 @@ const renderClimateRelevantGuidance = () => '';
 const html = renderClimateVerifiedAssessment({json.dumps(reader)});
 for (const expected of [
   'The project needs a bounded climate-FCV review.',
-  'Method, limitations, and sources'
+  'Limitations'
 ]) {{
   if (!html.includes(expected)) throw new Error('missing fallback content: ' + expected + ' | ' + html);
 }}
@@ -2118,13 +2117,13 @@ const headings = Array.from(html.matchAll(headingPattern), match => [match[1], m
 const expectedHeadings = [
   ['01', 'Overview'],
   ['02', 'Ranked operational priorities'],
-  ['03', 'How this analysis was produced']
+  ['03', 'Limitations']
 ];
 if (JSON.stringify(headings) !== JSON.stringify(expectedHeadings)) {{
-  throw new Error('fallback section sequence is not gap-free or methodology is not final: ' + JSON.stringify(headings) + ' | ' + html);
+  throw new Error('fallback section sequence is not gap-free or limitations are not final: ' + JSON.stringify(headings) + ' | ' + html);
 }}
-if (!html.includes('<details class="climate-fold"><summary>Method, limitations, and sources</summary>')) {{
-  throw new Error('methodology disclosure summary repeats or omits its contents label | ' + html);
+if (!html.includes('<h2>Limitations</h2>')) {{
+  throw new Error('limitations heading is missing | ' + html);
 }}
 """
     result = subprocess.run(
@@ -2323,9 +2322,9 @@ const html = renderClimateVerifiedAssessment({{
 for (const expected of [
   '<details id="climate-priority-2" class="climate-priority-card" open><summary>',
   '<details class="climate-priority-detail"><summary>Practical considerations</summary>',
-  '<details class="climate-fold"><summary>Method, limitations, and sources</summary>',
+  '<h2>Limitations</h2>',
   'Closed priority narrative.', 'Closed priority decision.',
-  'Closed method text.', 'Closed limitations text.'
+  'Closed limitations text.'
 ]) {{
   if (!html.includes(expected)) throw new Error('closed disclosure/content missing: '+expected+' | '+html);
 }}
@@ -2641,11 +2640,11 @@ console.log(renderClimateVerifiedAssessment({{
         assert page.locator("details.climate-priority-card").evaluate_all("elements => elements.every(element => element.open)")
         page.locator("details.climate-priority-card > summary").nth(1).click()
         prior_states = details.evaluate_all("elements => elements.map(element => element.open)")
-        assert prior_states == [True, False, False, False, False, False, True]
+        assert prior_states == [True, False, False, False, False, True]
         assert page.get_by_text("Open priority prose.").is_visible()
         assert not page.get_by_text("Closed priority prose.").is_visible()
         assert not page.get_by_text("Method text for print.").is_visible()
-        assert not page.get_by_text("Limitations text for print.").is_visible()
+        assert page.get_by_text("Limitations text for print.").is_visible()
         assert not page.get_by_text("Source text for print").is_visible()
         assert not page.get_by_text("Closed guidance text for print.").is_visible()
         assert page.get_by_text("Pre-opened guidance text for print.").is_visible()
@@ -2655,9 +2654,9 @@ console.log(renderClimateVerifiedAssessment({{
         assert details.evaluate_all("elements => elements.every(element => element.open)")
         assert page.get_by_text("Closed priority prose.").is_visible()
         assert page.get_by_text("Closed decision.", exact=True).is_visible()
-        assert page.get_by_text("Method text for print.").is_visible()
+        assert page.get_by_text("Method text for print.").count() == 0
         assert page.get_by_text("Limitations text for print.").is_visible()
-        assert page.get_by_text("Source text for print").is_visible()
+        assert page.get_by_text("Source text for print").count() == 0
         assert page.get_by_text("Closed guidance text for print.").is_visible()
         assert page.get_by_text("Pre-opened guidance text for print.").is_visible()
 

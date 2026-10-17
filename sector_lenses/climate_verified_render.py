@@ -1063,6 +1063,13 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
     })
 
 
+_DEFAULT_LIMITATIONS = (
+    "This automated screening is advisory and is limited by the coverage and detail "
+    "of the uploaded documents. The team should confirm material findings through "
+    "project and country expertise."
+)
+
+
 _METHODOLOGY_NOTE = (
     "Here is how this analysis was put together, in plain terms. The tool first "
     "reads your document and pulls out the concrete facts it can find - what the "
@@ -1634,47 +1641,10 @@ def render_reader_html(model: dict[str, object], *, snapshot_sha256: str | None 
         parts.append("</div></details></section>")
 
     trail = _mapping(model.get("evidence_trail"))
-    sources = model.get("sources") or []
-    if trail or sources:
-        parts.append(_reference_panel(6, "How this analysis was produced", "Understand the method, source coverage and limits of this assessment."))
-        parts.append(
-            '<details class="climate-fold"><summary>'
-            "Method, limitations, and sources</summary>"
-        )
-        methodology_note = _text(trail.get("methodology_note"))
-        if methodology_note:
-            parts.append(f"<p>{html.escape(methodology_note)}</p>")
-        limitations = _field_text(trail.get("limitations"))
-        if limitations:
-            parts.append("<h4>Limitations</h4>")
-            parts.append(f"<p>{html.escape(limitations)}</p>")
-        if sources:
-            parts.append("<h4>Sources &amp; further reading</h4>")
-            parts.append(
-                "<p>This analysis draws on the World Bank's core guidance on climate "
-                "action in fragile and conflict-affected settings. Linked titles open the "
-                "World Bank publication page if you want to read more.</p><ul>"
-            )
-            for source in sources:
-                source_map = _mapping(source)
-                title = html.escape(_text(source_map.get("title")))
-                description = html.escape(_text(source_map.get("description")))
-                url = source_map.get("url")
-                if isinstance(url, str) and url.startswith("https://"):
-                    label = (
-                        f'<a href="{html.escape(url)}" target="_blank" '
-                        f'rel="noopener">{title}</a>'
-                    )
-                    tail = f" - {description}" if description else ""
-                else:
-                    note = (
-                        " (reference only; no public link is shown until one is confirmed)"
-                    )
-                    label = title
-                    tail = f" - {description}{note}" if description else note
-                parts.append(f"<li>{label}{tail}</li>")
-            parts.append("</ul>")
-        parts.append("</details></section>")
+    if trail:
+        limitations = _field_text(trail.get("limitations")) or _DEFAULT_LIMITATIONS
+        parts.append(_reference_panel(6, "Limitations", ""))
+        parts.append(f"<p>{html.escape(limitations)}</p></section>")
 
     parts.append(
         '<p class="climate-advisory">'
@@ -1874,40 +1844,9 @@ def write_reader_docx(model: dict[str, object], path: str | Path, *, snapshot_sh
                 document.add_paragraph(practical_value)
             document.add_paragraph(_text(item.get("url")))
     trail = _mapping(model.get("evidence_trail"))
-    sources = model.get("sources") or []
-    if trail or sources:
-        document.add_heading("Method, limitations, and sources", level=1)
-        methodology_note = _text(trail.get("methodology_note"))
-        if methodology_note:
-            document.add_paragraph(methodology_note)
-        limitations = _field_text(trail.get("limitations"))
-        if limitations:
-            document.add_heading("Limitations", level=2)
-            document.add_paragraph(limitations)
-        if sources:
-            document.add_heading("Sources & further reading", level=2)
-            document.add_paragraph(
-                "This analysis draws on the World Bank's core guidance on climate action "
-                "in fragile and conflict-affected settings."
-            )
-            for source in sources:
-                source_map = _mapping(source)
-                title = _text(source_map.get("title"))
-                description = _text(source_map.get("description"))
-                url = source_map.get("url")
-                if isinstance(url, str) and url.startswith("https://"):
-                    tail = f" - {description}" if description else ""
-                    line = f"{title}{tail} ({url})"
-                else:
-                    note = (
-                        " (reference only; no public link is shown until one is confirmed)"
-                    )
-                    line = (
-                        f"{title} - {description}{note}"
-                        if description else f"{title}{note}"
-                    )
-                document.add_paragraph(line)
-
+    if trail:
+        document.add_heading("Limitations", level=1)
+        document.add_paragraph(_field_text(trail.get("limitations")) or _DEFAULT_LIMITATIONS)
 
     document.add_paragraph(_text(model.get("advisory_notice")))
     from fcv_word_style import style_fcv_word_document

@@ -32,6 +32,36 @@ exact and uncertainty is visible. If only one clause exceeds the evidence, requi
 narrow correction and retain the supported analysis."""
 
 
+_CONDITIONAL_BENEFITS_GUIDANCE = """USEFUL CONDITIONAL ANALYSIS
+Apply the Peace and Social Dividends report's distinction between what a project
+invests in and how it delivers it. Look beyond explicit peace objectives: climate-
+related services, livelihoods and institutional capacity may create opportunities
+for trust, institutional legitimacy, inclusion and collective action. Select the
+few mechanisms relevant to this project, not a checklist of every possible benefit.
+Explain the chain from an evidenced project feature, through people's experience
+of services, decisions or opportunities, to a plausible wider benefit and resilience.
+For example, reliable and fairly accessible services could build confidence in
+institutions; joint planning could strengthen cooperation; more secure livelihoods
+could improve coping capacity. These are analytical possibilities, not automatic
+consequences of infrastructure, jobs or a coordination committee.
+The premises need source support; the inferred outcome need not be stated
+in the document or directly demonstrated. Missing peace terminology, impact data
+or an explicit dividend objective does not erase credible potential. Equally,
+'could' cannot invent a beneficiary group, agreed targeting, institutional mandate
+or funding link. Potential is not a demonstrated impact or an automatic higher rating.
+Distinguish potential in the current design from extra potential if accepted
+priorities are adopted. Describe enabling conditions and the most material risk
+briefly, without making the whole answer an inventory of missing arrangements.
+For fair benefits, explain possible gains for people and barriers to realizing them,
+not just who is excluded. Do not rank beneficiary gains without evidence.
+Also consider FCV-related maladaptation: adaptation could shift exposure to others,
+lock vulnerable people into risky locations, or entrench exclusion and contested
+resource access, weakening resilience. Identify the project choice and plausible
+mechanism, qualify it as a risk to examine, and credit existing protections. Do not
+assert that harm has occurred or import a case-study outcome into this project.
+"""
+
+
 def _package(payload: dict[str, object]) -> str:
     return json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
 
@@ -705,13 +735,20 @@ length targets are advisory, with a hard ceiling of 400 per finding. Do not pad 
 merely to reach the target.
 Start with what the project could make possible for people, grounded in concrete
 activities and delivery choices. Explain the causal connection in ordinary words.
-For dividends, distinguish the immediate climate benefit from a plausible wider
+For design, discuss both how FCV can undermine climate-related delivery and how
+project choices could worsen fragility or produce maladaptation. Include a material
+plausible risk even if it is not expressly named in the document, with its causal
+chain and uncertainty visible. Do not invent site conditions or affected groups.
+For dividends, lead with the strongest plausible contribution of the current
+design, including institutional and community resilience where relevant. Then show
+how the accepted priorities could deepen that contribution. Distinguish the immediate climate benefit from a plausible wider
 livelihood, cooperation or trust benefit. Assess the conditions that could make
 that benefit credible, the constraints that could weaken it, and how accepted
 priorities could strengthen it. A document need not describe the dividend or its
 mechanism explicitly. Do not open with or criticize their absence, or simply
 conclude that wider benefits are unspecified. Do not promise a peace outcome.
-For inclusion, explain who can use the investment or support, who could be left
+For inclusion, first explain the practical benefits people could experience, then
+explain who can use the investment or support, who could be left
 out, and how access barriers or delivery choices could distribute benefits and
 costs unevenly. Credit documented targeting, consultation, grievance and other
 protections that apply. Explain what remains uncertain and why it matters to
@@ -892,6 +929,8 @@ def build_verified_stage_prompt(
     except KeyError as error:
         raise ValueError(f"Unsupported verified Climate stage: {stage}") from error
     prompt = builder(payload)
+    if stage in {"bounded_analysis", "judgment_review", "reader_compiler", "reader_review"}:
+        prompt = _CONDITIONAL_BENEFITS_GUIDANCE + "\n" + prompt
     if stage in {"fact_extraction", "recommendation_compiler", "conditional_review"}:
         prompt = """ROUTING METADATA AND SOURCE EVIDENCE
 operation_context is application-derived routing metadata, not uploaded document

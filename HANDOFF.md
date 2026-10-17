@@ -1,3 +1,27 @@
+### 2026-10-17 Useful conditional dividends and limitations-only reports
+
+User endorsed the opening/priority style but requested stronger, useful interpretation
+under the three questions. Read docs/20261017_dividends-framing-and-limitations.md.
+The supplied Peace and Social Dividends report informs conditional trust, legitimacy,
+livelihood, institutional and collective-resilience mechanisms; no explicit peace
+objective or proven impact is required. Include credible FCV-related maladaptation
+and practical benefit pathways, with source-grounded premises and uncertainty.
+Analysis v2.13, judgments v2.17, reader v1.11, reader-review v1.12; renderer v2.23.
+No schema, admission, rating scale, model-call or normal-FCV change. Browser/HTML/Word
+now show only Limitations in place of the method section and duplicate source list;
+separate guidance and internal provenance remain. Recommendation prompts unchanged.
+
+Offline verification: 1,811 passed, four known hanging Chromium tests excluded,
+317.60s. Five new checks failed then passed; connected tests and manifest check pass.
+All three editorial answers and limitations visually inspected in existing Edge.
+Review copy: output/20261016-ipf-pilot-live-preflight/
+20261017_dividends-editorial-v2-browser.html (139/171/165-word answers). Opening,
+ratings and four priorities retained; earlier source corrections carried into this
+editorial copy. Original run/report/packet unchanged. This is not fresh generation,
+a canonical approval packet or a model pass. Native review fallback remains honest.
+No paid call/deployment; preview remains 460eaef with blocker restored, production
+untouched, publication=false. Fresh model behavior and human approval still untested.
+
 ### 2026-10-17 Approved preview campaign completed; blocker restored
 
 Read docs/20261017_preview-readiness-460eaef-results.md first. Both authorized

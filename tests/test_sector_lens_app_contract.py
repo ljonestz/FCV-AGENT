@@ -2480,7 +2480,7 @@ def test_verified_climate_ui_contract_is_ranked_and_multidimensional():
     assert body.index("minorPointsHtml") < body.index("docFlagsHtml")
     assert "climateVerifiedRatingCards(r)" in body
     assert 'class="climate-priority-card"' in body
-    assert "Method, limitations, and sources" in body
+    assert "Limitations" in body
 
 
 
@@ -2601,7 +2601,7 @@ def test_verified_climate_docx_route_uses_canonical_reader():
     assert "Candidate country evidence: preview; not approved." in text
     assert "Smoke test: validates workflow completion only" in text
     assert "Relevant WBG guidance for this project" in text
-    assert "Method, limitations, and sources" in text
+    assert "Limitations" in text
     assert "FORGED" not in text
 
 

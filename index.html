@@ -406,6 +406,7 @@
     .climate-verified-assessment .climate-report-section{margin:0 0 34px}
     .climate-verified-assessment .climate-assessment-answer{margin:0 0 26px;padding:0 0 22px;border-bottom:1px solid #dce5eb}
     .climate-verified-assessment .climate-assessment-answer h3{font-size:17px!important;line-height:1.45;color:#002244!important;margin:0 0 12px!important;text-transform:none!important;letter-spacing:0!important}
+    .climate-verified-assessment .climate-assessment-answer p+p{margin-top:12px}
     .climate-verified-assessment .climate-assessment-links{font-size:12px;color:#496375;margin:12px 0}
     .climate-verified-assessment .climate-report-section.climate-reference-panel{background:#fff;border:1px solid #ccdbe4;border-radius:12px;padding:22px 24px;margin:28px 0;box-shadow:0 2px 5px rgba(0,34,68,.04)}
     .climate-verified-assessment .climate-reference-panel .climate-section-heading{border:0;margin-bottom:8px;padding-bottom:0;align-items:center}
@@ -5199,33 +5200,12 @@
     const minorPointsHtml=minorPoints.length?`<section class="climate-check-group"><h3>Smaller climate and fragility points to consider</h3><p class="climate-check-intro">These are smaller, climate- and fragility-specific points that were not large enough to become a recommendation above, but are still worth a look.</p>${minorPoints.map((point,index)=>numberedCheckItem(point.point||'',point.why||'',point.how_to_check||'',index)).join('')}</section>`:'';
     const docFlagsHtml=flags.length?`<section class="climate-check-group"><h3>Document points to confirm</h3>${flags.map((flag,index)=>numberedCheckItem(flag.flag||'Point to verify',flag.why_it_matters||'',flag.suggested_verification||'',index)).join('')}</section>`:'';
     const pointsToCheckBodyHtml=(flags.length||minorPoints.length)?`<details class="climate-fold"><summary>Checks for the project team</summary><div class="climate-purpose-band climate-decision-preparation"><span class="climate-purpose-icon" aria-hidden="true">!</span><div><strong>Climate decision preparation</strong><p>Points to check at the next applicable review.</p></div></div>${flagsIntro}${minorPointsHtml}${docFlagsHtml}</details>`:'';
-    let provenanceHtml='';
+    let limitationsHtml='';
     const trail=r.evidence_trail&&typeof r.evidence_trail==='object'?r.evidence_trail:null;
-    const sources=Array.isArray(r.sources)?r.sources:[];
-    if(trail||sources.length){
-      let inner='';
-      if(trail&&trail.methodology_note)inner+=`<p>${esc(trail.methodology_note)}</p>`;
-      const limitationsRaw=trail?trail.limitations:'';
-      const limitations=Array.isArray(limitationsRaw)?limitationsRaw.filter(Boolean).join(' '):String(limitationsRaw||'').trim();
-      inner+='<h4>Limitations</h4>';
-      inner+=`<p>${esc(limitations||'This automated screening is advisory and is limited by the coverage and detail of the uploaded documents. The team should confirm material findings through project and country expertise.')}</p>`;
-      if(sources.length){
-        inner+='<h4>Sources &amp; further reading</h4><p>This analysis draws on the World Bank\'s core guidance on climate action in fragile and conflict-affected settings. Linked titles open the World Bank publication page if you want to read more.</p><ul>';
-        sources.forEach(source=>{
-          if(!source||typeof source!=='object')return;
-          const title=esc(source.title||'');
-          const description=esc(source.description||'');
-          const url=String(source.url||'');
-          if(isPublicWorldBankHttpsUrl(url)){
-            inner+=`<li><a href="${esc(url)}" target="_blank" rel="noopener">${title}</a>${description?` - ${description}`:''}</li>`;
-          }else{
-            const note=' (reference only; no public link is shown until one is confirmed)';
-            inner+=`<li>${title}${description?` - ${description}`:''}${note}</li>`;
-          }
-        });
-        inner+='</ul>';
-      }
-      provenanceHtml=`<details class="climate-fold"><summary>Method, limitations, and sources</summary>${inner}</details>`;
+    if(trail){
+      const raw=trail.limitations;
+      const limitations=Array.isArray(raw)?raw.filter(Boolean).join(' '):String(raw||'').trim();
+      limitationsHtml=`<p>${esc(limitations||'This automated screening is advisory and is limited by the coverage and detail of the uploaded documents. The team should confirm material findings through project and country expertise.')}</p>`;
     }
     const overviewParagraphs=Array.isArray(r.summary_overview)&&r.summary_overview.length?r.summary_overview:[r.overview_summary||csr&&csr.overview_summary||''];
     const overviewHtml=overviewParagraphs.filter(Boolean).map(text=>`<p>${esc(text)}</p>`).join('');
@@ -5250,7 +5230,7 @@
       climateReportSection('Ranked operational priorities','climate-priorities',prioritiesBodyHtml)+
       (pointsToCheckBodyHtml?climateReportSection('Points to check before the applicable review','climate-points-to-check',pointsToCheckBodyHtml):'')+
       (relevantGuidanceHtml?climateReportSection('Relevant WBG guidance for this project','climate-guidance',relevantGuidanceHtml):'')+
-      (provenanceHtml?climateReportSection('How this analysis was produced','climate-methodology-section',provenanceHtml):'');
+      (limitationsHtml?climateReportSection('Limitations','climate-limitations-section',limitationsHtml):'');
     const advisoryHtml=r.advisory_notice?`<p class="climate-advisory">${esc(r.advisory_notice)}</p>`:'';
     const needsReview=recommendationsIncomplete||r.recommendation_status==='partial';
     const incompleteHtml=needsReview&&!ratingsInSidebar?`<p><strong>${recommendationsIncomplete?'Recommendations stage incomplete':'Recommendations need review'}:</strong> ${esc(r.recommendation_message||'Do not rely on this note as a completed assessment.')}</p>`:'';

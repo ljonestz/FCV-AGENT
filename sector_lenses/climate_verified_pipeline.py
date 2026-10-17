@@ -93,14 +93,14 @@ _INTEGRITY_CATEGORIES = READINESS_CATEGORIES - {"missing_operational_home"}
 
 PROMPT_VERSIONS = {
     "fact_extraction": "climate-facts-v2.9",
-    "bounded_analysis": "climate-analysis-v2.12",
-    "judgment_review": "climate-judgments-v2.16",
+    "bounded_analysis": "climate-analysis-v2.13",
+    "judgment_review": "climate-judgments-v2.17",
     "recommendation_compiler": "climate-recommendations-v2.23",
     "conditional_review": "climate-review-v2.21",
     "drafting_compiler": "climate-drafting-v1.7",
-    "reader_compiler": "climate-final-reader-v1.10",
+    "reader_compiler": "climate-final-reader-v1.11",
     "reader_correction": "climate-reader-correction-v1.7",
-    "reader_review": "climate-reader-review-v1.11",
+    "reader_review": "climate-reader-review-v1.12",
 }
 
 
@@ -2030,7 +2030,7 @@ def run_verified_climate_pipeline(
         reviewer_version="climate-review-v2.3",
         extraction_version="source-blocks-v3",
         normalization_version="climate-normalization-v2.13",
-        renderer_version="climate-reader-v2.22",
+        renderer_version="climate-reader-v2.23",
         model_aliases=model_aliases,
         sampling={"max_transient_retries": 1,
                   "correction_transient_retries": 0,
