@@ -1,3 +1,35 @@
+### 2026-10-17 Supervised-pilot source dispositions prepared
+
+Read docs/20261017_supervised-pilot-disposition-and-acceptance.md before another
+paid campaign. The full Pillar 3 sentence spans physical PDF pages 6-7 and links
+sector revenues to sustainable O&M. Historical RG-006/REC-004 asset exclusion
+remains unsupported and was missed by v2.21. The separate Smoke NARR-dividends
+objection is more nuanced: PF-014 only records the estimate, but the whole source
+supports a proposed revenue/O&M connection. Proposed wording removes the implied
+dependence on sufficient overflight revenue for all benefits and asks whether/how
+asset-level financing would work. Do not classify all maintenance linkage as
+unsupported or transfer REC/RG IDs between these different assessments.
+
+New offline artifacts use prefix 20261017_pilot-disposition- in the existing
+untracked live-preflight output folder. Source-review HTML/JSON links the refined
+style illustration and its newly generated packet. Five priorities and all displayed
+sections preserved in HTML/Word text; PDF passage matches, packet hashes, 200 export,
+409 reader drift and 409 canonical edit with stale reader checked. Network blocked,
+zero provider calls, historical inputs unchanged. Packet snapshot:
+9e518ccdf8479135b92fe4932d99cbec4906a9db6298404b3bf824e2f9b913db.
+Human confirmation pending, publication=false; no borrowed model pass. Smoke
+proposed wording is in the review companion only; saved revise/fallback untouched.
+Local Edge brief visually inspected and report link exercised. Word layout was not
+newly visually checked. Application unchanged from 9d0f547; no paid call/deployment.
+
+The concrete next campaign is preview-only, one Smoke then at most one Quality
+after technical conditions pass, with fresh approval for deployment and temporary
+guard opening (no guaranteed dollar ceiling). Analytical flags remain for human
+source disposition; technical completion is not report acceptance. No additional
+run is authorized yet. Preserve all consumed locks and original artifacts. Named
+approval in the existing authenticated organisational workflow against actual file
+hashes remains required before sharing; the specific workflow is not yet recorded.
+
 ### 2026-10-17 Offline repair for contradictory aggregate review
 
 User authorized addressing the Smoke contradiction. The initial review fallback
