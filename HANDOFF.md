@@ -1,3 +1,16 @@
+### 2026-10-17 Saved reader meaning review
+
+See docs/20261017_reader-meaning-live-check.md. The single approved review ran:
+37,729 input/366 output tokens, 4 seconds, no retry. Verdict revise; passed=false;
+publication=false. One remaining objection to the possible Challenge Fund appears
+to be a reviewer false positive: PF-025 is cited, its original passage supports the
+exploratory fund and community enterprises, and the full reader explicitly says
+the fund is only to be explored. No claim of fund targeting displaced/vulnerable
+groups is made. Preserve the failed verdict; do not silently override it.
+Next: general reviewer calibration on whole-record qualifications and actual
+claimed scope, using this as a development case. No additional paid call, source
+code change, production change or preview budget change was made.
+
 ### 2026-10-16 Targeted reader correction and editorial length
 
 See docs/20261016_reader-correction-live-check.md. One explicitly approved isolated
