@@ -1,3 +1,22 @@
+### 2026-10-17 Latest autonomous campaign: candidate, not release acceptance
+
+Read docs/20261017_supervised-pilot-handover.md first; it supersedes the pending
+campaign status below. App candidate/preview 03618ab; PR83 remains draft. Two of
+three authorized full runs used, zero of five smaller calls. Smoke and Quality
+produced five priorities and valid exports. Quality final reader review was blocked
+locally by its exhausted conservative guard, not a successful review. Research was
+bank-only because that guard rejects tools. No full live acceptance is claimed.
+Quality REC-001 still blurs already-selected Phase 1 airstrips with open city/site
+choices; human source correction is needed. Do not discard the other useful advice.
+Full suite 1,832 passed/four known browser hangs excluded on f58c67a; final bounded
+SDK guard-diagnostic fix 50 focused tests passed. Word rendering, packet hashes,
+drift409, browser tabs/non-first priority and restored session checked.
+Reservations USD5.778093 for this campaign, not invoices. Preview blocker restored
+to 1 microUSD, health200 on 03618ab. Production remains 1168a8f unchanged. Publication
+false. Preserve branch/worktree/output and untracked test. No call queued. Prepare
+complete guarded pipeline budget offline before considering the unused third run;
+do not reset consumed ledgers or repeat calibration merely to obtain a model pass.
+
 ### 2026-10-17 Proportionate review candidate prepared for supervised handover
 
 Read docs/20261017_proportionate-review-readiness.md. User authorized autonomous

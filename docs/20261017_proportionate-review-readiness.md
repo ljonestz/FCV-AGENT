@@ -92,3 +92,11 @@ the ID after old scoped storage is cleared and before the session bar refreshes.
 This applies to normal FCV and Climate session lifecycle, without changing analysis.
 The regression exercises the actual JavaScript reset function; 21 new boundary tests
 pass. A live reset/round-trip check is included before Quality submission.
+
+
+## Final campaign outcome
+
+See [the final supervised-pilot handover](20261017_supervised-pilot-handover.md).
+Two full runs used, no smaller calls. Useful exports verified, but Quality reader
+review was blocked by the test budget and research was bank-only. This is not full
+live acceptance. Preview blocker restored; production unchanged.
