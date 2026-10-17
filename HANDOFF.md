@@ -1,3 +1,16 @@
+### 2026-10-17 Revised reader check prepared; automatic review blocked submission
+
+User approved the v2 editorial HTML and next step. Read
+docs/20261017_dividends-live-preflight.md. A two-call Anthropic reader compiler/review
+check is frozen from a1508ef, with corrected saved Quality evidence, no editorial
+answers in the input, no retries and a fresh USD2 reservation ceiling. Offline
+request/guard/package checks passed. Automatic approval review rejected submission
+before execution, requiring explicit authorization for this assessment/source
+payload to Anthropic. Zero paid calls; no submission lock or remote job created.
+Do not bypass the rejection or reuse consumed old allowances. Both deployed apps
+and original artifacts remain unchanged; publication=false. New raw preparations
+use dividends-live-20261017 in the existing untracked output directory.
+
 ### 2026-10-17 Useful conditional dividends and limitations-only reports
 
 User endorsed the opening/priority style but requested stronger, useful interpretation
