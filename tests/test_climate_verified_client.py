@@ -4,6 +4,32 @@ from dataclasses import dataclass
 
 import pytest
 
+
+def test_sdk_wrapped_pilot_guard_failure_is_not_retried(tmp_path):
+    import anthropic
+    import httpx
+    from pilot_spend_guard import PilotSpendGuard
+
+    sent = []
+    diagnostics = []
+    guard = PilotSpendGuard(tmp_path / 'budget.sqlite', 1)
+    with httpx.Client(event_hooks={'request': [guard]}, transport=httpx.MockTransport(
+        lambda request: sent.append(request) or httpx.Response(200, json={})
+    )) as transport:
+        sdk = anthropic.Anthropic(api_key='offline-test', http_client=transport)
+        client = AnthropicVerifiedJsonClient(
+            sdk, model='claude-sonnet-5-5', is_transient=lambda error: True,
+            diagnostic_sink=diagnostics.append,
+        )
+        with pytest.raises(anthropic.APIConnectionError):
+            client.complete_json(stage='fact_extraction', payload={'source_blocks': []},
+                                 timeout_seconds=30, max_output_tokens=1000,
+                                 max_transient_retries=1)
+    assert sent == []
+    assert guard.reserved_microusd() == 0
+    assert len(client.call_metrics) == 1
+    assert diagnostics[0]['provider_failure_code'] == 'pilot_request_blocked'
+
 from sector_lenses.climate_verified_client import AnthropicVerifiedJsonClient
 from sector_lenses.climate_verified_prompts import build_verified_stage_prompt
 from sector_lenses.climate_verified_schemas import STAGE_OUTPUT_SCHEMAS, stage_output_schema

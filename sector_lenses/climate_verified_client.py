@@ -8,6 +8,8 @@ import re
 import time
 from typing import Any
 
+from pilot_spend_guard import PilotBudgetExceeded
+
 from sector_lenses.climate_verified_prompts import build_verified_stage_prompt
 from sector_lenses.climate_verified_schemas import stage_output_schema
 
@@ -20,6 +22,18 @@ def _bounded_provider_failure_details(
     error: Exception,
 ) -> dict[str, str | None]:
     """Classify provider failures without retaining unrestricted messages."""
+
+    # The SDK wraps request-hook rejections as connection errors. They are local
+    # policy decisions, so retrying cannot resolve them and obscures diagnosis.
+    cause = error
+    seen = set()
+    while cause is not None and id(cause) not in seen:
+        seen.add(id(cause))
+        if isinstance(cause, PilotBudgetExceeded):
+            return {'provider_error_type': None,
+                    'provider_failure_code': 'pilot_request_blocked',
+                    'schema_path': None}
+        cause = cause.__cause__
 
     provider_error_type = None
     message = ""
@@ -193,7 +207,10 @@ class AnthropicVerifiedJsonClient:
                     timeout_seconds=timeout_seconds,
                     remaining_seconds=remaining,
                 )
-                if attempt >= max_transient_retries or not self._is_transient(error):
+                if (_bounded_provider_failure_details(error)['provider_failure_code']
+                        == 'pilot_request_blocked'
+                        or attempt >= max_transient_retries
+                        or not self._is_transient(error)):
                     raise
                 if remaining < 1:
                     raise self._retry_budget_error(stage, error) from error
