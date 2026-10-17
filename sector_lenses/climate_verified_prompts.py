@@ -432,12 +432,17 @@ new-model equivalent) rather than by any date; never introduce a date.
 Do not add a stock sentence about what a reviewer would raise at the next gate.
 Mention a review consideration only when it identifies a distinct, evidenced
 decision or preparation dependency, rather than restating the risk or action.
-Make clear in plain
-language whether the item is mainly a do-no-harm (sensitivity) concern or one that
-strengthens responsiveness. Add no digits and no new claims.
+Explain the harm-prevention or wider contribution mechanism in plain language.
+Use sensitivity or responsiveness terminology only where it helps the reader;
+do not append a stock classification sentence. Add no unsupported factual claims.
 
-Do not invent dates, thresholds, actors, instruments, systems, formal requirements,
-or completion evidence. If no responsible actor is verified for the suggested
+Do not invent project facts, dates, thresholds, existing actors, instruments,
+systems, binding requirements or completion evidence. Develop proposed operational
+arrangements from the evidenced gap and project design: explain how responsibilities,
+selection criteria, coordination, monitoring or maintenance would work where relevant.
+A proposed arrangement need not already exist in the source. Keep it visibly proposed,
+not a claim that the project has adopted it, and do not create unsupported formal roles.
+If no responsible actor is verified for the suggested
 action, address the task team rather than naming or creating a new role. Apply
 that rule to the title, narrative and responsible_function as well as action fields.
 Use no digits in decision, minimum_action,
@@ -447,20 +452,26 @@ source-linked, and limited to four. Keep free-text values to 45 words or fewer.
 For limitation, write one complete sentence of at most 35 words describing the
 remaining gap or evidence limitation, not the proposed action. Distinguish
 missing evidence from a confirmed omission; an optional dividends opportunity is not a required correction.
-The narrative is the one exception: write it as two or three short paragraphs of
-plain, flowing prose (about 110-220 words), separated by a blank line.
+The narrative is the one exception: match the substantive task-team advisory style
+of the main FCV recommendations. Write about 300-500 words in four to six paragraphs,
+separated by a blank line, when the evidence warrants that depth. This is a writing
+target, not a minimum to pad or an admission rule. Explain the operational mechanism
+and the preparation work, rather than expanding the same document clarification.
 Make the action usable in document preparation: name the current document and
 the relevant section from operational_guidance.permitted_targets, then specify
 the decision, criterion, responsibility or evidence to add or revise there.
-Each action should identify one concrete document change, rather than a general
-topic for attention. In minimum_action and the opening sentence of the narrative's
+Keep each priority centred on one coherent operational decision. Develop two or
+three related edits or preparation steps where useful, rather than stopping at a
+general instruction to improve the description. In minimum_action and the opening sentence of the narrative's
 action paragraph, name the current document, permitted section and the specific
 project element to change: for example an evidenced selection criterion, component
 description, indicator definition or assignment of responsibility. State the
 content to add or revise and the decision it would inform. The visible narrative
 must stand alone; do not leave this specificity only in the drafting dropdown.
-Use direct task-team language such as 'Revise ... to explain ...', while making
-clear that this is advice rather than an existing commitment or mandatory rule.
+Use direct verbs such as Revise, Specify, Assess, Include and Agree. State the
+recommended action directly, using 'could consider' only for a genuinely optional
+choice. Direct advice is not an assertion of an existing commitment or mandatory
+rule. Keep those distinctions explicit where material without hedging every sentence.
 Choose the relevant edit for each recommendation, not the same checklist for all.
 Use permitted section labels as proposed destinations, not proof that those exact
 headings occur in the upload. Do not invent page numbers or subsection titles.
@@ -476,15 +487,21 @@ without demanding completed appraisal detail. Describe the preparation decision
 or evidence dependency instead of assigning an unverified formal gate.
 Keep later work distinct from the current edit: say what design
 question it resolves and where its result would be used, only when supported.
-Do not turn document advice into detailed implementation procedures or require a
-new instrument merely to make an action sound specific. Where a review stage is unverified,
+Describe practical design choices and follow-through in enough detail that the
+task team can act: what information to use, what responsibility or arrangement to
+settle, where to record it and how it informs a preparation decision. Select the
+relevant elements for this priority, not a checklist repeated for every item.
+Do not prescribe unsupported technical procedures, introduce binding obligations,
+or require a new instrument merely to make an action sound specific. Where a review stage is unverified,
 omit generic gate language from individual recommendations; the report already
 states the overall routing limitation. These are drafting instructions, not extra
 admission gates or reasons to suppress a useful recommendation.
-The first paragraph explains the gap or opportunity and why it matters, crediting
-what the project already does. The remaining paragraphs explain what the team
-could do, how and who leads it, any optional deeper step and when it is warranted,
-and the concrete result that would show the action has been addressed.
+The first paragraph gives a substantive account of the gap or opportunity and why
+it matters to delivery or affected people, crediting what the project already does.
+The remaining paragraphs develop the recommended edits and preparation steps,
+how they would work, who leads where evidenced, dependencies and the decision or
+usable output they support. Connect the steps in prose. Do not end every recommendation
+with 'The result would be' or a restatement that the document will have been updated.
 Do not use 'Done looks like', telegraphic labels, headings or semicolons in the
 narrative. Use complete, natural sentences throughout without repeating the
 finding section's project history. Explain the purpose of
@@ -499,10 +516,17 @@ block (added later) supplies the ready-to-use text - keep the three distinct so
 the reader is not told the same thing three times. Add no new claims and no
 unsupported digits. Do not repeat the evidence package or add prose outside the
 requested fields.
-The Recommendation details disclosure uses limitation and caution as complementary
+The Practical considerations disclosure uses limitation and caution as complementary
 paragraphs. Write complete, connected prose: limitation explains what remains
 unconfirmed and the preparation context; caution explains the practical boundary
-or condition the team should preserve. Do not repeat the visible action, its
+or condition the team should preserve. Use reader-facing statements the task team
+can use in a preparation discussion: what remains to settle, what to check and
+how that uncertainty affects the next decision. Express evidence limitations as
+practical uncertainty about project arrangements, rather than commentary about
+what the model, source passages or assessment can assert. Avoid model instructions
+such as 'Do not imply', 'Do not invent' or 'Do not specify', and boilerplate such
+as 'This is advisory drafting'. A concrete task-team check is useful when it
+resolves the stated uncertainty. Do not repeat the visible action, its
 decision or completion checklist in these paragraphs. Avoid telegraphic labels,
 internal identifiers, status values and evidence-chain recaps. Keep material
 qualifications and distinguish proposed arrangements from existing commitments.

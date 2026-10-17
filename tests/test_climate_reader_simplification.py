@@ -17,7 +17,7 @@ def test_simplified_exports_keep_evidence_internal(tmp_path):
         assert 'Project details behind this assessment' not in output
         assert 'Why this matters' in output
         assert 'What the team could do' in output
-    assert 'Recommendation details' in html
+    assert 'Practical considerations' in html
     assert model['core_questions'][0]['summary'] == 'Detailed internal finding.'
 
 

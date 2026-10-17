@@ -543,8 +543,8 @@ CANDIDATE_SCHEMA = _object(
         "limitation": _string("45 words or fewer."),
         "caution": _string("45 words or fewer."),
         "narrative": _string(
-            "Two or three short plain-prose paragraphs telling the story; "
-            "no new claims or digits."
+            "Four to six paragraphs, about 300-500 words when useful. Explain rationale "
+            "and practical steps; no unsupported facts or digits."
         ),
         "supported_numeric_tokens": _strings(),
         "score": SCORE_SCHEMA,

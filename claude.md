@@ -1,3 +1,28 @@
+### 2026-10-17 Match main FCV recommendation writing
+
+Compiler v2.23 uses main FCV's substantive, direct advisory style: about 300-500
+words in four to six paragraphs where warranted, concrete document edits and
+related operational preparation steps. These are writing targets, not admission
+minimums. Proposals stay visibly proposed and qualifications stay beside claims;
+avoid repeated caveats and formulaic result sentences. Keep the prose-led
+disclosure layout under the title Practical considerations. Address its notes to
+the task team: practical uncertainties, checks and preparation implications,
+without model instructions or evidence-chain commentary. No new fields, reviewer/admission rule or call
+budget; the narrative schema description remains within its existing size limit.
+
+Renderer v2.21 preserves explicit negated responsiveness phrases instead of
+withholding their whole narrative. A separate unsupported positive occurrence
+still triggers the existing guard. See docs/20261017_main-fcv-recommendation-style.md
+and current HANDOFF. Focused connected checks: 373 passed, four hanging browser
+checks excluded. The local style illustration contains two editorial rewrites,
+not fresh generation. Known REC-004 detection miss, human source review and full
+live pipeline/export acceptance remain outstanding. No paid call/deployment;
+publication=false. Conditional review v2.21 and reader review v1.11 unchanged.
+Final broader verification: 1,799 passed, four known hanging browser tests excluded.
+Final title/prose contracts: 11 passed; local Edge card/considerations inspected.
+The user has now authorized a paid readiness run after preparation; see current
+HANDOFF for deployment boundaries and execution status.
+
 ### 2026-10-17 Recommendation details prose
 
 Climate Recommendation details is prose-led in browser, HTML and DOCX. Render the

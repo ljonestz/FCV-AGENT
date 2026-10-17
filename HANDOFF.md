@@ -1,3 +1,53 @@
+### 2026-10-17 Paid readiness run authorized; preparation in progress
+
+User authorized a paid production-readiness check after all preparation. No new
+provider call is queued or submitted yet. Do not treat this as merge/production
+deployment approval. The original no-automatic-deployment restriction remains;
+prepare the exact preview-only deployment/execution terms before approval.
+Read-only Render checks: workspace tea-d6de2tsr85hc73bqdi0g, preview
+srv-d6gsivcr85hc73a2833g follows fix/climate-opcs-parity with auto-deploy off,
+free plan, live dep-db98qcifngtc739asn0g on 98048797116a. Production
+srv-d6de99jh46gs73d0jjrg follows main, auto-deploy on, paid 0.5c-512mb plan.
+No service change made. Preserve all consumed ledgers/locks and do not reuse them.
+
+### 2026-10-17 Main FCV recommendation writing benchmark
+
+User selected main FCV's style, depth and tone. Compiler v2.23 now targets about
+300-500 words in four to six paragraphs when warranted, with substantive rationale,
+direct recommendations and related practical edits/preparation work. Proposed
+operational arrangements remain proposals; source/authority distinctions remain.
+The prose disclosure layout is retained under the new title Practical considerations.
+After reading the illustration, the user approved its fuller style and asked for
+task-team notes instead of model-facing caveats. The prompt and editorial example
+now focus those notes on open questions, practical checks and preparation decisions.
+Narrative schema description
+aligned within the existing size budget; no new fields, admission rule, reviewer
+or call limit. Conditional review v2.21 and final-reader review v1.11 unchanged.
+
+Renderer v2.21 fixes the specific negated-responsiveness false positive that hid
+the first two saved narratives. Unsupported positive occurrences still trigger
+the existing fallback. See docs/20261017_main-fcv-recommendation-style.md.
+Focused checks: 373 passed with four known hanging browser tests excluded.
+New untracked illustration prefix: output/20261016-ipf-pilot-live-preflight/
+20261017_main-fcv-style-refined-. The earlier main-fcv-style example is preserved.
+REC-001 and REC-004 are explicit editorial examples, 346/375 words, and all five
+considerations sections are tidied. Other narratives/actions and canonical facts/judgments
+are preserved. All five
+narratives survive browser/HTML/in-memory Word rendering. No fresh generation,
+source approval or new review packet is claimed for this style illustration.
+The final title/prose disclosure checks passed all 11 affected contracts.
+Final broader suite: 1,799 passed, four known hanging browser tests excluded,
+253.18 seconds. Final local Edge card/considerations visually inspected. The
+isolated browser had only a missing favicon; no application JavaScript error.
+Hashes/source preservation verified in the refined illustration's verification.json.
+
+Fresh v2.23 generation and full live acceptance remain outstanding. A new paid
+readiness run is authorized as recorded above, with deployment/execution preparation
+still pending. The real
+REC-004 semantic detection miss is unresolved; human source review and external
+snapshot/file-bound approval remain necessary. No provider call or deployment;
+publication=false. Keep the existing branch/worktree and untracked artifacts.
+
 ### 2026-10-17 Recommendation details prose
 
 User-approved presentation change: Climate Recommendation details now uses the

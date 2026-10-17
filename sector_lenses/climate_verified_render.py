@@ -936,7 +936,12 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
                                ("decision", "minimum_action", "enhanced_action"))
         # A narrative may not introduce a contribution classification absent from
         # the reviewed action. Retain every field/qualification through the fallback.
-        if re.search(r"\bresponsiveness\b", narrative, re.IGNORECASE) and not re.search(
+        # Explicitly negated classifications are not added contribution claims.
+        contribution_text = re.sub(
+            r"\b(?:not|rather than)\s+(?:(?:a|an)\s+)?responsiveness\b",
+            "", narrative, flags=re.IGNORECASE,
+        )
+        if re.search(r"\bresponsiveness\b", contribution_text, re.IGNORECASE) and not re.search(
             r"\bresponsiveness\b", action_text, re.IGNORECASE
         ):
             reader_priority["narrative"] = ""
@@ -1509,7 +1514,7 @@ def render_reader_html(model: dict[str, object], *, snapshot_sha256: str | None 
                 for paragraph in paragraphs:
                     parts.append('<p class="pc-narr">' + html.escape(paragraph) + '</p>')
                 parts.append('</section>')
-        parts.append('<details class="climate-priority-detail"><summary>Recommendation details</summary>')
+        parts.append('<details class="climate-priority-detail"><summary>Practical considerations</summary>')
         detail_paragraphs, followup, notes = _priority_detail_content(priority)
         for paragraph in detail_paragraphs:
             parts.append('<p class="climate-priority-detail-prose">' + html.escape(paragraph) + '</p>')
@@ -1789,7 +1794,7 @@ def write_reader_docx(model: dict[str, object], path: str | Path, *, snapshot_sh
                 document.add_heading(label, level=3)
                 for paragraph in paragraphs:
                     document.add_paragraph(paragraph)
-        document.add_heading("Recommendation details", level=3)
+        document.add_heading("Practical considerations", level=3)
         detail_paragraphs, followup, notes = _priority_detail_content(priority)
         for paragraph in detail_paragraphs:
             document.add_paragraph(paragraph)

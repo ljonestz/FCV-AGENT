@@ -2466,9 +2466,9 @@ def test_verified_climate_ui_contract_is_ranked_and_multidimensional():
     assert "Suggested drafting for the current document" in body
     assert "Suggested drafting for an operational instrument" in body
     # The card leads with the model narrative; the useful structured fields fold
-    # into a "Recommendation details" collapsible, and app-internal routing/coded
+    # into a "Practical considerations" collapsible, and app-internal routing/coded
     # references are dropped from the user view entirely.
-    assert "Recommendation details" in body
+    assert "Practical considerations" in body
     assert "pc-narr" in body
     assert "priority_summary" in body
     assert "prioritySummary.statement" in body

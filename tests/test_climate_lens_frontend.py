@@ -2032,7 +2032,7 @@ for (const expected of [
   'Seasonal flooding and insecurity can disrupt works. The project needs agreed triggers for pausing and restarting activity.',
   'These triggers should be discussed with local delivery partners. They can reduce uneven access to project benefits.',
   'Include seasonal access triggers in the implementation arrangements.',
-  'Recommendation details', '<article class="climate-verified-assessment">',
+  'Practical considerations', '<article class="climate-verified-assessment">',
   '<section class="climate-report-section', '<header class="climate-section-heading">',
   '<details class="climate-priority-detail">',
   'Complete drafting paragraph for priority four.',
@@ -2322,7 +2322,7 @@ const html = renderClimateVerifiedAssessment({{
 }});
 for (const expected of [
   '<details id="climate-priority-2" class="climate-priority-card" open><summary>',
-  '<details class="climate-priority-detail"><summary>Recommendation details</summary>',
+  '<details class="climate-priority-detail"><summary>Practical considerations</summary>',
   '<details class="climate-fold"><summary>Method, limitations, and sources</summary>',
   'Closed priority narrative.', 'Closed priority decision.',
   'Closed method text.', 'Closed limitations text.'

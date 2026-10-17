@@ -1,4 +1,4 @@
-"""Recommendation details keep readable qualifications and hide machine metadata."""
+"""Practical considerations keep readable qualifications and hide machine metadata."""
 from copy import deepcopy
 from html import escape
 from io import BytesIO
@@ -10,6 +10,7 @@ from docx import Document
 
 from sector_lenses.climate_verified_render import build_reader_model, render_reader_html, write_reader_docx
 from sector_lenses.climate_verified_prompts import _recommendation_prompt
+from sector_lenses.climate_verified_schemas import CANDIDATE_SCHEMA
 from tests.test_climate_verified_render import _assessment
 from tests.test_climate_lens_frontend import INDEX, _extract_js_function, _js_escape_helper
 
@@ -37,7 +38,7 @@ def test_html_and_word_details_keep_qualifications_without_the_field_dump():
     output = BytesIO()
     write_reader_docx(model, output)
     paragraphs = [p.text for p in Document(output).paragraphs]
-    start = paragraphs.index('Recommendation details')
+    start = paragraphs.index('Practical considerations')
     end = paragraphs.index('Points to check before the applicable review')
     word = '\n'.join(paragraphs[start:end])
     priority = model['priorities'][0]
@@ -93,6 +94,22 @@ for(const omitted of ['Minimum action:','Recommendation:','Limitation:','Caution
 
 def test_generation_uses_existing_fields_for_complementary_detail_prose():
     prompt = ' '.join(_recommendation_prompt({}).split())
-    assert 'Recommendation details' in prompt
+    assert 'Practical considerations' in prompt
     assert 'complementary paragraphs' in prompt
     assert 'Do not repeat the visible action' in prompt
+
+
+def test_generation_matches_main_fcv_depth_and_direct_operational_advice():
+    prompt = ' '.join(_recommendation_prompt({}).split())
+    assert 'about 300-500 words' in prompt
+    assert 'four to six paragraphs' in prompt
+    assert '110-220 words' not in prompt
+    assert 'Use direct verbs such as Revise, Specify, Assess, Include and Agree' in prompt
+    assert 'proposed operational arrangements' in prompt
+    assert "Do not end every recommendation with 'The result would be'" in prompt
+    assert 'reader-facing statements' in prompt
+    assert 'preparation discussion' in prompt
+    assert 'missing evidence from a confirmed omission' in prompt
+    description = CANDIDATE_SCHEMA['properties']['narrative']['description']
+    assert '300-500 words' in description
+    assert 'Four to six paragraphs' in description

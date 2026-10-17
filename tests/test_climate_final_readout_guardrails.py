@@ -4,6 +4,8 @@ from copy import deepcopy
 import json
 import subprocess
 
+import pytest
+
 from sector_lenses.climate_verified_render import build_reader_model
 from sector_lenses.research import verify_climate_research_claims
 from sector_lenses.climate_verified_prompts import build_verified_stage_prompt
@@ -26,6 +28,34 @@ def test_new_responsiveness_classification_cannot_enter_only_through_narrative()
     assert original==before
     original["decision"]="Consider responsiveness through a documented wider peace-dividend mechanism."
     assert build_reader_model(assessment)["priorities"][1]["narrative"]==before["narrative"]
+
+
+@pytest.mark.parametrize("qualification", [
+    "This is a do-no-harm concern rather than a responsiveness opportunity.",
+    "This is a do-no-harm concern, not a responsiveness measure.",
+    "This supports sensitivity, not responsiveness.",
+])
+def test_negated_responsiveness_does_not_withhold_the_operational_narrative(qualification):
+    assessment, _, _ = _run_multiple(3)
+    priority = assessment["priorities"][1]
+    priority["narrative"] = (
+        "The existing access indicator needs a clearer reporting definition. "
+        + qualification + "\n\nRevise the results framework to specify how access is reported."
+    )
+    before = deepcopy(assessment)
+    reader = build_reader_model(assessment)
+    assert reader["priorities"][1]["narrative"] == priority["narrative"]
+    assert reader["technical_annex"]["withheld_narrative_count"] == 0
+    assert assessment == before
+
+
+def test_negation_does_not_hide_another_unsupported_responsiveness_assertion():
+    assessment, _, _ = _run_multiple(3)
+    assessment["priorities"][1]["narrative"] = (
+        "Measurement alone is not a responsiveness measure. "
+        "The baseline nevertheless establishes a responsiveness contribution."
+    )
+    assert build_reader_model(assessment)["priorities"][1]["narrative"] == ""
 
 
 def test_only_cited_sources_and_provider_publication_dates_are_retained():
