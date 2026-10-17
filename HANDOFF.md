@@ -1,3 +1,24 @@
+### 2026-10-17 Approved preview campaign completed; blocker restored
+
+Read docs/20261017_preview-readiness-460eaef-results.md first. Both authorized
+submissions are consumed: Smoke 0999c005-9be4-4558-bbf9-37e60348f5b0, Quality
+13290d23-ae01-4bdc-8656-3dcbc3eeefef. Candidate 460eaef completed the technical
+pipeline, exports, packet integrity/409 drift checks and exact session reload.
+Quality retained four recommendations (356-381 words); second disclosure works;
+12 Word pages rendered and visually inspected. Summary fallback and one withheld
+REC-003 drafting block remain. Human source review found an unflagged REC-001
+phasing error: four later-phase airstrips must not be called unselected Phase 1
+sites. REC-004 avoids the historical revenue exclusion. Keep useful recommendations;
+apply targeted offline corrections, regenerate matching exports/packet, and obtain
+named organisational approval. Full analytical acceptance remains pending.
+
+Preview blocker merge-restored; dep-db9s3njncjis73afgo90 live at 18:45:15 UTC on
+460eaef, health ok/quality, branch unchanged and auto-deploy off. No runtime guard
+probe was made. Production untouched. No further paid call authorized or queued.
+Campaign artifacts use ipf-readiness-20261017-460eaef- in existing untracked
+output directory. Original artifacts/locks preserved; publication_approved=false.
+The older preparation entries below are historical and do not reopen authorization.
+
 ### 2026-10-17 Supervised-pilot source dispositions prepared
 
 Read docs/20261017_supervised-pilot-disposition-and-acceptance.md before another
