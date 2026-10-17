@@ -1,3 +1,17 @@
+### 2026-10-17 Revised reader check completed after explicit approval
+
+Read docs/20261017_dividends-live-results.md. User explicitly approved the prepared
+Anthropic payload/destination; two calls completed, zero retries, USD0.921508
+conservative reservations against USD2 (not invoice charges). Authorization consumed.
+Fresh dividends prose is more useful and conditional; mechanical checks pass, but
+semantic review returned revise and the reader remains unadmitted. Source review
+confirms blended activity/airstrip criteria and finds additional scope qualifiers;
+the historical hiring objection is overstrict. Preserve useful analysis and the
+approved editorial v2; no new detection architecture or paid correction loop.
+Raw result/review HTML use dividends-live-20261017 in the existing output folder.
+Neither app was deployed or reconfigured; publication=false. Canonical reconciliation,
+matching packet, named human approval and revised full-pipeline acceptance remain.
+
 ### 2026-10-17 Revised reader check prepared; automatic review blocked submission
 
 User approved the v2 editorial HTML and next step. Read
