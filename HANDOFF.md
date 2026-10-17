@@ -1,14 +1,40 @@
-### 2026-10-17 Paid readiness run authorized; preparation in progress
+### 2026-10-17 Paid readiness campaign stopped after incomplete Smoke
 
-User authorized a paid production-readiness check after all preparation. No new
-provider call is queued or submitted yet. Do not treat this as merge/production
-deployment approval. The original no-automatic-deployment restriction remains;
-prepare the exact preview-only deployment/execution terms before approval.
-Read-only Render checks: workspace tea-d6de2tsr85hc73bqdi0g, preview
-srv-d6gsivcr85hc73a2833g follows fix/climate-opcs-parity with auto-deploy off,
-free plan, live dep-db98qcifngtc739asn0g on 98048797116a. Production
-srv-d6de99jh46gs73d0jjrg follows main, auto-deploy on, paid 0.5c-512mb plan.
-No service change made. Preserve all consumed ledgers/locks and do not reuse them.
+User approved the concrete preview-only deployment, temporary guard opening and
+Smoke-to-Quality plan. Candidate 853771e is now deployed on the existing Climate
+preview; auto-deploy remains off. One paid Smoke assessment ran:
+8dda1436-c4b5-4342-93f1-deb7953c21c9. Complete PDF extraction, research and all
+ten native calls returned, but five valid/admitted candidates became zero priorities.
+Conditional review said revise while all five core records passed and no issues
+or targets were supplied. The unresolved-target fallback suppressed everything.
+Offline replay confirms valid source IDs and five valid core reviews: do not
+misdiagnose this as a parsing or unresolved-source failure. The final reader also
+remained withheld after bounded correction. Quality was not submitted and no
+additional paid assessment is queued or authorized. See
+docs/20261017_supervised-readiness-smoke-result.md for diagnosis and next step.
+
+Diagnostic session/HTML/DOCX/review packet saved under the existing output folder,
+prefix ipf-readiness-20261017-853771e-smoke-. Packet hashes and draft notices passed;
+live stale-reader export rejected with 409. Publication remains false. These are
+incomplete Smoke exports, not live acceptance or Word visual-layout acceptance.
+Native usage 255,394 input / 24,758 output tokens excludes upstream helpers; actual
+invoice cost is unavailable. Historical reservations were not reused or reset.
+
+Preview srv-d6gsivcr85hc73a2833g, fix/climate-opcs-parity, free plan, is restored
+to Quality and blocking settings MICROUSD=1 / DB=/tmp/fcv-ipf-readiness-20261017-853771e-post.sqlite.
+Restore dep-db9qrvu1egvs738a1kog became live on 853771e at 17:20:18 UTC; health
+confirmed same build/Quality. Merge acknowledgement, deploy and health are the
+restoration evidence; live guard hook not independently inspected or provider-probed.
+Production srv-d6de99jh46gs73d0jjrg unchanged, main, health build 1168a8f2ab2a.
+No merge/production deploy/plan change. Preserve branch/worktree, consumed Smoke
+lock, historical artifacts and pre-existing untracked test. The Quality lock is absent.
+
+Next: reproduce this contradiction offline and prepare narrow handling that keeps
+explicitly passed cores for supervised review while flagging the inconsistency;
+do not silently certify a pass. The earlier REC-004 detection miss remains unresolved.
+Full Quality pipeline/export acceptance and named external source/file-bound
+human approval are still required before sharing. A fresh paid assessment requires
+new approval after the handling change and checks are concrete.
 
 ### 2026-10-17 Main FCV recommendation writing benchmark
 

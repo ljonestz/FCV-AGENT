@@ -1,3 +1,31 @@
+### 2026-10-17 Paid readiness Smoke stopped before Quality
+
+Read docs/20261017_supervised-readiness-smoke-result.md and current HANDOFF first.
+User-approved preview campaign deployed application commit 853771e and submitted
+one Smoke assessment, 8dda1436-c4b5-4342-93f1-deb7953c21c9. Five admitted candidates
+were all suppressed: conditional review returned revise with all five valid core
+reviews passed and no issues/targets. Offline replay confirms valid source IDs;
+the unresolved-target fallback caused the blanket withholding. Final reader also
+remained withheld after its bounded correction. Quality was not submitted. Do not
+claim full live acceptance or reuse the consumed Smoke lock for another run.
+
+Preview blocker configuration restored and deployed on 853771e in Quality mode
+(MICROUSD=1; fresh /tmp/fcv-ipf-readiness-20261017-853771e-post.sqlite).
+Restore dep-db9qrvu1egvs738a1kog live; health verified. Guard hook not independently
+inspected or provider-probed. Auto-deploy off; production health unchanged at 1168a8f2ab2a.
+Diagnostic exports/packet hashes and live stale-reader 409 passed. Smoke produced
+no accepted recommendations; Quality generation and Word visual-layout checks were not run.
+No additional paid assessment is queued/authorized. Preserve branch/worktree,
+raw artifacts and pre-existing untracked test. Publication=false; human approval
+against the actual packet/report hashes remains external and pending.
+
+Use the saved response for an offline contradiction regression and narrow handling
+fix that retains explicitly passed cores for supervised review while exposing the
+unresolved aggregate result. Do not silently convert contradictory review to pass,
+weaken source checks or introduce another detection architecture. The prior REC-004
+semantic detection miss remains unresolved; later Quality acceptance needs fresh
+approval after a concrete fix/checks. No application code changed in this run.
+
 ### 2026-10-17 Match main FCV recommendation writing
 
 Compiler v2.23 uses main FCV's substantive, direct advisory style: about 300-500
