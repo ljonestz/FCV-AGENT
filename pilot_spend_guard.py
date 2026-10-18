@@ -18,8 +18,8 @@ class PilotBudgetExceeded(RuntimeError):
 
 class PilotSpendGuard:
     def __init__(self, path: Path, limit_microusd: int):
-        if type(limit_microusd) is not int or not 0 < limit_microusd <= 5_000_000:
-            raise ValueError("Pilot allowance must be positive and at most USD5")
+        if type(limit_microusd) is not int or not 0 < limit_microusd <= 6_000_000:
+            raise ValueError("Pilot allowance must be positive and at most USD6")
         self.path = Path(path)
         with closing(sqlite3.connect(self.path)) as db, db:
             db.execute("CREATE TABLE IF NOT EXISTS budget (id INTEGER PRIMARY KEY CHECK(id=1), ceiling INTEGER, reserved INTEGER)")

@@ -60,7 +60,8 @@ Do not confuse a cold start, missing bank or host timeout with an analytical err
 The acceptance guard is opt-in and separate from production operational budgeting.
 It permits only known plain-text first-party requests and rejects live tools. Set
 both `FCV_PILOT_BUDGET_MICROUSD` and `FCV_PILOT_BUDGET_DB` together. A ceiling above
-5,000,000 microUSD is rejected. Reservations include the full allowed output once,
+6,000,000 microUSD is rejected. The USD6 maximum was explicitly approved for
+one further acceptance run; it is not a standing operating allowance. Reservations include the full allowed output once,
 double input-byte/framing headroom, failures and retries; they are not invoices.
 Ledgers are atomic and cannot have their ceiling changed. Never reset a consumed
 ledger or repeat an allowance after an ephemeral host redeploy.

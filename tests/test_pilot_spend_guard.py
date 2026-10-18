@@ -84,10 +84,19 @@ def test_full_output_ceiling_is_reserved_once_with_double_input_headroom(tmp_pat
     assert guard.reserved_microusd() > 160000
 
 
-@pytest.mark.parametrize('limit', [5000001, 100000000, True, 0])
-def test_five_dollar_hard_ceiling_cannot_be_relaxed(tmp_path, limit):
+@pytest.mark.parametrize('limit', [6000001, 100000000, True, 0])
+def test_six_dollar_hard_ceiling_cannot_be_relaxed(tmp_path, limit):
     with pytest.raises(ValueError):
         PilotSpendGuard(tmp_path / 'budget.sqlite', limit)
+
+
+def test_fresh_six_dollar_allowance_does_not_change_existing_ledger(tmp_path):
+    path = tmp_path / 'approved.sqlite'
+    guard = PilotSpendGuard(path, 6000000)
+    guard(request())
+    assert PilotSpendGuard(path, 6000000).reserved_microusd() == guard.reserved_microusd()
+    with pytest.raises(ValueError):
+        PilotSpendGuard(path, 5000000)
 
 
 def test_all_application_clients_use_guard_and_default_is_off(monkeypatch, tmp_path):

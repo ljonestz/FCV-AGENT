@@ -1,3 +1,17 @@
+### 2026-10-18 Fresh paid Quality run authorized, not submitted
+
+User explicitly approved one additional full bank-only Quality run up toUSD6.
+Read docs/20261018_fresh-quality-six-dollar-allocation.md. Earlier three full-run
+slots/ledgers remain consumed and untouched. New authorization record is
+output/20261016-ipf-pilot-live-preflight/20261018_final-six-dollar-authorization.json;
+exclusive lock will be final-quality-20261018-six.started.lock. Never repeat it.
+Guard maximum only changes5to6USD; reservation math and analytical code unchanged.
+173guard/pipeline tests passed. Offline8-page PID/IPF extraction passed; same-run
+planning anchor plus added prompt/schema overhead USD4.572208, not a fresh-output
+guarantee or invoice. Fresh ledger /tmp/fcv-pilot-final-quality-20261018-six.sqlite.
+No provider call submitted yet. Verify deployedSHA/modes before upload, capture
+all outputs/reservations, then restore blocker. No production deployment authorized.
+
 ### 2026-10-18 Combined candidate deployed and handover packaged
 
 Read docs/20261018_combined-pilot-preview-results.md first. Combined app/source
