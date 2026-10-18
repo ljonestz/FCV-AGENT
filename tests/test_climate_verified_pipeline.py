@@ -816,7 +816,7 @@ def test_manifest_is_privacy_safe_and_scoped_to_the_run():
     assert first["manifest"]["run_id"] == "run-test"
     assert second["manifest"]["run_id"] == "run-two"
     assert first["manifest"]["source_count"] == 1
-    assert first["manifest"]["renderer_version"] == "climate-reader-v2.26"
+    assert first["manifest"]["renderer_version"] == "climate-reader-v2.27"
     assert first["manifest"]["extraction_version"] == "source-blocks-v3"
     assert (
         first["manifest"]["prompt_versions"]["fact_extraction"]
@@ -836,7 +836,7 @@ def test_manifest_is_privacy_safe_and_scoped_to_the_run():
     )
     assert (
         first["manifest"]["prompt_versions"]["conditional_review"]
-        == "climate-review-v2.23"
+        == "climate-review-v2.24"
     )
     assert (
         first["manifest"]["prompt_versions"]["drafting_compiler"]
@@ -2716,5 +2716,5 @@ def test_reader_paragraph_cleanup_preserves_text_and_requires_meaning_review(ver
     assert reviewer.calls[-1]['stage'] == 'reader_review'
     reviewed = reviewer.calls[-1]['payload']['final_reader']['assessment_narratives'][0]
     assert ' '.join(reviewed['paragraphs']) == original
-    assert len(reviewed['paragraphs']) <= 2
+    assert len(reviewed['paragraphs']) <= 3
     assert result['summary_overview_status'] == ('generated' if verdict == 'pass' else 'fallback')

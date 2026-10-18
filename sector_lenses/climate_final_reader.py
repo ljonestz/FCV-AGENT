@@ -54,6 +54,10 @@ def reader_support_records(assessment: dict[str, object]) -> dict[str, dict]:
             if identifier in records:
                 duplicates.add(identifier)
             if key == "recommendation_id":
+                diagnostics = assessment.get("recommendation_diagnostics")
+                marked = diagnostics.get("verification_issues", {}) if isinstance(diagnostics, dict) else {}
+                if isinstance(marked, dict) and identifier in marked:
+                    continue
                 # An accepted action is not independent evidence for its narrative premises.
                 action_fields = (
                     "recommendation_id", "title", "decision", "minimum_action",
@@ -78,7 +82,7 @@ def normalize_reader_paragraphs(payload: dict) -> dict:
         if not isinstance(texts, list) or not all(isinstance(text, str) for text in texts):
             continue
         texts = [text for text in texts if not re.fullmatch(r'[\s.,;:!?…]*', text)]
-        record['paragraphs'] = texts if len(texts) <= 2 else [texts[0], ' '.join(texts[1:])]
+        record['paragraphs'] = texts if len(texts) <= 3 else [texts[0], texts[1], ' '.join(texts[2:])]
     return normalized
 
 
@@ -204,9 +208,9 @@ def validate_final_reader(payload: object, assessment: dict[str, object],
         theme, texts = record.get("theme"), record.get("paragraphs")
         if (not isinstance(theme, str) or theme not in {"design", "dividends", "inclusion"} or theme in themes
                 or record.get("object_id") != f"NARR-{theme}"
-                or not isinstance(texts, list) or not 1 <= len(texts) <= 2
+                or not isinstance(texts, list) or not 1 <= len(texts) <= 3
                 or any(not isinstance(text, str) for text in texts)):
-            rejected(record.get('object_id'), 'Use the required ID/theme and one or two text paragraphs.', 'READER_STRUCTURE_INVALID')
+            rejected(record.get('object_id'), 'Use the required ID/theme and one to three text paragraphs.', 'READER_STRUCTURE_INVALID')
             valid = False
         else:
             # Presentation defects must not mask unsupported evidence references.
@@ -214,7 +218,7 @@ def validate_final_reader(payload: object, assessment: dict[str, object],
                 valid = False
             count = sum(len(text.split()) for text in texts)
             if not 1 <= count <= 400:
-                rejected(record['object_id'], f'Finding has {count} words; nonempty prose is required and the hard ceiling is 400 (editorial target 70-180).', 'READER_WORD_COUNT')
+                rejected(record['object_id'], f'Finding has {count} words; nonempty prose is required and the hard ceiling is 400 (editorial target 180-240).', 'READER_WORD_COUNT')
                 valid = False
         if isinstance(theme, str):
             themes.add(theme)
@@ -308,6 +312,30 @@ def apply_reader_corrections(payload: dict, response: object, targets: set[str],
     return corrected
 
 
+def review_display_text(texts: list[str], issue: dict) -> list[str] | None:
+    """Apply an explicit review disposition; originals remain in the audit record."""
+    disposition = issue.get('disposition')
+    quote, note = issue.get('quoted_text'), issue.get('verification_note')
+    if (not isinstance(disposition, str) or disposition not in {'verify', 'omit_sentence'} or not isinstance(note, str)
+            or not note.strip() or len(note) > 600 or not isinstance(quote, str)
+            or not quote.strip() or sum(text.count(quote) for text in texts) != 1):
+        return None
+    result = list(texts)
+    index = next(i for i, text in enumerate(texts) if quote in text)
+    text = texts[index]
+    if disposition == 'omit_sentence':
+        # Only an exact whole sentence is removable; ambiguous boundaries stay closed.
+        sentences = re.split(r'(?<=[.!?])\s+', text.strip())
+        if quote not in sentences or not any(part != quote and part.strip() for part in sentences):
+            return None
+        text = ' '.join(part for part in sentences if part != quote)
+        marker = 'Sentence withheld. Verify before sharing: '
+    else:
+        marker = 'Verify before sharing: '
+    result[index] = text + ' [' + marker + note.strip() + ']'
+    return result
+
+
 def valid_reader_revision(review: dict, final_reader: object) -> bool:
     """Reject incomplete diagnostics before spending the single text correction."""
     if review.get('verdict') != 'revise':
@@ -345,6 +373,12 @@ def valid_reader_revision(review: dict, final_reader: object) -> bool:
         if 'severity' in issue and (issue['severity'] not in ('minor', 'consequential')
                 or not isinstance(issue.get('decision_impact'), str) or not issue['decision_impact'].strip()):
             return False
+        if 'disposition' in issue and (not isinstance(issue['disposition'], str)
+                or issue['disposition'] not in {'verify', 'omit_sentence', 'withhold'}
+                or issue.get('severity') not in ('minor', 'consequential')
+                or not isinstance(issue.get('verification_note'), str)
+                or not issue['verification_note'].strip() or len(issue['verification_note']) > 600):
+            return False
         record = records.get(issue['object_id'])
         if record is None:
             return False
@@ -372,8 +406,26 @@ def reviewed_final_reader(payload: object, review: object, assessment: dict[str,
         return (summary, narratives) if all(review.get(k) == [] for k in ('object_ids', 'reason_codes', 'issues')) else ([], [])
     if not valid_reader_revision(review, payload):
         return [], []
-    withheld = {issue['object_id'] for issue in review['issues'] if issue.get('severity', 'consequential') != 'minor'}
-    # The opening is a single argument; removing one paragraph can reverse its balance.
+    summary = list(summary)
+    narratives = deepcopy(narratives)
+    withheld = set()
+    for issue in review['issues']:
+        identifier = issue['object_id']
+        if identifier.startswith('SUM-'):
+            index = next(i for i, record in enumerate(payload['summary_paragraphs']) if record['object_id'] == identifier)
+            changed = review_display_text([summary[index]], issue)
+            if changed is not None:
+                summary[index] = changed[0]
+            elif issue.get('severity') != 'minor' or 'disposition' in issue:
+                withheld.add(identifier)
+        else:
+            record = next(record for record in narratives if record['object_id'] == identifier)
+            changed = review_display_text(record['paragraphs'], issue)
+            if changed is not None:
+                record['paragraphs'] = changed
+            elif issue.get('severity') != 'minor' or 'disposition' in issue:
+                withheld.add(identifier)
+    # Preserve the opening's balance when an entire argument cannot stand alone.
     if any(identifier.startswith('SUM-') for identifier in withheld):
         summary = []
     return summary, [record for record in narratives if record['object_id'] not in withheld]
@@ -390,13 +442,17 @@ def reader_review_notice(payload: object, review: object, assessment: dict[str, 
         return 'Automated narrative review did not establish usable prose. Source-based findings are shown where available; human review is required.'
     labels = {'SUM': 'opening', 'NARR-design': 'climate risks and delivery',
               'NARR-dividends': 'peace and social dividends', 'NARR-inclusion': 'fair benefits'}
-    minor, consequential = [], []
+    minor, consequential, marked = [], [], []
     for issue in review['issues']:
         label = labels['SUM'] if issue['object_id'].startswith('SUM-') else labels[issue['object_id']]
-        target = minor if issue.get('severity') == 'minor' else consequential
+        retained = (bool(summary) if issue['object_id'].startswith('SUM-') else
+                    any(record['object_id'] == issue['object_id'] for record in narratives))
+        target = marked if retained and issue.get('disposition') in {'verify', 'omit_sentence'} else minor if issue.get('severity') == 'minor' else consequential
         if label not in target:
             target.append(label)
     messages = []
+    if marked:
+        messages.append('Verification notes identify unresolved claims in ' + ', '.join(marked) + '; human source review is required before sharing.')
     if minor:
         messages.append('Minor uncertainties remain in ' + ', '.join(minor) + '; the narrative is retained for human review.')
     if consequential:

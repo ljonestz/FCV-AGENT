@@ -11,7 +11,7 @@ from typing import Any
 
 from docx import Document
 
-from sector_lenses.climate_final_reader import reviewed_final_reader, reader_review_notice
+from sector_lenses.climate_final_reader import reviewed_final_reader, reader_review_notice, review_display_text
 
 from climate_question_bank import CLIMATE_LITERATURE_REFERENCES
 from sector_lenses.climate_judgments import ALLOWED
@@ -632,7 +632,7 @@ def _assessment_themes(gaps: list[dict], questions: list[dict], priorities: list
         paragraphs = item.get("paragraphs")
         refs = item.get("evidence_ids")
         if (theme not in definitions or sum(record.get("theme") == theme for record in narratives) != 1
-                or not isinstance(paragraphs, list) or not 1 <= len(paragraphs) <= 2
+                or not isinstance(paragraphs, list) or not 1 <= len(paragraphs) <= 3
                 or not all(isinstance(paragraph, str) and paragraph.strip() for paragraph in paragraphs)
                 or not isinstance(refs, list) or not refs or not all(isinstance(ref, str) for ref in refs)
                 or set(refs) - known_ids or (not final_contract and not set(refs) & fact_ids)):
@@ -896,11 +896,12 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
     partially_reviewed = bool(priorities) and (
         diagnostics.get("reviewer_verdict") in {"revise", "block"}
         and isinstance(admitted_count, int) and admitted_count > len(priorities)
-    ) or inconclusive_review
+    ) or inconclusive_review or bool(diagnostics.get("verification_issues"))
     recommendation_status = "incomplete" if all_suppressed else "partial" if partially_reviewed else "complete"
     recommendation_message = (
         INCOMPLETE_RECOMMENDATION_MESSAGE
         if all_suppressed
+        else "Some recommendations contain verification notes. Resolve the identified source questions before using the affected advice." if diagnostics.get('verification_issues')
         else INCONCLUSIVE_REVIEW_MESSAGE if inconclusive_review
         else PARTIAL_RECOMMENDATION_MESSAGE if partially_reviewed
         else NO_RECOMMENDATION_MESSAGE if not priorities else ""
@@ -941,6 +942,19 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
     withheld_narrative_count = 0
     for position, priority in enumerate(priorities, start=1):
         reader_priority = dict(priority)
+        issue = _mapping(diagnostics.get('verification_issues')).get(priority.get('recommendation_id'))
+        if isinstance(issue, dict):
+            fields = {key: reader_priority[key] for key in ('title', 'decision', 'minimum_action',
+                      'enhanced_action', 'enhanced_activation', 'narrative', 'limitation', 'caution')
+                      if isinstance(reader_priority.get(key), str)}
+            displayed = review_display_text(list(fields.values()), issue)
+            if displayed is not None:
+                reader_priority.update(zip(fields, displayed))
+                note = 'Verify before sharing: ' + issue['verification_note'].strip()
+                # The action and narrative are separate visible views of the same decision.
+                for key in ('minimum_action', 'narrative'):
+                    if note not in _text(reader_priority.get(key)):
+                        reader_priority[key] = '[' + note + '] ' + _text(reader_priority.get(key))
         narrative = _text(priority.get("narrative"))
         action_text = " ".join(_text(priority.get(key)) for key in
                                ("decision", "minimum_action", "enhanced_action"))
@@ -978,6 +992,15 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
                 block = dict(block)
                 if block.get("target_document") == "pid":
                     block["target_document"] = "PID"
+                role = 'current_document' if key == 'current_document_drafting' else 'operational_instrument'
+                issue = _mapping(diagnostics.get('verification_issues')).get(priority.get('recommendation_id', '') + '::' + role)
+                if isinstance(issue, dict):
+                    displayed = review_display_text([_text(block.get('text'))], issue)
+                    if displayed is not None:
+                        block['text'] = displayed[0]
+                        note = 'Verify before sharing: ' + issue['verification_note'].strip()
+                        reader_priority['minimum_action'] = '[' + note + '] ' + _text(reader_priority.get('minimum_action'))
+                        reader_priority['narrative'] = '[' + note + '] ' + _text(reader_priority.get('narrative'))
                 if isinstance(block.get("text"), str):
                     block["text"] = re.sub(r"\bpid\b", "PID", block["text"])
                 reader_priority[key] = block

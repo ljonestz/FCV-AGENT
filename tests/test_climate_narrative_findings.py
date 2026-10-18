@@ -135,7 +135,7 @@ def test_benefits_prose_prompts_build_mechanisms_before_diagnosing_gaps():
     assert 'existing_responses and pathways' in analysis
     assert 'not a documented omission' in analysis
     reader = ' '.join(_reader_prompt({}).split())
-    assert '150-180 words' in reader
+    assert '180-240 words' in reader
     assert 'answer directly without repeating questions' in reader
     assert 'Start with what the project could make possible' in reader
     assert 'who could be left out' in reader

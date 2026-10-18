@@ -1,3 +1,18 @@
+### 2026-10-18 Targeted verification notes: offline candidate
+
+Read docs/20261018_targeted-verification-notes.md for the latest follow-up. User
+approved precise verification markers across opening/core answers/recommendations,
+sentence-only omission where coherent, and fuller180-240-word core answers. Reviews
+now explicitly choose verify/omit_sentence/withhold; legacy reviews keep old handling.
+One correction/re-review remains; malformed/block findings stay closed. Unresolved
+core advice is excluded from final-reader accepted-action support. Notes are visible
+in browser/HTML/Word and bound to snapshots; raw revise and publication=false remain.
+Final offline suite1866 passed/four known Chromium hangs excluded (284.30s). Browser
+and Word saved-case preview checked. No fresh generation, paid call, merge or deploy.
+Preview/ITS acceptance archive remain856f583; production1168a8f unchanged. All three
+full-run slots consumed. New labelled preview is not a replacement acceptance packet.
+Keep branch/worktree and preserved untracked output/test; no call queued.
+
 ### 2026-10-18 Bank-based supervised pilot: tested handover candidate
 
 Read docs/20261018_ITS_supervised-pilot-acceptance.md first; it supersedes older

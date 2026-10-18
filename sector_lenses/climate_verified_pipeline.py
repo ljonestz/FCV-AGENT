@@ -17,6 +17,8 @@ from typing import Protocol, Sequence
 
 import climate_question_bank
 
+from sector_lenses.climate_review_admission import core_verification_issue
+
 from sector_lenses.climate_final_reader import (
     valid_reader_revision as _valid_reader_revision,
     apply_reader_corrections, bind_same_passage_project_references, reader_support_records,
@@ -97,11 +99,11 @@ PROMPT_VERSIONS = {
     "bounded_analysis": "climate-analysis-v2.13",
     "judgment_review": "climate-judgments-v2.17",
     "recommendation_compiler": "climate-recommendations-v2.24",
-    "conditional_review": "climate-review-v2.23",
+    "conditional_review": "climate-review-v2.24",
     "drafting_compiler": "climate-drafting-v1.8",
-    "reader_compiler": "climate-final-reader-v1.12",
-    "reader_correction": "climate-reader-correction-v1.7",
-    "reader_review": "climate-reader-review-v1.14",
+    "reader_compiler": "climate-final-reader-v1.13",
+    "reader_correction": "climate-reader-correction-v1.8",
+    "reader_review": "climate-reader-review-v1.15",
 }
 
 
@@ -1410,6 +1412,7 @@ def run_verified_climate_pipeline(
     reviewer_verdict = "not_invoked"
     semantic_review_object_ids: list[str] = []
     correction_trace: dict[str, object] = {}
+    verification_issues: dict[str, dict] = {}
     review: dict[str, object] = {}
     review_input: dict[str, object] = {}
     if priorities:
@@ -1636,6 +1639,14 @@ def run_verified_climate_pipeline(
                             passed = set(correction_admission.passed_core_ids)
                             recovered = {item.recommendation_id: item for item in corrected
                                          if item.recommendation_id in passed}
+                            if verdict == 'revise' and not correction_admission.reason_codes:
+                                for item in corrected:
+                                    if item.recommendation_id in passed:
+                                        continue
+                                    issue = core_verification_issue(correction_review, asdict(item))
+                                    if issue is not None:
+                                        verification_issues[item.recommendation_id] = issue
+                                        recovered[item.recommendation_id] = item
                     correction_trace["recovered_ids"] = sorted(recovered)
                 except PipelineCancelled:
                     raise
@@ -1781,6 +1792,15 @@ def run_verified_climate_pipeline(
                                 if identifier.split("::", 1)[0] in passed_parents
                                 and identifier not in rejected_artifacts
                             }
+                            if draft_verdict == 'revise' and not draft_admission.reason_codes:
+                                for identifier, block in proposed.items():
+                                    if identifier.split('::', 1)[0] not in passed_parents or identifier in recoverable:
+                                        continue
+                                    issue = core_verification_issue(second_review, {
+                                        'recommendation_id': identifier, 'narrative': block.text})
+                                    if issue is not None:
+                                        verification_issues[identifier] = issue
+                                        recoverable[identifier] = block
                             priorities = tuple(replace(item, **{
                                 field: recoverable.get(f"{item.recommendation_id}::{role}", getattr(item, field))
                                 for role, field in (("current_document", "current_document_drafting"),
@@ -1834,14 +1854,16 @@ def run_verified_climate_pipeline(
             'analysis': analysis_record, 'context_evidence': context_records,
             'judgments': asdict(judgments), 'executive_readout': executive_readout,
             'priorities': [asdict(replace(item, current_document_drafting=None,
-                                        operational_instrument_drafting=None)) for item in priorities],
+                                        operational_instrument_drafting=None)) for item in priorities
+                           if item.recommendation_id not in verification_issues],
         }
         support_records = reader_support_records(reader_assessment)
         reader_input = {
             'support_records': support_records, 'judgments': asdict(judgments),
             'source_passages': source_passages,
             'executive_readout': executive_readout,
-            'accepted_recommendation_ids': [item.recommendation_id for item in priorities],
+            'accepted_recommendation_ids': [item.recommendation_id for item in priorities
+                                            if item.recommendation_id not in verification_issues],
             'operation_context': resolved_context,
         }
         summary_overview_paragraphs, assessment_narratives = [], []
@@ -1988,10 +2010,10 @@ def run_verified_climate_pipeline(
         run_id=run_id,
         schema_version=CLIMATE_VERIFIED_SCHEMA_VERSION,
         prompt_versions=PROMPT_VERSIONS,
-        reviewer_version="climate-review-v2.5",
+        reviewer_version="climate-review-v2.6",
         extraction_version="source-blocks-v3",
         normalization_version="climate-normalization-v2.13",
-        renderer_version="climate-reader-v2.26",
+        renderer_version="climate-reader-v2.27",
         model_aliases=model_aliases,
         sampling={"max_transient_retries": 1,
                   "correction_transient_retries": 0,
@@ -2076,6 +2098,7 @@ def run_verified_climate_pipeline(
             "unsupported_numeric_tokens": unsupported_numbers,
             "semantic_review_object_ids": semantic_review_object_ids,
             "candidate_suppressions": candidate_suppressions,
+            **({"verification_issues": verification_issues} if verification_issues else {}),
         },
         "manifest": safe_log_summary(manifest),
     }

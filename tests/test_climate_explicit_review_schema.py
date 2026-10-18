@@ -21,7 +21,8 @@ def test_reader_objection_is_anchored_without_inheriting_core_checks():
     core = stage_output_schema('conditional_review')
     assert 'core_reviews' not in reader['properties']
     assert 'quoted_text' in reader['properties']['issues']['items']['required']
-    assert 'quoted_text' not in core['properties']['issues']['items']['properties']
+    for schema in (reader, core):
+        assert {'quoted_text', 'disposition', 'verification_note'} <= set(schema['properties']['issues']['items']['required'])
 
 
 def test_explicit_review_retains_qualified_analysis_and_proposals():

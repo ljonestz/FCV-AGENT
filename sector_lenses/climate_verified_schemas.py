@@ -744,6 +744,16 @@ STAGE_OUTPUT_SCHEMAS: dict[str, dict[str, object]] = {
 }
 
 
+# A reviewer distinguishes unresolved claims from defects requiring withholding.
+_conditional_issue = STAGE_OUTPUT_SCHEMAS['conditional_review']['properties']['issues']['items']
+_conditional_issue['properties'].update({
+    'quoted_text': _string('Exact unique text in the affected record; use the full sentence for omit_sentence.'),
+    'disposition': _enum(('verify', 'omit_sentence', 'withhold')),
+    'verification_note': _string('A concise task-team instruction saying exactly what to check against which source; maximum 600 characters.'),
+})
+_conditional_issue['required'].extend(['quoted_text', 'disposition', 'verification_note'])
+
+
 # Final prose is compiled against the decisions that survived semantic review.
 STAGE_OUTPUT_SCHEMAS['reader_compiler'] = _object({
     'summary_paragraphs': {'type': 'array', 'items': _object({
@@ -754,7 +764,7 @@ STAGE_OUTPUT_SCHEMAS['reader_compiler'] = _object({
     'assessment_narratives': {'type': 'array', 'items': _object({
         'object_id': _string('NARR-design, NARR-dividends or NARR-inclusion.'),
         'theme': _enum(('design', 'dividends', 'inclusion')),
-        'paragraphs': _strings('One or two connected paragraphs targeting 70-180 words; up to 200 permitted to preserve qualifications. Aim for 150-180 words in two paragraphs for dividends and inclusion when supported.'),
+        'paragraphs': _strings('Two or three connected paragraphs targeting 180-240 words when supported; shorter for sparse evidence. Hard ceiling 400 words.'),
         'evidence_ids': _strings('Exact supplied support IDs.'),
     })},
 })
@@ -766,7 +776,7 @@ STAGE_OUTPUT_SCHEMAS['reader_review'] = _object({
 _reader_issue = STAGE_OUTPUT_SCHEMAS['reader_review']['properties']['issues']['items']
 _reader_issue['properties']['quoted_text'] = _string(
     'Exact unique substring in the affected current final_reader record identifying the challenged assertion.')
-_reader_issue['required'].append('quoted_text')
+# quoted_text is inherited from the conditional issue contract.
 _reader_issue['properties']['severity'] = _enum(('minor', 'consequential'))
 _reader_issue['properties']['decision_impact'] = _string(
     'Explain the preparation decision or project understanding materially changed; for minor issues explain why it is unchanged.')

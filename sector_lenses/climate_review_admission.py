@@ -166,3 +166,40 @@ def reconcile_core_reviews(
         synthesized_issues=tuple(synthesized),
         reason_codes=(_UNRESOLVED,) if structural_problem else (),
     )
+
+
+def core_verification_issue(review: dict, candidate: dict) -> dict | None:
+    """Keep only a precisely anchored, explicit human-review disposition."""
+    from sector_lenses.climate_final_reader import review_display_text
+    if review.get('verdict') != 'revise':
+        return None
+    issues = review.get('issues', [])
+    targets, codes = review.get('object_ids'), review.get('reason_codes')
+    if (not isinstance(issues, list) or not isinstance(targets, list)
+            or not all(isinstance(target, str) for target in targets)
+            or len(targets) != len(set(targets)) or not isinstance(codes, list)
+            or not all(isinstance(code, str) and code in SEMANTIC_REVIEW_REASON_CODES for code in codes)
+            or not all(isinstance(issue, dict) and isinstance(issue.get('object_id'), str) for issue in issues)
+            or len(issues) != len(targets)
+            or {issue['object_id'] for issue in issues} != set(targets)):
+        return None
+    matches = [issue for issue in issues if isinstance(issue, dict)
+               and issue.get('object_id') == candidate['recommendation_id']]
+    if len(matches) != 1:
+        return None
+    issue = matches[0]
+    codes = issue.get('reason_codes')
+    if (not isinstance(codes, list) or not codes
+            or not all(isinstance(code, str) and code in SEMANTIC_REVIEW_REASON_CODES for code in codes)
+            or not set(codes) <= set(review.get('reason_codes', []))
+            or not isinstance(issue.get('explanation'), str) or not issue['explanation'].strip()):
+        return None
+    fields = {key: candidate[key] for key in ('title', 'decision', 'minimum_action',
+              'enhanced_action', 'enhanced_activation', 'narrative', 'limitation', 'caution')
+              if isinstance(candidate.get(key), str)}
+    texts = list(fields.values())
+    if review_display_text(texts, issue) is None:
+        return None
+    if issue['disposition'] == 'omit_sentence' and issue['quoted_text'] not in fields.get('narrative', ''):
+        return None
+    return dict(issue)

@@ -626,10 +626,25 @@ Return: {"drafting_sets":[{"recommendation_id":"REC-001","drafting_blocks":[{"dr
     )
 
 
+_VERIFICATION_DISPOSITION_GUIDANCE = """For each issue choose a display disposition. Use verify for an unresolved or
+reasonably disputed claim: preserve useful prose and give a precise verification_note
+for the task team, identifying what to check against which source (maximum 600 characters).
+Use omit_sentence only for a clearly contradicted or unsupported sentence whose
+removal leaves a coherent, independent argument; quoted_text must be that exact
+complete sentence. Use withhold when the defect undermines the whole argument or
+a proposed action cannot responsibly be retained. Do not use withhold for a small
+qualification or a disputed interpretation alone. Never mark a known false claim
+verify. Keep verdict revise for all unresolved issues; a marker is not a pass.
+For recommendation decisions, use withhold if the premise or decision fails;
+omit_sentence is limited to explanatory narrative or optional drafting, never a
+required decision/action. A block or structurally invalid review stays closed.
+"""
+
+
 def _review_prompt(payload: dict[str, object]) -> str:
     allowed_reason_codes = ", ".join(SEMANTIC_REVIEW_REASON_CODES)
     return _common(
-        """Review for consequential errors in a supervised operational pilot. Do not reject
+        _VERIFICATION_DISPOSITION_GUIDANCE + """Review for consequential errors in a supervised operational pilot. Do not reject
 useful actions for minor wording inconsistencies, editorial preferences or qualified
 inferences whose premises are supported. Flag errors that materially change project
 understanding or a preparation decision, including invented commitments, funding,
@@ -754,8 +769,9 @@ accepted_recommendation_ids. Never mention a withheld action as a recommendation
 Assessment narratives: three short question-led answers, theme design, dividends,
 inclusion; object_id NARR-design/NARR-dividends/NARR-inclusion. The renderer supplies
 the question headings, so answer directly without repeating questions in prose. Keep design to
-90-130 words. For dividends and inclusion, aim for 150-180 words each in two short,
-connected paragraphs when the support is rich enough. Target 70-180 words;
+180-240 words, as for dividends and inclusion, in two or three connected
+paragraphs when the support is rich enough. Explain the documented response, the
+mechanism and its conditions, and the practical implication. Target 180-240 words;
 length targets are advisory, with a hard ceiling of 400 per finding. Do not pad sparse evidence
 merely to reach the target.
 Start with what the project could make possible for people, grounded in concrete
@@ -818,7 +834,7 @@ anchors around abbreviations; include enough original context to make anchors un
 Do not overlap anchors. All anchors refer to the original text, not earlier edits.
 For shortening, delete or shorten individual uniquely anchored sentences. Preserve
 unaffected wording, spacing and paragraph boundaries; the application merges edits.
-A finding retains one or two paragraphs, targeting 70-180 words. Length targets
+A finding retains up to three paragraphs, targeting 180-240 words when supported. Length targets
 are advisory: preserve necessary qualifications, without padding sparse evidence.
 Hard size ceilings are 400 words per finding and 500 for the combined Summary.
 The combined Summary should target 160-230 words, including
@@ -833,6 +849,7 @@ record's original evidence IDs; do not return evidence IDs, themes or metadata.
 For each record, allowed_numeric_date_tokens_by_id is the exact whitelist enforced
 by the application. Use only its listed numeric_tokens. Use a date only as a full
 listed date phrase; a listed year or day used elsewhere does not permit a new date.
+Check every replacement for asset scope, planned versus ongoing status and preserved qualifications, not only the initially flagged defect.
 Keep planned benefits conditional and credit existing protections. The application
 preserves all unchanged records and references. A complete structural check and
 fresh independent meaning review follow this repair.""", payload,
@@ -841,7 +858,7 @@ fresh independent meaning review follow this repair.""", payload,
 
 def _reader_review_prompt(payload: dict[str, object]) -> str:
     return _common(
-        """Independently verify every final reader paragraph against its referenced
+        _VERIFICATION_DISPOSITION_GUIDANCE + """Independently verify every final reader paragraph against its referenced
 support_records and accepted recommendations. Check meaning, not vocabulary overlap.
 Read each project fact as subject, predicate and object_value together;
 supporting_excerpt is a provenance anchor, not the exhaustive assertion. A faithful
