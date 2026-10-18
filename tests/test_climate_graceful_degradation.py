@@ -64,3 +64,44 @@ def test_mixed_codes_surface_only_reader_facing_ones():
     messages = app._climate_source_warning_messages(mixed)
     assert len(messages) == 1
     assert "beneficiary country" in messages[0]["message"]
+
+
+# --- Fix 2: empty-priority statement must not overclaim validation ----------
+
+from sector_lenses import climate_verified_render as _render
+
+
+def test_empty_summary_says_none_generated_when_no_candidates():
+    """raw_candidate_count == 0 means nothing reached validation."""
+
+    summary = _render._priority_summary([], {"raw_candidate_count": 0})
+    assert summary["count"] == 0
+    text = summary["statement"].lower()
+    assert "generated" in text
+    assert "admitted after validation" not in text
+
+
+def test_empty_summary_reports_validation_when_candidates_existed():
+    """raw_candidate_count > 0 but none admitted -> validation did reject them."""
+
+    summary = _render._priority_summary(
+        [], {"raw_candidate_count": 3, "admitted_count": 0}
+    )
+    assert summary["count"] == 0
+    assert "validation" in summary["statement"].lower()
+
+
+def test_empty_summary_without_diagnostics_is_safe():
+    """Missing diagnostics must not raise and must keep a non-empty statement."""
+
+    summary = _render._priority_summary([])
+    assert summary["count"] == 0
+    assert summary["statement"]
+
+
+def test_populated_summary_statement_unchanged():
+    """The non-empty path keeps its existing reader wording."""
+
+    summary = _render._priority_summary([{"title": "Alpha"}, {"title": "Beta"}])
+    assert summary["count"] == 2
+    assert "2 main operational priorities" in summary["statement"]

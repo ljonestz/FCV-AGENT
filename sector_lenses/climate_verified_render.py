@@ -508,14 +508,30 @@ def _project_cycle_for_operation(
         ),
     }
 
-def _priority_summary(priorities: list[dict[str, Any]]) -> dict[str, object]:
+def _priority_summary(
+    priorities: list[dict[str, Any]],
+    diagnostics: dict[str, Any] | None = None,
+) -> dict[str, object]:
     titles = [_text(item.get("title")) for item in priorities]
     count = len(titles)
     if count == 0:
-        statement = (
-            "No final operational priority was admitted after validation and "
-            "semantic review."
-        )
+        # Distinguish "the model generated nothing" (raw_candidate_count == 0)
+        # from "candidates were generated but none passed review" so the reader
+        # is not told priorities were rejected when none ever existed. When
+        # diagnostics are absent, keep the conservative validation wording.
+        raw_candidate_count = (diagnostics or {}).get("raw_candidate_count")
+        if raw_candidate_count == 0:
+            statement = (
+                "No operational priority was generated for this assessment. "
+                "This does not establish an absence of risks or gaps; review the "
+                "assessment findings and points to check below."
+            )
+        else:
+            statement = (
+                "No operational priority was admitted after validation and "
+                "semantic review. Review the assessment findings and points to "
+                "check below."
+            )
     else:
         noun = "priority" if count == 1 else "priorities"
         statement = (
@@ -1041,7 +1057,7 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
         "recommendation_message": recommendation_message,
         "review_readiness_flags": [dict(item) for item in flags],
         "minor_climate_points": minor_climate_points,
-        "priority_summary": _priority_summary(reader_priorities),
+        "priority_summary": _priority_summary(reader_priorities, diagnostics),
         "evidence_status": _text(assessment.get("evidence_status")) or "approved",
         "technical_annex": {
             "run_id": _text(assessment.get("run_id")),
