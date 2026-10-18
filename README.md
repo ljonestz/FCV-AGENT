@@ -46,6 +46,24 @@ details and suggested project-package text. Current browser/HTML/Word styling is
 preserved. See [restoration verification](20260921_detailed-analysis-restoration.md)
 for the single fresh run, export checks and remaining analytical limitations.
 
+## October 18 Climate lens routing fixes
+
+Production tracks `main` (currently `6f3d5e6`), which now carries four fixes to the
+Climate-FCV lens after a Honduras IPF PAD produced no recommendations. The fixes
+restore instrument resolution when the datasheet financing-instrument grid falls past
+the bounded extraction window, stop an unchecked datasheet MPA checkbox from
+misrouting a plain IPF PAD as a Multiphase Programmatic Approach, suppress internal
+routing codes from the reader notice, and make the empty-priority message report
+whether priorities were never generated or generated then not admitted. The driving
+insight is that instrument routing feeds the operational-guidance targets the
+recommendation compiler needs, so an unresolved route silently empties the
+recommendations rather than only affecting labels. A bounded paid run confirmed five
+ranked priorities generate where the original produced zero. One known limitation
+remains: the Overview narrative can still fall back to a human-review notice, which
+does not block the structured findings and priorities. See
+[the climate degradation-fix handover](20261018_ITS_Handover_climate-degradation-fixes.docx)
+and `claude.md` for detail.
+
 ## Optional sector lenses
 
 Users may select up to two specialist lenses before analysis. The production Climate-FCV Lens is manual-only and is never auto-suggested. Once selected, it automatically screens both climate-intent operations and wider development projects, prioritizes adaptation and resilience, and uses deep mitigation analysis only where a clear material pathway exists.
