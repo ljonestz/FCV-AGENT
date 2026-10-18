@@ -80,9 +80,11 @@ remove operational cost controls. Agree the pilot's operating allowance separate
 3. Resolve consequential source issues. In particular, an open activity or city list
    does not reopen an explicitly selected subset of assets; later phases are not
    current-phase candidates. Preserve useful advice on design and delivery.
-4. Keep the automated review status visible. Minor findings may retain prose with a
-   notice. Consequential findings withhold affected sections; structural invalidity
-   and block remain closed. A fallback is not the richer generated native narrative.
+4. Keep the automated review status visible. After bounded correction, a precisely
+   anchored unresolved claim may retain prose with a nearby "Verify before sharing"
+   note. A defective whole sentence may be omitted when the remainder is useful;
+   whole-argument defects, structural invalidity and block remain closed. Legacy
+   reviews retain their earlier handling. A note is a human check, not a model pass.
 5. Download Word/HTML, the review packet and saved session. Record named approval in
    the existing authenticated organisational workflow against the exact packet hash
    and files. `publication_approved` stays false in the application. A material edit

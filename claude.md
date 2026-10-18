@@ -1,3 +1,21 @@
+### 2026-10-18 Step-by-Step handover repairs
+
+Read docs/20261018_step-by-step-handover-integration.md. User approved release
+preparation and inclusion of colleague's relevant repairs. His local344949f was
+not available on GitHub (write access blocked); independently reproduced the three
+bugs and fixed saved stage history, Refine context setup and document-type transport
+including Step-by-Step browser consumption. Legacy recovery only where text exists.
+Initial full suite1878passed/one compatibility failure; restored native Climate
+history shape. Final full suite1879passed/four known Chromium hangs excluded,
+305.37s; final browser field fix and connected checks143passed, including three new
+browser cases not collected in that full run. No provider calls. Preview8671aa0
+was deployed with bank_only/quality and existing1-microUSD blocker; next preview
+will use the committed combined candidate. Production remains unchanged. Preserve
+branch/worktree/output and untracked final-reader test. New bundle separates source,
+historical856f583Quality and unpaid replay evidence. Country matching/classification
+and the model-history40000-character cap remain reported limitations. No ITS port
+acceptance, production promotion or operating allowance is implied.
+
 ### 2026-10-18 Targeted verification notes: offline candidate
 
 Read docs/20261018_targeted-verification-notes.md for the latest follow-up. User

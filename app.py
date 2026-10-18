@@ -9205,6 +9205,52 @@ def detect_document_type_route():
 
 # ── Main analysis route ───────────────────────────────────────────────────────
 
+def _prior_stage_outputs(history):
+    """Recover actual outputs, including those embedded by the old compact history."""
+    outputs = {}
+    label = ''
+    placeholder = 'Understood. I will build on this prior analysis.'
+    for message in history:
+        content = message.get('content', '')
+        if not isinstance(content, str):
+            continue
+        if message.get('role') == 'user':
+            label = content
+        elif message.get('role') == 'assistant':
+            if content == placeholder:
+                prefix = 'Prior FCV analysis context:\n\n'
+                suffix = '\n\nUse this as the basis for the next stage.'
+                if label.startswith(prefix) and label.endswith(suffix):
+                    context = label[len(prefix):-len(suffix)]
+                    for part in re.split(r'\n\n---\n\n(?=Stage [123] output:\n)', context):
+                        match = re.fullmatch(r'Stage ([123]) output:\n(.*)', part, re.S)
+                        if match and match[2] != placeholder:
+                            outputs[int(match[1])] = match[2]
+                continue
+            match = re.match(r'\[(?:Climate )?Stage ([123])\b', label)
+            number = int(match[1]) if match else max(outputs, default=0) + 1
+            outputs[number] = content
+    return outputs
+
+
+def _history_through_stage(history, stage):
+    """Keep compact labels and full outputs, never the model-request placeholder."""
+    messages = []
+    for number, output in sorted(_prior_stage_outputs(history).items()):
+        if number <= stage:
+            messages.extend([
+                {'role': 'user', 'content': f'[Stage {number} - saved analysis]'},
+                {'role': 'assistant', 'content': output},
+            ])
+    return messages
+
+
+def _doc_type_from_history(history):
+    output = _prior_stage_outputs(history).get(1, '')
+    match = re.search(r'%%%DOC_TYPE:\s*([^%\n]+)%%%', output)
+    return match[1].strip() if match else 'Unknown'
+
+
 @app.route('/api/run-stage', methods=['POST'])
 def run_stage():
     try:
@@ -9219,8 +9265,11 @@ def run_stage():
         user_message = data.get('user_message', '').strip()
         prompt_override = data.get('prompt_override', '').strip()  # session-only override from frontend
         document_type = _effective_document_type(
-            data.get('document_type'), analysis_state.doc_type
+            data.get('document_type'), analysis_state.doc_type,
+            data.get('doc_type'), _doc_type_from_history(conversation_history),
         )
+        analysis_state.doc_type = document_type
+        instrument_type = data.get('instrument_type') or analysis_state.instrument or 'Unknown'
         stage3_document_type = _effective_document_type(
             data.get('doc_type'), document_type
         )
@@ -9266,17 +9315,13 @@ def run_stage():
 
         MAX_ASSISTANT_CHARS = 40000
 
-        prior_outputs = []
-        for m in conversation_history:
-            if m['role'] == 'assistant':
-                c = m['content'] if isinstance(m['content'], str) else ''
-                if len(c) > MAX_ASSISTANT_CHARS:
-                    c = c[:MAX_ASSISTANT_CHARS] + '\n...[truncated]'
-                prior_outputs.append(c)
+        prior_outputs = _prior_stage_outputs(conversation_history)
 
         if prior_outputs:
             context = "\n\n---\n\n".join(
-                f"Stage {i+1} output:\n{o}" for i, o in enumerate(prior_outputs)
+                f"Stage {number} output:\n{output[:MAX_ASSISTANT_CHARS]}"
+                + ('\n...[truncated]' if len(output) > MAX_ASSISTANT_CHARS else '')
+                for number, output in sorted(prior_outputs.items())
             )
             messages = [
                 {"role": "user", "content": f"Prior FCV analysis context:\n\n{context}\n\nUse this as the basis for the next stage."},
@@ -9286,6 +9331,31 @@ def run_stage():
             messages = []
 
         extraction_warnings = []  # Populated in stage 1 doc loop; empty for stages 2+
+
+        if stage != 1:
+            # Climate question-bank signals (Stage 2 only uses them): instrument/doc-type
+            # plus sector + the Stage-1 assistant narrative carried in the request history.
+            _s1_history_text = prior_outputs.get(1, '')[:2500]
+            lens_context = build_lens_stage_context(
+                analysis_state,
+                stage,
+                lens_diagnostic=data.get('lens_diagnostic'),
+                lens_context_sources=data.get('lens_context_sources'),
+                climate_research=server_climate_research,
+                climate_grounding=server_climate_grounding,
+                project_signals=_climate_project_signals(
+                    analysis_state, data.get('sector_context'), _s1_history_text
+                ),
+                compose_prompt=not (
+                    _native_climate_stage2 or _native_climate_stage3
+                ),
+            )
+            if lens_context['restart_required']:
+                return jsonify({
+                    'error': 'A selected sector lens version changed. Re-run from Stage 1.',
+                    'restart_required': True,
+                    'lens_warnings': lens_context['warnings'],
+                }), 409
 
         if stage == 1:
             documents = data.get('documents', [])
@@ -9746,33 +9816,6 @@ def run_stage():
                 pq_block = build_priority_questions_block(priority_questions, stage)
                 if pq_block:
                     stage_prompt = stage_prompt + pq_block
-            # Climate question-bank signals (Stage 2 only uses them): instrument/doc-type
-            # plus sector + the Stage-1 assistant narrative carried in the request history.
-            _s1_history_text = " ".join(
-                str(m.get('content', ''))
-                for m in conversation_history
-                if isinstance(m, dict) and m.get('role') == 'assistant'
-            )[:2500]
-            lens_context = build_lens_stage_context(
-                analysis_state,
-                stage,
-                lens_diagnostic=data.get('lens_diagnostic'),
-                lens_context_sources=data.get('lens_context_sources'),
-                climate_research=server_climate_research,
-                climate_grounding=server_climate_grounding,
-                project_signals=_climate_project_signals(
-                    analysis_state, data.get('sector_context'), _s1_history_text
-                ),
-                compose_prompt=not (
-                    _native_climate_stage2 or _native_climate_stage3
-                ),
-            )
-            if lens_context['restart_required']:
-                return jsonify({
-                    'error': 'A selected sector lens version changed. Re-run from Stage 1.',
-                    'restart_required': True,
-                    'lens_warnings': lens_context['warnings'],
-                }), 409
             if stage in (1, 2):
                 stage_prompt = append_standard_fcv_stage_context(
                     stage_prompt, stage, lens_context['active_lenses']
@@ -10331,7 +10374,7 @@ def run_stage():
                     # constants forward. The next stage re-injects its own fresh background
                     # docs; assistant outputs in history are what matter for continuity.
                     compact_label = f"[Stage {stage} — analysis prompt with operational guidance injected]"
-                    compact_messages = messages[:-1] + [{"role": "user", "content": compact_label}]
+                    compact_messages = _history_through_stage(conversation_history, stage - 1) + [{"role": "user", "content": compact_label}]
                     updated_messages = compact_messages + [{"role": "assistant", "content": full_text}]
                 if len(updated_messages) > 20:
                     updated_messages = updated_messages[-20:]
@@ -10353,6 +10396,9 @@ def run_stage():
                     'research_brief': research_brief_text if stage == 1 else None,
                     'research_country': research_country if stage == 1 else None,
                     'instrument_type': _instrument_type if stage == 1 else None,
+                    'doc_type': _effective_document_type(
+                        _doc_type_from_history(updated_messages), document_type,
+                    ) if stage == 1 else document_type,
                     'temporal_context': _temporal_context if stage == 1 else None,
                     'regime_context': _regime_context if stage == 1 else None,
                     'process_type': _process_type if stage == 1 else None,
