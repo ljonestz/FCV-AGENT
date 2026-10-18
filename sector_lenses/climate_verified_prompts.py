@@ -62,6 +62,24 @@ assert that harm has occurred or import a case-study outcome into this project.
 """
 
 
+_DECISION_SCOPE_GUIDANCE = """SETTLED DECISIONS AND OPEN CHOICES
+Preserve the decision status of each asset, component and phase across facts,
+gaps, recommendations, suggested drafting and reader prose. A specific selected
+subset takes precedence over a general statement that the overall activity list
+is under discussion. These statements can both be true; do not reopen selected
+sites by extending uncertainty about other sites or activities to them.
+Separate current-phase selections, genuinely open choices and future-phase scope;
+do not treat later-phase assets as current-phase candidates. Read footnotes and
+qualifiers before deciding which preparation decision a recommendation informs.
+For already-selected assets, useful advice may still concern design, access, maintenance or implementation.
+For open choices, advice may concern selection criteria and comparison of options.
+Keep those actions distinct in the visible paragraph and suggested document edit.
+A broad gap statement or accepted recommendation cannot override a more specific
+source fact. If one clause blurs these scopes, correct that clause and retain the
+useful proposal; do not discard a whole priority or invent a need to reselect sites.
+"""
+
+
 def _package(payload: dict[str, object]) -> str:
     return json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
 
@@ -947,6 +965,9 @@ def build_verified_stage_prompt(
     except KeyError as error:
         raise ValueError(f"Unsupported verified Climate stage: {stage}") from error
     prompt = builder(payload)
+    if stage in {'recommendation_compiler', 'drafting_compiler', 'conditional_review',
+                 'reader_compiler', 'reader_review'}:
+        prompt = _DECISION_SCOPE_GUIDANCE + '\n' + prompt
     if stage in {"bounded_analysis", "judgment_review", "reader_compiler", "reader_review"}:
         prompt = _CONDITIONAL_BENEFITS_GUIDANCE + "\n" + prompt
     if stage in {"fact_extraction", "recommendation_compiler", "conditional_review"}:

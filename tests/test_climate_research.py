@@ -258,6 +258,34 @@ def test_bank_selection_precedes_live_research(monkeypatch):
     ) != caller_thread
 
 
+def test_bank_only_mode_never_constructs_provider_or_reuses_live_cache(monkeypatch):
+    monkeypatch.setenv('CLIMATE_RESEARCH_MODE', 'bank_only')
+    monkeypatch.setattr(app_module, 'get_research_client', lambda: pytest.fail('Provider constructed'))
+    monkeypatch.setattr(app_module, 'load_climate_bank', lambda: object())
+    monkeypatch.setattr(app_module, 'select_bank_manifest', lambda *a, **kw:
+                        {'bank_status': 'ok', 'country_iso3': 'SSD', 'evidence_ids': ['SSD-E-001']})
+    result = list(app_module._iter_stage1_research(_climate_bank_plan(), 'bank-only'))[-1]['result']
+    assert result['climate_grounding']['evidence_ids'] == ['SSD-E-001']
+    assert result['core_brief'] == ''
+    assert result['lens_context_sources'] == []
+    assert result['climate_research']['attempts'] == 0
+    assert 'disabled' in result['climate_research']['failure_reason']
+
+
+def test_bank_only_mode_does_not_disable_normal_fcv_research(monkeypatch):
+    monkeypatch.setenv('CLIMATE_RESEARCH_MODE', 'bank_only')
+    monkeypatch.setattr(app_module, '_research_cache', {})
+    calls = []
+    monkeypatch.setattr(app_module, 'get_research_client', lambda: object())
+    monkeypatch.setattr(app_module, 'run_fcv_web_research', lambda *a, **kw:
+                        calls.append(True) or {'brief': 'Normal FCV research'})
+    plan = _climate_bank_plan()
+    plan['climate']['enabled'] = False
+    result = list(app_module._iter_stage1_research(plan, 'normal-fcv'))[-1]['result']
+    assert calls == [True]
+    assert result['core_brief'] == 'Normal FCV research'
+
+
 def test_bank_selection_failure_is_nonfatal(monkeypatch):
     monkeypatch.setattr(
         app_module,

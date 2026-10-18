@@ -1214,6 +1214,10 @@ def build_evidence_trail(assessment: dict[str, object]) -> dict[str, object]:
     else:
         limitations = _text(limitations_raw)
 
+    if not manifest.get('live_research_count', 0):
+        limitations = ('No live web evidence was included. Check current-context claims against current sources before sharing. '
+                       + limitations).strip()
+
     return {
         "methodology_note": _METHODOLOGY_NOTE,
         "pathways": pathways,

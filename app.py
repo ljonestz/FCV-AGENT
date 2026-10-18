@@ -8603,6 +8603,17 @@ def _iter_stage1_research(
                 assessment_id or "unknown",
                 results["climate_grounding"].get("warning_code") or "unknown",
             )
+    if climate_enabled and os.environ.get('CLIMATE_RESEARCH_MODE', '').strip().lower() == 'bank_only':
+        # Deliberate supervised-pilot scope: retain the pinned bank, skip both
+        # research providers and cached live material, and preserve the limitation.
+        results['climate_research'] = normalize_climate_research_bundle({
+            'attempts': 0,
+            'failure_reason': 'Live web research is disabled for this bank-based supervised pilot; current-context claims require human source review.',
+        })
+        app.logger.info('Climate research mode assessment_id=%s mode=bank_only',
+                        assessment_id or 'unknown')
+        yield {'result': results}
+        return
     pool = ThreadPoolExecutor(max_workers=2)
     try:
         if cached_core:
@@ -9086,6 +9097,7 @@ def health():
         'build': BUILD_MARKER,
         'stage1_research_budget_s': STAGE1_RESEARCH_BUDGET_SECONDS,
         'climate_verified_run_mode': verified_runtime.mode,
+        'climate_research_mode': os.environ.get('CLIMATE_RESEARCH_MODE', 'live').strip().lower(),
     })
 
 

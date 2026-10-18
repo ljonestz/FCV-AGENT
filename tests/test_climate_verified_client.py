@@ -35,6 +35,25 @@ from sector_lenses.climate_verified_prompts import build_verified_stage_prompt
 from sector_lenses.climate_verified_schemas import STAGE_OUTPUT_SCHEMAS, stage_output_schema
 
 
+@pytest.mark.parametrize('stage', ['recommendation_compiler', 'drafting_compiler',
+                                  'conditional_review', 'reader_compiler', 'reader_review'])
+def test_settled_subset_and_open_choices_reach_downstream_prompts(stage):
+    # Regression boundary from the real case: extraction retained both statuses,
+    # but later prose treated an open overall list as reopening selected assets.
+    # This proves prompt/data continuity, not that a model will obey it.
+    payload = {'facts': [
+        {'claim_id': 'PF-1', 'subject': 'Overall activity list', 'object_value': 'under discussion'},
+        {'claim_id': 'PF-2', 'subject': 'Phase 1 facilities', 'object_value': 'five already selected'},
+    ], 'source_passages': {'B-1': 'Cities remain under discussion. Footnote: five facilities selected for this phase.'}}
+    prompt = ' '.join(build_verified_stage_prompt(stage, payload).split())
+    assert 'SETTLED DECISIONS AND OPEN CHOICES' in prompt
+    assert 'specific selected subset takes precedence' in prompt
+    assert 'do not treat later-phase assets as current-phase candidates' in prompt
+    assert 'design, access, maintenance or implementation' in prompt
+    assert 'five already selected' in prompt
+    assert 'Cities remain under discussion. Footnote:' in prompt
+
+
 @pytest.mark.parametrize('stage', sorted(STAGE_OUTPUT_SCHEMAS))
 def test_every_provider_schema_avoids_unsupported_bounds(stage):
     # Native messages.create does not strip constraints like the SDK parse helper.

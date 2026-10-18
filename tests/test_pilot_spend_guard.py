@@ -14,11 +14,11 @@ def request(**changes):
 
 def test_reservations_persist_and_retry_is_charged_again(tmp_path):
     path = tmp_path / "ledger.sqlite"
-    guard = PilotSpendGuard(path, 100000)
+    guard = PilotSpendGuard(path, 70000)
     guard(request())
     spent = guard.reserved_microusd()
     assert 10000 < spent < 50000
-    restored = PilotSpendGuard(path, 100000)
+    restored = PilotSpendGuard(path, 70000)
     restored(request())
     assert restored.reserved_microusd() == spent * 2
     with pytest.raises(PilotBudgetExceeded):
@@ -71,8 +71,23 @@ def test_parallel_requests_cannot_overdraw(tmp_path):
             return False
     with ThreadPoolExecutor(max_workers=4) as pool:
         accepted = list(pool.map(attempt, range(8)))
-    assert sum(accepted) == 2
+    assert sum(accepted) == 3
     assert 0 < guard.reserved_microusd() <= 100000
+
+
+def test_full_output_ceiling_is_reserved_once_with_double_input_headroom(tmp_path):
+    guard = PilotSpendGuard(tmp_path / 'output.sqlite', 5000000)
+    req = request(max_tokens=16000)
+    guard(req)
+    assert guard.reserved_microusd() == ((2 * (len(req.read()) + 4096) * 20
+                                        + 16000 * 100 + 9) // 10)
+    assert guard.reserved_microusd() > 160000
+
+
+@pytest.mark.parametrize('limit', [5000001, 100000000, True, 0])
+def test_five_dollar_hard_ceiling_cannot_be_relaxed(tmp_path, limit):
+    with pytest.raises(ValueError):
+        PilotSpendGuard(tmp_path / 'budget.sqlite', limit)
 
 
 def test_all_application_clients_use_guard_and_default_is_off(monkeypatch, tmp_path):

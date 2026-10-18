@@ -6,6 +6,7 @@ After a redeploy, the operator must subtract all prior reservations from the new
 limit. Never reuse a fresh ledger to repeat a campaign's original allowance.
 """
 from pathlib import Path
+from contextlib import closing
 import json
 import os
 import sqlite3
@@ -20,14 +21,14 @@ class PilotSpendGuard:
         if type(limit_microusd) is not int or not 0 < limit_microusd <= 5_000_000:
             raise ValueError("Pilot allowance must be positive and at most USD5")
         self.path = Path(path)
-        with sqlite3.connect(self.path) as db:
+        with closing(sqlite3.connect(self.path)) as db, db:
             db.execute("CREATE TABLE IF NOT EXISTS budget (id INTEGER PRIMARY KEY CHECK(id=1), ceiling INTEGER, reserved INTEGER)")
             db.execute("INSERT OR IGNORE INTO budget VALUES (1, ?, 0)", (limit_microusd,))
             if db.execute("SELECT ceiling FROM budget WHERE id=1").fetchone()[0] != limit_microusd:
                 raise ValueError("Existing campaign allowance differs; do not reset the ledger")
 
     def reserved_microusd(self):
-        with sqlite3.connect(self.path) as db:
+        with closing(sqlite3.connect(self.path)) as db:
             return db.execute("SELECT reserved FROM budget WHERE id=1").fetchone()[0]
 
     def __call__(self, request):
@@ -54,7 +55,8 @@ class PilotSpendGuard:
                 or b'"cache_control"' in raw or b'"speed"' in raw):
             raise PilotBudgetExceeded("Unbounded or unsupported pilot request pricing")
         # No images, documents or remote tool results: UTF-8 bytes conservatively
-        # bound text tokens; add framing headroom and double the full reservation.
+        # bound text tokens; double input plus framing headroom. Output already
+        # has a provider-enforced max_tokens ceiling, so reserve that ceiling once.
         def text_only(value):
             if isinstance(value, str):
                 return True
@@ -71,8 +73,8 @@ class PilotSpendGuard:
                        or not text_only(m["content"]) for m in messages)):
             raise PilotBudgetExceeded("Only text inputs are allowed in the pilot")
         input_rate, output_rate = rates[model]
-        reserve = (2 * ((len(raw) + 4096) * input_rate + output * output_rate) + 9) // 10
-        with sqlite3.connect(self.path, timeout=30) as db:
+        reserve = (2 * (len(raw) + 4096) * input_rate + output * output_rate + 9) // 10
+        with closing(sqlite3.connect(self.path, timeout=30)) as db, db:
             db.execute("BEGIN IMMEDIATE")
             ceiling, used = db.execute("SELECT ceiling, reserved FROM budget WHERE id=1").fetchone()
             if used + reserve > ceiling:

@@ -42,6 +42,16 @@ def test_minor_retains_prose_and_visible_review_across_exports(assessment, tmp_p
     assert assessment['reader_review']['verdict'] == 'revise'
 
 
+def test_no_live_evidence_limitation_survives_html_and_word(assessment, tmp_path):
+    from sector_lenses.climate_verified_render import attach_provenance
+    assessment['manifest']['live_research_count'] = 0
+    model = attach_provenance(build_reader_model(assessment), assessment)
+    notice = 'No live web evidence was included. Check current-context claims against current sources before sharing.'
+    assert notice in render_reader_html(model)
+    path = write_reader_docx(model, tmp_path / 'bank-only.docx')
+    assert notice in '\n'.join(p.text for p in Document(path).paragraphs)
+
+
 @pytest.mark.parametrize('identifier,count,has_summary', [('NARR-inclusion',2,True),('SUM-001',3,False)])
 def test_consequential_withholds_only_affected_section(assessment, identifier, count, has_summary):
     final = assessment['final_reader']
