@@ -391,10 +391,17 @@ def resolve_verified_operation_context(
         instrument = "Unknown"
         warnings.append("INSTRUMENT_ROUTE_AMBIGUOUS")
 
+    # Datasheet templates list "[ ] Multiphase Programmatic Approach (MPA)" and
+    # "[ ] Contingent Emergency Response Component (CERC)" on every operation; an
+    # UNCHECKED box is a blank template label, not a positive signal. Drop
+    # unchecked-checkbox items before the broad MPA match so a plain IPF PAD is
+    # not misread as an MPA. Checked boxes ("[X] ...") and narrative current-
+    # operation descriptions are preserved and still flag is_mpa below.
+    deboxed_head = re.sub(r"\[\s*\]\s*[^\n\[]*", " ", source_head)
     is_mpa = _context_matches(
         r"\bmultiphase programmatic approach\b|\bmpa\b",
         filenames,
-        source_head,
+        deboxed_head,
     )
     # Concept descriptions can follow a long country context. Require a current-
     # operation statement in the body, not a reference to another project's MPA.

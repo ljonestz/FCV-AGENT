@@ -105,3 +105,57 @@ def test_populated_summary_statement_unchanged():
     summary = _render._priority_summary([{"title": "Alpha"}, {"title": "Beta"}])
     assert summary["count"] == 2
     assert "2 main operational priorities" in summary["statement"]
+
+
+# --- Fix 3: unchecked datasheet MPA checkbox must not flag is_mpa ------------
+
+from sector_lenses.climate_verified_runtime import (
+    prepare_verified_sources,
+    resolve_verified_operation_context,
+)
+
+# Faithful to the Honduras P181166 PAD datasheet grid that misrouted on
+# 2026-10-18: instrument stated as IPF, MPA/CERC boxes present but UNCHECKED.
+_PAD_DATASHEET = (
+    "Project Appraisal Document\n"
+    "Operation ID Financing Instrument Environmental and Social Risk Classification\n"
+    "P181166 Investment Project Financing (IPF) High\n"
+    "Financing & Implementation Modalities\n"
+    "[  ] Multiphase Programmatic Approach (MPA) [  ] Contingent Emergency "
+    "Response Component (CERC)\n"
+    "[  ] Series of Projects (SOP)\n"
+)
+
+
+def _resolve(raw_text, name="Project Appraisal Document (PAD) clean.pdf"):
+    prepared = prepare_verified_sources(
+        [{"label": "PROJECT DOCUMENT", "name": name, "raw_text": raw_text}]
+    )
+    return resolve_verified_operation_context(prepared)
+
+
+def test_unchecked_mpa_checkbox_is_not_an_mpa_signal():
+    """An empty [  ] MPA checkbox on the datasheet template is not an MPA."""
+
+    assert _resolve(_PAD_DATASHEET).is_mpa is False
+
+
+def test_checked_mpa_checkbox_is_still_detected():
+    """A ticked [X] MPA checkbox remains a positive MPA signal."""
+
+    checked = _PAD_DATASHEET.replace(
+        "[  ] Multiphase Programmatic Approach (MPA)",
+        "[X] Multiphase Programmatic Approach (MPA)",
+    )
+    assert _resolve(checked).is_mpa is True
+
+
+def test_genuine_mpa_description_is_still_detected():
+    """A narrative current-operation MPA statement still routes as MPA."""
+
+    described = (
+        "Project Appraisal Document\n"
+        "The proposed project is the first phase of a Multiphase Programmatic "
+        "Approach (MPA) to restore climate resilience.\n"
+    )
+    assert _resolve(described).is_mpa is True
