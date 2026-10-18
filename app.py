@@ -8470,8 +8470,13 @@ def _climate_source_warning_messages(codes: list[str]) -> list[dict[str, str]]:
             "Confirm which document is authoritative before relying on the assessment."
         ),
     }
-    return [{"message": messages.get(code, code.replace("_", " ").title())}
-            for code in codes if code != "PRIMARY_APPLICABILITY_USER_DESIGNATED"]
+    # Only surface codes that carry an explicit reader-facing explanation.
+    # Internal routing/provenance bookkeeping (INSTRUMENT_ROUTE_UNRESOLVED,
+    # MPA_BASE_INSTRUMENT_UNRESOLVED, PACKAGE_FACT_AUTHORITY_WITHHELD,
+    # SOURCE_BLOCKS_BOUNDED, etc.) must never leak into the UI as a raw
+    # title-cased enum; those conditions already have dedicated reader
+    # advisories elsewhere in the readout.
+    return [{"message": messages[code]} for code in codes if code in messages]
 
 
 def build_stage1_research_plan(
