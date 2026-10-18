@@ -1,3 +1,17 @@
+### 2026-10-18 Fresh Quality check completed and spending blocked
+
+Read docs/20261018_final-quality-supervised-handover.md first. Fresh e106ded Quality
+bank-only run completed all stages, ten native calls, four retained priorities.
+Reservation USD 4.655988 of USD 6, not invoice. New one-run authorization consumed.
+Reader revise preserved useful opening/Q1 with visible AWS-scope verification notes;
+all exports preserve them. No automated factual certification. Human correction and
+version-bound approval remain required; publication=false. Actual HTML/Word/packet,
+hashes, drift409, browser tabs/non-first toggle and exact session restore verified.
+All 12 Word pages inspected. Preview blocker restored live dep-dbaabqbrjlhs739gtn5g,
+e106ded quality/bank_only, health200. Production1168a8f unchanged. Current source and
+fresh evidence packaged for ITS; no merge, production deployment or further call.
+Preserve branch/worktree, raw output and untracked final-reader test.
+
 ### 2026-10-18 Fresh paid Quality run authorized, not submitted
 
 User explicitly approved one additional full bank-only Quality run up toUSD6.
