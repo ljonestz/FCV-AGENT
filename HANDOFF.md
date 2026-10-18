@@ -1,3 +1,26 @@
+### 2026-10-18 Climate graceful-degradation fixes deployed to production
+
+Honduras IPF PAD (P181166) via the Climate lens produced zero recommendations and a
+garbled sector-lens notice. Root cause: instrument resolved Unknown and is_mpa true
+although the datasheet stated IPF with the MPA box unchecked, so
+select_operational_guidance returned 0 permitted targets -> OPERATIONAL_GUIDANCE_WITHHELD
+-> the recommendation compiler failed every candidate on the routing gate ->
+raw_candidate_count 0. KEY INSIGHT: instrument routing feeds operational_guidance that
+the recommendation prompt requires, so an unresolved route silently empties
+recommendations. Four deterministic fixes (PR84, main 6f3d5e6), tests in
+tests/test_climate_graceful_degradation.py: warning-code suppression in the reader
+notice; honest none-generated vs none-admitted summary; debox unchecked datasheet MPA
+checkbox so a plain IPF PAD is not misrouted as MPA; and _sole_document_instrument to
+resolve the instrument when the datasheet grid is chunked past source_head[:8000].
+Paid Express validation (smoke cd4cd2f, USD6): raw_candidate_count 5,
+final_priority_count 5 (was 0), full readout, drafting targets the PAD, no garbled
+notice. Deployed main 6f3d5e6 to the main FCV-AGENT service; 1168a8f stays rollback
+reference; auto-deploy remains OFF (manual deploys). KNOWN REMAINING: Overview/5-min
+narrative can still fall back; paid run hit the USD6 ceiling before reader_review, and
+the original run was a genuine reviewer withhold (verdict revise,
+PROJECT_FACT_UNSUPPORTED). Core findings/priorities unaffected. Handover:
+20261018_ITS_Handover_climate-degradation-fixes.docx.
+
 ### 2026-10-18 Fresh Quality check completed and spending blocked
 
 Read docs/20261018_final-quality-supervised-handover.md first. Fresh e106ded Quality

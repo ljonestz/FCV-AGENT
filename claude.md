@@ -1,3 +1,41 @@
+### 2026-10-18 Climate graceful-degradation fixes deployed to production
+
+Honduras IPF PAD (P181166) via the Climate lens produced zero recommendations and a
+garbled sector-lens notice. Root cause: instrument resolved Unknown and is_mpa true
+although the datasheet stated Investment Project Financing (IPF) with the MPA box
+unchecked, so select_operational_guidance returned 0 permitted targets ->
+OPERATIONAL_GUIDANCE_WITHHELD -> the recommendation compiler, which routes only to
+permitted targets, failed every candidate on the routing gate -> raw_candidate_count
+0. KEY INSIGHT: instrument routing feeds operational_guidance, which the gate-heavy
+recommendation prompt requires; an unresolved route therefore silently empties the
+recommendations, it is not merely cosmetic. Four deterministic fixes on branch
+fix/climate-graceful-degradation, merged as PR84 (main 6f3d5e6), covered by
+tests/test_climate_graceful_degradation.py: (1) _climate_source_warning_messages
+allowlists reader-facing codes and suppresses unmapped internal codes instead of
+title-casing them into the notice; (2) _priority_summary distinguishes none-generated
+(raw_candidate_count 0) from none-admitted-after-validation; (3)
+resolve_verified_operation_context deboxes unchecked datasheet checkboxes before the
+broad MPA match so a blank "[  ] Multiphase Programmatic Approach (MPA)" template
+label no longer flags is_mpa (checked boxes and genuine descriptions still flag); (4)
+_sole_document_instrument resolves the single instrument named across the whole
+primary source when the datasheet Financing Instrument grid is chunked past
+source_head[:8000] or dropped in preparation. Note the Express path at app.py:10898
+deliberately passes instrument_type="Unknown" ("client intake not authoritative;
+derive from the primary document"), so the fix repairs deterministic derivation
+rather than seeding the normal route's LLM extract_instrument_type. Paid Express
+validation (smoke build cd4cd2f, USD6 ceiling, Honduras PAD): raw_candidate_count 5,
+admitted_count 5, final_priority_count 5 (was 0); full readout, five ranked
+priorities, drafting targets the PAD, no garbled notice; reserved ~USD5.99.
+Deployed main 6f3d5e6 to the main FCV-AGENT service (fcv-agent.onrender.com) via
+manual trigger; 1168a8f stays the rollback reference; main-service auto-deploy
+remains OFF so production deploys are manual. KNOWN REMAINING: the Overview and
+five-minute narrative can still fall back ("narrative review did not establish usable
+prose"); on the paid run the USD6 ceiling blocked the final reader_review on this
+large PAD, while the original production run was a genuine reviewer withhold (verdict
+revise, PROJECT_FACT_UNSUPPORTED). Core findings and priorities are unaffected. Next:
+a ~USD8 re-run to isolate the budget artefact, then reader_compiler/reader_review
+tuning if the withhold persists. Handover: 20261018_ITS_Handover_climate-degradation-fixes.docx.
+
 ### 2026-10-18 Fresh Quality check completed and spending blocked
 
 Read docs/20261018_final-quality-supervised-handover.md first. Fresh e106ded Quality
