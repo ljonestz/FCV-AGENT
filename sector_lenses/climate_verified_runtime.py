@@ -242,6 +242,20 @@ def _structured_financing_instruments(
     return tuple(selected)
 
 
+def _sole_document_instrument(source_text: str) -> str:
+    """Return the instrument when the full primary source names exactly one.
+
+    Used only as a last resort when the bounded source_head window held no
+    instrument marker - e.g. the datasheet Financing Instrument grid was
+    chunked past it (or dropped) during source preparation. Requires global
+    uniqueness across the whole primary document: any competing instrument
+    leaves the route Unknown, so a narrative comparison cannot force a route.
+    """
+
+    present = set(_instrument_markers(source_text))
+    return next(iter(present)) if len(present) == 1 else "Unknown"
+
+
 def _context_matches(pattern: str, filenames: str, source_head: str) -> bool:
 
     return bool(re.search(pattern, filenames) or re.search(pattern, source_head))
@@ -375,6 +389,12 @@ def resolve_verified_operation_context(
             detected_instrument = "DPF"
         elif ipf and not pforr and not dpf:
             detected_instrument = "IPF"
+        elif not (pforr or dpf or ipf):
+            # No instrument marker within the bounded source_head window; the
+            # datasheet Financing Instrument grid may have been chunked past it
+            # (or dropped) during preparation. Fall back to the sole instrument
+            # named across the whole primary source.
+            detected_instrument = _sole_document_instrument(source_text)
     if detected_instrument != "Unknown":
         if (
             instrument.casefold() != "unknown"

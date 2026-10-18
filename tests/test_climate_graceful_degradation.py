@@ -159,3 +159,41 @@ def test_genuine_mpa_description_is_still_detected():
         "Approach (MPA) to restore climate resilience.\n"
     )
     assert _resolve(described).is_mpa is True
+
+
+# --- Fix 4: datasheet Financing Instrument grid past the source_head window --
+
+from sector_lenses.climate_verified_runtime import _sole_document_instrument
+
+
+def test_datasheet_instrument_reads_grid_value():
+    """The grid 'Financing Instrument' header + adjacent IPF value resolves."""
+
+    grid = (
+        "Operation ID Financing Instrument Environmental and Social Risk "
+        "Classification\nP181166 Investment Project Financing (IPF) High\n"
+    )
+    assert _sole_document_instrument(grid) == "IPF"
+
+
+def test_datasheet_instrument_ignored_when_ambiguous():
+    """A span naming two instruments is not accepted as authoritative."""
+
+    ambiguous = (
+        "Financing Instrument Investment Project Financing (IPF) and "
+        "Development Policy Financing (DPF)\n"
+    )
+    assert _sole_document_instrument(ambiguous) == "Unknown"
+
+
+def test_instrument_resolves_when_datasheet_past_source_head_window():
+    """Reproduces the Honduras PAD: instrument field sits past the 8000 chars."""
+
+    frontmatter = "abbreviations and acronyms. " * 400  # > 8000 chars
+    datasheet = (
+        "Operation ID Financing Instrument Environmental and Social Risk "
+        "Classification\nP181166 Investment Project Financing (IPF) High\n"
+    )
+    ctx = _resolve(frontmatter + datasheet)
+    assert ctx.instrument_type == "IPF"
+    assert "INSTRUMENT_ROUTE_UNRESOLVED" not in ctx.warning_codes
