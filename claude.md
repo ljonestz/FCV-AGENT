@@ -1,3 +1,22 @@
+### 2026-10-18 Bank-based supervised pilot: tested handover candidate
+
+Read docs/20261018_ITS_supervised-pilot-acceptance.md first; it supersedes older
+pending-run status. Tested application/preview 856f583, pinned bank 12a804f. User
+accepted bank-only scope and a USD5 final-run cap. Quality completed all stages,
+10 native calls, four priorities; conservative reservations USD4.467768, not invoice.
+All three full-run slots consumed; zero separate smaller calls. No call queued.
+Scope guidance now distinguishes selected airstrips from open urban choices; fresh
+maintenance advice avoids unsupported revenue exclusions. This is generation
+improvement, not proof of reliable semantic detection. Final reader review=revise:
+minor opening retained, first answer falls back, other answers/priorities retained.
+Full suite 1846 passed/four known Chromium hangs excluded. Actual HTML/Word/packet,
+hashes, drift409, tabs/non-first disclosure and session restore verified. Word12pages.
+Source archive and operating guide prepared for ITS. Publication remains false;
+human source review and authenticated version-bound approval required before sharing.
+Preview blocker restore live in dep-dba8bp0m7kps73fsasd0; health200. Production
+1168a8f unchanged. No merge/deploy to production. Preserve branch/worktree and raw
+untracked artifacts/test. No further paid run without a fresh explicit decision.
+
 ### 2026-10-17 Latest autonomous campaign: candidate, not release acceptance
 
 Read docs/20261017_supervised-pilot-handover.md first; it supersedes the pending
