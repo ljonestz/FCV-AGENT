@@ -1,0 +1,16 @@
+{
+  "fixture_version": "proposition-review-v1",
+  "status": "frozen before any model test",
+  "created": "2026-10-16",
+  "case_count": 12,
+  "pair_count": 6,
+  "proposition_count": 24,
+  "true_defect_count": 6,
+  "manual_inventory": true,
+  "provider_calls": 0,
+  "publication_approved": false,
+  "sha256": {
+    "reviewer_inputs.json": "ab33b49b3d5c93daf12d8c4bac45027b327f8bae2f2d5a51a621c098a0a69629",
+    "expected.json": "a76e8cf2335c03d5e00d5a101b869c570155e49a8b2529abc97311960de34681"
+  }
+}

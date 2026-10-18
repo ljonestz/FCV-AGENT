@@ -1,4 +1,388 @@
+### 2026-10-18 Fresh Quality check completed and spending blocked
+
+Read docs/20261018_final-quality-supervised-handover.md first. Fresh e106ded Quality
+bank-only run completed all stages, ten native calls, four retained priorities.
+Reservation USD 4.655988 of USD 6, not invoice. New one-run authorization consumed.
+Reader revise preserved useful opening/Q1 with visible AWS-scope verification notes;
+all exports preserve them. No automated factual certification. Human correction and
+version-bound approval remain required; publication=false. Actual HTML/Word/packet,
+hashes, drift409, browser tabs/non-first toggle and exact session restore verified.
+All 12 Word pages inspected. Preview blocker restored live dep-dbaabqbrjlhs739gtn5g,
+e106ded quality/bank_only, health200. Production1168a8f unchanged. Current source and
+fresh evidence packaged for ITS; no merge, production deployment or further call.
+Preserve branch/worktree, raw output and untracked final-reader test.
+
+### 2026-10-18 Fresh paid Quality run authorized, not submitted
+
+User explicitly approved one additional full bank-only Quality run up toUSD6.
+Read docs/20261018_fresh-quality-six-dollar-allocation.md. Earlier three full-run
+slots/ledgers remain consumed and untouched. New authorization record is
+output/20261016-ipf-pilot-live-preflight/20261018_final-six-dollar-authorization.json;
+exclusive lock will be final-quality-20261018-six.started.lock. Never repeat it.
+Guard maximum only changes5to6USD; reservation math and analytical code unchanged.
+173guard/pipeline tests passed. Offline8-page PID/IPF extraction passed; same-run
+planning anchor plus added prompt/schema overhead USD4.572208, not a fresh-output
+guarantee or invoice. Fresh ledger /tmp/fcv-pilot-final-quality-20261018-six.sqlite.
+No provider call submitted yet. Verify deployedSHA/modes before upload, capture
+all outputs/reservations, then restore blocker. No production deployment authorized.
+
+### 2026-10-18 Combined candidate deployed and handover packaged
+
+Read docs/20261018_combined-pilot-preview-results.md first. Combined app/source
+cb1b38d is live on preview, quality/bank_only; blocker remains1microUSD. Original
+Quality session and labelled manual-note fixture both pass unpaid HTML/Word/packet
+checks, hashes and drift409. Full1879passed/4excluded plus final143focused tests.
+Updated23-file ITS bundle:20261018_ITS-Climate-FCV-cb1b38d-handover.zip in the
+existing output folder. No paid calls; last full paid acceptance remains856f583.
+Production1168a8f unchanged. Production activation/operating allowance pending;
+human source review and publicationfalse remain. This documentation-only follow-up
+does not change the deployed/source commit. Preserve branch/worktree/raw artifacts.
+
+### 2026-10-18 Step-by-Step handover repairs
+
+Read docs/20261018_step-by-step-handover-integration.md. User approved release
+preparation and inclusion of colleague's relevant repairs. His local344949f was
+not available on GitHub (write access blocked); independently reproduced the three
+bugs and fixed saved stage history, Refine context setup and document-type transport
+including Step-by-Step browser consumption. Legacy recovery only where text exists.
+Initial full suite1878passed/one compatibility failure; restored native Climate
+history shape. Final full suite1879passed/four known Chromium hangs excluded,
+305.37s; final browser field fix and connected checks143passed, including three new
+browser cases not collected in that full run. No provider calls. Preview8671aa0
+was deployed with bank_only/quality and existing1-microUSD blocker; next preview
+will use the committed combined candidate. Production remains unchanged. Preserve
+branch/worktree/output and untracked final-reader test. New bundle separates source,
+historical856f583Quality and unpaid replay evidence. Country matching/classification
+and the model-history40000-character cap remain reported limitations. No ITS port
+acceptance, production promotion or operating allowance is implied.
+
+### 2026-10-18 Targeted verification notes: offline candidate
+
+Read docs/20261018_targeted-verification-notes.md for the latest follow-up. User
+approved precise verification markers across opening/core answers/recommendations,
+sentence-only omission where coherent, and fuller180-240-word core answers. Reviews
+now explicitly choose verify/omit_sentence/withhold; legacy reviews keep old handling.
+One correction/re-review remains; malformed/block findings stay closed. Unresolved
+core advice is excluded from final-reader accepted-action support. Notes are visible
+in browser/HTML/Word and bound to snapshots; raw revise and publication=false remain.
+Final offline suite1866 passed/four known Chromium hangs excluded (284.30s). Browser
+and Word saved-case preview checked. No fresh generation, paid call, merge or deploy.
+Preview/ITS acceptance archive remain856f583; production1168a8f unchanged. All three
+full-run slots consumed. New labelled preview is not a replacement acceptance packet.
+Keep branch/worktree and preserved untracked output/test; no call queued.
+
+### 2026-10-18 Bank-based supervised pilot: tested handover candidate
+
+Read docs/20261018_ITS_supervised-pilot-acceptance.md first; it supersedes older
+pending-run status. Tested application/preview 856f583, pinned bank 12a804f. User
+accepted bank-only scope and a USD5 final-run cap. Quality completed all stages,
+10 native calls, four priorities; conservative reservations USD4.467768, not invoice.
+All three full-run slots consumed; zero separate smaller calls. No call queued.
+Scope guidance now distinguishes selected airstrips from open urban choices; fresh
+maintenance advice avoids unsupported revenue exclusions. This is generation
+improvement, not proof of reliable semantic detection. Final reader review=revise:
+minor opening retained, first answer falls back, other answers/priorities retained.
+Full suite 1846 passed/four known Chromium hangs excluded. Actual HTML/Word/packet,
+hashes, drift409, tabs/non-first disclosure and session restore verified. Word12pages.
+Source archive and operating guide prepared for ITS. Publication remains false;
+human source review and authenticated version-bound approval required before sharing.
+Preview blocker restore live in dep-dba8bp0m7kps73fsasd0; health200. Production
+1168a8f unchanged. No merge/deploy to production. Preserve branch/worktree and raw
+untracked artifacts/test. No further paid run without a fresh explicit decision.
+
+### 2026-10-17 Latest autonomous campaign: candidate, not release acceptance
+
+Read docs/20261017_supervised-pilot-handover.md first; it supersedes the pending
+campaign status below. App candidate/preview 03618ab; PR83 remains draft. Two of
+three authorized full runs used, zero of five smaller calls. Smoke and Quality
+produced five priorities and valid exports. Quality final reader review was blocked
+locally by its exhausted conservative guard, not a successful review. Research was
+bank-only because that guard rejects tools. No full live acceptance is claimed.
+Quality REC-001 still blurs already-selected Phase 1 airstrips with open city/site
+choices; human source correction is needed. Do not discard the other useful advice.
+Full suite 1,832 passed/four known browser hangs excluded on f58c67a; final bounded
+SDK guard-diagnostic fix 50 focused tests passed. Word rendering, packet hashes,
+drift409, browser tabs/non-first priority and restored session checked.
+Reservations USD5.778093 for this campaign, not invoices. Preview blocker restored
+to 1 microUSD, health200 on 03618ab. Production remains 1168a8f unchanged. Publication
+false. Preserve branch/worktree/output and untracked test. No call queued. Prepare
+complete guarded pipeline budget offline before considering the unused third run;
+do not reset consumed ledgers or repeat calibration merely to obtain a model pass.
+
+### 2026-10-17 Proportionate review candidate prepared for supervised handover
+
+Read docs/20261017_proportionate-review-readiness.md. User authorized autonomous
+app-wide readiness work, up to three full paid app reviews and five smaller calls;
+offline first, use fewer. No new campaign paid submission yet. Reader review v1.13,
+conditional review v2.22, admission v2.4, renderer v2.24. Minor-only findings retain
+prose with visible review notice and avoid repair; consequential issues withhold
+only affected sections after the existing bounded repair. Structural failures and
+block remain closed. Native reports no longer display the unreviewed executive
+precursor beside reviewed prose. Browser/HTML/Word/snapshot agree; normal FCV unchanged.
+Offline: 1,828 passed, four known Chromium hangs excluded; final presentation checks
+109 passed plus two browser/manifest checks. Saved real review replay retains two
+useful answers without changing revise. Full live candidate acceptance still pending.
+Preview-only Smoke then Quality planned; no production deployment/merge, publication=false.
+
+### 2026-10-17 Useful conditional dividends and limitations-only reports
+
+User endorsed the opening/priority style but requested stronger, useful interpretation
+under the three questions. Read docs/20261017_dividends-framing-and-limitations.md.
+The supplied Peace and Social Dividends report informs conditional trust, legitimacy,
+livelihood, institutional and collective-resilience mechanisms; no explicit peace
+objective or proven impact is required. Include credible FCV-related maladaptation
+and practical benefit pathways, with source-grounded premises and uncertainty.
+Analysis v2.13, judgments v2.17, reader v1.11, reader-review v1.12; renderer v2.23.
+No schema, admission, rating scale, model-call or normal-FCV change. Browser/HTML/Word
+now show only Limitations in place of the method section and duplicate source list;
+separate guidance and internal provenance remain. Recommendation prompts unchanged.
+
+Offline verification: 1,811 passed, four known hanging Chromium tests excluded,
+317.60s. Five new checks failed then passed; connected tests and manifest check pass.
+All three editorial answers and limitations visually inspected in existing Edge.
+Review copy: output/20261016-ipf-pilot-live-preflight/
+20261017_dividends-editorial-v2-browser.html (139/171/165-word answers). Opening,
+ratings and four priorities retained; earlier source corrections carried into this
+editorial copy. Original run/report/packet unchanged. This is not fresh generation,
+a canonical approval packet or a model pass. Native review fallback remains honest.
+No paid call/deployment; preview remains 460eaef with blocker restored, production
+untouched, publication=false. Fresh model behavior and human approval still untested.
+
+### 2026-10-17 Contradictory review handled without blanket suppression
+
+Initial conditional review now retains explicitly passed cores for supervised
+review only for an empty revise (explicit empty issues/targets/reason codes), full
+valid core coverage and no admission errors. Keep revise/attention and the existing
+SEMANTIC_REVIEW_VERDICT_INVALID diagnostic; never turn this into pass. Explicit
+block, substantive reasons, unknown targets and malformed coverage still withhold.
+No extra call, prompt/schema/field/budget change. Runtime admission v2.3, renderer
+v2.22; compiler v2.23, conditional prompt v2.21, reader-review prompt v1.11 unchanged.
+
+Verification: 1,806 passed, four known hanging browser checks excluded, 339.83s.
+No complete browser-suite pass. Connected checks: 252; expanded warning cases: two passed.
+
+Existing partial status and browser/HTML/Word warnings say review was inconclusive
+and sources must be checked before sharing. The exact saved five candidates and
+conditional response retained five cores in an offline fake-client replay; the
+separate reader failure stayed a fallback. Packet/drift/hash checks passed;
+publication=false. See current HANDOFF and the offline follow-up in
+docs/20261017_supervised-readiness-smoke-result.md. No new paid call or deployment.
+The failed live Smoke remains failed; Quality and human source approval remain
+pending. Preserve original artifacts, consumed locks, branch/worktree and untracked test.
+
+### 2026-10-17 Paid readiness Smoke stopped before Quality
+
+Read docs/20261017_supervised-readiness-smoke-result.md and current HANDOFF first.
+User-approved preview campaign deployed application commit 853771e and submitted
+one Smoke assessment, 8dda1436-c4b5-4342-93f1-deb7953c21c9. Five admitted candidates
+were all suppressed: conditional review returned revise with all five valid core
+reviews passed and no issues/targets. Offline replay confirms valid source IDs;
+the unresolved-target fallback caused the blanket withholding. Final reader also
+remained withheld after its bounded correction. Quality was not submitted. Do not
+claim full live acceptance or reuse the consumed Smoke lock for another run.
+
+Preview blocker configuration restored and deployed on 853771e in Quality mode
+(MICROUSD=1; fresh /tmp/fcv-ipf-readiness-20261017-853771e-post.sqlite).
+Restore dep-db9qrvu1egvs738a1kog live; health verified. Guard hook not independently
+inspected or provider-probed. Auto-deploy off; production health unchanged at 1168a8f2ab2a.
+Diagnostic exports/packet hashes and live stale-reader 409 passed. Smoke produced
+no accepted recommendations; Quality generation and Word visual-layout checks were not run.
+No additional paid assessment is queued/authorized. Preserve branch/worktree,
+raw artifacts and pre-existing untracked test. Publication=false; human approval
+against the actual packet/report hashes remains external and pending.
+
+Use the saved response for an offline contradiction regression and narrow handling
+fix that retains explicitly passed cores for supervised review while exposing the
+unresolved aggregate result. Do not silently convert contradictory review to pass,
+weaken source checks or introduce another detection architecture. The prior REC-004
+semantic detection miss remains unresolved; later Quality acceptance needs fresh
+approval after a concrete fix/checks. No application code changed in this run.
+
+### 2026-10-17 Match main FCV recommendation writing
+
+Compiler v2.23 uses main FCV's substantive, direct advisory style: about 300-500
+words in four to six paragraphs where warranted, concrete document edits and
+related operational preparation steps. These are writing targets, not admission
+minimums. Proposals stay visibly proposed and qualifications stay beside claims;
+avoid repeated caveats and formulaic result sentences. Keep the prose-led
+disclosure layout under the title Practical considerations. Address its notes to
+the task team: practical uncertainties, checks and preparation implications,
+without model instructions or evidence-chain commentary. No new fields, reviewer/admission rule or call
+budget; the narrative schema description remains within its existing size limit.
+
+Renderer v2.21 preserves explicit negated responsiveness phrases instead of
+withholding their whole narrative. A separate unsupported positive occurrence
+still triggers the existing guard. See docs/20261017_main-fcv-recommendation-style.md
+and current HANDOFF. Focused connected checks: 373 passed, four hanging browser
+checks excluded. The local style illustration contains two editorial rewrites,
+not fresh generation. Known REC-004 detection miss, human source review and full
+live pipeline/export acceptance remain outstanding. No paid call/deployment;
+publication=false. Conditional review v2.21 and reader review v1.11 unchanged.
+Final broader verification: 1,799 passed, four known hanging browser tests excluded.
+Final title/prose contracts: 11 passed; local Edge card/considerations inspected.
+The user has now authorized a paid readiness run after preparation; see current
+HANDOFF for deployment boundaries and execution status.
+
+### 2026-10-17 Recommendation details prose
+
+Climate Recommendation details is prose-led in browser, HTML and DOCX. Render the
+existing limitation/caution paragraphs, preserve conditional further work and
+distinct timing, and use a compact suggested-lead/confidence note. Do not restore
+the repeated structured field dump, status enums or guidance IDs. Suggested
+drafting retains its document/section destination. Canonical fields, evidence,
+visible actions, schemas and admission checks remain unchanged; normal FCV is
+unaffected. Compiler v2.22 requests complementary detail prose, renderer v2.20;
+conditional review remains v2.21, final-reader review v1.11. Fresh generation is
+not tested. See docs/20261017_recommendation-details-prose.md and current HANDOFF.
+
+Verification: 356 focused and 1,794 broader checks passed, with four known hanging
+browser tests excluded; local Edge disclosure and nine Word pages inspected.
+No provider call or deployment. The known REC-004 financing exclusion remains a
+semantic detection miss despite the model pass. Named human source review and
+external snapshot/file-bound approval remain necessary; publication=false and
+full live pipeline/export acceptance remains outstanding.
+
+### 2026-10-16 Advisory native reader length
+
+Native Climate reader word targets are editorial guidance: Summary 160-230 and
+findings 70-180 words. Hard runaway-output ceilings are 500 total Summary words
+and 400 per finding; nonempty prose, evidence, numeric/date, exact-edit and meaning
+checks remain required. Strict Summary callers retain their prior length contract.
+Never truncate prose or treat mechanical admission as a clean semantic review.
+Reader/correction/review versions v1.10/v1.7/v1.10; normalization v2.13.
+See docs/20261016_reader-correction-live-check.md for the paid check and offline replay.
+
+### 2026-10-16 Native correction schema and PID display
+
+Do not put numeric bounds such as minimum in native Anthropic output schemas.
+reader_correction uses integer paragraph_index; apply_reader_corrections enforces
+nonnegative/in-range integer values locally before applying exact edits. Tests
+cover every stage schema, including rarely reached corrections. Independent
+meaning review remains required. The paid acceptance reached meaning review but
+its correction request failed; no post-fix paid validation is claimed.
+
+The shared reader projection displays PID in recommendation prose and drafting
+destination labels. Preserve lowercase internal routing values and the immutable
+assessment; do not rewrite saved evidence or identifiers for presentation casing.
+
+### 2026-10-16 Research admission and reader tolerance repair
+
+Climate search now supplies the same allowed_domains that downstream provenance
+validation accepts. Previously unrestricted searches spent their two-search budget
+on results later rejected by the fixed domain list. Provider-owned quotations up
+to 700 characters (the existing claim-text bound) are preserved whole across packet,
+normalization and matching; the 12,000-character packet cap, exact proof checks,
+country/project linkage and existing search/call/time limits remain. Never clip a
+long quote or manufacture a shorter one to force admission. This follows normal
+FCV's whole-passage approach with Climate's smaller context budget.
+
+Final-reader normalization drops only empty or punctuation-only paragraph entries
+and folds excess paragraph breaks without deleting substantive text. Raw output
+stays in diagnostics. All word-count, evidence-ID, factual and meaning checks run
+after normalization; a reviewer block still withholds the reader. Normalization
+version v2.12. Recommendation prompt v2.19 removes the compulsory reviewer-at-next-
+gate clause and requests the current document/allowed section, concrete edit or
+decision, completion evidence, and distinct later preparation work when relevant.
+These specificity instructions are not new admission gates. No policy authority,
+new formal milestone, approval or implementation commitment is inferred.
+
+Normal FCV also retains single-source coverage as limited; Climate still requires
+two distinct cited sources and beneficiary coverage for live-grounding admission.
+Do not equate that coverage threshold with falsity of a retained individual quote.
+Changing partial-evidence use would require preserving its limited status through
+grounding and exports; this repair does not silently relabel it complete.
+
+### 2026-10-16 General final-reader evidence safeguards
+
+Reader compilation uses a request-scoped JSON-schema enum of the supplied support
+registry. Empty registries fail before provider calls. This constrains identifiers,
+not truth or semantic relevance; application validation and independent meaning
+review remain mandatory. Invalid references are checked even when text is overlong.
+Findings target 70-180 words; up to 200 are allowed to preserve qualifications, with
+no exception to evidence, numeric/date or semantic checks. Withheld reader diagnostics
+carry the actual precheck codes. Reader/correction versions v1.9/v1.6; normalization
+v2.11. Research logs now report bounded numeric passage rejection counts without
+quotes or source titles; admission rules are unchanged. No case-specific ID mapping,
+quote truncation, new model calls, or publication approval is introduced.
+
+### 2026-10-16 Late MPA descriptions and internal metadata
+
+Climate routing retains the short header check and also recognizes explicit
+current-operation MPA self-descriptions across prepared primary-document blocks.
+This fixes the standard Somalia PID whose MPA Phase 1 statement follows long
+country context. Other-project, future, negated and supporting-document examples
+must not activate the new body matcher. IPF remains the base instrument.
+
+Fact extraction, recommendation compilation and conditional review now distinguish
+operation_context routing metadata from uploaded evidence. An internal mismatch
+is not a source-document inconsistency. Corresponding prompt versions are facts
+v2.9, recommendations v2.18 and conditional review v2.20. No schema change.
+See current HANDOFF for verification. Historical model output remains unchanged; no new paid acceptance.
+
+### 2026-10-16 Opt-in preview spend reservations
+
+All four Anthropic clients accept the same opt-in HTTP request hook when
+FCV_PILOT_BUDGET_MICROUSD and FCV_PILOT_BUDGET_DB are both set. Default is off.
+The hook reserves before each send, including retries, using text bytes plus4096
+framing headroom and full output cap at pinned known rates with a2x margin.
+SQLite updates are atomic across clients/workers and reservations are never
+refunded. Unknown request fields, server tools/MCP/compaction, nontext blocks,
+caching and unpriced routing are rejected before send. This is a controlled
+single-instance preview-campaign guard, not an account billing system.
+
+The ledger survives worker restarts but NOT Render ephemeral-filesystem replacement.
+Use fixed phase-specific allowances whose sum never exceeds the authorized total;
+after any mid-phase replacement subtract all previous reservations before starting
+another ledger. Blocked optional research must be disclosed; it is not equivalent
+to a full web-grounded acceptance run. Production remains default-off.
+
 # FCV Project Screening App — Claude Development Guide
+
+### 2026-10-16 External human review packet
+
+User selected approval in an existing authenticated organisational workflow.
+Climate Summary, Detailed, HTML and Word now say Draft - human review required;
+client approval flags cannot remove that status. The review-packet download reuses
+the snapshot mismatch gate and creates a ZIP containing Detailed HTML, Word,
+canonical snapshot JSON, a checksum manifest, blank named-review template and
+instructions. The actual report files and snapshot have SHA-256 hashes; both
+reports display the snapshot ID. Reviewer identity, decision and workflow reference
+must be recorded externally. No approval is imported or asserted by the app.
+Changes require a new packet and review against actual file checksums held in the
+authenticated record. Source uploads are not bundled; the reviewer must resolve
+source access/provenance and all consequential claims, including unflagged claims.
+
+Render read-only check: service srv-d6de99jh46gs73d0jjrg remains on main with
+commit-triggered auto-deploy. This PR branch was not deployed. No in-app identity
+or durable approval storage was found in repository review. Workspace database
+inventory was unavailable without selecting a workspace; no inventory absence is
+claimed. No new infrastructure, paid calls, merge or live acceptance.
+Synthetic packet: output/20261016-external-review-packet/synthetic-review-packet.zip.
+Validation: 1,732 full-suite tests passed in 1,605.74 seconds (26:45);
+187 connected packet/renderer/route tests passed. Read-only review found no
+blockers. Synthetic HTML inspected in headless Edge at desktop and phone widths,
+with readable notice/hash and no phone overflow. Word content/checksums were
+verified programmatically; no visual Word-layout acceptance is claimed.
+
+
+### 2026-10-16 Climate export consistency boundary
+
+Climate HTML and Word exports now share a no-model assessment/reader consistency
+check. Supplied stale or edited readers receive READER_SNAPSHOT_MISMATCH (409),
+not a silently rebuilt report. Canonical assessment corrections remain exportable.
+The HTML path checks before downloading and rejects an in-flight report change.
+Runtime readers use JSON-compatible evidence values and deterministic evidence
+ordering so saved/restored reports can pass the same boundary. A SHA-256 snapshot
+identity includes the complete supplied assessment and projected reader; it is not
+an authenticated approval or independent source verification. Publication approval
+remains false. Older mismatching saved readers require regeneration from their
+assessment; missing-reader legacy Word requests still export the canonical draft.
+No provider calls, prompt changes, merge or deployment. Validation: 1,721 full-suite tests passed in 1,064.31 seconds using Python
+UTF-8 mode and normal process permissions; final snapshot tests 17 passed.
+Read-only code review found no remaining blockers. The first default-encoding
+run was stopped after reproducing a Windows cp1252 subprocess error; the UTF-8
+full rerun passed. No live-service acceptance is claimed.
+
 
 > **Maintenance instruction:** After every substantial change (new features, prompt changes, new delimiters, UI additions, architectural decisions), update this file AND the relevant reference doc before committing. Keep section 1.3 (Stage pipeline), section 3 (Prompt Architecture), and section 5.3 (Priority Parsing) accurate at all times.
 >
@@ -11,6 +395,385 @@
 ---
 
 ## Overview
+
+### 2026-10-15 claim-level paid check: overall failed
+
+Both authorized calls completed normally, without retries. Discovery returned no
+findings and missed both known factual defects. Independent review of the manually
+corrected reader accepted the two narrow edits and correctly rejected the false
+access objection; schemas, source quotes and the finalizer pass. This is successful
+targeted adjudication, not an automated detection/correction chain or release pass.
+Usage: 32,758 input / 5,275 output tokens; 50.491 seconds provider time. No full run,
+deployment or merge. No additional paid authority. Production/ITS acceptance remains
+held because missed factual premises remain unresolved. See [results](docs/20261015_climate-claim-model-results.md).
+
+### 2026-10-15 claim-level repair: offline prototype verified
+
+A standalone adapter now records exact factual findings, permits multiple narrow
+edits in one paragraph, retains disputed analysis for explicit adjudication and
+requires complete final review. Optional precision alone cannot block acceptance.
+Production prompts, runtime and deployments are unchanged.
+
+170 focused/connected tests passed. Curated replay of the saved five-record reader
+made two factual edits and preserved the disputed access paragraph and all evidence.
+This validates mechanics, not fresh model judgment. No paid calls were made;
+production/ITS acceptance remains held. The next gate is bounded claim-level model
+validation before runtime integration or another full paid assessment.
+See [validation](docs/20261015_climate-claim-repair-validation.md).
+
+### 2026-10-15 source-scope paid validation: failed
+
+Two targeted calls on 039a112 are consumed, no retries/full assessment/deployment.
+The reviewer catches safeguard specificity but still falsely equates regional
+continuity with affected-population access in REC-003 and NARR-inclusion. Reader
+issues duplicate NARR-inclusion, so the actual correction-admission gate returns
+False despite valid native JSON and exact quotes. Raw 13/14 ID agreement is not
+semantic/application acceptance. Usage: 111,619 input / 7,571 output; provider time 68.926 s.
+No more paid authority from this check. Production/ITS acceptance remains held.
+See [results](docs/20261015_climate-source-scope-review-results.md).
+
+### 2026-10-15 source-scope reviewer repair: offline verified
+
+The two review prompts now compare exact population/access and risk/instrument
+relationships, credit broad provisions without treating them as narrower proof,
+and retain qualified analysis. Explicit matching provisions defeat blanket omission
+claims; unseen safeguard content does not mean failed protection. Review versions
+are core2.19 and reader1.9. Schemas, correction paths, model settings and budgets
+are unchanged. Four synthetic contrast cases reuse the existing offline harness.
+
+171 focused tests and all 1,677 full-suite tests passed (1,274.80s); all 158 checked
+source/fixture hashes remained unchanged. Seven other rendered stage prompts are
+byte-identical to the preceding commit. Independent review found no blocking issue.
+No paid calls, full assessment, deployment or merge. This candidate's model judgment
+is unvalidated: the prior 12/14 result applies to older prompts. Production/ITS
+acceptance remains held. See [repair](docs/20261015_climate-source-scope-review-repair.md).
+
+### 2026-10-15 reasoning-enabled comparison: improved, still failed
+
+Two authorized isolated reviewer calls are consumed, no retries or full assessment.
+Adaptive/high reasoning caught study scope, separate funding envelopes and planned
+versus delivered facilities; readiness decisions were correct. Decision agreement
+was 12/14 against pre-frozen adjudicated labels. Remaining failures: false rejection
+of qualified cancelled-site access analysis and missed exclusion-specific safeguard
+overstatement. Both actual schemas, fingerprints and exact quote checks passed;
+33 focused tests passed. Usage: 110,643 input / 7,831 output tokens; provider time 56.608 s.
+No app settings, deployment or merge changed. Production/ITS acceptance remains
+held. No further paid authority from this experiment. See
+[results](docs/20261015_climate-reasoning-review-results.md).
+
+### 2026-10-15 explicit-premise paid check: failed
+
+Two newly authorized reviewer calls on candidate8b1039c are consumed; no retries,
+correction-generation calls, full assessment or deployment. Both native schemas and
+reader quote checks pass, but the model still admits Kasindi study-scope and separate
+funding-envelope errors, misses planned-versus-delivered flood-ready status, and
+accepts rounding as an inconsistency. The historical REC-003 reject label was too
+strict: its explicitly qualified access question is valid analysis. Inclusion needs
+a narrow safeguard wording correction; other reader objections overstate precision
+issues. Keep frozen expectations and the separate source adjudication visible.
+Actual Sonnet5.5 usage:110641 input/2024 output tokens. Production/ITS readiness stays
+held; no further paid authority from this check. See [results](docs/20261015_climate-explicit-premise-review-results.md).
+
+### 2026-10-15 explicit premise review and bounded correction
+
+The offline candidate now requires a source-linked premise decision for every core
+recommendation and an exact current-text quote for every reader objection. Supported
+facts, qualified analysis and proposed actions remain admissible. An unsupported
+parent premise cannot pass merely because only its optional draft was flagged.
+Precise findings use the existing bounded correction and fresh review; malformed
+findings cannot authorize speculative edits. Valid unrelated cores and untouched
+reader text are preserved. Reader publication still needs a clean meaning review;
+the verified Detailed fallback remains available if it fails.
+
+Core review2.18, reader review1.8 and normalization2.10 record the contract change;
+renderer2.19 and maximum call/retry budgets are unchanged. No provider calls or
+deployment occurred in this repair. Offline tests establish admission behavior,
+not model judgment: fresh semantic acceptance and production/ITS readiness remain
+unproven. Stored assessments are not automatically re-reviewed. See
+[repair and verification](docs/20261015_climate-explicit-premise-repair-validation.md).
+
+### 2026-10-15 full-context paid reviewer check: failed
+
+Two explicitly approved reviewer-only calls are now used; no retries, full run,
+deployment or merge occurred. Candidate 94a0f2c used claude-sonnet-5-5 and recorded
+108,819 input / 1,068 output tokens. Both native responses validated, but analytical
+acceptance failed: all five core recommendations passed, including known scope
+errors REC-001/003/005; all four readiness decisions matched; reader review again
+rejected valid coordinated wording and missed the flood-ready status overstatement.
+A new inclusion objection is recorded with its source nuance. REC-005's financing
+scope error was recognized only on its optional draft, leaving the faulty core
+approved. More context alone did not solve admission. No further paid authority
+remains from this approval; production/ITS acceptance stays held. See
+[full results](docs/20261015_climate-full-context-review-results.md).
+
+### 2026-10-15 full-context offline repair (not production accepted)
+
+The user approved an offline repair following quality13. Cited original source
+blocks now accompany facts through generation and reader stages so site/activity
+and recipient/funding boundaries remain visible. Corrections use unique anchored
+sentence/clause edits, preserving surrounding text and evidence; numeric/date
+checks and fresh independent meaning review remain mandatory. Research telemetry
+recognizes selections and preserves numeric rejection counts, distinguishing
+unknown diagnostics from known zero counts without logging source text.
+
+The full-context replay reconstructs 104 source blocks, 60 facts, five core
+recommendations, four flags and five reader records; its recorded outcome correctly
+fails seven acceptance checks. It separates reconstructed baseline inputs from the
+current candidate reader input and never injects expected labels into model input.
+The offline validation record is docs/20261015_climate-full-context-repair-validation.md.
+Added source context increases input size (43,322 serialized characters per full
+context call on quality13); no new model calls or retries were added. No provider
+calls, paid assessments or deployments occurred in this repair. Production/ITS
+acceptance remains outstanding; saved failures remain unchanged. Draft PR83 and
+its worktree are preserved. Do not treat software tests as semantic certification.
+
+### 2026-10-15 quality13: production acceptance failed
+
+The one newly authorized full paid run is used; all six targeted reviewer calls are
+also used. Candidate f463684 passed 1,591 offline tests, exact-commit CodeQL and the
+four targeted calibration cases, but quality13 failed source-based acceptance.
+Assessment 09c194d6-a4f0-40a7-bc9b-3eccfc952f6a completed HTTP200 at 07:10:45UTC.
+Four priorities survived; REC-001 misroutes Kasindi through Haut-Katanga feasibility
+studies and REC-005 combines separate Burundi/DRC financing pools. The reviewer
+admitted false rounding/status contradictions and again rejected valid qualified
+reader wording. One real reader status defect was found; its correction introduced
+new numeric tokens and was correctly rejected. Summary 198 words was not the issue.
+Research returned zero admitted claims; stale structural telemetry cannot establish
+why selections failed. See docs/20261015_climate-quality13-acceptance-diagnosis.md.
+
+Production restored to original main 1168a8f by dep-db87rsm89jmc73ciiij0, live
+2026-10-15 07:17:29UTC; branch main, On Commit and HTTP200 build health verified.
+Preview 23958ae/auto-deploy off; branch/worktree and draft PR83 retained. Actual
+browser/HTML/DOCX artifacts are local and agree, including the review-needed fallback.
+No further paid call, main merge, ITS deployment or successful ITS handover is
+approved by this failed result. Historical allowance statements below are superseded.
+The isolated calibration did not generalize; production readiness is not established.
+
+### 2026-10-15 reviewer calibration complete; full acceptance pending
+
+The latest user authority permits six targeted reviewer-only calls and one further
+full paid assessment after repairs. All six targeted calls are now used; the new
+full run is not yet used. This supersedes historical exhausted-allowance statements
+below. No additional reviewer-only calls are authorized.
+
+The repair separates accepted proposed actions from factual evidence, retains
+material siting criteria, checks every core premise against source passages, and
+calibrates reader review for faithful weaker paraphrases and conditional inference.
+Four final calibration cases passed the configured reviewer with native schemas,
+exact targets, appropriate per-object reasons and manual source review. Two negative
+cases were purified and repeated within the six-call cap; positive payloads and
+runtime prompts were unchanged. See docs/20261015_climate-reviewer-calibration.md.
+
+Frozen verification: 1,591 tests passed in339.79 seconds; all157 checked Python/fixture
+source hashes unchanged. Independent acceptance review found no remaining blocker.
+
+Versions: facts2.7, analysis2.11, judgments2.15, recommendations2.16,
+conditional-review2.16, drafting1.6, compiler1.7, correction1.4,
+reader-review1.6, normalization2.8. Renderer2.19 and all schemas/call budgets
+are unchanged. No cached-result re-review is implied. Fresh end-to-end analytical,
+browser and export acceptance remains mandatory before a successful ITS handover.
+Production remains original main1168a8f/On Commit; preview23958ae/auto-deploy off.
+
+### 2026-10-15 quality12 outcome: rollout held
+
+Final combined offline verification: 1,573 tests passed; 163 source/test hashes unchanged.
+See the quality12 diagnosis for live failures, offline changes and remaining limits.
+
+Offline follow-up (not deployed): conditional-review2.15 now receives readiness
+flags in its existing call and returns passed_readiness_ids. Only explicit, valid,
+uncontested acceptances reach output; no-priority runs withhold unreviewed flags
+without another call. Flag disputes cannot remove explicitly accepted core actions.
+Correction calls clear the flag list. Original flag wording remains reserved against
+minor-point duplication, conservatively preventing rejected claims from resurfacing.
+Reader-correction1.3 exposes per-target numeric/date tokens while retaining deterministic
+rejection. Normalization2.7; renderer2.19 unchanged. These changes are offline verified
+only; relational-scope errors and reviewer false positives still require fresh analytical
+acceptance. No further paid call is authorized under the exhausted two-run allowance.
+
+Both authorized paid runs are consumed. Quality12 on 23958ae completed HTTP 200,
+retained three priorities and two-country research, but failed analytical/native-reader
+acceptance. Summary length was valid at 204 words. One initial meaning review ran;
+the correction added a date outside the original record and was rejected before any
+fresh review. Source checks found unsupported displaced-trader/site linkage, overstated
+missing siting criteria, and unverified integrity flags, alongside reviewer false positives.
+See docs/20261015_climate-quality12-acceptance-diagnosis.md. Do not admit saved results,
+run another paid assessment/provider review, merge, or deploy to ITS.
+Production rollback dep-db80ii8u01pc738ev6tg restored original main1168a8f at
+2026-10-14 23:00:04 UTC; On Commit and HTTP200 original-build health verified.
+The branch preview remains23958ae with auto-deploy off. No successful ITS Word
+handover has been authored. Historical statements below about one remaining run
+are superseded. Offline safety improvements do not establish fresh analytical acceptance.
+
+### 2026-10-15 bounded quality11 repair (acceptance pending)
+
+October15 quality11 follow-up: the first of two newly authorized paid trials
+completed on paid production but failed analytical acceptance (false same-scope
+contradiction, incomplete country research, Summary321/288 words without meaning
+review). Production was restored to original main1168a8f, On Commit, healthy.
+One paid trial remains. Native reader repair now combines initial meaning issues
+with repairable text prechecks in one correction, followed by fresh review; length
+patches receive220 total words of application-owned paragraph budgets, while the
+admission ceiling remains260. Malformed/block reviews skip correction. Research
+retains received proof ahead of snippets and reserves coverage within existing
+caps. Fact/review prompts verify comparability and residual-gap premises. Versions:
+facts2.6, review2.14, compiler1.6, correction1.2, reader-review1.5, normalization2.6.
+Renderer2.19 unchanged. See docs/20261015_climate-quality11-repair-validation.md.
+Earlier paid-authority restrictions below are historical. Rollout remains held.
+
+
+### 2026-10-14 quality10 follow-up: meaning takes priority over modest length
+
+The user authorized further paid acceptance, including a full run if needed, and
+clarified that roughly twenty extra words must not be the main acceptance blocker.
+Quality10 on 4231ab9 retained five independently accepted priorities but withheld
+native prose: Summary 250 words, then 239 after the single correction. Meaning
+review was never reached. Complete initial/precheck/patch diagnostics were retained.
+
+Native Summary targets remain 160-230 words, with an admission allowance up to 260.
+Legacy Summary retains its 230-word limit. Native meaning review remains mandatory;
+unreviewed historical results are never promoted. Compiler1.5/correction1.1/reviewer1.4
+explicitly preserve country/component/activity scope, beneficiary-population scope,
+and planned versus delivered benefits. Normalization2.5; renderer2.19 unchanged.
+No extra correction, retry or provider budget was added. See
+docs/20261014_climate-quality10-validation.md. Production/main/ITS remain held
+pending fresh analytical acceptance; earlier no-paid statements below are historical.
+
+### 2026-10-14 approved native reader contract repair (rollout held)
+
+Quality9 consumed the single follow-on paid allowance. It retained four independently
+accepted actions and five Summary gaps, but native prose was withheld before meaning
+review: the returned Summary had 274 words and the old capitalization heuristic
+rejected Protections. The original precheck/reader response was overwritten during
+whole-reader correction, preventing an exact diagnosis of its scope failure.
+
+Compiler 1.4/correction 1.0/reviewer 1.3 and normalization 2.4 replace whole-reader copying
+with exact-ID text patches. The application preserves all evidence, themes and
+untargeted records. Native mechanical checks retain reference, number/date, format
+and length boundaries; independent meaning review owns actors, actions, units,
+negation, source scope and planned/completed status. Normal FCV Summary stays strict.
+Corrections receive original claim scope and restricted cited support, followed by
+complete revalidation and fresh review. Missing/malformed/non-clean review fails
+closed. Initial response, prechecks, returned patch and review outcomes remain bounded
+private diagnostics, excluded from display, grounding and exports. One correction
+uses the existing deadline/shared 9,000-token allowance with zero repair retries.
+Reader 2.19 and legacy contracts are unchanged. No further paid call is authorized;
+offline archive replay supplies no retrospective semantic pass. Production/main/ITS
+remain held. See docs/20261014_climate-reader-contract-validation.md.
+
+CodeQL follow-up: research source classification now uses exact World Bank/IPCC
+domains or their dot-delimited subdomains, matching the existing trusted HTTPS
+admission rule. Lookalike hosts cannot receive official-source labels even before
+normalization rejects them. No source entitlement or schema change.
+
+### 2026-10-14 richer benefits prose preflight (rollout held)
+
+The user requested richer dividends/fair-benefit findings and authorized one new
+quality8 paid run after offline fixes. Analysis 2.10 records conditional benefit
+mechanisms and enabling conditions in existing responses/pathways, including who
+could benefit or bear costs. Final reader/reviewer 1.2 use project-feature-led,
+connected prose, distinguish missing instrument visibility from failed protection,
+and never treat absent dividend language or an explicit mechanism as a defect.
+Dividends/inclusion target 150-180 words in two paragraphs when supported; native
+admission now allows 70-180 words, matching the existing theme renderer and keeping
+short saved outputs readable. Reader version 2.18. An exact sentence-initial Clear access arrangements
+exception retains one-word actor, multiword-name and acronym guards. No extra calls or budget changes.
+Focused177passed; full1510passed/one obsolete wording assertion; aligned client
+module18passed. Runtime unchanged after full suite. Fresh quality8 acceptance
+remains outstanding.
+See docs/superpowers/plans/2026-10-14-climate-benefits-prose.md.
+
+### 2026-10-14 quality7 reader-boundary follow-up (rollout held)
+
+The one paid quality7 run passed research (2 sources/4 passages) but failed at the
+runtime reader gate CURRENT_DRAFTING_INCOMPLETE. Its completed assessment was not
+returned or cached, so accepted priority count and native prose are unobservable.
+No paid retry; allowance consumed. See docs/20261014_climate-quality7-validation.md.
+Reader 2.17 explicitly carries final-reader-v1 so missing optional wording passes,
+while supplied malformed wording and legacy readers retain their checks. Native
+prose requires all three theme answers. Typed reader failures return a separate
+caller-only diagnostic event, manually saved/loaded as climateVerifiedFailure,
+never used for display, exports, follow-on inputs or automatic storage. Reset/new
+run clears it and stale session labels. Context evidence retains source metadata,
+dates, limitations and relevance horizons; unknown dates leave current status
+unverified. All prompts include that temporal calibration; no extra calls added.
+
+### 2026-10-14 Climate backend candidate (rollout held)
+
+Approved redesign implements separate operational-decision and optional-drafting
+validation. Native reviewers explicitly list passed_core_ids; missing/unresolved
+acceptance fails closed. Draft artifacts have separate IDs. Decision corrections
+use recommendation_compiler, wording corrections use drafting_compiler, with one
+independent re-review and a shared9,000-output-token allowance (no repair retries).
+Optional drafting reserves core review time. Cancellation propagates; optional
+provider/editorial failures retain previously accepted decisions.
+
+Research classification selects received citation passage IDs and source-owned
+project labels; the application owns quotes, URLs and metadata. Search continuation
+keeps encrypted blocks; the pure classification call sends only the bounded packet.
+Incomplete exact proof is retained for inspection but excluded from admitted prompt
+grounding. Beneficiary coverage, whole source-label spans and bank unavailable
+reasons remain explicit. Country evidence never establishes a project/site fact.
+
+The native judgment stage defers prose with final-reader-v1. reader_compiler runs
+after final action review; reader_review checks supported meaning, status and scope.
+Summary and three findings cite admitted evidence/action IDs. Reader2.16 exports
+reviewed narratives, ignores separate unreviewed top-level prose, rechecks support
+and uses a clear limited fallback. Legacy saved assessments remain unchanged.
+All priorities remain open; their details and04-06 disclosures remain closed.
+Per-attempt metrics record configured/resolved model, usage, scope and failures.
+See docs/20261014_climate-decision-acceptance-benchmark.md. Full offline verification
+and branch-test checks are recorded in the matching backend-validation handover.
+No additional paid generation; fresh live quality acceptance remains outstanding.
+
+### 2026-10-13 pipeline reassessment and priority visibility
+
+Reader2.15 opens every ranked Climate operational priority initially in browser
+Detailed and standalone HTML. Recommendation details and sections04–06 remain
+closed; user toggling and print restoration are retained. Generation is unchanged.
+The six-run/backend assessment identifies a native correction schema defect:
+compiler corrections cannot contain drafting, but confirmed-route validation
+requires it. Existing passing fixtures supplied legacy fields forbidden live.
+The Summary lexical gate also rejects ordinary prose and can accept inverted
+meaning. These are diagnosed/proposed backend changes, not implemented repairs.
+See `docs/20261013_climate-pipeline-readiness-assessment.md` for evidence, options,
+cost/coverage limits and the recommended redesign checkpoints. Rollout remains held.
+
+### 2026-10-13 quality6 follow-up (rollout held)
+
+The new paid quality assessment generated four candidates and retained two after
+independent review; correction recovered none. Research provenance failed and
+native Summary fell back. This is a failed quality gate; PR83 remains draft.
+Reader2.14 repairs rejection of the full DRC country name against an admitted DRC
+fact and ordinary sentence-initial Today in analytical prose. Summary no longer
+requires four literal dimension labels; its other grounding checks remain strict.
+Correction trace retains bounded response and pre-review rejection reasons.
+No new model calls, recommendation restoration or generation-prompt changes.
+The Word route also calls the existing provenance helper after canonical reader
+validation, restoring matched guidance and method/source notes from the assessment
+and curated references. It never copies provenance from the incoming saved reader.
+See `docs/20261013_climate-quality6-validation.md` for evidence and remaining blockers.
+
+### 2026-10-12 candidate: shared rating sidebar
+
+Normal FCV and verified Climate now keep the rating sidebar in Summary and Detailed;
+mobile uses the existing collapsed disclosure. Climate shows separate sensitivity
+and responsiveness cards with short glosses and collapsed rationale. Responsiveness
+uses five contribution levels (very_limited through very_strong), with not_expected
+and unclear unscored. The judgment prompt is climate-judgments-v2.8; saved
+Emerging results remain visibly legacy and unscored. The approved scope message is:
+"Contributing to responsiveness is often a sign of going above and beyond. The
+expected contribution depends on the project's scope." Normal FCV's existing
+rating scale is unchanged. This candidate has not been merged to production.
+
+Production-readiness follow-up: explicit PID beneficiary-country fields are read
+before source normalization, including bounded handling of concatenated geography
+columns. Verified Climate uses that metadata for regional scope. Metadata model
+helpers disable adaptive thinking and collect text blocks safely. E&S markers are
+checked across retained primary evidence, not only the opening 8,000 characters.
+Missing OIS/processing evidence is now explicit in Summary, Detailed and exports.
+HTML/Word exports include the contribution interpretation; saved Emerging readers
+remain valid while new generation rejects that legacy value. Mobile utility CSS
+now follows the desktop rule so wrapped controls retain their background/height.
 
 This is a **World Bank FCV (Fragility, Conflict, and Violence) Project Screener** — a Flask-based web app that guides Task Team Leaders (TTLs) through a **3-stage workflow** to assess how well a World Bank project integrates FCV considerations and generate targeted, actionable recommendations.
 
@@ -334,7 +1097,7 @@ Procfile            # Render deployment config
 
 **Climate-active dual-use contract (implemented on `codex/climate-fcv-output-redesign`):** Stage 1 runs reduced core research and one dedicated bounded trusted-source Climate pass concurrently, with one narrower retry. Stage 2 requires both directional interaction pathways with stable IDs, project/place/group/system anchors, causal steps, confidence, evidence gaps or research claim IDs, and current/project/asset-system horizons. Stage 3 retains both causal directions inside the 900-token lens ceiling and validates `climate_links` on every priority as either `linked` to recognized interaction/dividend/finding IDs or `no-material-pathway` with a concrete reason. Live HTML, shared HTML, and DOCX use the same narrative interactions, causal strips, qualitative dividend synthesis, and priority contribution panels. See `docs/20260723_climate_fcv_output_redesign_handoff.md`.
 
-**Bounded Climate evidence handoff:** Sonnet still performs exactly two targeted web searches. If it returns search results without the validated JSON bundle, a pure adapter retains only bounded note text, trusted cited source metadata, and a bounded project profile. Haiku receives that packet in a fresh single-turn request; the original prompt, tool-use blocks, encrypted result payloads, and full assistant conversation are not replayed. The ClimateResearchBundle schema and mandatory evidence gate are unchanged. Truncated structuring output is reported separately from missing sources.
+**Bounded Climate evidence handoff:** Sonnet performs two targeted web searches. If structuring is needed, Haiku continues the original native search messages, including encrypted result blocks, with further tool use disabled. No extra call is added. Fresh claims require a short source_excerpt matching a provider cited passage at the declared trusted source URL; downstream claim text is that passage, preserving measured quantities and qualifiers. Citation-split JSON text is joined without injected newlines. Missing matching passages fail the evidence gate; source metadata alone is insufficient. See the sector-lens reference for bounds and remaining acceptance limits.
 
 ```
 STAGE 1 — Context & Extraction
@@ -462,6 +1225,11 @@ Limitation: browser-specific, not suitable for team collaboration or long-term a
 ## 3. Prompt Architecture
 
 ### 3.1 Where Prompts Live
+
+Verified Climate uses sector_lenses/climate_verified_prompts.py. All six stages
+share sensitivity/dividend calibration, commitment-status preservation and the
+current review date. Historical estimated approval dates do not establish current
+status. Source-proof and prompt versions are recorded in the sector-lens reference.
 
 ```python
 # app.py — top-level DEFAULT_PROMPTS dictionary
@@ -947,3 +1715,247 @@ Watch List heading normalization uses linear line parsing in Python and JavaScri
 Live acceptance exposed uncited synthesis leaking into analysis. `core_research_analysis_context` now supplies only country-attributable provider passages to both Stage 1 workflows; the full qualified briefing stays visible and exportable. Timing guidance requires later developments to remain watch items, not historical gaps, and forbids inferring site-specific events from broad country excerpts.
 
 Country matching normalizes typographic possessives before ASCII folding, so a national-news title such as "Somalia’s ..." is not falsely downgraded to ambiguous regional context. The regression includes the exact title returned during live research and retains the namesake-country cases.
+
+
+## Climate OPCS parity candidate (2026-10-12)
+
+Branch `fix/climate-opcs-parity` updates verified Climate routing and the bounded
+registry to `climate-guidance-v4`. DPF PAD hints normalize to Program Document;
+IPF-DDO uses IPF; unsupported TA stays unresolved. PID, Project Paper and Program
+Document alone do not establish a preparation regime. Explicit OIS dates use the
+shared instrument boundaries. AF/restructuring purpose precedes generic paper
+labels. Labelled risk inputs use the shared processing classifier with MPA,
+FMRF and hybrid-component safeguards; conflicting processing markers fail closed.
+New-model IPF can resolve ESF through the shared OIS rule, while AF/restructuring
+needs explicit E&S evidence and mixed framework mentions stay unresolved.
+
+DPF-MPA drafting is withheld. PforR mid-cycle guidance is registered. Hybrid PforR
+recommendations can use IPF E&S terminology only in explicitly component-scoped
+sentences supported by linked component facts; standalone PforR/DPF guards remain.
+`DraftingValidationContext.has_ipf_component` is an internal optional boolean;
+no output schema, delimiter, rating or extra model call changes.
+
+Appraisal guidance adds evidence checks and specialist referrals for Paris
+Alignment, climate/disaster risk screening, climate co-benefits and indicators.
+It never certifies compliance or treats a missing upload as an absent assessment.
+Reader timing uses conditional new-model review destinations, and PID is not
+assumed concept-stage. Source currency remains subject to live PPF verification.
+Live acceptance and release status: see `docs/20261012_climate-opcs-parity-validation.md`.
+
+### 2026-10-12 quality acceptance hold (PR #83)
+
+The single Great Lakes quality run on cbd31ddd1084 correctly resolved AF/IPF/multi/ESF and the five-point ratings, but all recommendations were suppressed. Do not promote this candidate as analytically accepted. The semantic verifier now receives the compiler's scoped operational guidance (review prompt v2.6); live effect remains unverified. Upload handlers now resolve current arrays after removal/reset; reset clears package files and metadata. Incomplete exports put their warning before the assessment. See docs/20261012_climate-opcs-parity-validation.md for acceptance evidence.
+
+
+### 2026-10-12 offline hardening before another paid run
+
+Shared Markdown spacing/marker-drift cleanup and actor normalization now cover all
+visible fields. Saved assessments retain bounded diagnostic_trace snapshots,
+excluded from readers/logs/exports; reviewer schema adds per-REC issues. Summary
+validation records specific failures without relaxing grounding. Prompt versions:
+judgments v2.6, compiler v2.5, review v2.7. No added provider calls. See
+`docs/20261012_climate-opcs-parity-validation.md` for checks and acceptance limits.
+Production remains held pending a separately authorized live quality check.
+
+
+### 2026-10-12 second quality trial and post-run fixes
+
+The authorized trial on 152656b retained one of three priorities; two correctly
+failed scope/authority review. Production remains held. Post-run fixes accept
+ordinary grounded summary prose, reject project-document titles on country-homepage
+URLs and avoid treating page_age as publication date. Climate scope/CERC and
+conditional proposal guards are strengthened (analysis v2.3, compiler v2.6,
+drafting v1.1, review v2.8; judgments v2.6). Reader status partial adds a short
+needs-review notice across app, copied Summary and exports. See the current
+validation document for trace, evidence and live-acceptance limits.
+
+
+### Native research-context continuation correction
+
+The existing research structuring call now preserves native search/encrypted
+context, with further searches disabled and no added call. All 55 research,
+grounding and context checks pass. The current validation record documents the
+protocol and remaining live-acceptance hold; ITS remains unchanged.
+
+
+### 2026-10-12 approved dividends framing and Summary gaps
+
+Climate judgment/compiler prompts are v2.7; reader manifest v2.4. Sensitivity now
+asks how well the project recognizes and addresses interacting climate/FCV risks;
+recognition alone cannot earn a strong rating. Responsiveness asks how well relevant
+climate-related design and delivery choices support wider peace and social dividends
+within scope, using an evidenced mechanism rather than theoretical maximum benefit.
+Five-point values and unscored/legacy exceptions are retained. The shared caveat now
+respects project objectives, scope and delivery constraints.
+
+The later Summary-completeness update supersedes the two-item gaps paragraph.
+The reader projects up to five complete project-linked residual-gap statements,
+independently of recommendation count. Summary uses the normal FCV bullet style,
+first-sentence emphasis and every supported priority up to five. Statements over
+75 words are omitted, never sliced. Older readers without summary_gaps reuse their
+existing priority limitations. Sidebar glosses, saved grades and withholding
+notices are preserved. Summary copying inherits these findings and actions.
+
+### 2026-10-12 expanded gaps and candidate coverage
+
+Reader v2.6 adds optional summary_gaps: up to five complete qualified residual-gap
+statements, independent of action count. Kept-priority links come first, then
+design findings before contextual evidence gaps. The projection checks typed
+project/pathway/response/evidence references and explicit-negative support for
+confirmed omissions, deduplicates IDs/text, and keeps whole qualifications.
+Evidence-trail assembly includes those gap IDs, preserving their supporting prose
+in detailed HTML/Word. Legacy readers use existing limitation fields; only fresh
+or rebuilt readers gain summary_gaps. Archives are not regraded or regenerated.
+
+Analysis v2.5 explains each gap in two/three sentences, 35-65 words: what remains,
+its project-specific consequence and evidence/scope qualifier. Compiler v2.9
+considers every admitted gap and may return up to five material distinct actions,
+grouping only gaps resolved by the same action. No quota or lowered review gate.
+The Climate Summary now displays all five supported priorities, matching normal
+FCV's cap. Unknown gap evidence IDs are rejected before compilation. Exact source
+words within hyphenated expressions no longer falsely fail entity grounding;
+unsupported entities still fail. No dependency, extra provider call, repair loop
+or native generation-schema field. Other prompt versions are unchanged.
+
+
+Final pre-paid refinements: Stage 1 now passes its existing explicit PID beneficiary
+countries and country scope into both search and bounded structuring. Neighboring
+countries in geographic identifiers are excluded. Regional searches prioritize an
+uncovered beneficiary within the existing two-search limit; incomplete coverage
+must remain partial. Profile/page text is evidence, never instructions, and document
+excerpts must not become public search queries. No new provider or metadata call.
+The Summary no longer credits high risk relevance as a project strength; genuine
+very_strong responsiveness retains its positive interpretation. Literal source
+words/acronyms in compounds, including Flood-resilient and C-ESMP, pass the shared
+whole-word grounding check; unsupported entities remain rejected. Methodology
+wording describes source-linked checks and expert corroboration without promising
+that generation cannot invent a claim. Other gates and five-point values remain.
+
+
+### 2026-10-13 post-quality4 handoff repair
+
+Analysis v2.6 clarifies exact fact/context IDs and project-only mechanisms when
+context evidence is empty. Reader v2.7 adds a plain analysis_status/message for
+withheld evidence, shown in both views and HTML/Word. Source packets enrich
+metadata with later native citations and prioritize quoted passages within the
+same four-source cap, using cumulative pause-turn content. Sonnet search uses
+between_tools/3000 tokens and bounded cited quotes; the existing Haiku structurer,
+two-search/150s limit and independent evidence/review gates remain. No extra call
+or fetch. See docs/20261012_climate-opcs-parity-validation.md for the unaccepted
+quality4 result, original private artifacts, tests and remaining paid allowance.
+
+
+Source-notice wording follow-up: _climate_source_warning_messages preserves
+bundle codes while omitting routine primary-selection bookkeeping from the
+banner. Regional coverage and unresolved document precedence have plain messages.
+Full source/pipeline regression and the subsequent focused wording checks are
+recorded in docs/20261012_climate-opcs-parity-validation.md.
+
+
+2026-10-13 final readout safeguards: reader v2.8 withholds a whole narrative that
+introduces responsiveness absent from the reviewed action fields; complete field
+presentation retains every action/qualification and grades are unchanged.
+Compiler/reviewer v2.10 align titles with minimum actions and distinguish ordinary
+measurement from wider dividends. Source proof retains only cited sources and
+explicit provider publication dates; unknown dates stay unknown. Climate gaps
+carry a concise optional-dividend scope note. No new model/fetch call; original
+paid archives remain unchanged. Final trial/check evidence is recorded in
+`docs/20261012_climate-opcs-parity-validation.md`.
+
+
+Detailed export completeness: HTML/Word render the optional reader summary_gaps
+as Supporting gap findings before priorities, preserving all five full qualified
+statements and the optional-dividend scope note. They still use detailed renderer
+boundaries. Legacy readers without summary_gaps do not gain an empty section.
+
+
+Final export parity: browser Detailed/Share HTML also includes Supporting gap
+findings under the core questions, matching the complete data in Python HTML/Word.
+Final full verification: 1,444 passed after the hostname-boundary follow-up; paid and replay limits are recorded in the
+validation handover. Production/main and ITS remain unchanged.
+
+
+### 2026-10-13 action-led Climate candidate (rollout held)
+
+The verified reader derives `assessment_themes` from admitted gap statements and
+question/evidence links, with `priority_ranks` or explicit evidence follow-up. Detailed
+retains full questions in supporting analysis; Word uses an appendix. Summary retains
+five complete gaps. Paired five-point ratings replace the old export panel. Climate
+Detailed no longer renders the normal route's duplicate priority stepper/cards.
+Judgment prompt v2.9 targets 180–260 words of operational context; recommendation
+prompt v2.11 targets three to five substantive decisions where evidence warrants them.
+An explicit explained revise verdict permits one bounded compiler correction plus
+independent re-review through the same validation and original deadline. Original
+review and correction diagnostics remain separate; accepted actions survive repair
+failure. Reader version v2.9. No new paid generation has validated this candidate.
+See `docs/20261013_climate-action-led-validation.md` for acceptance and saved replay.
+
+
+### 2026-10-13 narrative findings follow-up
+
+The existing judgment call now returns assessment_narratives (design/dividends/inclusion),
+one or two connected paragraphs per theme, targeting 70-130 words and citing verified
+register IDs. Shared reader admission requires unique themes, known citations including
+a project fact, complete plain prose and number/entity/action checks. This narrative
+path permits natural paraphrase; the existing strict Summary vocabulary gate is unchanged.
+Original canonical gaps and recommendation links remain available as supporting detail.
+Browser and HTML use question headings, prose and native disclosures; Word preserves
+prose with original detail in its supporting appendix. Sections 04-07 use distinct cards
+in HTML. Common prompt calibration assesses conditional potential and enabling conditions,
+without penalizing missing peace/dividends terminology. Executive provider schema is
+aligned to the existing 180-260 word instruction. No extra generation call or dependency.
+
+Prompt versions: facts2.4, analysis2.7, judgments2.10, recommendations2.12, review2.11,
+drafting1.3; reader2.10. Fresh provider output remains unvalidated; PR83 stays draft.
+
+
+### 2026-10-13 reader simplification (supersedes visible supporting detail above)
+
+User-approved follow-up removes per-theme project-detail disclosures and the
+supporting question/watch appendix from Detailed, HTML and Word. Internal evidence
+and canonical questions remain available for validation and audit. The three
+question-led narrative answers remain. Method shows coverage, limitations and
+sources without repeating pathways. Priority cards now use Why this matters and
+What the team could do, with implementation/drafting in Recommendation details.
+Word mirrors those headings with a detail block. Legacy narrative/field fallback
+preserves complete text. Mobile card padding is reduced. Summary watches unchanged.
+Judgment and recommendation instructions require natural prose without framework
+recaps, label-and-colon verdicts, semicolons or literal Done looks like cues.
+Versions: judgments2.11, recommendations2.13, reader2.11. No added model calls.
+See docs/20261013_climate-reader-simplification-validation.md for evidence and limits.
+
+
+### 2026-10-13 standalone brief review
+
+Context/findings/priority prose instructions now develop a connected brief instead
+of repeating project history and gap inventories. A reproduced capitalization
+false positive rejected sentence-initial Links and silently restored old dividends
+wording. Analytical paraphrase now permits bounded generic sentence openings and
+inflections of existing permitted prose terms. Multiword names/acronyms, figures,
+dates, markup and action checks remain. Strict Summary mode is unchanged.
+Versions judgments2.12, recommendations2.14, reader2.12. No added provider calls
+or schema fields. New editorial preview asserts admission of all three narratives.
+See docs/20261013_climate-cohesive-brief-validation.md. Fresh paid generation remains
+unvalidated and PR83 remains draft.
+
+### 2026-10-14 quality8 outcome and reader repair
+
+Quality8 on d6282ef produced four independently accepted priorities and five
+Summary gaps. Both-country research recovered on its existing bounded second
+attempt. Native Summary/findings were withheld before meaning review; the actual
+dividends fallback was 43 words. The single paid allowance is consumed. Preserve
+the original session; do not invent or substitute a native reader_review pass.
+
+Post-paid fixes bind only a unique explicit sibling fact from an already-cited
+passage, recognize exact grammatical prose openings and distinguish qualified
+causal consequences from new project instructions. One targeted final-reader
+correction shares the existing output allowance/deadline and requires fresh
+meaning review. Untargeted records/themes/actions stay unchanged; correction
+cannot add evidence IDs or new names, quantities or action anchors. Compiler1.3,
+normalization2.3; reader2.19 links direct accepted recommendation references to
+priority cards. Semantic reviewer1.2 remains unchanged.
+
+The original compiler response passes the fixed structural gate but remains
+withheld without meaning review. A separate source-checked editorial preview is
+not native acceptance. See docs/20261014_climate-quality8-validation.md. PR83,
+production/main and ITS remain held pending fresh hosted prose acceptance.

@@ -1,0 +1,154 @@
+{
+  "provenance": {
+    "kind": "curated_offline_replay",
+    "note": "Synthetic evidence abstracts and saved failure clauses are composed into one synthetic reader to exercise mechanics. Source strings are test paraphrases, not quotations from the uploaded document. Adjudications and edits are curated test expectations, not new model responses. Original raw results remain ignored in output."
+  },
+  "reader": {
+    "summary_paragraphs": [
+      {
+        "object_id": "SUM-001",
+        "text": "Most displacement is climate-related.",
+        "evidence_ids": [
+          "PF-DISPLACEMENT"
+        ]
+      }
+    ],
+    "assessment_narratives": [
+      {
+        "object_id": "NARR-inclusion",
+        "theme": "inclusion",
+        "paragraphs": [
+          "The project documents safeguards against vulnerable group exclusion. The immediate benefit is climate resilience: flood-ready border posts. If reliable services reach affected traders, they could support livelihoods; effectiveness remains unverified.",
+          "Traders and communities near cancelled DRC sites may lose access to benefits, and the documents do not say how."
+        ],
+        "evidence_ids": [
+          "PF-SAFEGUARDS",
+          "PF-DESIGN",
+          "PF-ACCESS"
+        ]
+      }
+    ]
+  },
+  "sources": {
+    "B-SAFEGUARDS": "Social risks include exclusion of vulnerable groups. The Borrowers have prepared and are implementing core ESF instruments, including the ESMF and SEP.",
+    "B-DESIGN": "The AF finances flood-resilient redesign and construction of four border posts.",
+    "B-ACCESS": "Remaining funds originally allocated to Goma will be reallocated to a cross-border market and Component 1 and Component 3 activities in Kasindi, ensuring that North Kivu communities continue to benefit.",
+    "B-DISPLACEMENT": "Climate-related disasters accounted for 92 percent of displacement."
+  },
+  "source_note": "Synthetic test evidence representing the source relationships established in separate adjudication; consult original saved source blocks for actual document wording and full context.",
+  "review": {
+    "reviewer_label": "initial-review",
+    "record_reviews": [
+      {
+        "object_id": "SUM-001",
+        "findings": []
+      },
+      {
+        "object_id": "NARR-inclusion",
+        "findings": [
+          {
+            "finding_id": "F-SAFEGUARD",
+            "paragraph_index": 0,
+            "quoted_text": "The project documents safeguards against vulnerable group exclusion",
+            "role": "factual_assertion",
+            "disposition": "repair",
+            "evidence_classification": "not_established",
+            "reason": "General instruments and risk recognition do not establish an exclusion-specific protection.",
+            "source_checks": [
+              {
+                "source_id": "B-SAFEGUARDS",
+                "quoted_text": "Social risks include exclusion of vulnerable groups. The Borrowers have prepared and are implementing core ESF instruments, including the ESMF and SEP."
+              }
+            ]
+          },
+          {
+            "finding_id": "F-STATUS",
+            "paragraph_index": 0,
+            "quoted_text": "The immediate benefit is climate resilience: flood-ready border posts",
+            "role": "factual_assertion",
+            "disposition": "repair",
+            "evidence_classification": "not_established",
+            "reason": "Planned redesign and construction do not establish operating flood-ready facilities.",
+            "source_checks": [
+              {
+                "source_id": "B-DESIGN",
+                "quoted_text": "The AF finances flood-resilient redesign and construction of four border posts."
+              }
+            ]
+          },
+          {
+            "finding_id": "F-ACCESS",
+            "paragraph_index": 1,
+            "quoted_text": "Traders and communities near cancelled DRC sites may lose access to benefits, and the documents do not say how.",
+            "role": "conditional_inference",
+            "disposition": "disputed",
+            "evidence_classification": "not_established",
+            "reason": "Preserve this disputed reviewer objection: regional continuity does not by itself establish access for affected traders. Embedded factual premises still require independent review.",
+            "source_checks": [
+              {
+                "source_id": "B-ACCESS",
+                "quoted_text": "Remaining funds originally allocated to Goma will be reallocated to a cross-border market and Component 1 and Component 3 activities in Kasindi, ensuring that North Kivu communities continue to benefit."
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "correction": {
+    "edits": [
+      {
+        "finding_id": "F-SAFEGUARD",
+        "object_id": "NARR-inclusion",
+        "paragraph_index": 0,
+        "old_text": "The project documents safeguards against vulnerable group exclusion",
+        "new_text": "The project identifies vulnerable group exclusion as a risk and documents general safeguard instruments"
+      },
+      {
+        "finding_id": "F-STATUS",
+        "object_id": "NARR-inclusion",
+        "paragraph_index": 0,
+        "old_text": "The immediate benefit is climate resilience: flood-ready border posts",
+        "new_text": "The planned benefit is climate resilience through flood-resilient border posts"
+      }
+    ],
+    "disputed_finding_ids": [
+      "F-ACCESS"
+    ]
+  },
+  "adjudications": [
+    {
+      "finding_id": "F-SAFEGUARD",
+      "outcome": "resolved",
+      "reason": "The edited clause recognizes risk and general instruments without claiming a risk-specific measure.",
+      "source_checks": [
+        {
+          "source_id": "B-SAFEGUARDS",
+          "quoted_text": "Social risks include exclusion of vulnerable groups. The Borrowers have prepared and are implementing core ESF instruments, including the ESMF and SEP."
+        }
+      ]
+    },
+    {
+      "finding_id": "F-STATUS",
+      "outcome": "resolved",
+      "reason": "The edited clause describes a planned benefit without asserting completed or operating facilities.",
+      "source_checks": [
+        {
+          "source_id": "B-DESIGN",
+          "quoted_text": "The AF finances flood-resilient redesign and construction of four border posts."
+        }
+      ]
+    },
+    {
+      "finding_id": "F-ACCESS",
+      "outcome": "resolved",
+      "reason": "The source establishes continued regional activity but not access for traders connected to cancelled sites. The original qualified question is retained; this resolves the false objection, not the underlying uncertainty.",
+      "source_checks": [
+        {
+          "source_id": "B-ACCESS",
+          "quoted_text": "Remaining funds originally allocated to Goma will be reallocated to a cross-border market and Component 1 and Component 3 activities in Kasindi, ensuring that North Kivu communities continue to benefit."
+        }
+      ]
+    }
+  ]
+}

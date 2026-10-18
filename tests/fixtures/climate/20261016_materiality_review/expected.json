@@ -1,0 +1,97 @@
+{
+  "fixture_version": "materiality-review-v1",
+  "reviewer_must_not_receive_this_file": true,
+  "expected_by_proposition": {
+    "M01-P01": {
+      "role": "factual_assertion",
+      "verdict": "supported",
+      "is_defect": false,
+      "materiality": "none",
+      "reason": "Explicit source fact.",
+      "decision_consequence": ""
+    },
+    "M01-P02": {
+      "role": "conditional_inference",
+      "verdict": "not_established",
+      "is_defect": false,
+      "materiality": "none",
+      "reason": "Plausible qualified risk based on the stated access barrier.",
+      "decision_consequence": ""
+    },
+    "M02-P01": {
+      "role": "factual_assertion",
+      "verdict": "contradicted",
+      "is_defect": true,
+      "materiality": "major",
+      "reason": "Source explicitly says the bridge has not been built.",
+      "decision_consequence": "Could remove an urgent access intervention from priorities."
+    },
+    "M02-P02": {
+      "role": "proposed_action",
+      "verdict": "not_established",
+      "is_defect": false,
+      "materiality": "none",
+      "reason": "The proposed action depends on the separately flagged false operational-status premise.",
+      "decision_consequence": "Parent recommendation must be held for review; nondefect role is not recommendation approval."
+    },
+    "M03-P01": {
+      "role": "factual_assertion",
+      "verdict": "supported",
+      "is_defect": false,
+      "materiality": "none",
+      "reason": "Explicit planned provision.",
+      "decision_consequence": ""
+    },
+    "M03-P02": {
+      "role": "proposed_action",
+      "verdict": "not_established",
+      "is_defect": false,
+      "materiality": "none",
+      "reason": "Grounded proposed adaptation, not an assertion that protection already exists.",
+      "decision_consequence": ""
+    },
+    "M04-P01": {
+      "role": "factual_assertion",
+      "verdict": "not_established",
+      "is_defect": true,
+      "materiality": "major",
+      "reason": "Planned general provision does not establish delivered confidential protection or outcomes.",
+      "decision_consequence": "Could lead staff to expose complainants or omit a needed protection."
+    },
+    "M04-P02": {
+      "role": "conditional_inference",
+      "verdict": "not_established",
+      "is_defect": false,
+      "materiality": "none",
+      "reason": "Qualification does not rescue the separately flagged unsupported premise.",
+      "decision_consequence": "Hold the parent conclusion because its premise fails."
+    },
+    "M05-P01": {
+      "role": "conditional_inference",
+      "verdict": "not_established",
+      "is_defect": false,
+      "materiality": "none",
+      "reason": "A qualified concern is consistent with the unassessed access question.",
+      "decision_consequence": ""
+    },
+    "M06-P01": {
+      "role": "conditional_inference",
+      "verdict": "contradicted",
+      "is_defect": true,
+      "materiality": "major",
+      "reason": "May does not protect a specific possibility explicitly excluded by the source.",
+      "decision_consequence": "Could cause planners to overlook exclusion and omit access support."
+    }
+  },
+  "blocked_parent_cases": [
+    "M02",
+    "M04",
+    "M06"
+  ],
+  "protected_parent_cases": [
+    "M01",
+    "M03",
+    "M05"
+  ],
+  "recommendation_verdict_policy": "Record label differences separately if role, factual premises, recommended handling and evidence meaning agree. Contradicted advice or inference remains consequential regardless of role."
+}

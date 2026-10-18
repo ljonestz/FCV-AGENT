@@ -61,8 +61,8 @@
   - CSS: `.sensitivity-responsiveness-grid`, `.sr-card`, `.sr-card.sensitivity` (border `#0050A0`), `.sr-card.responsiveness` (border `#16A34A`), `.sr-card-label`
 
 ### Stage 3 rating rail (`updateSidebar()`)
-- Updates the compact sticky `.stage3-rating-rail` in Detailed analysis and the matching `.stage3-mobile-ratings` disclosure below the mobile breakpoint.
-- Normal FCV output shows textual Sensitivity and Responsiveness cards with slim percentage bars; Climate lens output shows one textual Climate-FCV integration card.
+- Uses the compact sticky `.stage3-rating-rail` in Summary and Detailed analysis, and the matching `.stage3-mobile-ratings` disclosure below the mobile breakpoint.
+- Normal FCV shows Sensitivity and Responsiveness cards. Verified Climate uses `climateVerifiedRatingCards()` for separate five-point sensitivity and responsiveness contribution cards; saved legacy integration output retains its old renderer. Short glosses are visible and full Climate rationale is collapsed. Not expected, unclear and legacy Emerging are unscored. Contribution depends on project scope and is often a sign of going above and beyond.
 - Updates rating text state, meaning, percentage progress, and the restored dimension-specific colors, including the legacy four-level climate integration mapping.
 
 ### Utilities
@@ -408,3 +408,173 @@ brief Word gaps already use Word's List Bullet style.
 ## Report and research usability (2026-09-22)
 
 Report controls distinguish summary copying from full-report copying. Full report content includes all canonical priority actions and drafting, ratings, risk, conclusions and watch items. The HTML analytical annex remains distinct from the Word report scope. The research briefing and country persist in saved sessions. Playbook loading has bounded recovery with retry and stale-response protection. Rating explanations retain the six existing tiers and distinguish responsiveness from overall project quality.
+
+### 2026-10-12 upload reset and incomplete exports
+
+setupZone takes a getter for the current file array so removal/reset cannot leave stale handler references. reset clears primary/package/context files, metadata and native inputs. Standalone verified Climate exports show incomplete status before assessment content.
+
+
+### 2026-10-12 shared Markdown block spacing
+
+md keeps headings/lists/tables/rules outside prose paragraphs and removes internal
+list separator newlines. normalizeVisibleText suppresses complete and two-percent
+machine marker drift in visible prose while retaining protected URLs/code. Stage 3
+backend cleaning canonicalizes marker drift before stripping duplicate blocks.
+This applies to normal FCV, saved results and Markdown-based HTML exports.
+
+
+### 2026-10-12 partial recommendations
+
+Verified Climate reader status partial makes renderOut show Recommendations need
+review in Summary and Detailed. copySummary prepends the short status message;
+standalone Detailed HTML and Word include it before assessment content. Complete
+and wholly suppressed incomplete results preserve their previous treatment.
+
+
+### 2026-10-12 dividends framing and Summary gaps
+
+climateVerifiedRatingCards retains paired five-point cards, short glosses and
+collapsed explanations. Its questions distinguish risk recognition/response from
+peace and social dividends through climate-related design/delivery within scope.
+The full approved contribution caveat remains in the explanation and exports.
+The later Summary-completeness update supersedes the two-item gaps paragraph.
+The reader projects up to five complete project-linked residual-gap statements,
+independently of recommendation count. Summary uses the normal FCV bullet style,
+first-sentence emphasis and every supported priority up to five. Statements over
+75 words are omitted, never sliced. Older readers without summary_gaps reuse their
+existing priority limitations. Sidebar glosses, saved grades and withholding
+notices are preserved. Summary copying inherits these findings and actions.
+
+### 2026-10-12 authoritative saved Climate scope
+
+syncClimateCountryScope reads only single/multi from the verified reader's
+operation_context. renderOut at Stage 3, epSafeStore and saveSession apply it before
+display/checkpoint/export so regional assessments cannot be saved as single-country
+because of an earlier client default. Missing or invalid reader scope preserves the
+current value. The AF reader labels the applicable Additional Financing review
+without presuming an upcoming approval. Historical saved grades are unchanged.
+
+
+### 2026-10-12 expanded gaps and candidate coverage
+
+Reader v2.6 adds optional summary_gaps: up to five complete qualified residual-gap
+statements, independent of action count. Kept-priority links come first, then
+design findings before contextual evidence gaps. The projection checks typed
+project/pathway/response/evidence references and explicit-negative support for
+confirmed omissions, deduplicates IDs/text, and keeps whole qualifications.
+Evidence-trail assembly includes those gap IDs, preserving their supporting prose
+in detailed HTML/Word. Legacy readers use existing limitation fields; only fresh
+or rebuilt readers gain summary_gaps. Archives are not regraded or regenerated.
+
+Analysis v2.5 explains each gap in two/three sentences, 35-65 words: what remains,
+its project-specific consequence and evidence/scope qualifier. Compiler v2.9
+considers every admitted gap and may return up to five material distinct actions,
+grouping only gaps resolved by the same action. No quota or lowered review gate.
+The Climate Summary now displays all five supported priorities, matching normal
+FCV's cap. Unknown gap evidence IDs are rejected before compilation. Exact source
+words within hyphenated expressions no longer falsely fail entity grounding;
+unsupported entities still fail. No dependency, extra provider call, repair loop
+or native generation-schema field. Other prompt versions are unchanged.
+
+
+### 2026-10-13 post-quality4 handoff repair
+
+Analysis v2.6 clarifies exact fact/context IDs and project-only mechanisms when
+context evidence is empty. Reader v2.7 adds a plain analysis_status/message for
+withheld evidence, shown in both views and HTML/Word. Source packets enrich
+metadata with later native citations and prioritize quoted passages within the
+same four-source cap, using cumulative pause-turn content. Sonnet search uses
+between_tools/3000 tokens and bounded cited quotes; the existing Haiku structurer,
+two-search/150s limit and independent evidence/review gates remain. No extra call
+or fetch. See docs/20261012_climate-opcs-parity-validation.md for the unaccepted
+quality4 result, original private artifacts, tests and remaining paid allowance.
+
+
+Source-notice wording follow-up: _climate_source_warning_messages preserves
+bundle codes while omitting routine primary-selection bookkeeping from the
+banner. Regional coverage and unresolved document precedence have plain messages.
+Full source/pipeline regression and the subsequent focused wording checks are
+recorded in docs/20261012_climate-opcs-parity-validation.md.
+
+
+2026-10-13 final readout safeguards: reader v2.8 withholds a whole narrative that
+introduces responsiveness absent from the reviewed action fields; complete field
+presentation retains every action/qualification and grades are unchanged.
+Compiler/reviewer v2.10 align titles with minimum actions and distinguish ordinary
+measurement from wider dividends. Source proof retains only cited sources and
+explicit provider publication dates; unknown dates stay unknown. Climate gaps
+carry a concise optional-dividend scope note. No new model/fetch call; original
+paid archives remain unchanged. Final trial/check evidence is recorded in
+`docs/20261012_climate-opcs-parity-validation.md`.
+
+
+Detailed export completeness: HTML/Word render the optional reader summary_gaps
+as Supporting gap findings before priorities, preserving all five full qualified
+statements and the optional-dividend scope note. They still use detailed renderer
+boundaries. Legacy readers without summary_gaps do not gain an empty section.
+
+
+Final export parity: browser Detailed/Share HTML also includes Supporting gap
+findings under the core questions, matching the complete data in Python HTML/Word.
+Final full verification: 1,444 passed after the hostname-boundary follow-up; paid and replay limits are recorded in the
+validation handover. Production/main and ITS remain unchanged.
+
+
+### 2026-10-13 action-led Climate candidate (rollout held)
+
+The verified reader derives `assessment_themes` from admitted gap statements and
+question/evidence links, with `priority_ranks` or explicit evidence follow-up. Detailed
+retains full questions in supporting analysis; Word uses an appendix. Summary retains
+five complete gaps. Paired five-point ratings replace the old export panel. Climate
+Detailed no longer renders the normal route's duplicate priority stepper/cards.
+Judgment prompt v2.9 targets 180–260 words of operational context; recommendation
+prompt v2.11 targets three to five substantive decisions where evidence warrants them.
+An explicit explained revise verdict permits one bounded compiler correction plus
+independent re-review through the same validation and original deadline. Original
+review and correction diagnostics remain separate; accepted actions survive repair
+failure. Reader version v2.9. No new paid generation has validated this candidate.
+See `docs/20261013_climate-action-led-validation.md` for acceptance and saved replay.
+
+
+### 2026-10-13 narrative findings follow-up
+
+The existing judgment call now returns assessment_narratives (design/dividends/inclusion),
+one or two connected paragraphs per theme, targeting 70-130 words and citing verified
+register IDs. Shared reader admission requires unique themes, known citations including
+a project fact, complete plain prose and number/entity/action checks. This narrative
+path permits natural paraphrase; the existing strict Summary vocabulary gate is unchanged.
+Original canonical gaps and recommendation links remain available as supporting detail.
+Browser and HTML use question headings, prose and native disclosures; Word preserves
+prose with original detail in its supporting appendix. Sections 04-07 use distinct cards
+in HTML. Common prompt calibration assesses conditional potential and enabling conditions,
+without penalizing missing peace/dividends terminology. Executive provider schema is
+aligned to the existing 180-260 word instruction. No extra generation call or dependency.
+
+Prompt versions: facts2.4, analysis2.7, judgments2.10, recommendations2.12, review2.11,
+drafting1.3; reader2.10. Fresh provider output remains unvalidated; PR83 stays draft.
+
+
+### 2026-10-13 reader simplification (supersedes visible supporting detail above)
+
+User-approved follow-up removes per-theme project-detail disclosures and the
+supporting question/watch appendix from Detailed, HTML and Word. Internal evidence
+and canonical questions remain available for validation and audit. The three
+question-led narrative answers remain. Method shows coverage, limitations and
+sources without repeating pathways. Priority cards now use Why this matters and
+What the team could do, with implementation/drafting in Recommendation details.
+Word mirrors those headings with a detail block. Legacy narrative/field fallback
+preserves complete text. Mobile card padding is reduced. Summary watches unchanged.
+Judgment and recommendation instructions require natural prose without framework
+recaps, label-and-colon verdicts, semicolons or literal Done looks like cues.
+Versions: judgments2.11, recommendations2.13, reader2.11. No added model calls.
+See docs/20261013_climate-reader-simplification-validation.md for evidence and limits.
+
+
+### 2026-10-16 External review download
+
+`downloadClimateReviewPacket(btn)` posts the current assessment/reader pair to
+/api/climate-review-packet, disables/restores its button, and downloads the ZIP
+only after success and a second unchanged-pair check. The action is shown for
+verified Climate assessments at Stage 3. Summary and Detailed contain the same
+unconditional human-review draft notice; browser-provided approval metadata cannot
+hide it. Approval remains entirely in the chosen external authenticated workflow.

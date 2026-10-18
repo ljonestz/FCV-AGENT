@@ -96,6 +96,7 @@ const localStorage = {{
 }};
 let activeLenses = [], lensDiagnostic = {{}}, lensContextSources = [];
 let climateResearch = {{}}, climateGrounding = {{}};
+let researchBrief = '', researchCountry = '';
 let climateVerifiedAssessment = null, climateVerifiedReader = null;
 let stageConciseReadout = null, stageThreePriorities = [];
 let fcvRating = 'Adequate', fcvResponsivenessRating = 'Emerging';
@@ -106,6 +107,7 @@ let midCycleWatch = [], dpfWatch = [], p4rWatch = [], regionalWatch = [];
 let horizonConsiderations = '';
 let docType = 'PAD', instrumentType = 'IPF', countryScope = 'single';
 const lensVersions = () => ({{}});
+const syncClimateCountryScope=()=>{{}};
 {checkpoint}
 epSafeStore({{}}, {{}}, 3);
 const saved = JSON.parse(localStorage.getItem('fcv_express_lensState'));

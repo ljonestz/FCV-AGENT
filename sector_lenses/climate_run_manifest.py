@@ -29,6 +29,7 @@ class RunManifest:
     latency_ms: dict[str, int]
     token_usage: dict[str, int]
     cache_state: dict[str, str]
+    call_metrics: tuple[dict[str, object], ...] = ()
 
 
 def build_cache_key(
@@ -66,6 +67,7 @@ def safe_log_summary(manifest: RunManifest) -> dict[str, object]:
         "normalization_version": data["normalization_version"],
         "renderer_version": data["renderer_version"],
         "model_aliases": data["model_aliases"],
+        "sampling": data["sampling"],
         "source_count": len(data["source_fingerprints"]),
         "applicability_fingerprint": data["applicability_fingerprint"],
         "bank_release_id": data["bank_release_id"],
@@ -76,4 +78,5 @@ def safe_log_summary(manifest: RunManifest) -> dict[str, object]:
         "latency_ms": data["latency_ms"],
         "token_usage": data["token_usage"],
         "cache_state": data["cache_state"],
+        "call_metrics": data["call_metrics"],
     }

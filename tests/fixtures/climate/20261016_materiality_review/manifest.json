@@ -1,0 +1,14 @@
+{
+  "fixture_version": "materiality-review-v1",
+  "synthetic": true,
+  "status": "offline_frozen_not_model_tested",
+  "cases": 6,
+  "propositions": 10,
+  "major_defects": 3,
+  "nondefects": 7,
+  "validation": "Unique IDs, exact spans, complete gold coverage, defect counts, input/gold field separation passed.",
+  "sha256": {
+    "reviewer_inputs.json": "7aca97fa037d996e4e628d787463e77475e48d5a33acd0ad97c950f37a40638c",
+    "expected.json": "6dd697a72530d8ba78ed7a1ef09dcea5e7412ba9982c9316968a96c7c0c375f1"
+  }
+}

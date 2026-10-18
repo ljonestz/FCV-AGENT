@@ -11,12 +11,6 @@ from copy import deepcopy
 import re
 
 
-_SUMMARY_DIMENSION_SIGNALS = {
-    "relevance": ("relevance",),
-    "sensitivity": ("sensitivity",),
-    "responsiveness": ("responsiveness",),
-    "operationalization": ("operationalization", "operationalisation"),
-}
 _SUMMARY_GENERIC_ENTITIES = {"task team", "project team", "implementation team"}
 _SUMMARY_CONNECTIVE_TOKENS = {
     "however", "therefore", "while", "although", "together", "already",
@@ -31,6 +25,17 @@ _SUMMARY_ALLOWED_SINGLE_WORDS = {
     "second", "third", "verdict", "foundation", "takeaway", "credible",
     "recognizes", "recognises", "shows", "demonstrates",
 }
+# Ordinary sentence openings in analytical prose are not new proper names.
+_NARRATIVE_OPENING_WORDS = {
+    "links", "benefits", "access", "delivery", "inclusion", "participation",
+    "protection", "cooperation", "opportunities", "choices", "investments", "fair", "today",
+}
+# These grammatical phrases are safe at sentence openings; their first words
+# alone can still be names and must not bypass the evidence check.
+_NARRATIVE_OPENING_PHRASES = (
+    "Clear access arrangements ", "Accepted priorities ", "Setting out ",
+    "Updates to ", "Limited visibility ", "Alongside this ",
+)
 _SUMMARY_ACTION_STEM_RE = re.compile(
     r"\b(?P<stem>approv|requir|monitor|implement|adopt|ensur|establish|"
     r"creat|launch|form|appoint|mandat|commit|fund|build|develop|strengthen|"
@@ -50,11 +55,13 @@ _SUMMARY_ALLOWED_TOKENS = {
     "harm", "resilience", "inclusion", "roles", "indicators", "follows",
     "supports", "sets", "four-dimensional", "climate-fcv", "new", "ranked",
     "criteria",
+    "acts", "unit", "dimensions", "lack", "narrow", "thin", "concern", "main", "working",
 }
 _SUMMARY_STOPWORDS = {
     "a", "an", "and", "are", "as", "at", "be", "by", "for", "from",
     "has", "in", "is", "it", "its", "of", "on", "or", "that", "the",
     "their", "them", "this", "to", "was", "what", "will", "with", "where",
+    "after", "between",
 }
 _SUMMARY_MONTHS = (
     "january", "february", "march", "april", "may", "june", "july",
@@ -128,48 +135,59 @@ def validate_summary_overview(
     *,
     executive_readout: object = "",
     canonical_text: object = (),
+    diagnostics: dict[str, object] | None = None,
+    allow_paraphrase: bool = False,
+    semantic_review_required: bool = False,
 ) -> list[str]:
     """Admit only a grounded, plain-text two/three-paragraph synthesis."""
+    def reject(reason: str) -> list[str]:
+        if diagnostics is not None:
+            diagnostics["reason"] = reason
+        return []
+
     raw = value.get("paragraphs") if isinstance(value, dict) else None
     if not isinstance(raw, list) or len(raw) not in {2, 3}:
-        return []
+        return reject("SUMMARY_PARAGRAPH_COUNT")
     if any(not isinstance(item, str) or not item.strip() for item in raw):
-        return []
+        return reject("SUMMARY_PARAGRAPH_EMPTY_OR_TYPE")
     if any(_SUMMARY_MARKUP_RE.search(item) for item in raw):
-        return []
+        return reject("SUMMARY_MARKUP")
     paragraphs = [_summary_normalize(item) for item in raw]
-    if not 160 <= sum(len(item.split()) for item in paragraphs) <= 230:
-        return []
+    # Native prose uses editorial targets, with a separate runaway-output ceiling.
+    # Strict callers retain their existing length contract.
+    minimum_words, maximum_words = (1, 500) if semantic_review_required else (160, 230)
+    if not minimum_words <= sum(len(item.split()) for item in paragraphs) <= maximum_words:
+        return reject("SUMMARY_WORD_COUNT")
     if any(_SUMMARY_MARKUP_RE.search(item) for item in paragraphs):
-        return []
+        return reject("SUMMARY_MARKUP")
     combined = " ".join(paragraphs).casefold()
-    if not all(
-        any(signal in combined for signal in signals)
-        for signals in _SUMMARY_DIMENSION_SIGNALS.values()
-    ):
-        return []
-    if not any(
+    if not semantic_review_required and not any(
         signal in paragraphs[0].casefold()
-        for signal in ("verdict", "foundation", "overall", "credible", "takeaway", "recognizes", "recognises", "shows", "demonstrates", "assessment", "finding")
+        for signal in ("verdict", "foundation", "overall", "credible", "takeaway", "recognizes", "recognises", "shows", "demonstrates", "assessment", "finding", "already")
     ):
-        return []
-    if not any(
+        return reject("SUMMARY_VERDICT_MISSING")
+    if not semantic_review_required and not any(
         signal in combined
         for signal in ("practical implication", "ranked priorities", "confirm", "next", "priority", "priorities", "attention", "follow-up", "follow up", "decision", "remaining")
     ):
-        return []
+        return reject("SUMMARY_IMPLICATION_MISSING")
     executive = " ".join(_summary_strings(executive_readout))
     executive_normalized = _summary_normalize(executive).casefold()
     if executive_normalized:
         for paragraph in paragraphs:
             normalized = paragraph.casefold()
             if normalized in executive_normalized or executive_normalized in normalized:
-                return []
-    for paragraph in paragraphs:
+                return reject("SUMMARY_EXECUTIVE_COPY")
+    for index, paragraph in enumerate(paragraphs):
         if not validate_summary_fragment(
             paragraph,
             canonical_text=canonical_text,
+            diagnostics=diagnostics,
+            allow_paraphrase=allow_paraphrase,
+            semantic_review_required=semantic_review_required,
         ):
+            if diagnostics is not None:
+                diagnostics["paragraph_index"] = index
             return []
     return paragraphs
 
@@ -178,24 +196,41 @@ def validate_summary_fragment(
     text: object,
     *,
     canonical_text: object = (),
+    diagnostics: dict[str, object] | None = None,
+    allow_paraphrase: bool = False,
+    semantic_review_required: bool = False,
 ) -> bool:
     """Validate grounding controls for one plain-text summary fragment."""
+    def reject(reason: str, detail: str = "") -> bool:
+        if diagnostics is not None:
+            diagnostics["reason"] = reason
+            if detail:
+                diagnostics["detail"] = detail[:160]
+        return False
+
     if not isinstance(text, str) or not text.strip():
-        return False
+        return reject("SUMMARY_FRAGMENT_EMPTY")
     if _SUMMARY_MARKUP_RE.search(text):
-        return False
+        return reject("SUMMARY_MARKUP")
     fragment = _summary_normalize(text)
     if not _summary_sentences(fragment):
-        return False
+        return reject("SUMMARY_SENTENCE_INCOMPLETE")
     canonical = " ".join(_summary_strings(canonical_text))
     canonical_casefold = canonical.casefold()
+    # The verified register may abbreviate DRC while the narrative spells it out.
+    # Normalize only this complete name, only against an admitted DRC reference;
+    # Republic of Congo and arbitrary country names remain separate entities.
+    if allow_paraphrase and re.search(r"\bDRC\b", canonical):
+        fragment = re.sub(
+            r"\bDemocratic Republic of (?:the )?Congo\b", "DRC", fragment,
+        )
     canonical_words = _summary_words(canonical)
     canonical_numbers = set(
         re.findall(r"\b\d+(?:[.,]\d+)?%?\b", canonical)
     )
     for number in re.findall(r"\b\d+(?:[.,]\d+)?%?\b", fragment):
         if number not in canonical_numbers:
-            return False
+            return reject("SUMMARY_NUMBER_UNSUPPORTED", number)
     for month in _SUMMARY_MONTHS:
         date_pattern = (
             rf"\b{month}\s+\d{{4}}\b|"
@@ -203,30 +238,53 @@ def validate_summary_fragment(
         )
         for date in re.findall(date_pattern, fragment.casefold()):
             if date not in canonical_casefold:
-                return False
+                return reject("SUMMARY_DATE_UNSUPPORTED", date)
+    # Native reader meaning is admitted only by reviewed_final_reader. Capitalized
+    # vocabulary and verb overlap cannot establish actors, actions or meaning.
+    if semantic_review_required:
+        return True
     if canonical_casefold:
         for match in _SUMMARY_ENTITY_RE.finditer(fragment):
             entity = match.group(0).casefold()
             if entity.startswith("the "):
                 entity = entity[4:]
+            if allow_paraphrase:
+                entity = re.sub(r"^(?:for|in|at|under|with)\s+", "", entity)
             if entity not in canonical_casefold and entity not in _SUMMARY_GENERIC_ENTITIES:
-                return False
+                return reject("SUMMARY_ENTITY_UNSUPPORTED", entity)
         for match in _SUMMARY_CAPITALIZED_RE.finditer(fragment):
             token = match.group(0).casefold()
-            if token in _SUMMARY_ALLOWED_SINGLE_WORDS | _SUMMARY_CONNECTIVE_TOKENS:
+            if token in _SUMMARY_ALLOWED_SINGLE_WORDS | _SUMMARY_CONNECTIVE_TOKENS | _SUMMARY_STOPWORDS:
                 continue
-            if token not in canonical_words:
-                return False
+            opening_words = _NARRATIVE_OPENING_WORDS | _SUMMARY_ALLOWED_TOKENS
+            if (allow_paraphrase
+                    and (token in opening_words
+                         or (token.endswith("ing") and token[:-3] in opening_words)
+                         or fragment[match.start():].startswith(_NARRATIVE_OPENING_PHRASES))
+                    and (match.start() == 0 or re.search(r"[.!?]\s*$", fragment[:match.start()]))):
+                continue
+            if token not in canonical_words and not re.search(
+                rf"\b{re.escape(token)}\b", canonical_casefold
+            ):
+                return reject("SUMMARY_ENTITY_UNSUPPORTED", token)
         for match in _SUMMARY_ACRONYM_RE.finditer(fragment):
             token = match.group(0).casefold()
             if token in _SUMMARY_ALLOWED_SINGLE_WORDS:
                 continue
-            if token not in canonical_words:
-                return False
+            if token not in canonical_words and not re.search(
+                rf"\b{re.escape(token)}\b", canonical_casefold
+            ):
+                return reject("SUMMARY_ENTITY_UNSUPPORTED", token)
     for match in _SUMMARY_ACTION_STEM_RE.finditer(fragment.casefold()):
         if match.group("stem") not in canonical_casefold:
-            return False
-    if canonical_words:
+            # A qualified consequence is assessed by mandatory native meaning
+            # review. It is not an instruction to take a new project action.
+            if (allow_paraphrase and match.group('stem') in {'caus', 'reduc', 'prevent', 'lead'}
+                    and re.search(r'\b(?:could|might|may)\s+$', fragment[:match.start()], re.IGNORECASE)):
+                continue
+            return reject("SUMMARY_ACTION_UNSUPPORTED", match.group(0))
+    # Analytical narratives may paraphrase; strict management summaries keep vocabulary checks.
+    if canonical_words and not allow_paraphrase:
         for sentence in _summary_sentences(fragment):
             words = _summary_words(sentence)
             unsupported_words = (
@@ -235,11 +293,9 @@ def validate_summary_fragment(
                 - _SUMMARY_ALLOWED_TOKENS
                 - _SUMMARY_CONNECTIVE_TOKENS
             )
-            if any(
-                not _summary_morphology_supported(word, canonical_words)
-                for word in unsupported_words
-            ):
-                return False
+            for word in sorted(unsupported_words):
+                if not _summary_morphology_supported(word, canonical_words):
+                    return reject("SUMMARY_TERM_UNSUPPORTED", word)
     return True
 
 
@@ -487,8 +543,8 @@ CANDIDATE_SCHEMA = _object(
         "limitation": _string("45 words or fewer."),
         "caution": _string("45 words or fewer."),
         "narrative": _string(
-            "Two or three short plain-prose paragraphs telling the story; "
-            "no new claims or digits."
+            "Four to six paragraphs, about 300-500 words when useful. Explain rationale "
+            "and practical steps; no unsupported facts or digits."
         ),
         "supported_numeric_tokens": _strings(),
         "score": SCORE_SCHEMA,
@@ -590,36 +646,20 @@ STAGE_OUTPUT_SCHEMAS: dict[str, dict[str, object]] = {
     ),
     "judgment_review": _object(
         {
-            "executive_readout": _string("Between 500 and 800 words."),
+            "executive_readout": _string("Between 180 and 260 words."),
             "overview_summary": _string(
                 "A three-to-four sentence plain-language overall summary for the "
                 "top-of-report overview, distinct from and shorter than the "
                 "executive_readout."
             ),
-            "summary_overview": {
-                "type": "object",
-                "properties": {
-                    "paragraphs": {
-                        "type": "array",
-                        "items": {"type": "string", "minLength": 1},
-                        "minItems": 1,
-                        # The application validator enforces the upper bound.
-                        "description": (
-                            "Exactly two or three non-empty plain-text paragraphs, "
-                            "totalling 160 to 230 words."
-                        ),
-                    }
-                },
-                "required": ["paragraphs"],
-                "additionalProperties": False,
-            },
+            "reader_contract": _enum(("final-reader-v1",)),
             "relevance": _judgment(("high", "medium", "low", "unclear")),
             "sensitivity": _judgment(
                 ("very_strong", "strong", "moderate", "limited",
                  "very_limited", "unclear")
             ),
             "responsiveness": _judgment(
-                ("strong", "emerging", "limited", "not_expected", "unclear")
+                ("very_strong", "strong", "moderate", "limited", "very_limited", "not_expected", "unclear")
             ),
             "operationalization": _judgment(
                 ("embedded", "partial", "early", "not_evidenced", "unclear")
@@ -669,6 +709,19 @@ STAGE_OUTPUT_SCHEMAS: dict[str, dict[str, object]] = {
     "conditional_review": _object(
         {
             "verdict": _enum(("pass", "revise", "block")),
+            "core_reviews": {
+                "type": "array",
+                "items": _object({
+                    "recommendation_id": _string("Exact supplied core REC ID; one record per recommendation."),
+                    "premise_verdict": _enum(("supported", "qualified", "unsupported")),
+                    "source_block_ids": _strings("Nonempty unique original source-block IDs checked for this core premise and scope."),
+                    "reason_codes": {"type": "array", "items": _enum(SEMANTIC_REVIEW_REASON_CODES)},
+                    "explanation": _string("Concise source-based premise assessment; distinguish facts from conditional analysis or proposals."),
+                }),
+                "description": "Review each core factual premise independently of optional drafting; unsupported cannot pass.",
+            },
+            "passed_core_ids": _strings("Every independently accepted core REC ID; empty only when none passed."),
+            "passed_readiness_ids": _strings("Exact supplied readiness flag IDs independently supported by source passages; omit unverified flags."),
             "reason_codes": {
                 "type": "array",
                 "items": _enum(SEMANTIC_REVIEW_REASON_CODES),
@@ -677,16 +730,86 @@ STAGE_OUTPUT_SCHEMAS: dict[str, dict[str, object]] = {
                 ),
             },
             "object_ids": _strings("No more than 12 affected object IDs."),
+            "issues": {
+                "type": "array",
+                "items": _object({
+                    "object_id": _string("An exact supplied decision, drafting artifact or reader paragraph ID from object_ids."),
+                    "reason_codes": {"type": "array", "items": _enum(SEMANTIC_REVIEW_REASON_CODES)},
+                    "explanation": _string("One short sentence identifying the unsupported wording or scope."),
+                }),
+                "description": "One diagnostic entry per affected object, at most twelve; empty for pass.",
+            },
         }
     ),
 }
 
 
-def stage_output_schema(stage: str) -> dict[str, object]:
+# A reviewer distinguishes unresolved claims from defects requiring withholding.
+_conditional_issue = STAGE_OUTPUT_SCHEMAS['conditional_review']['properties']['issues']['items']
+_conditional_issue['properties'].update({
+    'quoted_text': _string('Exact unique text in the affected record; use the full sentence for omit_sentence.'),
+    'disposition': _enum(('verify', 'omit_sentence', 'withhold')),
+    'verification_note': _string('A concise task-team instruction saying exactly what to check against which source; maximum 600 characters.'),
+})
+_conditional_issue['required'].extend(['quoted_text', 'disposition', 'verification_note'])
+
+
+# Final prose is compiled against the decisions that survived semantic review.
+STAGE_OUTPUT_SCHEMAS['reader_compiler'] = _object({
+    'summary_paragraphs': {'type': 'array', 'items': _object({
+        'object_id': _string('Sequential SUM-001, SUM-002, optionally SUM-003.'),
+        'text': _string('Plain prose, two or three paragraphs targeting 160-230 words; up to 260 permitted to preserve meaning.'),
+        'evidence_ids': _strings('Exact supplied support IDs, including accepted REC IDs for proposed actions.'),
+    })},
+    'assessment_narratives': {'type': 'array', 'items': _object({
+        'object_id': _string('NARR-design, NARR-dividends or NARR-inclusion.'),
+        'theme': _enum(('design', 'dividends', 'inclusion')),
+        'paragraphs': _strings('Two or three connected paragraphs targeting 180-240 words when supported; shorter for sparse evidence. Hard ceiling 400 words.'),
+        'evidence_ids': _strings('Exact supplied support IDs.'),
+    })},
+})
+STAGE_OUTPUT_SCHEMAS['reader_review'] = _object({
+    key: deepcopy(value)
+    for key, value in STAGE_OUTPUT_SCHEMAS['conditional_review']['properties'].items()
+    if key not in {'passed_core_ids', 'passed_readiness_ids', 'core_reviews'}
+})
+_reader_issue = STAGE_OUTPUT_SCHEMAS['reader_review']['properties']['issues']['items']
+_reader_issue['properties']['quoted_text'] = _string(
+    'Exact unique substring in the affected current final_reader record identifying the challenged assertion.')
+# quoted_text is inherited from the conditional issue contract.
+_reader_issue['properties']['severity'] = _enum(('minor', 'consequential'))
+_reader_issue['properties']['decision_impact'] = _string(
+    'Explain the preparation decision or project understanding materially changed; for minor issues explain why it is unchanged.')
+_reader_issue['required'].extend(['severity', 'decision_impact'])
+
+STAGE_OUTPUT_SCHEMAS['reader_correction'] = _object({
+    'corrections': {'type': 'array', 'items': _object({
+        'object_id': _string('Exact requested SUM or NARR ID; no other records.'),
+        'edits': {'type': 'array', 'items': _object({
+            # Native provider schemas reject numeric bounds; the patch merger
+            # checks integer type and bounds before touching any paragraph.
+            'paragraph_index': {'type': 'integer', 'description': 'Nonnegative zero-based original paragraph index; SUM uses 0.'},
+            'old_text': _string('Exact unique original substring within one sentence; no overlapping anchors.'),
+            'new_text': _string('Replacement clause or sentence; empty string deletes the anchor.'),
+        })},
+    })},
+})
+
+def stage_output_schema(stage: str, payload: dict | None = None) -> dict[str, object]:
     """Return an isolated native output schema for one verified stage."""
 
     try:
         schema = STAGE_OUTPUT_SCHEMAS[stage]
     except KeyError as error:
         raise ValueError(f"Unsupported verified Climate stage: {stage}") from error
-    return deepcopy(schema)
+    schema = deepcopy(schema)
+    if stage == 'reader_compiler' and payload is not None:
+        support = payload.get('support_records')
+        if (not isinstance(support, dict) or not support
+                or any(not isinstance(key, str) or not key for key in support)):
+            raise ValueError('Reader requires a nonempty support registry')
+        # Decode against this assessment only; semantic support still needs review.
+        for key in ('summary_paragraphs', 'assessment_narratives'):
+            refs = schema['properties'][key]['items']['properties']['evidence_ids']
+            refs['items'] = _enum(sorted(support))
+    return schema

@@ -14,6 +14,7 @@ from typing import Any
 from flask import Flask, request, jsonify, send_from_directory, Response, stream_with_context
 from werkzeug.exceptions import RequestEntityTooLarge
 import anthropic
+from pilot_spend_guard import pilot_http_client
 from fcv_presentation import bullet_finding_sections, strip_watch_heading
 from fcv_core_research import (
     build_core_research_prompt, core_research_analysis_context,
@@ -30,24 +31,33 @@ from sector_lenses.climate_runtime_config import load_verified_climate_runtime
 from sector_lenses.climate_verified_client import AnthropicVerifiedJsonClient
 from sector_lenses.climate_verified_pipeline import PipelineClients
 from sector_lenses.climate_verified_runtime import (
+    ClimateReaderIntegrityError,
+    extract_beneficiary_countries,
     prepare_verified_sources,
     resolve_verified_operation_context,
     run_verified_from_doc_parts,
 )
 from sector_lenses.climate_verified_render import (
+    attach_provenance,
     build_reader_model,
     validate_reader_model,
     write_reader_docx,
 )
+from sector_lenses.climate_review_packet import build_review_packet
+from sector_lenses.research import TRUSTED_CLIMATE_HOST_SUFFIXES
 from sector_lenses.pipeline import normalize_climate_assessment
 from sector_lenses import (
     CCDR_RESEARCH_INSTRUCTIONS,
     build_climate_evidence_packet,
+    build_climate_project_elements,
+    build_climate_passage_selection_prompt,
+    resolve_climate_passage_selections,
     build_climate_research_prompt,
     build_climate_search_prompt,
     CLIMATE_RESEARCH_END,
     CLIMATE_RESEARCH_START,
     extract_climate_research_bundle,
+    verify_climate_research_claims,
     format_climate_research_context,
     summarize_climate_structuring_response,
     merge_climate_grounding,
@@ -1093,6 +1103,10 @@ def _iter_verified_climate_assessment(
                        "verified_stage": "automatic_validation"}
                 continue
             if kind == "error":
+                if isinstance(value, ClimateReaderIntegrityError):
+                    # Same caller receives the paid result for manual diagnostic
+                    # saving. It is never a successful result or public log.
+                    yield {"climate_verified_failure": value.diagnostic_payload}
                 raise value
             yield {"result": value}
             return
@@ -1266,7 +1280,8 @@ def build_lens_stage_context(
             "a separate score and may affect ratings only through an explicit core_mappings value."
         )
         if "climate" in active_ids:
-            research = normalize_climate_research_bundle(climate_research)
+            research_decision = climate_research_evidence_gate(climate_research)
+            research = research_decision['bundle'] if research_decision['ok'] else {'claims': []}
             compact_claims = [{
                 "id": claim["id"],
                 "claim": claim["claim"][:350],
@@ -6424,6 +6439,8 @@ def clean_stage3_output(text):
 
     Heading cleanup and blank-line normalisation are also applied.
     """
+    # Canonicalize delimiter drift before stripping blocks, including saved outputs.
+    text = re.sub(r'%{2,3}([A-Z][A-Z0-9_]*(?::[^%\n]*)?)%{2,3}', r'%%%\1%%%', text)
     # Primary: strip the new JSON block — all structured data lives here
     text = re.sub(r'%%%JSON_START%%%.*?%%%JSON_END%%%', '', text, flags=re.DOTALL)
     # Strip FCV Risk Exposure narrative (rendered separately as risk-exposure card)
@@ -7807,11 +7824,15 @@ def extract_country_name(project_doc_text: str, api_client) -> str:
     """Extract the country name from the first portion of a project document.
     Uses Haiku (trivial classification task). Timeout handled by httpx client.
     """
+    countries = extract_beneficiary_countries(project_doc_text)
+    if countries:
+        return "; ".join(countries)
     snippet = project_doc_text[:4000]
     try:
         resp = api_client.messages.create(
             model=MODEL_LIGHT,
-            max_tokens=50,
+            max_tokens=128,
+            thinking={"type": "disabled"},
             messages=[{
                 "role": "user",
                 "content": (
@@ -7821,7 +7842,7 @@ def extract_country_name(project_doc_text: str, api_client) -> str:
                 )
             }]
         )
-        country = resp.content[0].text.strip().strip('.').strip('"').strip("'")
+        country = " ".join(getattr(block, "text", "") for block in resp.content).strip().strip('.').strip('"').strip("'")
         return country if country else "Unknown"
     except Exception:
         return "Unknown"
@@ -7836,7 +7857,8 @@ def extract_sector_name(project_doc_text: str, api_client) -> str:
     try:
         resp = api_client.messages.create(
             model=MODEL_LIGHT,
-            max_tokens=50,
+            max_tokens=128,
+            thinking={"type": "disabled"},
             messages=[{
                 "role": "user",
                 "content": (
@@ -7848,7 +7870,7 @@ def extract_sector_name(project_doc_text: str, api_client) -> str:
                 )
             }]
         )
-        sector = resp.content[0].text.strip().strip('.').strip('"').strip("'")
+        sector = " ".join(getattr(block, "text", "") for block in resp.content).strip().strip('.').strip('"').strip("'")
         return sector if sector else "Development"
     except Exception:
         return "Development"
@@ -7957,9 +7979,12 @@ def log_climate_research_summary(
         if bundle.get("status") in {"complete", "partial", "failed"}
         else "failed"
     )
+    passage_diagnostics = bundle.get("passage_diagnostics")
+    passage_counts_known = isinstance(passage_diagnostics, dict)
     app.logger.info(
         "Climate research summary assessment_id=%s status=%s attempts=%d "
-        "elapsed_ms=%d sources=%d claims=%d source_types=%s horizons=%s",
+        "elapsed_ms=%d sources=%d claims=%d source_types=%s horizons=%s "
+        "passage_checks=received:%d,selected:%d,invalid:%d,admitted:%d",
         assessment_id or "unknown",
         status,
         _telemetry_count(bundle.get("attempts"), 2),
@@ -7968,6 +7993,14 @@ def log_climate_research_summary(
         min(len(claims), 99),
         ",".join(source_types) or "none",
         horizon_text,
+        _telemetry_count(passage_diagnostics.get("received_count"), 24)
+        if passage_counts_known else -1,
+        _telemetry_count(passage_diagnostics.get("selected_count"), 6)
+        if passage_counts_known else -1,
+        _telemetry_count(passage_diagnostics.get("invalid_selection_count"), 6)
+        if passage_counts_known else -1,
+        _telemetry_count(passage_diagnostics.get("admitted_claim_count"), 6)
+        if passage_counts_known else -1,
     )
 
 
@@ -8043,6 +8076,8 @@ def run_climate_web_research(
     started = clock()
     attempts = 0
     failure_reason = "Dedicated Climate-FCV research could not be completed."
+    best_partial = None
+    last_passage_diagnostics = None
 
     def finish(bundle: dict[str, Any]) -> dict[str, Any]:
         log_climate_research_summary(
@@ -8052,7 +8087,17 @@ def run_climate_web_research(
         )
         return bundle
 
+    def passage_count(
+        diagnostics: Any,
+        key: str,
+        limit: int,
+    ) -> int:
+        if not isinstance(diagnostics, dict):
+            return -1
+        return _telemetry_count(diagnostics.get(key), limit)
+
     for attempt in (1, 2):
+        current_passage_diagnostics = None
         remaining = (
             CLIMATE_RESEARCH_ATTEMPT_CAP_SECONDS
             if deadline is None
@@ -8071,19 +8116,24 @@ def run_climate_web_research(
             messages = [{"role": "user", "content": prompt}]
             request_options = {
                 "model": MODEL_STANDARD,
-                "max_tokens": 1800,
+                # Reserve output for cited notes instead of default up-front thinking.
+                "thinking": {"type": "between_tools"},
+                "max_tokens": 3000,
                 "tools": [{
                     "type": "web_search_20250305",
                     "name": "web_search",
                     "max_uses": 2,
+                    "allowed_domains": list(TRUSTED_CLIMATE_HOST_SUFFIXES),
                 }],
                 "betas": ["web-search-2025-03-05"],
             }
+            provider_content = []
             response = api_client.beta.messages.create(
                 **request_options,
                 messages=messages,
                 timeout=min(remaining, CLIMATE_RESEARCH_ATTEMPT_CAP_SECONDS),
             )
+            provider_content.extend(response.content)
             if getattr(response, "stop_reason", "") == "pause_turn":
                 block_types = [
                     getattr(block, "type", "unknown")
@@ -8119,14 +8169,25 @@ def run_climate_web_research(
                     messages=messages,
                     timeout=continuation_timeout,
                 )
-            text = "\n".join(
+                provider_content.extend(response.content)
+            text = "".join(
                 block.text
                 for block in response.content
                 if getattr(block, "type", "") == "text"
             )
             search_result_count = sum(
                 getattr(block, "type", "") == "web_search_tool_result"
-                for block in response.content
+                for block in provider_content
+            )
+            app.logger.info(
+                "Climate research search boundary assessment_id=%s attempt=%d "
+                "stop_reason=%s output_tokens=%d text_chars=%d citations=%d",
+                assessment_id or "unknown", attempt,
+                str(getattr(response, "stop_reason", "unknown"))[:40],
+                int(getattr(getattr(response, "usage", None), "output_tokens", 0) or 0),
+                min(len(text), 99_999),
+                sum(len(getattr(block, "citations", None) or [])
+                    for block in provider_content if getattr(block, "type", "") == "text"),
             )
             block_present = (
                 CLIMATE_RESEARCH_START in text
@@ -8147,8 +8208,13 @@ def run_climate_web_research(
                 structure_timeout = min(cap_remaining, parent_remaining)
                 if structure_timeout > 0:
                     evidence_packet = build_climate_evidence_packet(
-                        response.content,
+                        provider_content,
                         project_profile,
+                    )
+                    app.logger.info(
+                        "Climate research passage admission assessment_id=%s attempt=%d counts=%s",
+                        assessment_id or "unknown", attempt,
+                        evidence_packet.get("passage_diagnostics", {}),
                     )
                     packet_text = json.dumps(
                         evidence_packet,
@@ -8168,18 +8234,7 @@ def run_climate_web_research(
                         min(len(evidence_packet.get("sources", [])), 9),
                         "yes" if evidence_packet.get("notes") else "no",
                     )
-                    structuring_prompt = (
-                        "Do not search. Structure only the bounded evidence "
-                        "packet below.\n\nEVIDENCE PACKET:\n"
-                        + packet_text
-                        + "\n\n"
-                        + build_climate_research_prompt(
-                            country,
-                            sector,
-                            evidence_packet["project_profile"],
-                            narrow=True,
-                        )
-                    )
+                    structuring_prompt = build_climate_passage_selection_prompt(evidence_packet)
                     response = api_client.beta.messages.create(
                         model=MODEL_LIGHT,
                         # Mechanical JSON structuring of a bounded evidence
@@ -8190,19 +8245,34 @@ def run_climate_web_research(
                         # headroom (the 5.5 tokenizer emits ~1.3x more tokens).
                         max_tokens=4000,
                         thinking={"type": "disabled"},
-                        messages=[{
-                            "role": "user",
-                            "content": structuring_prompt,
-                        }],
+                        messages=[{"role": "user", "content": structuring_prompt}],
                         timeout=structure_timeout,
                     )
                     structured_response = True
-                    text = "\n".join(
+                    provider_content.extend(response.content)
+                    text = "".join(
                         block.text
                         for block in response.content
                         if getattr(block, "type", "") == "text"
                     )
-            _, bundle = extract_climate_research_bundle(text)
+            if structured_response:
+                try:
+                    selection_text = text.split(CLIMATE_RESEARCH_START, 1)[1].split(CLIMATE_RESEARCH_END, 1)[0]
+                    if CLIMATE_RESEARCH_END not in text:
+                        raise ValueError('Incomplete passage selections')
+                    bundle = resolve_climate_passage_selections(json.loads(selection_text), evidence_packet)
+                except (IndexError, ValueError, TypeError):
+                    bundle = normalize_climate_research_bundle({'status': 'failed'})
+                if isinstance(bundle.get("passage_diagnostics"), dict):
+                    current_passage_diagnostics = bundle["passage_diagnostics"]
+                    last_passage_diagnostics = current_passage_diagnostics
+            else:
+                _, bundle = extract_climate_research_bundle(text)
+                bundle = verify_climate_research_claims(bundle, provider_content)
+            if bundle.get('claims') and (best_partial is None or
+                    (len(bundle.get('coverage_countries', [])), len(bundle.get('sources', [])), len(bundle['claims'])) >
+                    (len(best_partial.get('coverage_countries', [])), len(best_partial.get('sources', [])), len(best_partial['claims']))):
+                best_partial = {**bundle, 'status': 'partial'}
             bundle["attempts"] = attempt
             gate = climate_research_evidence_gate(bundle)
             if structured_response:
@@ -8226,7 +8296,8 @@ def run_climate_web_research(
                     "input_tokens=%d output_tokens=%d response_chars=%d "
                     "start_present=%s end_present=%s json_status=%s "
                     "top_level_object=%s fields_present=%s sources_count=%d "
-                    "claims_count=%d gate_code=%s "
+                    "claims_count=%d selections_count=%d gate_code=%s "
+                    "passage_checks=received:%d,selected:%d,invalid:%d,admitted:%d "
                     "source_checks=id:%d,type:%d,title:%d,url:%d,valid:%d",
                     assessment_id or "unknown",
                     attempt,
@@ -8241,7 +8312,22 @@ def run_climate_web_research(
                     ",".join(diagnostic["fields_present"]) or "none",
                     diagnostic["sources_count"],
                     diagnostic["claims_count"],
+                    diagnostic["selections_count"],
                     diagnostic["gate_code"],
+                    passage_count(
+                        current_passage_diagnostics, "received_count", 24
+                    ),
+                    passage_count(
+                        current_passage_diagnostics, "selected_count", 6
+                    ),
+                    passage_count(
+                        current_passage_diagnostics,
+                        "invalid_selection_count",
+                        6,
+                    ),
+                    passage_count(
+                        current_passage_diagnostics, "admitted_claim_count", 6
+                    ),
                     diagnostic["source_id_valid"],
                     diagnostic["source_type_valid"],
                     diagnostic["source_title_present"],
@@ -8275,6 +8361,8 @@ def run_climate_web_research(
                 accepted = gate["bundle"]
                 accepted["attempts"] = attempt
                 return finish(accepted)
+            if bundle.get("failure_reason"):
+                failure_reason = str(bundle["failure_reason"])
             retry_insufficient = (
                 attempt == 1
                 and gate.get("code") == "climate_research_insufficient"
@@ -8328,10 +8416,16 @@ def run_climate_web_research(
                 type(exc).__name__,
             )
             break
+    if best_partial:
+        best_partial['attempts'] = attempts
+        best_partial['failure_reason'] = best_partial.get('failure_reason') or failure_reason
+        return finish(best_partial)
     return finish(normalize_climate_research_bundle({
         "status": "failed",
         "attempts": attempts,
         "failure_reason": failure_reason,
+        **({"passage_diagnostics": last_passage_diagnostics}
+           if last_passage_diagnostics is not None else {}),
     }))
 
 
@@ -8365,6 +8459,21 @@ def research_cache_key(
     return f"core-v2::{base}::profile={digest}"
 
 
+def _climate_source_warning_messages(codes: list[str]) -> list[dict[str, str]]:
+    """Explain evidence limits without exposing normal provenance bookkeeping."""
+    messages = {
+        "MULTI_COUNTRY_BANK_WITHHELD": (
+            "This is a regional project. Check that the uploaded evidence and research "
+            "cover each beneficiary country; country-specific reference material has not been applied."
+        ),
+        "PRIMARY_DOCUMENT_PRECEDENCE_UNRESOLVED": (
+            "Confirm which document is authoritative before relying on the assessment."
+        ),
+    }
+    return [{"message": messages.get(code, code.replace("_", " ").title())}
+            for code in codes if code != "PRIMARY_APPLICABILITY_USER_DESIGNATED"]
+
+
 def build_stage1_research_plan(
     active_lens_ids: list[str],
     country: str,
@@ -8386,6 +8495,12 @@ def build_stage1_research_plan(
         str(part.get("raw_text") or "")[:6000]
         for part in project_parts[:2]
     )[:12000]
+    beneficiaries = list(dict.fromkeys(
+        name for part in project_parts[:2]
+        for name in extract_beneficiary_countries(str(part.get("raw_text") or ""))
+    ))[:8]
+    scope = "multi" if len(beneficiaries) > 1 else str(country_scope or "single").strip().lower()
+    country_count = max(0, int(resolved_country_count), len(beneficiaries))
     return {
         "country": str(country or "").strip(),
         "sector": str(sector or "").strip(),
@@ -8395,14 +8510,19 @@ def build_stage1_research_plan(
         },
         "climate": {"enabled": climate_active},
         "project_profile": {
+            "project_elements": build_climate_project_elements("\n\n".join(
+                str(part.get("raw_text") or "") for part in project_parts[:2]
+            )),
             "documents": [
                 str(part.get("name") or "project document")[:200]
                 for part in project_parts[:4]
             ],
             "document_excerpt": excerpt,
+            "country_scope": scope,
+            "beneficiary_countries": beneficiaries,
         },
-        "country_scope": str(country_scope or "single").strip().lower(),
-        "resolved_country_count": max(0, int(resolved_country_count)),
+        "country_scope": scope,
+        "resolved_country_count": country_count,
     }
 
 
@@ -8483,6 +8603,17 @@ def _iter_stage1_research(
                 assessment_id or "unknown",
                 results["climate_grounding"].get("warning_code") or "unknown",
             )
+    if climate_enabled and os.environ.get('CLIMATE_RESEARCH_MODE', '').strip().lower() == 'bank_only':
+        # Deliberate supervised-pilot scope: retain the pinned bank, skip both
+        # research providers and cached live material, and preserve the limitation.
+        results['climate_research'] = normalize_climate_research_bundle({
+            'attempts': 0,
+            'failure_reason': 'Live web research is disabled for this bank-based supervised pilot; current-context claims require human source review.',
+        })
+        app.logger.info('Climate research mode assessment_id=%s mode=bank_only',
+                        assessment_id or 'unknown')
+        yield {'result': results}
+        return
     pool = ThreadPoolExecutor(max_workers=2)
     try:
         if cached_core:
@@ -8701,6 +8832,8 @@ def resolve_climate_grounding(
             "warning_code": decision.get(
                 "code", "climate_research_insufficient"
             ),
+            **({"passage_diagnostics": normalized["passage_diagnostics"]}
+               if "passage_diagnostics" in normalized else {}),
         }
 
     try:
@@ -8771,6 +8904,14 @@ def resolve_climate_grounding(
         grounding.get("state") or "thematic-only",
         grounding.get("warning_code") or "none",
     )
+    if not decision['ok'] and normalized.get('claims') and all(
+        claim.get('source_excerpt') and claim['source_excerpt'] == claim['claim']
+        for claim in normalized['claims']
+    ):
+        # Retain bounded proof for inspection. The grounding above still receives
+        # no live claims when the full research gate fails.
+        return grounding, {**normalized, 'status': 'partial',
+                           'warning_code': decision.get('code', 'climate_research_insufficient')}
     return grounding, normalized if decision["ok"] else accepted_research
 
 
@@ -8876,6 +9017,7 @@ def get_client():
     if _client is None:
         _client = anthropic.Anthropic(
             api_key=os.environ.get("ANTHROPIC_API_KEY"),
+            **pilot_http_client(),
             timeout=httpx.Timeout(timeout=600.0, connect=30.0)
         )
     return _client
@@ -8892,6 +9034,7 @@ def get_fast_client():
     if _fast_client is None:
         _fast_client = anthropic.Anthropic(
             api_key=os.environ.get("ANTHROPIC_API_KEY"),
+            **pilot_http_client(),
             timeout=httpx.Timeout(timeout=25.0, connect=10.0)
         )
     return _fast_client
@@ -8906,6 +9049,7 @@ def get_lens_recovery_client():
     if _lens_recovery_client is None:
         _lens_recovery_client = anthropic.Anthropic(
             api_key=os.environ.get("ANTHROPIC_API_KEY"),
+            **pilot_http_client(),
             timeout=httpx.Timeout(timeout=120.0, connect=10.0),
             max_retries=0,
         )
@@ -8922,6 +9066,7 @@ def get_research_client():
     if _research_client is None:
         _research_client = anthropic.Anthropic(
             api_key=os.environ.get("ANTHROPIC_API_KEY"),
+            **pilot_http_client(),
             timeout=httpx.Timeout(timeout=120.0, connect=10.0),
             max_retries=0,
         )
@@ -8952,6 +9097,7 @@ def health():
         'build': BUILD_MARKER,
         'stage1_research_budget_s': STAGE1_RESEARCH_BUDGET_SECONDS,
         'climate_verified_run_mode': verified_runtime.mode,
+        'climate_research_mode': os.environ.get('CLIMATE_RESEARCH_MODE', 'live').strip().lower(),
     })
 
 
@@ -9059,6 +9205,52 @@ def detect_document_type_route():
 
 # ── Main analysis route ───────────────────────────────────────────────────────
 
+def _prior_stage_outputs(history):
+    """Recover actual outputs, including those embedded by the old compact history."""
+    outputs = {}
+    label = ''
+    placeholder = 'Understood. I will build on this prior analysis.'
+    for message in history:
+        content = message.get('content', '')
+        if not isinstance(content, str):
+            continue
+        if message.get('role') == 'user':
+            label = content
+        elif message.get('role') == 'assistant':
+            if content == placeholder:
+                prefix = 'Prior FCV analysis context:\n\n'
+                suffix = '\n\nUse this as the basis for the next stage.'
+                if label.startswith(prefix) and label.endswith(suffix):
+                    context = label[len(prefix):-len(suffix)]
+                    for part in re.split(r'\n\n---\n\n(?=Stage [123] output:\n)', context):
+                        match = re.fullmatch(r'Stage ([123]) output:\n(.*)', part, re.S)
+                        if match and match[2] != placeholder:
+                            outputs[int(match[1])] = match[2]
+                continue
+            match = re.match(r'\[(?:Climate )?Stage ([123])\b', label)
+            number = int(match[1]) if match else max(outputs, default=0) + 1
+            outputs[number] = content
+    return outputs
+
+
+def _history_through_stage(history, stage):
+    """Keep compact labels and full outputs, never the model-request placeholder."""
+    messages = []
+    for number, output in sorted(_prior_stage_outputs(history).items()):
+        if number <= stage:
+            messages.extend([
+                {'role': 'user', 'content': f'[Stage {number} - saved analysis]'},
+                {'role': 'assistant', 'content': output},
+            ])
+    return messages
+
+
+def _doc_type_from_history(history):
+    output = _prior_stage_outputs(history).get(1, '')
+    match = re.search(r'%%%DOC_TYPE:\s*([^%\n]+)%%%', output)
+    return match[1].strip() if match else 'Unknown'
+
+
 @app.route('/api/run-stage', methods=['POST'])
 def run_stage():
     try:
@@ -9073,8 +9265,11 @@ def run_stage():
         user_message = data.get('user_message', '').strip()
         prompt_override = data.get('prompt_override', '').strip()  # session-only override from frontend
         document_type = _effective_document_type(
-            data.get('document_type'), analysis_state.doc_type
+            data.get('document_type'), analysis_state.doc_type,
+            data.get('doc_type'), _doc_type_from_history(conversation_history),
         )
+        analysis_state.doc_type = document_type
+        instrument_type = data.get('instrument_type') or analysis_state.instrument or 'Unknown'
         stage3_document_type = _effective_document_type(
             data.get('doc_type'), document_type
         )
@@ -9120,17 +9315,13 @@ def run_stage():
 
         MAX_ASSISTANT_CHARS = 40000
 
-        prior_outputs = []
-        for m in conversation_history:
-            if m['role'] == 'assistant':
-                c = m['content'] if isinstance(m['content'], str) else ''
-                if len(c) > MAX_ASSISTANT_CHARS:
-                    c = c[:MAX_ASSISTANT_CHARS] + '\n...[truncated]'
-                prior_outputs.append(c)
+        prior_outputs = _prior_stage_outputs(conversation_history)
 
         if prior_outputs:
             context = "\n\n---\n\n".join(
-                f"Stage {i+1} output:\n{o}" for i, o in enumerate(prior_outputs)
+                f"Stage {number} output:\n{output[:MAX_ASSISTANT_CHARS]}"
+                + ('\n...[truncated]' if len(output) > MAX_ASSISTANT_CHARS else '')
+                for number, output in sorted(prior_outputs.items())
             )
             messages = [
                 {"role": "user", "content": f"Prior FCV analysis context:\n\n{context}\n\nUse this as the basis for the next stage."},
@@ -9140,6 +9331,31 @@ def run_stage():
             messages = []
 
         extraction_warnings = []  # Populated in stage 1 doc loop; empty for stages 2+
+
+        if stage != 1:
+            # Climate question-bank signals (Stage 2 only uses them): instrument/doc-type
+            # plus sector + the Stage-1 assistant narrative carried in the request history.
+            _s1_history_text = prior_outputs.get(1, '')[:2500]
+            lens_context = build_lens_stage_context(
+                analysis_state,
+                stage,
+                lens_diagnostic=data.get('lens_diagnostic'),
+                lens_context_sources=data.get('lens_context_sources'),
+                climate_research=server_climate_research,
+                climate_grounding=server_climate_grounding,
+                project_signals=_climate_project_signals(
+                    analysis_state, data.get('sector_context'), _s1_history_text
+                ),
+                compose_prompt=not (
+                    _native_climate_stage2 or _native_climate_stage3
+                ),
+            )
+            if lens_context['restart_required']:
+                return jsonify({
+                    'error': 'A selected sector lens version changed. Re-run from Stage 1.',
+                    'restart_required': True,
+                    'lens_warnings': lens_context['warnings'],
+                }), 409
 
         if stage == 1:
             documents = data.get('documents', [])
@@ -9600,33 +9816,6 @@ def run_stage():
                 pq_block = build_priority_questions_block(priority_questions, stage)
                 if pq_block:
                     stage_prompt = stage_prompt + pq_block
-            # Climate question-bank signals (Stage 2 only uses them): instrument/doc-type
-            # plus sector + the Stage-1 assistant narrative carried in the request history.
-            _s1_history_text = " ".join(
-                str(m.get('content', ''))
-                for m in conversation_history
-                if isinstance(m, dict) and m.get('role') == 'assistant'
-            )[:2500]
-            lens_context = build_lens_stage_context(
-                analysis_state,
-                stage,
-                lens_diagnostic=data.get('lens_diagnostic'),
-                lens_context_sources=data.get('lens_context_sources'),
-                climate_research=server_climate_research,
-                climate_grounding=server_climate_grounding,
-                project_signals=_climate_project_signals(
-                    analysis_state, data.get('sector_context'), _s1_history_text
-                ),
-                compose_prompt=not (
-                    _native_climate_stage2 or _native_climate_stage3
-                ),
-            )
-            if lens_context['restart_required']:
-                return jsonify({
-                    'error': 'A selected sector lens version changed. Re-run from Stage 1.',
-                    'restart_required': True,
-                    'lens_warnings': lens_context['warnings'],
-                }), 409
             if stage in (1, 2):
                 stage_prompt = append_standard_fcv_stage_context(
                     stage_prompt, stage, lens_context['active_lenses']
@@ -10185,7 +10374,7 @@ def run_stage():
                     # constants forward. The next stage re-injects its own fresh background
                     # docs; assistant outputs in history are what matter for continuity.
                     compact_label = f"[Stage {stage} — analysis prompt with operational guidance injected]"
-                    compact_messages = messages[:-1] + [{"role": "user", "content": compact_label}]
+                    compact_messages = _history_through_stage(conversation_history, stage - 1) + [{"role": "user", "content": compact_label}]
                     updated_messages = compact_messages + [{"role": "assistant", "content": full_text}]
                 if len(updated_messages) > 20:
                     updated_messages = updated_messages[-20:]
@@ -10207,6 +10396,9 @@ def run_stage():
                     'research_brief': research_brief_text if stage == 1 else None,
                     'research_country': research_country if stage == 1 else None,
                     'instrument_type': _instrument_type if stage == 1 else None,
+                    'doc_type': _effective_document_type(
+                        _doc_type_from_history(updated_messages), document_type,
+                    ) if stage == 1 else document_type,
                     'temporal_context': _temporal_context if stage == 1 else None,
                     'regime_context': _regime_context if stage == 1 else None,
                     'process_type': _process_type if stage == 1 else None,
@@ -10899,10 +11091,9 @@ def run_express():
                         'responsiveness', {}
                     ).get('value', '')
                     executive = verified_reader.get('executive_readout', '')
-                    source_warnings = [
-                        {'message': code.replace('_', ' ').title()}
-                        for code in verified_bundle.get('source_warnings', [])
-                    ]
+                    source_warnings = _climate_source_warning_messages(
+                        verified_bundle.get('source_warnings', [])
+                    )
                     stage2_output = executive or "Verified assessment complete."
                     verified_history = [
                         {
@@ -12510,6 +12701,65 @@ def download_management_brief():
     )
 
 
+def _climate_export_snapshot(data):
+    """Validate export consistency; a fingerprint is not human approval."""
+    raw = data.get('climate_assessment') if isinstance(data, dict) else None
+    if not isinstance(raw, dict) or raw.get('schema_version') != 'climate-verified-v2.1':
+        return None, (jsonify(error='A verified Climate assessment is required.'), 422)
+    verified = normalize_climate_assessment(raw)
+    reader = build_reader_model(verified)
+    # Runtime mode belongs to the assessment, not an editable reader override.
+    mode = verified.get('runtime_mode')
+    if mode in {'quality', 'smoke'}:
+        reader['runtime_mode'] = mode
+        reader['technical_annex'] = {**(reader.get('technical_annex') or {}),
+                                     'runtime_mode': mode}
+    issues = validate_reader_model(reader)
+    if issues:
+        return None, (jsonify(error='Climate report failed integrity checks.',
+                              reason_codes=list(issues)), 422)
+    attach_provenance(reader, verified)
+    # Compare JSON values: Python tuples become arrays in the browser.
+    canonical_reader = json.loads(json.dumps(reader, ensure_ascii=False, allow_nan=False))
+    if 'climate_reader' in data and data['climate_reader'] != canonical_reader:
+        return None, (jsonify(
+            error='The displayed report differs from its assessment. Reload the matching '
+                  'assessment and reader before exporting; no content was substituted.',
+            reason_codes=['READER_SNAPSHOT_MISMATCH']), 409)
+    encoded = json.dumps({'assessment': verified, 'reader': reader},
+                         sort_keys=True, separators=(',', ':'), ensure_ascii=False,
+                         allow_nan=False).encode('utf-8')
+    return {'reader': reader, 'sha256': hashlib.sha256(encoded).hexdigest(),
+            'publication_approved': False}, None
+
+
+@app.route('/api/climate-report-snapshot', methods=['POST'])
+def climate_report_snapshot():
+    """No-model consistency check for the browser's standalone HTML export."""
+    data = request.get_json(force=True)
+    if not isinstance(data, dict) or not isinstance(data.get('climate_reader'), dict):
+        return jsonify(error='A complete displayed Climate reader is required.'), 422
+    snapshot, error = _climate_export_snapshot(data)
+    return error if error is not None else jsonify(snapshot)
+
+
+@app.route('/api/climate-review-packet', methods=['POST'])
+def climate_review_packet():
+    """Export a draft for named approval outside the app; never grant approval."""
+    from io import BytesIO
+    from flask import send_file
+
+    data = request.get_json(force=True)
+    if not isinstance(data, dict) or not isinstance(data.get('climate_reader'), dict):
+        return jsonify(error='A complete displayed Climate reader is required.'), 422
+    snapshot, error = _climate_export_snapshot(data)
+    if error is not None:
+        return error
+    content = build_review_packet(normalize_climate_assessment(data['climate_assessment']), snapshot)
+    return send_file(BytesIO(content), mimetype='application/zip', as_attachment=True,
+                     download_name='Climate-FCV-Review-' + snapshot['sha256'][:12] + '.zip')
+
+
 @app.route('/api/download-report', methods=['POST'])
 def download_report():
     """Generate a DOCX mirroring the full Stage 3 web output structure."""
@@ -12523,25 +12773,10 @@ def download_report():
         isinstance(verified_raw, dict)
         and verified_raw.get('schema_version') == 'climate-verified-v2.1'
     ):
-        verified = normalize_climate_assessment(verified_raw)
-        reader_model = build_reader_model(verified)
-        incoming_reader = data.get('climate_reader') or {}
-        runtime_mode = (
-            incoming_reader.get('runtime_mode')
-            if isinstance(incoming_reader, dict)
-            else None
-        )
-        if runtime_mode in {'quality', 'smoke'}:
-            reader_model['runtime_mode'] = runtime_mode
-            reader_annex = dict(reader_model.get('technical_annex') or {})
-            reader_annex['runtime_mode'] = runtime_mode
-            reader_model['technical_annex'] = reader_annex
-        reader_issues = validate_reader_model(reader_model)
-        if reader_issues:
-            return jsonify({
-                'error': 'Verified Climate-FCV report failed integrity checks.',
-                'reason_codes': list(reader_issues),
-            }), 422
+        reader_model, snapshot_error = _climate_export_snapshot(data)
+        if snapshot_error is not None:
+            return snapshot_error
+        reader_model = reader_model['reader']
         verified_buf = io.BytesIO()
         write_reader_docx(reader_model, verified_buf)
         verified_buf.seek(0)

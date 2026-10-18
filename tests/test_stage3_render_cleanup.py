@@ -42,3 +42,12 @@ def test_stray_delimiter_token_catch_all():
     assert "%%%" not in out
     assert "Normal prose" in out
     assert "More prose" in out
+
+
+def test_drifted_risk_markers_strip_the_duplicate_block_and_preserve_percentage():
+    text = ("Context with 50% coverage.\n\n%%RISK_NARRATIVE_START%%\n"
+            "### FCV Risk Exposure\nDuplicate risk.\n%%RISK_NARRATIVE_END%%\n"
+            "### Strengths\nSupported strength.")
+    out = app.clean_stage3_output(text)
+    assert "Duplicate risk" not in out and "RISK_NARRATIVE" not in out
+    assert "50%" in out and "Supported strength." in out

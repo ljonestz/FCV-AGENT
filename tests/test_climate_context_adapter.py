@@ -109,3 +109,21 @@ def test_malformed_or_unsourced_context_is_discarded():
         "live_claims": [{"id": "claim-1", "claim": "Unsupported"}],
     }
     assert adapt_grounding_evidence(grounding) == ()
+
+
+def test_live_context_keeps_source_date_title_and_material_limitations():
+    bundle = _research_bundle()
+    bundle["sources"][0].update(title="Flood operation 2024", publication_date="2024-05-03")
+    bundle["claims"][0]["evidence_gap"] = "These ports are outside the project sites."
+    evidence = adapt_grounding_evidence(merge_climate_grounding({}, bundle))[0]
+    assert evidence.source_details[0]["title"] == "Flood operation 2024"
+    assert evidence.source_details[0]["publication_date"] == "2024-05-03"
+    assert evidence.evidence_gap == "These ports are outside the project sites."
+    assert evidence.time_horizons == ("current-near-term",)
+    assert evidence.statement == bundle["claims"][0]["claim"]
+
+
+def test_unknown_publication_date_cannot_be_silent_current_context():
+    evidence = adapt_grounding_evidence(merge_climate_grounding({}, _research_bundle()))[0]
+    assert "Current conditions are unverified" in evidence.evidence_gap
+    assert evidence.source_details[0]["publication_date"] == ""

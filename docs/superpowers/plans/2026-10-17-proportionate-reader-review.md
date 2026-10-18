@@ -1,0 +1,12 @@
+# Proportionate supervised-pilot review implementation plan
+
+Goal: retain useful qualified analysis while withholding consequentially misleading content, with visible review status and no automatic publication approval.
+
+User approved this design and autonomous implementation on 17 October. Existing blanket withholding is the rejected alternative; wholesale advisory display would expose consequential errors. Use validated, object-specific review disposition instead. No new adjudicator or extra model calls.
+
+1. Move existing exact-target/quote review validation to the shared reader module; reuse it in runtime and exports. Add reader issue severity (minor/consequential) and decision impact. Missing legacy severity remains consequential; malformed reviews and block remain closed. Structural/evidence failure still withholds the entire native reader.
+2. Retain all structurally valid prose for minor issues, visibly marked for review. For consequential issues withhold the affected thematic answer; withhold the opening as a unit if any Summary paragraph is affected. Preserve unaffected answers. Never turn revise into pass. Avoid repair calls for minor-only issues. Keep the existing single bounded correction for consequential issues; retain usable sections if a valid review still requests revision.
+3. Carry a shared concise reader review notice through browser, HTML, Word and version-bound reader/packet hashing. Original diagnostics remain available. Remove the renderer's obsolete 40-180-word gate for final-reader prose: the shared validator already enforces the actual hard limits.
+4. Calibrate recommendation review toward consequential decision errors while retaining existing per-core handling and structural checks. Do not weaken facts to invented commitments, funding, beneficiaries or achieved impacts. Normal FCV unchanged.
+5. Add offline boundary tests: minor/consequential/mixed, legacy, malformed/unknown/duplicate targets, stale quotes, block, structural failures, exports, pipeline calls/status. Replay saved real results without claiming severity was freshly inferred. Run focused tests then full suite once; preserve four documented hanging browser exclusions.
+6. Only after offline evidence, use a bounded smaller paid calibration if useful, then preview full acceptance if justified. New authorization ceiling: three full app runs plus five smaller calls, retries count; use fewer. Keep campaign records and consumed locks, no production deploy/merge. Finish with handover and remaining risks.

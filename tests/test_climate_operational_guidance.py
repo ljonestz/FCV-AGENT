@@ -18,7 +18,6 @@ SUPPORTED_ROUTES = (
     ("IPF", "Restructuring"),
     ("DPF", "PCN"),
     ("DPF", "PID"),
-    ("DPF", "PAD"),
     ("DPF", "Program Document"),
     ("PforR", "PCN"),
     ("PforR", "PID"),
@@ -28,7 +27,7 @@ SUPPORTED_ROUTES = (
 
 
 def test_registry_has_stable_unique_ids_and_bounded_authority() -> None:
-    assert GUIDANCE_REGISTRY_VERSION == "climate-guidance-v3"
+    assert GUIDANCE_REGISTRY_VERSION == "climate-guidance-v4"
     ids = [entry.guidance_id for entry in OPERATIONAL_GUIDANCE]
     assert len(ids) == len(set(ids))
     assert all(identifier.startswith("GUIDE-") for identifier in ids)
@@ -110,7 +109,6 @@ def test_unsupported_or_inactive_routes_remain_fail_closed(
     ("instrument", "document"),
     (
         ("IPF", "PID"),
-        ("DPF", "PID"),
         ("PforR", "PID"),
     ),
 )

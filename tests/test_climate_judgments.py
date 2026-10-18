@@ -11,7 +11,7 @@ def test_high_relevance_can_coexist_with_partial_operationalization():
         relevance=Judgment("high", ("PW-001",), "Material PDO pathway."),
         sensitivity=Judgment("moderate", ("ER-001",), "Risks recognized."),
         responsiveness=Judgment(
-            "emerging",
+            "moderate",
             ("ER-002",),
             "Some resilience benefits are intended.",
         ),
@@ -25,7 +25,7 @@ def test_high_relevance_can_coexist_with_partial_operationalization():
     assert validate_judgments(judgments, known) == ()
     assert deterministic_summary(judgments) == (
         "High Climate-FCV relevance; moderate sensitivity; "
-        "emerging responsiveness; partial operationalization."
+        "moderate responsiveness; partial operationalization."
     )
 
 

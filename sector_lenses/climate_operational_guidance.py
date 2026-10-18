@@ -10,7 +10,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 
 
-GUIDANCE_REGISTRY_VERSION = "climate-guidance-v3"
+GUIDANCE_REGISTRY_VERSION = "climate-guidance-v4"
 MAX_GUIDANCE_PACKET_SIZE = 6
 
 
@@ -35,10 +35,64 @@ _IPF = ("ipf",)
 _NEW_IPF = ("project paper",)
 _IPF_MID_CYCLE = ("af", "restructuring")
 _PFORR_DOCS = ("pcn", "pid", "program paper", "pad")
-_DPF_DOCS = ("pcn", "pid", "pad", "program document")
+_DPF_DOCS = ("pcn", "pid", "program document")
 
 
 OPERATIONAL_GUIDANCE = (
+    GuidanceEntry(
+        guidance_id="GUIDE-PFORR-MID-CYCLE",
+        title="PforR additional financing and restructuring",
+        document_types=("af", "restructuring"),
+        instrument_types=("pforr", "p4r"),
+        permitted_targets=tuple(
+            (document, section)
+            for document in ("af", "restructuring")
+            for section in (
+                "proposed changes", "program scope and design", "results framework",
+                "program action plan", "DLI matrix", "verification protocol",
+                "environmental and social systems assessment (ESSA)",
+            )
+        ),
+        application_rule=(
+            "Limit advice to the evidenced changes and their implications for "
+            "borrower systems, ESSA, Program Action Plan, results and DLIs."
+        ),
+        authority_class="operational_guidance",
+        prohibited_overstatements=(
+            "Do not invent approval levels, DLI amounts or changes to unaffected activities.",
+        ),
+    ),
+    GuidanceEntry(
+        guidance_id="GUIDE-CLIMATE-APPRAISAL",
+        title="Climate appraisal evidence and specialist review",
+        document_types=("pad", "project paper", "program paper", "af", "restructuring"),
+        instrument_types=("ipf", "pforr", "p4r"),
+        permitted_targets=tuple(
+            (document, section)
+            for document in ("pad", "project paper", "program paper", "af", "restructuring")
+            for section in ("climate considerations", "results framework")
+        ),
+        application_rule=(
+            "Check the uploaded appraisal evidence for the Paris Alignment assessment "
+            "and Climate and Disaster Risk Screening, and connect relevant findings "
+            "to the supported Climate-FCV pathway. Refer gaps to the responsible "
+            "specialists; absence from an upload is not proof an assessment is absent. "
+            "Review evidenced climate co-benefits and climate indicators. For IPF, "
+            "where an evidenced corporate climate co-benefits share is at least 20%, "
+            "check for a climate indicator in the results framework and refer any gap "
+            "for confirmation under the Preparation of IPF guidance (June 2026). "
+            "For AF/restructuring, consider only the changed scope and applicable "
+            "review provisions. Use the Project Paper (July 2026) or Program Paper "
+            "(June 2026) guidance as appropriate; verify later revisions with OPCS."
+        ),
+        authority_class="operational_guidance",
+        prohibited_overstatements=(
+            "Do not certify Paris Alignment, screening adequacy or climate finance shares.",
+            "Do not invent a climate co-benefits percentage, indicator baseline or target.",
+            "Do not turn an advisory check into an approval condition.",
+        ),
+    ),
+
     GuidanceEntry(
         guidance_id="GUIDE-PCN-DESIGN",
         title="Stage-appropriate project design",
@@ -242,7 +296,9 @@ OPERATIONAL_GUIDANCE = (
         ),
         authority_class="operational_guidance",
         prohibited_overstatements=(
-            "Do not route PforR actions to ESCP, SEP, or ESS instruments.",
+            "Do not route standalone PforR actions to ESCP, SEP, or ESS instruments. "
+            "For an evidenced IPF component, limit such drafting to that component "
+            "and its verified instruments.",
         ),
     ),
     GuidanceEntry(
@@ -282,11 +338,6 @@ OPERATIONAL_GUIDANCE = (
             ("pid", "concept description"),
             ("pid", "proposed development objectives"),
             ("pid", "poverty and social impacts and environmental aspects"),
-            ("pad", "program description and policy matrix"),
-            ("pad", "prior actions"),
-            ("pad", "poverty and social impact analysis"),
-            ("pad", "environment, forests, and natural resources analysis"),
-            ("pad", "results framework"),
             ("program document", "program description and policy matrix"),
             ("program document", "prior actions"),
             ("program document", "poverty and social impact analysis"),
@@ -310,7 +361,7 @@ OPERATIONAL_GUIDANCE = (
             "pcn", "pid", "pad", "project paper", "program paper",
             "program document", "af", "restructuring",
         ),
-        instrument_types=("ipf", "pforr", "p4r", "dpf", "dpo"),
+        instrument_types=("ipf", "pforr", "p4r"),
         permitted_targets=(
             ("pcn", "MPA program framework and phase sequencing"),
             ("pid", "MPA program framework and phase sequencing"),
@@ -344,6 +395,11 @@ def select_operational_guidance(
 
     document = str(doc_type or "").strip().casefold()
     instrument = str(instrument_type or "").strip().casefold()
+    instrument = {"ipf-ddo": "ipf", "p4r": "pforr", "dpo": "dpf"}.get(instrument, instrument)
+    if instrument == "dpf" and is_mpa:
+        return ()
+    if instrument == "dpf" and document == "pad":
+        document = "program document"
     selected = [
         entry
         for entry in OPERATIONAL_GUIDANCE
@@ -351,6 +407,8 @@ def select_operational_guidance(
         and instrument in entry.instrument_types
         and (not entry.mpa_only or is_mpa)
     ]
-    if is_mpa:
-        selected.sort(key=lambda entry: not entry.mpa_only)
+    selected.sort(key=lambda entry: (
+        not entry.mpa_only,
+        entry.guidance_id != "GUIDE-CLIMATE-APPRAISAL",
+    ))
     return tuple(selected[:MAX_GUIDANCE_PACKET_SIZE])

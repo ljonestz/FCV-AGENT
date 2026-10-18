@@ -1,0 +1,127 @@
+{
+  "fixture_version": "materiality-review-v1",
+  "synthetic": true,
+  "note": "Manual offline cases; source text is synthetic. Expected labels withheld separately.",
+  "cases": [
+    {
+      "case_id": "M01",
+      "sentence_id": "M01-S01",
+      "sentence": "The proposed bridge has not been built; flood-related disruption may continue without an alternative route.",
+      "propositions": [
+        {
+          "proposition_id": "M01-P01",
+          "span_start": 0,
+          "span_end": 38,
+          "quoted_text": "The proposed bridge has not been built"
+        },
+        {
+          "proposition_id": "M01-P02",
+          "span_start": 40,
+          "span_end": 106,
+          "quoted_text": "flood-related disruption may continue without an alternative route"
+        }
+      ],
+      "source_registry": {
+        "M01-SRC": "SYNTHETIC: The proposed bridge has not been built. Floodwater still prevents physical access to the clinic. No alternative route is available."
+      }
+    },
+    {
+      "case_id": "M02",
+      "sentence_id": "M02-S01",
+      "sentence": "The bridge is operational; the project could therefore stop funding temporary clinic access.",
+      "propositions": [
+        {
+          "proposition_id": "M02-P01",
+          "span_start": 0,
+          "span_end": 25,
+          "quoted_text": "The bridge is operational"
+        },
+        {
+          "proposition_id": "M02-P02",
+          "span_start": 27,
+          "span_end": 91,
+          "quoted_text": "the project could therefore stop funding temporary clinic access"
+        }
+      ],
+      "source_registry": {
+        "M02-SRC": "SYNTHETIC: The proposed bridge has not been built. Floodwater still prevents physical access to the clinic. No alternative route is available."
+      }
+    },
+    {
+      "case_id": "M03",
+      "sentence_id": "M03-S01",
+      "sentence": "The project plans a general grievance channel; the design should consider confidential complaints to reduce retaliation risk.",
+      "propositions": [
+        {
+          "proposition_id": "M03-P01",
+          "span_start": 0,
+          "span_end": 45,
+          "quoted_text": "The project plans a general grievance channel"
+        },
+        {
+          "proposition_id": "M03-P02",
+          "span_start": 47,
+          "span_end": 124,
+          "quoted_text": "the design should consider confidential complaints to reduce retaliation risk"
+        }
+      ],
+      "source_registry": {
+        "M03-SRC": "SYNTHETIC: The project plans a general grievance channel. No arrangement for confidential complaints is described. Retaliation against complainants is an identified risk."
+      }
+    },
+    {
+      "case_id": "M04",
+      "sentence_id": "M04-S01",
+      "sentence": "The channel already protects complainants from retaliation; additional confidentiality measures may therefore be unnecessary.",
+      "propositions": [
+        {
+          "proposition_id": "M04-P01",
+          "span_start": 0,
+          "span_end": 58,
+          "quoted_text": "The channel already protects complainants from retaliation"
+        },
+        {
+          "proposition_id": "M04-P02",
+          "span_start": 60,
+          "span_end": 124,
+          "quoted_text": "additional confidentiality measures may therefore be unnecessary"
+        }
+      ],
+      "source_registry": {
+        "M04-SRC": "SYNTHETIC: The project plans a general grievance channel. No arrangement for confidential complaints is described. Retaliation against complainants is an identified risk."
+      }
+    },
+    {
+      "case_id": "M05",
+      "sentence_id": "M05-S01",
+      "sentence": "Traders near cancelled sites may face access barriers.",
+      "propositions": [
+        {
+          "proposition_id": "M05-P01",
+          "span_start": 0,
+          "span_end": 53,
+          "quoted_text": "Traders near cancelled sites may face access barriers"
+        }
+      ],
+      "source_registry": {
+        "M05-SRC": "SYNTHETIC: Regional activities continue at retained sites. Access by traders near cancelled sites has not been assessed."
+      }
+    },
+    {
+      "case_id": "M06",
+      "sentence_id": "M06-S01",
+      "sentence": "Traders near the cancelled site may still have an alternative route to retained activities.",
+      "propositions": [
+        {
+          "proposition_id": "M06-P01",
+          "span_start": 0,
+          "span_end": 90,
+          "quoted_text": "Traders near the cancelled site may still have an alternative route to retained activities"
+        }
+      ],
+      "source_registry": {
+        "M06-SRC": "SYNTHETIC: The only bridge serving the cancelled site has been demolished. The source confirms that traders there have no alternative route to any retained activity."
+      }
+    }
+  ]
+}

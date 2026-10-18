@@ -8,6 +8,7 @@ from docx import Document
 from climate_question_bank import CLIMATE_LITERATURE_REFERENCES
 from sector_lenses.climate_verified_render import (
     HEADINGS,
+    DRAFT_REVIEW_NOTICE,
     SENSITIVITY_RATING_QUESTION,
     attach_provenance,
     build_climate_guidance_items,
@@ -16,6 +17,30 @@ from sector_lenses.climate_verified_render import (
     validate_reader_model,
     write_reader_docx,
 )
+
+
+def test_pid_display_casing_preserves_internal_assessment_and_exports():
+    from copy import deepcopy
+
+    assessment = _assessment()
+    assessment['operation_context'] = {'document_type': 'PID', 'instrument_type': 'IPF'}
+    priority = assessment['priorities'][0]
+    priority['minimum_action'] = 'In the pid concept description, clarify the approach.'
+    priority['current_document_drafting']['target_document'] = 'pid'
+    priority['current_document_drafting']['text'] = 'The pid could clarify the approach.'
+    before = deepcopy(assessment)
+    model = build_reader_model(assessment)
+    assert assessment == before
+    rendered = render_reader_html(model)
+    assert 'In the PID concept description' in rendered
+    assert 'The PID could clarify' in rendered
+    assert model['priorities'][0]['current_document_drafting']['target_document'] == 'PID'
+    output = BytesIO()
+    write_reader_docx(model, output)
+    output.seek(0)
+    text = '\n'.join(p.text for p in Document(output).paragraphs)
+    assert 'In the PID concept description' in text
+    assert 'The PID could clarify' in text
 
 
 def test_build_climate_guidance_items_builds_a_matched_item():
@@ -416,7 +441,7 @@ def test_build_reader_model_exposes_safe_existing_responses_for_summary_tiles():
     assert all("internal_only" not in item for item in model["existing_responses"])
 
 
-def test_rating_scale_renders_in_overview_before_core_questions():
+def test_rating_scale_renders_in_overview_before_priorities():
     assessment = {
         "executive_readout": "Alpha sentence. " * 60,
         "judgments": {
@@ -427,10 +452,10 @@ def test_rating_scale_renders_in_overview_before_core_questions():
         "priorities": [],
     }
     html = render_reader_html(build_reader_model(assessment))
-    rating_pos = html.find("climate-sens-rating")
-    core_pos = html.find("Core climate-FCV questions")
+    rating_pos = html.find("climate-paired-ratings")
+    core_pos = html.find("Ranked operational priorities")
     assert rating_pos != -1 and core_pos != -1
-    # The rating sits in the overview, above the core-questions section.
+    # The rating sits in the overview, above operational priorities.
     assert rating_pos < core_pos
 
 
@@ -462,7 +487,7 @@ def test_overview_summary_renders_in_overview_box_at_the_very_top():
     }
     html = render_reader_html(build_reader_model(assessment))
     summary_pos = html.find("OVERVIEW_MARKER")
-    rating_pos = html.find("climate-sens-rating")
+    rating_pos = html.find("climate-paired-ratings")
     exec_heading_pos = html.find("Executive readout")
     assert summary_pos != -1 and rating_pos != -1 and exec_heading_pos != -1
     # The 3-4 sentence overall summary is embedded in the rating card, and the
@@ -502,14 +527,15 @@ def test_overview_summary_renders_in_docx_before_executive_readout():
     write_reader_docx(build_reader_model(assessment), stream)
     stream.seek(0)
     texts = [p.text for p in Document(stream).paragraphs]
-    question_idx = next(
-        i for i, t in enumerate(texts) if t.startswith(SENSITIVITY_RATING_QUESTION)
-    )
+    stream.seek(0)
+    document = Document(stream)
+    assert SENSITIVITY_RATING_QUESTION in document.tables[0].cell(0, 0).text
+    assert "Climate & FCV responsiveness" in document.tables[0].cell(0, 1).text
     summary_idx = next(i for i, t in enumerate(texts) if "OVERVIEW_MARKER" in t)
     exec_idx = next(i for i, t in enumerate(texts) if t == HEADINGS[0])
     # Graphic (rating question line) first, then the summary text, then the
     # fuller Executive readout heading below.
-    assert question_idx < summary_idx < exec_idx
+    assert summary_idx < exec_idx
 
 
 def test_overview_box_renders_without_summary_when_absent():
@@ -525,8 +551,8 @@ def test_overview_box_renders_without_summary_when_absent():
     html = render_reader_html(model)
     # Graceful degradation: the rating card still renders (with its level gloss),
     # just with no embedded overall summary.
-    assert "climate-sens-rating" in html
-    assert "strongly designed to recognise" in html
+    assert "climate-paired-ratings" in html
+    assert ">Strong</strong>" in html
 
 
 def test_visible_tiers_hide_routing_metadata_and_evidence_codes():
@@ -570,7 +596,7 @@ def test_visible_tiers_hide_routing_metadata_and_evidence_codes():
     assert "PF-001" not in html2
 
 
-def test_quick_fixes_are_visible_not_collapsed():
+def test_review_checks_keep_content_in_closed_disclosure():
     assessment = {
         "executive_readout": "Alpha sentence. " * 60,
         "judgments": {
@@ -595,8 +621,7 @@ def test_quick_fixes_are_visible_not_collapsed():
     assert "Empty screening field" in quick
     assert "How to address" in quick
     assert "Technical annex" not in quick
-    # The quick-fix block is a visible section, not a collapsed <details>.
-    assert "<summary>Points to check" not in quick
+    assert '<details class="climate-fold"><summary>Checks for the project team</summary>' in quick
 
 
 def test_watch_lines_render_in_standalone_section_not_inline():
@@ -615,13 +640,9 @@ def test_watch_lines_render_in_standalone_section_not_inline():
         ],
     }
     html = render_reader_html(build_reader_model(assessment))
-    # Watch content appears in the standalone section, not inline in the card.
-    assert "What to keep an eye on" in html
-    assert "Keep an eye on the flood season." in html
-    core_block = html.split("Core climate-FCV questions", 1)[1].split(
-        "Ranked operational priorities", 1
-    )[0]
-    assert "What to watch" not in core_block
+    assert "What to keep an eye on" not in html
+    assert "Keep an eye on the flood season." not in html
+    assert build_reader_model(assessment)["core_questions"][0]["watch"] == "Keep an eye on the flood season."
 
 
 def test_build_reader_model_normalizes_nonsequential_priority_ranks():
@@ -754,8 +775,8 @@ def _assessment() -> dict[str, object]:
         ("Project Paper", "In the current project document", "Before approval"),
         ("Program Paper", "In the current project document", "Before approval"),
         ("Program Document", "In the current project document", "Before approval"),
-        ("Additional Financing", "In the Additional Financing package", "Before approval"),
-        ("AF", "In the Additional Financing package", "Before approval"),
+        ("Additional Financing", "In the Additional Financing package", "At the applicable Additional Financing review"),
+        ("AF", "In the Additional Financing package", "At the applicable Additional Financing review"),
         ("Restructuring", "In the restructuring package", "During implementation"),
         ("Unknown", "At the current review stage", "Before the next decision point"),
     ],
@@ -838,11 +859,10 @@ def test_reader_has_four_dimensions_priority_cap_and_safe_annex():
         "count": 4,
         "titles": ["Priority 1", "Priority 2", "Priority 3", "Priority 4"],
         "statement": (
-            "Drawing on the overview and core climate-FCV questions, the analysis "
+            "Drawing on the assessment findings, the analysis "
             "identifies 4 main operational priorities for strengthening climate "
             "resilience, conflict sensitivity and implementation readiness in this "
-            "project. These are followed by secondary points to check before the "
-            "decision meeting and issues to keep under review as preparation advances."
+            "project. Smaller points to check follow these priorities."
         ),
     }
     assert "overall_rating" not in model
@@ -856,6 +876,7 @@ def test_reader_has_four_dimensions_priority_cap_and_safe_annex():
         "recommendation_candidate_count": 3,
         "recommendation_admitted_count": 3,
         "recommendation_final_count": 3,
+        "withheld_narrative_count": 0,
         "semantic_reviewer_invoked": False,
         "semantic_reviewer_verdict": "not_invoked",
         "recommendation_reason_codes": [],
@@ -960,7 +981,7 @@ def test_reader_uses_tolerant_integrity_bounds_for_executive_length():
 
     assert "EXECUTIVE_LENGTH_INVALID" not in validate_reader_model(model)
 
-    model["executive_readout"] = ("word " * 249) + "word."
+    model["executive_readout"] = ("word " * 149) + "word."
     assert "EXECUTIVE_LENGTH_INVALID" in validate_reader_model(model)
 
     model["executive_readout"] = ("word " * 949) + "word."
@@ -991,39 +1012,37 @@ def test_html_and_docx_share_headings_and_priority_order():
     assert by_html == by_docx
     for index in range(1, 5):
         identifier = f"REC-00{index}"
-        assert identifier in html
-        assert identifier in document_text
+        assert identifier not in html
+        assert identifier not in document_text
         assert f"Priority {index}" in html
         assert f"Priority {index}" in document_text
     # Drafting blocks stay; model-internal routing metadata and raw evidence
     # codes are no longer rendered in the visible priority card.
     for expected in (
-        "Current document drafting",
-        "Operational instrument drafting",
+        "Suggested drafting for the current document",
+        "Suggested drafting for an operational instrument",
         "Suggested targeted text for the current project document.",
         "Distinct operational instrument text for continuity.",
-        "GUIDE-PCN-DESIGN",
-        "GUIDE-FCV-CONTINUITY",
     ):
         assert expected in html
         assert expected in document_text
-    for removed in ("standard_document_advisory", "none_verified", "project_evidence"):
+    for removed in ("standard_document_advisory", "none_verified", "project_evidence", "GUIDE-PCN-DESIGN", "GUIDE-FCV-CONTINUITY"):
         assert removed not in html
         assert removed not in document_text
     assert not any(
         paragraph.text.rstrip().endswith(("[", "{", "..."))
         for paragraph in document.paragraphs
     )
-    assert html.count("Operational instrument drafting") == 1
-    assert document_text.count("Operational instrument drafting") == 1
-    assert html.index("Current document drafting") < html.index(
-        "Operational instrument drafting"
+    assert html.count("Suggested drafting for an operational instrument") == 1
+    assert document_text.count("Suggested drafting for an operational instrument") == 1
+    assert html.index("Suggested drafting for the current document") < html.index(
+        "Suggested drafting for an operational instrument"
     )
 
 
 
 
-def test_html_and_docx_render_canonical_project_cycle_after_actions():
+def test_html_and_docx_keep_cycle_data_without_repeating_actions():
     assessment = _assessment()
     assessment["operation_context"] = {"document_type": "PCN"}
     model = build_reader_model(assessment)
@@ -1037,12 +1056,10 @@ def test_html_and_docx_render_canonical_project_cycle_after_actions():
     )
 
     for rendered in (html, document_text):
-        assert "Where this fits in the project cycle" in rendered
-        assert "At concept stage" in rendered
-        assert "During preparation" in rendered
-        assert rendered.index("Minimum action") < rendered.index(
-            "Where this fits in the project cycle"
-        )
+        assert "Where this fits in the project cycle" not in rendered
+        assert "At concept stage" not in rendered
+        assert "During preparation" not in rendered
+    assert model['priorities'][0]['project_cycle']['primary_label'] == 'At concept stage'
 
 def _reader_with_balanced_hierarchy_content() -> dict[str, object]:
     assessment = _assessment()
@@ -1105,13 +1122,13 @@ def test_html_uses_balanced_hierarchy_without_reader_clutter():
     model = _reader_with_balanced_hierarchy_content()
     html = render_reader_html(model)
 
-    assert '<section class="climate-overview-panel climate-sens-rating"' in html
-    assert html.count("climate-overview-panel") == 1
-    assert '<section class="climate-overview-panel"><div' not in html
-    assert html.index("climate-overview-panel") < html.index("Executive readout")
-    assert html.count('<details class="climate-priority-disclosure" open>') == 1
-    assert html.count('<details class="climate-priority-disclosure">') == 3
-    assert '<summary><h3 class="climate-priority-title">1. Priority 1' in html
+    assert html.count('data-rating-key="climate-sensitivity"') == 1
+    assert html.count('data-rating-key="climate-responsiveness"') == 1
+    assert "climate-overview-panel" not in html
+    assert html.index("climate-paired-ratings") < html.index("Executive readout")
+    assert html.count('class="climate-priority-card" open>') == 4
+    assert html.count('class="climate-priority-card">') == 0
+    assert '<span class="pc-rank">1</span><span class="pc-title-text">Priority 1' in html
     assert "Suggested targeted text for the current project document." in html
     assert "Distinct operational instrument text for continuity." in html
     assert "Complete drafting paragraph for priority four." in html
@@ -1122,16 +1139,16 @@ def test_html_uses_balanced_hierarchy_without_reader_clutter():
     assert "<h4>Confirm heat safeguards for field teams.</h4>" in html
     assert "<h3>Document points to confirm</h3>" in html
     assert "<h4>Two sections state different financing totals.</h4>" in html
-    assert html.count('class="climate-item-number"') == 4
-    assert html.count('<span class="climate-item-number">01</span>') == 3
-    assert '<span class="climate-item-number">02</span>' in html
+    assert html.count('class="climate-item-number"') == 2
+    assert html.count('<span class="climate-item-number">01</span>') == 2
+    assert '<span class="climate-item-number">02</span>' not in html
     assert html.index("Relevant WBG guidance for this project") < html.index(
-        "Method, limitations, and sources"
+        "Limitations"
     )
     assert "Use this source to identify positive peace outcomes." in html
     assert "Use this source to identify positive peace outcomes." in html
     assert "The analysis depends on the uploaded document&#x27;s detail." in html
-    assert "Sources &amp; further reading" in html
+    assert "Sources &amp; further reading" not in html
     assert "Candidate country evidence: preview; not approved." in html
     for removed in (
         "Evidence status", "Technical annex", "Evidence key", "Run diagnostics",
@@ -1142,9 +1159,9 @@ def test_html_uses_balanced_hierarchy_without_reader_clutter():
 def test_html_heading_structure_is_ordered_and_priorities_navigable():
     html = render_reader_html(_reader_with_balanced_hierarchy_content())
 
-    assert html.count('<summary><h3 class="climate-priority-title">') == 4
-    assert '<summary><h3 class="climate-priority-title">1. Priority 1' in html
-    assert "<h2>Points to check before the decision meeting</h2>" in html
+    assert html.count('<summary><h3 class="pc-title">') == 4
+    assert '<span class="pc-rank">1</span><span class="pc-title-text">Priority 1' in html
+    assert "<h2>Points to check before the applicable review</h2>" in html
     assert "<h3>Smaller climate &amp; fragility points to consider</h3>" in html
     assert "<h4>Confirm heat safeguards for field teams.</h4>" in html
     assert "<h3>Document points to confirm</h3>" in html
@@ -1168,16 +1185,16 @@ def test_docx_matches_balanced_reader_content_and_keeps_all_priorities():
     )
     assert "01 Confirm heat safeguards for field teams." in text
     assert "01 Two sections state different financing totals." in text
-    assert "01 Can shared institutions reduce resource tensions?" in text
-    assert "02 Will delivery remain workable during floods?" in text
+    assert "01 Can shared institutions reduce resource tensions?" not in text
+    assert "02 Will delivery remain workable during floods?" not in text
     assert text.index("Relevant WBG guidance for this project") < text.index(
-        "Method, limitations, and sources"
+        "Limitations"
     )
     assert "Use this source to identify positive peace outcomes." in text
     assert "Use this source to identify positive peace outcomes." in text
     assert "https://www.worldbank.org/peace-dividends" in text
     assert "The analysis depends on the uploaded document's detail." in text
-    assert "Sources & further reading" in text
+    assert "Sources & further reading" not in text
     assert "Candidate country evidence: preview; not approved." in text
     for removed in (
         "Evidence status", "Technical annex", "Evidence key", "Run diagnostics",
@@ -1198,7 +1215,7 @@ def test_zero_priority_message_is_shared_by_html_and_docx():
         paragraph.text for paragraph in Document(stream).paragraphs
     )
 
-    message = "No operational priorities were identified in this assessment. Review the core questions and points to check below."
+    message = "No operational priorities were identified in this assessment. Review the assessment findings and points to check below."
     assert rendered.count(message) == 1
     assert document_text.count(message) == 1
     assert "No final operational priority was admitted" not in rendered
@@ -1246,6 +1263,56 @@ def test_all_suppressed_priorities_render_as_incomplete_in_html_and_docx():
         assert "DRAFTING_CURRENT_TARGET_INVALID" not in output
 
 
+def test_some_withheld_priorities_have_a_short_review_notice_in_exports():
+    assessment = _assessment()
+    assessment["priorities"] = assessment["priorities"][:1]
+    assessment["recommendation_diagnostics"] = {
+        "admitted_count": 3, "final_priority_count": 1, "reviewer_verdict": "revise"}
+    model = build_reader_model(assessment)
+    assert model["recommendation_status"] == "partial"
+    assert len(model["recommendation_message"].split()) <= 20
+    stream = BytesIO()
+    write_reader_docx(model, stream)
+    stream.seek(0)
+    text = "\n".join(p.text for p in Document(stream).paragraphs)
+    for content in [text, render_reader_html(model)]:
+        assert "Recommendations need review" in content
+        assert model["recommendation_message"] in content
+        assert "AUTHORITY_UNSUPPORTED" not in content
+
+
+@pytest.mark.parametrize("priority_count", [1, 4])
+def test_inconclusive_review_keeps_priorities_with_warning_in_exports(priority_count):
+    assessment = _assessment()
+    assessment["priorities"] = assessment["priorities"][:priority_count]
+    assessment["facts"] = [{"claim_id": "PF-001"}]
+    assessment["analysis"] = {"residual_gaps": [
+        {"gap_id": f"RG-{number}", "statement": f"Unresolved design question {number}.",
+         "gap_type": "not_yet_specified", "project_anchor_ids": ["PF-001"]}
+        for number in range(3)
+    ]}
+    assessment["recommendation_diagnostics"] = {
+        "admitted_count": len(assessment["priorities"]),
+        "final_priority_count": len(assessment["priorities"]),
+        "reviewer_verdict": "revise",
+        "reason_codes": ["SEMANTIC_REVIEW_VERDICT_INVALID"],
+    }
+    model = build_reader_model(assessment)
+    assert len(model["summary_gaps"]) == 3
+    assert len(model["priorities"]) == len(assessment["priorities"])
+    assert model["recommendation_status"] == "partial"
+    assert "inconclusive" in model["recommendation_message"]
+    stream = BytesIO()
+    write_reader_docx(model, stream)
+    stream.seek(0)
+    word = "\n".join(paragraph.text for paragraph in Document(stream).paragraphs)
+    for content in (word, render_reader_html(model)):
+        assert "Recommendations need review" in content
+        assert model["recommendation_message"] in content
+        assert "Some proposed actions were withheld" not in content
+        assert "SEMANTIC_REVIEW_VERDICT_INVALID" not in content
+
+
 def test_no_candidate_result_keeps_neutral_complete_status():
     assessment = _assessment()
     assessment["priorities"] = []
@@ -1289,7 +1356,7 @@ def test_zero_priority_output_hides_admission_and_review_diagnostics():
         paragraph.text for paragraph in Document(stream).paragraphs
     )
 
-    message = "No operational priorities were identified in this assessment. Review the core questions and points to check below."
+    message = "No operational priorities were identified in this assessment. Review the assessment findings and points to check below."
     for output in (rendered, document_text):
         assert output.count(message) == 1
         assert "37 recommendation" not in output
@@ -1317,10 +1384,10 @@ def test_docx_writer_accepts_an_in_memory_stream():
     assert returned is stream
     stream.seek(0)
     texts = [p.text for p in Document(stream).paragraphs]
-    # The candidate safeguard leads; the overview block and Executive readout
-    # follow below it.
-    assert texts[0] == "Candidate country evidence: preview; not approved."
-    assert texts[1].startswith(SENSITIVITY_RATING_QUESTION)
+    # Draft status leads; candidate evidence and the overview remain visible.
+    assert texts[0] == DRAFT_REVIEW_NOTICE
+    assert texts[1] == "Candidate country evidence: preview; not approved."
+    assert texts[2].startswith("Scale: Very limited")
     assert HEADINGS[0] in texts
 
 
@@ -1713,3 +1780,61 @@ def test_static_html_and_docx_prefer_canonical_summary_overview():
     docx_text = "\n".join(paragraph.text for paragraph in Document(output).paragraphs)
     assert "CANONICAL_SUMMARY_MARKER" in docx_text
     assert "LEGACY_RATING_SUMMARY_MARKER" not in docx_text
+
+
+def test_action_led_reader_links_themes_and_preserves_supporting_questions():
+    assessment = _assessment()
+    assessment["core_questions"] = [{"question_id": "cq1-hazard-delivery",
+        "theme": "cq1_interaction", "question": "What affects delivery?",
+        "summary": "Full supporting analysis remains available.", "evidence_ids": ["RG-001"]}]
+    assessment["facts"] = [{"claim_id": "PF-001"}]
+    assessment["analysis"] = {"pathways": [{"pathway_id": "PW-001"}]}
+    assessment["analysis"]["residual_gaps"] = [{"gap_id": "RG-001",
+        "gap_type": "not_yet_specified", "statement": "Flood access arrangements are not yet specified.",
+        "pathway_ids": ["PW-001"], "project_anchor_ids": ["PF-001"], "evidence_ids": ["PF-001"]}]
+    assessment["priorities"] = assessment["priorities"][:1]
+    assessment["priorities"][0]["residual_gap_ids"] = ["RG-001"]
+    reader = build_reader_model(assessment)
+    assert reader["assessment_themes"][0]["title"] == "Climate risks, design and delivery"
+    assert reader["assessment_themes"][0]["findings"][0]["priority_ranks"] == [1]
+    rendered = render_reader_html(reader)
+    assert "Full supporting analysis remains available." not in rendered
+    assert reader["core_questions"][0]["summary"] == "Full supporting analysis remains available."
+    assert 'href="#climate-priority-1"' in rendered
+    assert 'data-rating-key="climate-responsiveness"' in rendered
+    assert 'data-rating-key="climate-sensitivity"' in rendered
+    assert '<details class="climate-supporting-analysis">' not in rendered
+
+
+def test_unlinked_gap_is_not_presented_as_an_accepted_recommendation():
+    assessment = _assessment()
+    assessment["facts"] = [{"claim_id": "PF-001"}]
+    assessment["analysis"] = {"pathways": [{"pathway_id": "PW-001"}]}
+    assessment["analysis"]["residual_gaps"] = [{"gap_id": "RG-new",
+        "gap_type": "not_yet_specified", "statement": "Flood access arrangements are not yet specified.",
+        "pathway_ids": ["PW-001"], "project_anchor_ids": ["PF-001"], "evidence_ids": ["PF-001"]}]
+    reader = build_reader_model(assessment)
+    assert reader["assessment_themes"][0]["findings"][0]["priority_ranks"] == []
+    assert "Confirm the evidence" in reader["assessment_themes"][0]["findings"][0]["follow_up"]
+
+
+def test_short_operational_context_is_valid_without_requiring_long_questionnaire():
+    model = build_reader_model(_assessment())
+    model["executive_readout"] = "Climate pressures affect delivery and access. " * 32
+    assert "EXECUTIVE_LENGTH_INVALID" not in validate_reader_model(model)
+
+
+@pytest.mark.parametrize("missing", [None, {}])
+def test_native_reader_only_allows_absent_optional_draft_not_malformed(missing):
+    assessment = _assessment()
+    assessment["reader_contract"] = "final-reader-v1"
+    assessment["operation_context"] = {"document_type": "AF", "instrument_type": "IPF"}
+    for priority in assessment["priorities"]:
+        priority["current_document_drafting"] = missing
+    reader = build_reader_model(assessment)
+    assert reader.get("reader_contract") == "final-reader-v1"
+    if missing is None:
+        assert "CURRENT_DRAFTING_INCOMPLETE" not in validate_reader_model(reader)
+        assert len(reader["priorities"]) == 4
+    else:
+        assert "CURRENT_DRAFTING_INCOMPLETE" in validate_reader_model(reader)
