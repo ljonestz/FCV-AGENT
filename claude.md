@@ -1,3 +1,15 @@
+### 2026-10-18 Combined candidate deployed and handover packaged
+
+Read docs/20261018_combined-pilot-preview-results.md first. Combined app/source
+cb1b38d is live on preview, quality/bank_only; blocker remains1microUSD. Original
+Quality session and labelled manual-note fixture both pass unpaid HTML/Word/packet
+checks, hashes and drift409. Full1879passed/4excluded plus final143focused tests.
+Updated23-file ITS bundle:20261018_ITS-Climate-FCV-cb1b38d-handover.zip in the
+existing output folder. No paid calls; last full paid acceptance remains856f583.
+Production1168a8f unchanged. Production activation/operating allowance pending;
+human source review and publicationfalse remain. This documentation-only follow-up
+does not change the deployed/source commit. Preserve branch/worktree/raw artifacts.
+
 ### 2026-10-18 Step-by-Step handover repairs
 
 Read docs/20261018_step-by-step-handover-integration.md. User approved release
