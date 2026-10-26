@@ -138,6 +138,8 @@ def _bounded_bank_projection(bank: dict[str, Any]) -> tuple[dict[str, Any], str]
         "evidence_records": [],
         "pathways": [],
     }
+    if projection.get("limitations"):
+        bounded["limitations"] = deepcopy(projection["limitations"])
     for field in ("sources", "evidence_records", "pathways"):
         items = projection.get(field)
         for item in items if isinstance(items, list) else []:
@@ -265,6 +267,8 @@ def merge_climate_grounding(
         "sources": sources,
         "bank_evidence_records": bank_evidence,
         "bank_pathways": bank_pathways,
+        **({"bank_limitations": deepcopy(bank["limitations"])}
+           if bank.get("limitations") else {}),
         "live_claims": live_claims,
         "prompt_context": prompt_context,
         "bank_character_count": len(bank_context),
