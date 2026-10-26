@@ -8,7 +8,9 @@ import json
 import re
 from typing import Any, Iterable
 
-from .climate_bank import ClimateBankLoad, materialize_bank_manifest
+from .climate_bank import (
+    ClimateBankLoad, expired_current_evidence_ids, materialize_bank_manifest,
+)
 
 
 CLIMATE_BANK_TARGET_ITEMS = 8
@@ -359,6 +361,8 @@ def compact_bank_packet(packet: dict[str, Any]) -> dict[str, Any]:
     }
     if packet.get("candidate_preview") is True:
         compact["candidate_preview"] = True
+    if packet.get("limitations"):
+        compact["limitations"] = list(packet["limitations"])
     return compact
 
 
@@ -417,6 +421,17 @@ def select_bank_manifest(
         and item.get("iso3") == iso3
         and item.get("pathway_id") in pathway_ids
     ]
+    expired_ids = expired_current_evidence_ids(bank, iso3)
+    evidence_records = [
+        item for item in evidence_records
+        if item.get("evidence_id") not in expired_ids
+    ]
+    pathway_records = [
+        item for item in pathway_records
+        if not expired_ids.intersection(item.get("supporting_evidence_ids", []))
+    ]
+    if expired_ids and not evidence_records and not pathway_records:
+        return _unavailable("bank_content_expired")
     evidence_index = {
         item["evidence_id"]: item
         for item in evidence_records
