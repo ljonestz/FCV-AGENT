@@ -1,0 +1,269 @@
+{
+  "title_html": "Verified Climate-FCV Assessment",
+  "review_status": "Draft - human review required. Named approval of this version must be recorded separately before sharing. This app does not record human approval.",
+  "notices": [
+    {
+      "title": "Assessment evidence is incomplete.",
+      "body": [
+        "Some analysis findings were withheld because their supporting evidence could not be validated. Fewer findings or actions do not establish an absence of risks or gaps. Review the source documents and evidence limitations before relying on this assessment."
+      ]
+    },
+    {
+      "title": "Candidate country evidence: preview; not approved.",
+      "body": []
+    }
+  ],
+  "context_note": "Preparation route: confirm the OIS date and applicable review; the upload does not establish them.",
+  "overview_notice": "Verification notes identify unresolved claims in opening, climate risks and delivery; human source review is required before sharing.",
+  "ratings": [
+    {
+      "key": "climate-sensitivity",
+      "dimension": "Climate & FCV sensitivity",
+      "question": "How well does the project recognize and address interacting climate and FCV risks?",
+      "value": "Moderate",
+      "valuenow": 3,
+      "valuemax": 5,
+      "meaning": [
+        "Main interactions are addressed, with material gaps."
+      ],
+      "why": [
+        "The design recognizes floods, droughts, displacement and fragile governance, and responds with resilient airports and airstrips, an Automated Weather System linked to early warning, drainage and access roads, and stated conflict-sensitivity principles. Footprint and ecosystem risks are also acknowledged. However, how siting reaches informal and displaced settlements, avoids shifting flood exposure, and how warnings reach residents are not yet specified. Main interactions are addressed with material gaps remaining at concept stage."
+      ],
+      "notes": [],
+      "scale_note": "Scale: Very limited / Limited / Moderate / Strong / Very strong. Unclear means evidence is insufficient."
+    },
+    {
+      "key": "climate-responsiveness",
+      "dimension": "Climate & FCV responsiveness",
+      "question": "How well does the project use relevant opportunities to generate wider peace and social dividends through its climate-related design and delivery?",
+      "value": "Moderate contribution",
+      "valuenow": 3,
+      "valuemax": 5,
+      "meaning": [
+        "Peace and social dividends often reflect going above and beyond.",
+        "The expected contribution depends on the project's scope."
+      ],
+      "why": [
+        "Several evidenced features give credible but bounded potential: resilient connectivity that supports humanitarian and trade access, coordination platforms and municipal frameworks that could build cooperation, and skills training building on a precedent that reportedly employed women, displaced people and youth. These are analytical possibilities, not demonstrated impacts. Participation roles, Phase 1 hiring provisions and Challenge Fund targeting are not yet defined, which limits how far the potential can be credited now."
+      ],
+      "notes": [
+        "Contributing to responsiveness is often a sign of going above and beyond."
+      ],
+      "scale_note": "Scale: Very limited / Limited / Moderate / Strong / Very strong contribution. Unclear means evidence is insufficient. Not expected is a scope judgment. Older Emerging results require reassessment on the five-point scale."
+    }
+  ],
+  "ratings_disclaimer": "Advisory judgments, not official WBG ratings.",
+  "overview": [
+    "The project already builds climate resilience into its core physical choices. Selected airports and airstrips are to be upgraded, with an Automated Weather System linked to national early warning services at airport facilities, and urban works are to include drainage and climate-resilient access roads. Activities are to be prioritized using agreed criteria covering safe resilient connectivity, urban service bottlenecks and sustainable job creation, and five of nine selected airstrips are named for Phase 1. Conflict sensitivity, inclusive stakeholder engagement and emergency preparedness are stated design principles. [Verify before sharing: Check PF-013 and the Pillar 1 resilient airports passage: confirm the AWS is part of upgrades at Mogadishu and regional hubs only, and that airstrip upgrades (PF-015, PF-017) do not carry an AWS link.]",
+    "The main remaining challenge is that floods and displacement meet strained municipal capacity, so who benefits from siting and sequencing matters as much as the engineering. At concept stage the cities and final activity list are still open, so much is not yet specified rather than absent. Accepted priorities would add flood-exposure and settlement criteria for urban sites, a public relay path for early warning, clearer upkeep responsibility and funding, and a defined voice for cities, member states and communities in siting and sequencing decisions."
+  ],
+  "findings": [
+    {
+      "question": "Does the project address interacting climate and FCV risks in design and delivery?",
+      "paras": [
+        "Floods and droughts in Somalia can cut transport links, and the project responds by upgrading airports and selected airstrips with an Automated Weather System linked to national early warning services. Urban works would add drainage and climate-resilient access roads where recurrent flooding displaces many people and strains municipal capacity. If these services keep running through hazards, people could keep reaching markets, humanitarian help and emergency support, which may ease pressure on institutions. [Verify before sharing: Check PF-013 and the source passage on resilient airports and airspace: confirm the AWS applies to upgrades at Mogadishu and regional hubs, not to local airstrips upgraded to ICAO Code 3C; if so, restrict the AWS wording to airport facilities.]",
+        "Fragility could also work against delivery, and design choices could add to it. Where cities and sites are still under discussion, drainage and roads could favor better-connected areas, or move water onto neighbors, which would be a form of maladaptation. This is a risk to examine, not a finding of harm. The project already expects most works within existing footprints, flags indirect off-footprint effects, and states conflict sensitivity as a principle.",
+        "Accepted priorities would help: flood-exposure and settlement criteria for urban sites, a defined route for warnings to reach residents, and clear responsibility for upkeep so that works keep functioning after construction."
+      ],
+      "related": [
+        "Priority 1",
+        "Priority 2",
+        "Priority 3"
+      ]
+    },
+    {
+      "question": "Could the project generate wider peace and social benefits, and how could these be strengthened?",
+      "paras": [
+        "The strongest contribution of the current design is dependable connectivity and coordination. Resilient airports and airstrips are meant to support humanitarian, trade and domestic access, and drainage and roads aim to keep urban services running through floods. If people experience services that keep working, confidence in public institutions could grow, and that is a possibility rather than an automatic result of infrastructure.",
+        "The design also gives institutions something to work with. Coordination platforms chaired by the Ministry of Finance, risk mapping and emergency preparedness assessments, and maintenance financing frameworks could support shared planning across agencies and cities. Construction skills training building on SURP II, which reportedly employed women, displaced people and youth, could widen livelihood gains, though Phase 1 hiring provisions are not stated.",
+        "Accepted priorities could deepen this. Defined roles for cities, federal member states and communities in siting and sequencing could strengthen legitimacy and cooperation, and clearer upkeep responsibility could keep services reliable. Without these, benefits could remain fragile given limited fiscal capacity."
+      ],
+      "related": [
+        "Priority 3",
+        "Priority 4"
+      ]
+    },
+    {
+      "question": "Will people benefit fairly, and could delivery create exclusion or harm?",
+      "paras": [
+        "People could gain safer travel, more reliable access to services and relief during floods, and construction work and skills training. Urban drainage and access roads are planned in residential and commercial zones, and airstrip upgrades are meant to improve humanitarian and economic connectivity.",
+        "The design offers some protections. Airstrip selection draws on population served and humanitarian access, and the stated principles include inclusive stakeholder engagement. SURP II offers an inclusive hiring precedent. But the cities are still under discussion, so it is unclear whether flood-exposed informal and displaced settlements will be reached or whether water could be shifted onto neighbors. Communities near later-phase airstrips may also feel left out. The Challenge Fund is only being explored and its eligibility is not described, so its reach is uncertain.",
+        "Accepted priorities would help by adding settlement-inclusive site criteria, a relay path so warnings reach exposed residents including displaced and rural groups, and a defined way for cities, member states and communities to inform siting and sequencing, including for areas whose airstrips follow later."
+      ],
+      "related": [
+        "Priority 1",
+        "Priority 2",
+        "Priority 3",
+        "Priority 4"
+      ]
+    }
+  ],
+  "priority_intro": "Drawing on the assessment findings, the analysis identifies 4 main operational priorities for strengthening climate resilience, conflict sensitivity and implementation readiness in this project. Smaller points to check follow these priorities.",
+  "priorities": [
+    {
+      "rank": "1",
+      "title": "Specify flood-exposure and settlement-inclusion criteria for selecting drainage and access road sites in the cities still under discussion",
+      "why": [
+        "The concept document already credits the right problem. Recurrent flooding is linked to displacement of hundreds of thousands in urban nodes, and Phase 1 plans robust drainage and climate-resilient access roads in and around urban areas, including residential and commercial zones. It also says most works fall within existing footprints while connector roads and flood mitigation may have indirect effects beyond the immediate footprint. What is not yet stated is how drainage and road locations will be chosen within the cities, which are themselves still under discussion."
+      ],
+      "act": [
+        "This matters because the same investment can lower flood exposure for one neighborhood and worsen it for another, or favor commercial zones over informal settlements where displaced people live. Unplanned or poorly placed drainage can move water onto neighbors, which would undercut trust in the works. These are design questions the team can settle while the list of cities is still open, rather than risks that have been confirmed.",
+        "Revise the urban resilience and connectivity description in the concept description of the Project Concept Note to add a short set of selection criteria. The criteria should cover flood exposure, the type of settlement served including informal areas, displacement pressure, and a check on whether a drainage or road option would redirect water onto adjacent areas. Present these as the basis for comparing candidate sites, alongside the agreed prioritization criteria already described, not as a replacement for them.",
+        "Because the cities are not yet confirmed, treat this as a criterion to apply once candidate sites in Garowe, Baidoa, Kismayo or Mogadishu are identified, and record in the implementation arrangements who compares options and how the results are documented. The task team can propose that the implementing agency responsible for urban works carries out the comparison with the city administrations, without creating a new formal role.",
+        "Keep the scope narrow. Selected airstrips for this phase stay as named, and the criteria apply only to the urban drainage and road sites that remain open. The intended output is a clearer basis for deciding where flood works go, so the benefits and the indirect effects of Phase 1 are visible to the people living near them."
+      ],
+      "practical": [
+        "The cities and specific drainage and road sites remain under discussion, so it is not yet known which settlements are flood-exposed or how siting would affect neighbors.",
+        "The criteria are proposals for preparation, not an agreed commitment, and should apply only to urban sites still being chosen; the airstrip set for this phase is already named and should not be reopened here."
+      ],
+      "followup": "Agree a simple joint site-screening step with the city administrations once the cities are confirmed, comparing candidate drainage and road sites against these criteria and recording the choices. Use once the list of cities is confirmed and candidate sites in Garowe, Baidoa, Kismayo or Mogadishu are identified.",
+      "lead": "Task team, working with the implementing agency responsible for urban works",
+      "confidence": "medium",
+      "drafting_for": "PID - concept description",
+      "drafting": "For the urban resilience and connectivity activity, the team could consider, subject to its agreement, setting out the criteria used to compare candidate drainage and climate-resilient access road sites once the cities under discussion are confirmed. Proposed criteria could cover flood exposure, the type of settlement served including informal areas, displacement pressure, and a check on whether an option would redirect water onto neighboring areas. These would complement the agreed prioritization criteria already described. They would apply only to urban sites that remain open, and would not reopen the airstrips already named for this phase. Selected sites could be recorded together with the reasons for choosing them.",
+      "drafting_title": "Suggested drafting for the current document"
+    },
+    {
+      "rank": "2",
+      "title": "Add a public-reach arrangement for early warning linked to the airport weather system and urban drainage works",
+      "why": [
+        "The project already builds early warning into its design. The airport upgrades include an Automated Weather System linked to national early warning services, and the urban works are to be integrated with national early warning and response mechanisms. The project also states that it integrates climate adaptation and disaster risk reduction, including early warning systems. These links give the infrastructure a route into national systems, which is a sound starting point."
+      ],
+      "act": [
+        "What is not described is how that information reaches the people who need to act on it. The links are institutional, so it is not yet clear whether exposed residents, including displaced households and rural communities near airstrips, would receive timely and usable warnings. Where flooding is recurrent and disasters displace large numbers of people, a warning that stays with national services does little to change household decisions or reduce the strain on municipal services.",
+        "Revise the airport and urban resilience activities in the concept description of the Project Concept Note to say how outputs from the weather system and urban works are expected to be relayed locally. The edit should name the kinds of recipients to be reached, such as residents of flood-exposed neighborhoods and displaced settlements, and indicate which agency is proposed to lead the local relay, drawing on the disaster management agencies and city administrations already named in the coordination design.",
+        "This is a proposed arrangement and should be described as such, since the source does not show an existing relay mechanism. The team can add, in the implementation arrangements, a short note on how the relay would be maintained alongside the operations and maintenance frameworks planned under the third pillar. If useful, the arrangement can be tried with a few communities once urban sites are identified.",
+        "The purpose is to make the early warning investment count for the people living with flood risk. Settling who relays warnings and to whom, early in preparation, lets the design reflect it rather than leaving it to later chance."
+      ],
+      "practical": [
+        "The document describes institutional links to national early warning services but does not show whether, or through which channels, warnings reach households, so public reach remains unconfirmed.",
+        "This is a proposal to define during preparation, not an existing commitment, and it should build on the national services already referenced rather than duplicate them."
+      ],
+      "followup": "Test the proposed relay with a few communities, including displaced settlements, and adjust channels and responsibilities in light of what they report. Use once urban sites are identified and the national early warning services involved have confirmed the form of the outputs they can share.",
+      "lead": "Task team, with the implementing agencies and the disaster management agencies named in the coordination design",
+      "confidence": "low",
+      "drafting_for": "PID - concept description",
+      "drafting": "For the airport and urban resilience activities, the team could consider, subject to its agreement, describing how outputs from the Automated Weather System and the urban drainage works, linked to national early warning services, might be relayed locally to exposed residents. The description could name the intended recipients as residents of flood-exposed urban neighborhoods and displaced settlements in the cities still under discussion, and indicate which agency might lead the local relay, drawing on the disaster management agencies and city administrations already referenced in the coordination design. Whether outputs from the weather system are also meant to reach communities near regional airstrips could be clarified during preparation. This would be a proposed arrangement, building on the national services already referenced rather than duplicating them.",
+      "drafting_title": "Suggested drafting for the current document"
+    },
+    {
+      "rank": "3",
+      "title": "Define who funds and carries out upkeep of drainage, roads and airstrips across federal, state and municipal levels",
+      "why": [
+        "The project already recognizes that infrastructure fails when it is not maintained. The third pillar develops legal, governance and financial frameworks to leverage sector revenues for sustainable operations and maintenance, embedding climate and disaster risk considerations. It also prepares a roadmap for a Somalia Airport Authority to clarify mandates, ownership and accountability, and supports overflight fee reform that the document estimates could generate additional annual revenue."
+      ],
+      "act": [
+        "What remains open is the practical question of who does the upkeep and who pays for it once construction ends. Drainage and access roads in cities, and airstrips in other locations, may be the responsibility of different levels of government, and the document does not say how funding sources and duties are divided among federal, state and municipal actors. If upkeep lapses, drainage can fail in the next flood and access can be lost, which would weaken confidence in the services the project is meant to strengthen.",
+        "Revise the operations and maintenance activity in the concept description of the Project Concept Note to say that the financing frameworks will identify, for each main asset type, the level of government responsible and the funding source that supports upkeep. This should be written as a design question the framework resolves, linked to the planned municipal frameworks and the Airport Authority roadmap, not as a commitment the project has already made.",
+        "The task team can add a short note in the implementation arrangements on how the Ministry of Finance, which chairs the coordination platform, and the implementing agencies would settle these responsibilities. An asset-by-asset responsibility table is a practical way to do this once the urban sites and the airstrips for this phase are confirmed, and it can feed both the design work and the Airport Authority roadmap.",
+        "The benefit is continuity. Settling upkeep responsibility early helps ensure the resilient access the project builds remains usable through repeated floods and droughts."
+      ],
+      "practical": [
+        "The funding sources and the split of upkeep responsibility among federal, state and municipal actors are not specified, and the Airport Authority exists only as a planned roadmap.",
+        "This clarifies a planned framework rather than adding a new one, and responsibilities should be framed as proposals until the relevant agencies agree them."
+      ],
+      "followup": "Prepare a simple upkeep responsibility table for each asset type, agreed with the relevant agencies, to inform design and the Airport Authority roadmap. Use once the urban sites and the airstrips for this phase are confirmed and the roadmap for the Somalia Airport Authority has taken shape.",
+      "lead": "Task team, with the implementing agencies and the Ministry of Finance as chair of the coordination platform",
+      "confidence": "medium",
+      "drafting_for": "PID - implementation arrangements",
+      "drafting": "For the operations and maintenance activity, the team could consider, subject to its agreement, stating that the financing frameworks would identify, for drainage, access roads and airstrips, which level of government carries out upkeep and which funding sources support it. This would be framed as a design question for the frameworks to resolve, linked to the planned municipal frameworks and to the roadmap for a Somalia Airport Authority. The Ministry of Finance, which is described as chairing the coordination platforms, and the implementing agencies could be consulted in settling these responsibilities once the urban sites and the airstrips for this phase are confirmed.",
+      "drafting_title": "Suggested drafting for the current document"
+    },
+    {
+      "rank": "4",
+      "title": "Specify how city, state and community voices feed siting and sequencing decisions in the coordination platforms",
+      "why": [
+        "The project already sets up shared planning. Pillar 2 creates high-level coordination and technical platforms chaired by the Ministry of Finance, aligned with sectoral mechanisms including disaster management agencies and cities, and economic basin assessments cover risk mapping and emergency preparedness. The design also states that it incorporates conflict sensitivity and inclusive stakeholder engagement, and the airstrip selection used stated technical and socio-economic criteria, naming five of nine airstrips for this phase."
+      ],
+      "act": [
+        "What the concept document does not yet describe is how the voices of cities, federal member states and communities enter decisions on siting and sequencing. In a fragmented governance setting, who is heard on where works go and when can shape whether the program is seen as fair. This matters especially for areas whose airstrips come in later phases, who may read sequencing as exclusion unless they are informed about the reasons and the next steps.",
+        "Revise the implementation arrangements in the Project Concept Note to describe how the coordination platforms would take in views from cities, federal member states and communities near the five selected airstrips and the urban works. The edit should say what is proposed, such as a defined channel for consultation on siting and sequencing, without creating new formal roles, and should add a short statement on how areas with later-phase airstrips will be informed about the criteria used and what to expect.",
+        "Keep the scope to the open decisions. The five airstrips for this phase are already selected, so participation there concerns design, access and implementation rather than reselecting sites, while the urban siting questions remain open until the cities are confirmed. The stakeholder engagement already described by the project can serve as the base for these arrangements.",
+        "The aim is to turn a stated principle of inclusion into a practical arrangement the team can describe, so shared planning builds legitimacy and supports cooperation on climate-risk decisions."
+      ],
+      "practical": [
+        "The platforms are described by their chair and aligned agencies, and consultation arrangements are not specified, so it is unclear how participation will work or how later-phase areas will be informed.",
+        "Arrangements should be framed as proposals for preparation and should not reopen the five airstrips already named for this phase or imply that later phases are assured."
+      ],
+      "followup": "",
+      "lead": "Task team, with the Ministry of Finance as chair of the coordination platform",
+      "confidence": "medium",
+      "drafting_for": "PID - implementation arrangements",
+      "drafting": "For the high-level coordination and technical platforms chaired by the Ministry of Finance, the team could consider, subject to its agreement, describing how cities, federal member states and communities near the selected airstrips and the urban works might be consulted on design, access and sequencing. A proposed channel could build on the inclusive stakeholder engagement already stated in the project design. The description could also indicate how areas whose airstrips follow in later phases would be informed about the criteria used and what to expect. This would not reopen the five airstrips named for this phase, and it would not imply that later phases are assured.",
+      "drafting_title": "Suggested drafting for the current document"
+    }
+  ],
+  "checks": {
+    "heading": "Points to check before the applicable review",
+    "description": "Smaller checks to resolve alongside the main operational priorities.",
+    "fold_title": "Checks for the project team",
+    "band_title": "Climate decision preparation",
+    "band_text": "Points to check at the next applicable review.",
+    "intro": "These are smaller things for the team to confirm or consider at the applicable review. They are not the main recommendations above, and none is a reason to stop the project - think of them as a checklist.",
+    "groups": [
+      {
+        "title": "Smaller climate and fragility points to consider",
+        "intro": "These are smaller, climate- and fragility-specific points that were not large enough to become a recommendation above, but are still worth a look.",
+        "items": [
+          {
+            "num": "01",
+            "title": "Define Phase 1 hiring and skills-training provisions building on the earlier precedent.",
+            "why": "Without stated provisions, construction livelihoods may not reach displaced people, women or youth in the project cities.",
+            "how": "Review bidding and training design for local hiring and inclusion requirements once prepared."
+          }
+        ]
+      },
+      {
+        "title": "Document points to confirm",
+        "intro": "",
+        "items": [
+          {
+            "num": "01",
+            "title": "\"The final list of activities is under discussion and will be established during preparation\" and the urban city list \"is under discussion\".",
+            "why": "Climate screening of specific sites and activities cannot be completed while the activity and site lists remain open.",
+            "how": "Check the current preparation documents for the finalized activity and site lists before relying on screening conclusions."
+          },
+          {
+            "num": "02",
+            "title": "The proposed results indicators on climate-resilience beneficiaries and improved access to sustainable transport do not state disaggregation or any measure of how evenly benefits are distributed.",
+            "why": "Without definitions, it will be hard to show whether displaced people, women, youth and rural users benefit from Phase 1.",
+            "how": "Check whether the results framework will define these indicators and any disaggregation before appraisal materials are finalized."
+          },
+          {
+            "num": "03",
+            "title": "The Challenge Fund and community-based enterprise frameworks are described only as being explored, with no stated eligibility or targeting.",
+            "why": "Whether climate-exposed groups can take part and receive usable support cannot be judged until eligibility and targeting are described.",
+            "how": "Confirm during preparation whether eligibility and targeting will be defined if the Challenge Fund proceeds beyond exploration."
+          }
+        ]
+      }
+    ]
+  },
+  "guidance": {
+    "heading": "Relevant WBG guidance for this project",
+    "description": "Selected WBG resources to help the team take the findings forward.",
+    "fold_title": "Where the team can go for more detailed follow-up",
+    "intro": "These sources are selected because they speak directly to the current findings. This is not a standard reading list.",
+    "items": [
+      {
+        "title": "Maximizing the Peace and Social Dividends of Climate Action",
+        "url": "https://www.worldbank.org/en/topic/fragilityconflictviolence/publication/maximizing-the-peace-and-social-dividends-of-climate-action",
+        "use": "Use this source to identify how climate action can strengthen peace and social outcomes, and where project design can maximize those dividends."
+      },
+      {
+        "title": "FCV-Sensitive Climate Action Framework",
+        "url": "https://www.worldbank.org/en/topic/fragilityconflictviolence/publication/framework-for-promoting-fcv-sensitive-climate-action",
+        "use": "Use this source to stress-test whether climate action is conflict-sensitive, avoids harm and remains deliverable in fragile settings."
+      },
+      {
+        "title": "Defueling Conflict",
+        "url": "https://www.worldbank.org/en/topic/environment/publication/defueling-conflict-environment-and-natural-resource-management-as-a-pathway-to-peace",
+        "use": "Use this source to assess how environmental and natural-resource governance can reduce conflict risks and create incentives for cooperation."
+      }
+    ]
+  },
+  "limitations": [
+    "No live web evidence was included. Check current-context claims against current sources before sharing. The document is a concept-stage PID dated 07-Feb-2026; the final activity list and cities are under discussion, so site, beneficiary and targeting details are not specified. Country evidence is a preview, not approved, and supports only plausible contextual pathways, not project site conditions or gaps. Estimated appraisal and approval dates are not proof of current status; the Substantial risk classification does not describe specific E&S instruments. SURP II results and the 2023 flood loss figure are precedent or country-level evidence, not Phase 1 outcomes or current site conditions."
+  ],
+  "closing": "This automated screening supports task-team judgment and does not constitute an institutional adequacy or compliance decision."
+}
