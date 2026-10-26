@@ -1,3 +1,15 @@
+### 2026-10-26 Approved country bank integrated on Word design base; not deployed
+
+Branch `feat/country-bank-integration-20261026` builds on Word design commit
+`3ab33b5`, with Word files unchanged. Pins bank `cccf251`: approved schema 1.1,
+24 countries, 272 sources, 531 evidence records, 168 pathways. Carries over the
+prepared approved-schema/expiry support from `3ee149e`, absent from the Word base.
+Bank: 316 passed; app: 1,941 passed, two skipped, four known browser hangs deselected;
+all 24 country selections/materializations passed. No merge, deployment, paid call,
+hosted configuration or ITS change. Five country deadlines expire after 10 November 2026.
+See `docs/20261026_approved-country-bank-integration.md` for approval provenance,
+exact pins, checks, limitations and future deployment requirements. Preserve branches/worktrees.
+
 ### 2026-10-18 Climate graceful-degradation fixes deployed to production
 
 Honduras IPF PAD (P181166) via the Climate lens produced zero recommendations and a
