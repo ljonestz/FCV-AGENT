@@ -205,7 +205,14 @@ def load_climate_bank(path: str | Path | None = None) -> ClimateBankLoad:
         and release.get("candidate") is True
         and preview_opt_in
     )
-    if schema_version != CLIMATE_BANK_SCHEMA_VERSION and not candidate_preview:
+    approved_release = (
+        schema_version == CLIMATE_BANK_SCHEMA_VERSION
+        and release.get("candidate", False) is False
+    ) or (
+        schema_version == CLIMATE_BANK_PREVIEW_SCHEMA_VERSION
+        and release.get("candidate") is False
+    )
+    if not approved_release and not candidate_preview:
         return _unavailable("bank_incompatible")
     required = (
         "content_version",
@@ -313,15 +320,17 @@ def _valid_evidence_record(
     iso3: str,
     *,
     allow_reviewed: bool = False,
+    schema_version: str = CLIMATE_BANK_SCHEMA_VERSION,
 ) -> bool:
     scenario = record.get("scenario")
+    extended_schema = schema_version == CLIMATE_BANK_PREVIEW_SCHEMA_VERSION
     expected_fields = (
-        _EVIDENCE_FIELDS_1_1 if allow_reviewed else _EVIDENCE_FIELDS
+        _EVIDENCE_FIELDS_1_1 if extended_schema else _EVIDENCE_FIELDS
     )
-    preview_fields_valid = True
-    if allow_reviewed:
+    schema_fields_valid = True
+    if extended_schema:
         ecological_level = record.get("ecological_level")
-        preview_fields_valid = (
+        schema_fields_valid = (
             record.get("evidence_class") in _EVIDENCE_CLASSES
             and record.get("administrative_level") in _ADMINISTRATIVE_LEVELS
             and (ecological_level is None or _nonempty_string(ecological_level))
@@ -331,7 +340,7 @@ def _valid_evidence_record(
     return (
         set(record) == expected_fields
         and _approved_record(record, iso3, allow_reviewed=allow_reviewed)
-        and preview_fields_valid
+        and schema_fields_valid
         and record["evidence_id"].startswith(f"{iso3}-E-")
         and _nonempty_string(record.get("statement"))
         and _nonempty_string(record.get("compact_statement"))
@@ -538,6 +547,24 @@ def _valid_pathway_refs(
     return True
 
 
+def expired_current_evidence_ids(bank: ClimateBankLoad, iso3: str) -> set[str]:
+    """Identify canonical current records whose review window has elapsed."""
+
+    if bank.release.get("schema_version") != CLIMATE_BANK_PREVIEW_SCHEMA_VERSION:
+        return set()
+    today = date.today()
+    return {
+        record["evidence_id"]
+        for record in bank.release.get("evidence_records", [])
+        if isinstance(record, dict)
+        and record.get("iso3") == iso3
+        and isinstance(record.get("evidence_id"), str)
+        and record.get("refresh_tier") == "current"
+        and _valid_date(record.get("review_due"))
+        and date.fromisoformat(record["review_due"]) < today
+    }
+
+
 def materialize_bank_manifest(
     bank: ClimateBankLoad,
     manifest: Any,
@@ -554,7 +581,7 @@ def materialize_bank_manifest(
     if not isinstance(manifest, dict):
         return _packet_unavailable("bank_manifest_invalid")
     if manifest.get('bank_status') == 'unavailable' and manifest.get('warning_code') in {
-        'bank_country_unavailable', 'bank_scope_unsupported',
+        'bank_country_unavailable', 'bank_scope_unsupported', 'bank_content_expired',
     }:
         # An explicitly withheld country/scope selection has no IDs to rebuild.
         # Preserve that reason instead of misreporting a malformed manifest.
@@ -652,13 +679,18 @@ def materialize_bank_manifest(
         if (
             evidence is None
             or not _valid_evidence_record(
-                evidence, iso3, allow_reviewed=bank.candidate_preview
+                evidence, iso3, allow_reviewed=bank.candidate_preview,
+                schema_version=release["schema_version"],
             )
             or not _valid_evidence_refs(evidence, source_index)
         ):
             return _packet_unavailable("bank_manifest_invalid")
         selected_evidence.append(evidence)
         source_ids.update(ref["source_id"] for ref in evidence["source_refs"])
+
+    expired_ids = expired_current_evidence_ids(bank, iso3)
+    if supporting_ids.intersection(expired_ids):
+        return _packet_unavailable("bank_content_expired")
 
     selected_sources: list[dict[str, Any]] = []
     for source_id in sorted(source_ids):
@@ -682,4 +714,9 @@ def materialize_bank_manifest(
     }
     if bank.candidate_preview:
         packet["candidate_preview"] = True
+    if expired_ids.intersection(country_evidence_ids):
+        packet["limitations"] = [
+            "Current bank evidence past its review date, and pathways that "
+            "depend on it, were omitted. Check current conditions separately."
+        ]
     return packet
