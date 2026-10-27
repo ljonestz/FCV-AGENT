@@ -1,3 +1,24 @@
+### 2026-10-27 Smoke completed; bounded research fix verified before Quality
+
+Continue from `docs/20261027_global-country-bank-deployment-acceptance.md`.
+One Climate/Express Smoke completed on ac1eecf, assessment
+74ee9882-e5dc-4a26-bf95-e8bca4635cf2: all three stages, eight native calls,
+three priorities, approved global-bank provenance. Review remained revise with
+visible limits. Both live search calls returned/settled, but Haiku's adaptive
+thinking exhausted the bounded notes output; source admission safely fell back
+to bank-only. This is structural acceptance, not analytical certification.
+
+Haiku core/dedicated web research now explicitly disables thinking, including
+continuations; Sonnet options and all token/search/retry caps stay unchanged.
+Three regressions failed before the fix; 100 focused tests and a final full
+offline suite passed: 2,051 passed, two skipped, four documented hangs excluded
+(253.64s). Smoke's reconstructed conservative debit is 834,866 microUSD with
+no unresolved holds. The single conditional Quality phase can use at most
+14,165,134 microUSD in a fresh ledger. Never reissue the original USD15 or repeat
+Smoke. No Quality upload yet. Push/deploy the fix, verify SHA/modes, consume the
+Quality lock, capture actual evidence, then restore the blocker. Production and
+both draft PR statuses remain protected; raw evidence stays ignored.
+
 ### 2026-10-27 Controlled global-bank test deployment and fresh allowance
 
 Read `docs/20261027_global-country-bank-deployment-acceptance.md` first.

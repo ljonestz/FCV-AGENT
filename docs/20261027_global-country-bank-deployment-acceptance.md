@@ -16,8 +16,8 @@ No merge or production deployment is authorized. Both PRs remain draft.
   `37dd1e5e842285189f970abbc5b163bcd2e34c89`, live 27 October at 16:51:52 UTC.
 - Bank: immutable `daf594f8ca899a44bcea4e057a85b0d547ed9c33`, qualified
   routine-use release `2026.10.27.approved-global-country-bank`, 146 countries.
-- Initial health: build `37dd1e5e8422`, live research, Smoke. Spending remains
-  blocked at one microUSD while the web-search guard is verified.
+- Initial health: build `37dd1e5e8422`, live research, Smoke. Spending was
+  blocked at one microUSD while the web-search guard was verified.
 - Production health remains `6f3d5e65e213`, bank-only, Quality. No production
   setting or deployment was changed.
 - A settings update automatically rebuilt the old test-service commit first
@@ -49,8 +49,8 @@ Quality assessment and reviewer models remain Sonnet. Sonnet remains the normal
 research default. This test therefore cannot establish Sonnet web-search quality.
 The operator setting is `FCV_RESEARCH_MODEL=claude-haiku-5-5`; only that exact ID
 or `claude-sonnet-5-5` is accepted. `/health` exposes the effective nonsecret model
-selection. Haiku omits Sonnet's `between_tools` thinking option, including on a
-paused-turn continuation.
+selection. Haiku explicitly disables thinking on both searches, including on a
+paused-turn continuation; Sonnet retains its existing options.
 
 Each web request reserves ten full one-million-token input contexts at Haiku's
 highest published tier, ten output maxima at that tier, and the permitted search
@@ -108,4 +108,37 @@ Fresh verification and test results will be recorded below when available.
   permissions. This includes the final caching regression and research settings.
 - Immutable gitlink remains `daf594f8ca899a44bcea4e057a85b0d547ed9c33`.
   Word design/export files match the preserved design ancestor; both required
-  design/integration commits remain ancestors. No submission lock exists yet.
+  design/integration commits remain ancestors. These checks preceded the first
+  Smoke upload and its exclusive start lock.
+
+## Smoke result and correction before Quality
+
+Smoke ran once on `ac1eecfca71e1ffd0a43f8aabfdc7d903049c215`, deployment
+`dep-dbgep0hsrm7s73bnjssg`, assessment
+`74ee9882-e5dc-4a26-bf95-e8bca4635cf2`. Express returned HTTP200 with all three
+stage completions and eight returned native calls, in 157 seconds. It retained
+three priorities. The reader/recommendation review remained revise, with explicit
+unresolved-fact, invalid-review and readiness limitations; this is structural
+pipeline acceptance, not analytical acceptance or publication approval.
+
+The runtime selected Somalia evidence `SOM-E-009`, `SOM-E-106` and pathway
+`SOM-P-101` from `2026.10.27.approved-global-country-bank`. Both live web requests
+returned and settled. Dedicated research exhausted its output in Haiku's default
+adaptive thinking: zero prose/citations, 16 candidates without quoted passages.
+The source gate admitted none and truthfully reported bank-only fallback.
+
+The correction explicitly disables Haiku thinking for both core and dedicated
+web research, including continuations. It changes no token/search/retry/stage cap,
+and preserves all Sonnet defaults. Three regression assertions failed before the
+fix; the focused research suites then passed 100 tests. The final offline suite
+passed 2,051 tests, with two skipped and four documented Chromium hangs excluded
+(253.64 seconds). Smoke is not repeated.
+
+The reconstructed conservative debit, including all upload helpers and native
+calls, is 834,866 microUSD. Both web holds settled; no hold remains unresolved.
+Peak reservation was 10,250,256 microUSD, below 15,000,000. The single Quality
+phase may therefore allocate at most 14,165,134 microUSD in a fresh phase ledger.
+These are budget reservations/charges at conservative rates, not invoice amounts.
+Raw response, state, browser HTML, all 38 Render log entries and exclusive start
+lock are retained under the ignored output folder. No worker/OOM/gateway error
+was observed in that complete run window.

@@ -7915,17 +7915,21 @@ def run_fcv_web_research(
         country, sector, project_profile, max_uses=max_uses, as_of=researched_at,
     )
     try:
-        resp = api_client.beta.messages.create(
-            model=_effective_fcv_research_model(),
-            max_tokens=max_tokens,
-            tools=[{
+        research_model = _effective_fcv_research_model()
+        request_options = {
+            "model": research_model,
+            "max_tokens": max_tokens,
+            "tools": [{
                 "type": "web_search_20250305",
                 "name": "web_search",
                 "max_uses": max_uses,
             }],
-            messages=[{"role": "user", "content": prompt}],
-            betas=["web-search-2025-03-05"]
-        )
+            "messages": [{"role": "user", "content": prompt}],
+            "betas": ["web-search-2025-03-05"],
+        }
+        if research_model == MODEL_LIGHT:
+            request_options["thinking"] = {"type": "disabled"}
+        resp = api_client.beta.messages.create(**request_options)
         result = normalize_core_research_response(
             resp.content, country, researched_at=researched_at,
         )
@@ -8155,8 +8159,10 @@ def run_climate_web_research(
             }
             if research_model == MODEL_STANDARD:
                 # Reserve output for cited notes instead of default up-front thinking.
-                # Haiku 5.5 rejects between_tools; its adaptive default is compatible.
                 request_options["thinking"] = {"type": "between_tools"}
+            elif research_model == MODEL_LIGHT:
+                # Haiku's adaptive default can consume the bounded notes budget.
+                request_options["thinking"] = {"type": "disabled"}
             provider_content = []
             response = api_client.beta.messages.create(
                 **request_options,

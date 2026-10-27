@@ -65,11 +65,15 @@ def _patch_climate_acceptance(monkeypatch):
 
 
 @pytest.mark.parametrize(
-    ("configured_model", "expected_model"),
-    [(None, SONNET), (SONNET, SONNET), (HAIKU, HAIKU)],
+    ("configured_model", "expected_model", "thinking"),
+    [
+        (None, SONNET, None),
+        (SONNET, SONNET, None),
+        (HAIKU, HAIKU, {"type": "disabled"}),
+    ],
 )
 def test_core_research_uses_default_or_exact_override(
-    monkeypatch, configured_model, expected_model,
+    monkeypatch, configured_model, expected_model, thinking,
 ):
     if configured_model is None:
         monkeypatch.delenv("FCV_RESEARCH_MODEL", raising=False)
@@ -86,7 +90,10 @@ def test_core_research_uses_default_or_exact_override(
 
     assert len(client.calls) == 1
     assert client.calls[0]["model"] == expected_model
-    assert "thinking" not in client.calls[0]
+    if thinking is None:
+        assert "thinking" not in client.calls[0]
+    else:
+        assert client.calls[0]["thinking"] == thinking
 
 
 @pytest.mark.parametrize(
@@ -94,7 +101,7 @@ def test_core_research_uses_default_or_exact_override(
     [
         (None, SONNET, {"type": "between_tools"}),
         (SONNET, SONNET, {"type": "between_tools"}),
-        (HAIKU, HAIKU, None),
+        (HAIKU, HAIKU, {"type": "disabled"}),
     ],
 )
 def test_climate_research_uses_compatible_options_on_primary_and_continuation(
@@ -117,10 +124,7 @@ def test_climate_research_uses_compatible_options_on_primary_and_continuation(
     assert len(client.calls) == 2
     for call in client.calls:
         assert call["model"] == expected_model
-        if thinking is None:
-            assert "thinking" not in call
-        else:
-            assert call["thinking"] == thinking
+        assert call.get("thinking") == thinking
     assert client.calls[1]["messages"] == [
         client.calls[0]["messages"][0],
         {"role": "assistant", "content": paused_content},
@@ -186,7 +190,7 @@ def test_research_override_does_not_change_climate_structuring_model(monkeypatch
     assert len(client.calls) == 2
     search_call, structuring_call = client.calls
     assert search_call["model"] == HAIKU
-    assert "thinking" not in search_call
+    assert search_call["thinking"] == {"type": "disabled"}
     assert structuring_call["model"] == app_module.MODEL_LIGHT
     assert structuring_call["thinking"] == {"type": "disabled"}
 
