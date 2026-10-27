@@ -1,3 +1,25 @@
+### 2026-10-27 Controlled global-bank test deployment and fresh allowance
+
+Read `docs/20261027_global-country-bank-deployment-acceptance.md` first.
+Lindsey authorized the isolated test deployment in FCV LLM Services, then a fresh
+combined USD15 for exactly one Smoke and conditional one Quality run on the full
+standard Somalia PID, including helpers/search/retries/reviews. Old allowances
+remain consumed. No paid call has started; the test service still has its
+one-microUSD blocker. No production deployment or merge is authorized.
+
+The reviewed extension permits explicit budgeted basic web search on Haiku only;
+legacy text reservations remain nonrefundable. Per-request web holds use the
+documented current ten-iteration default and settle only validated usage. Preserve
+all failures/unresolved holds and subtract consumed amounts before any phase
+redeploy; never reissue USD15. `FCV_RESEARCH_MODEL` changes only core/Climate web
+research; defaults remain Sonnet and Quality assessment/review remain Sonnet.
+Both tests use Climate-FCV plus Express. Fresh offline suite: 2,051 passed,
+two skipped, four documented Chromium hangs excluded (292.38s). Guard focused:
+69 passed; research focused: 100 passed. Bank/Word ancestry and pin preserved.
+Next: push, deploy the reviewed commit, verify modes, consume unique local locks,
+run authorized tests, capture actual source/export evidence, then restore blocker.
+Keep both draft PRs and worktrees. Further raw artifacts stay ignored.
+
 ### 2026-10-27 Qualified routine bank activation and supplementary research
 
 Continue from `docs/20261027_global-country-bank-routine-activation.md`.

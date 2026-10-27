@@ -152,12 +152,28 @@ MAX_UPLOAD_MB = max(1, int(os.environ.get("MAX_UPLOAD_MB", "100")))
 
 # Model tiers (Claude 5.5 generation, Oct 2026). The reasoning-heavy core Stage 2
 # (FCV assessment) and Stage 3 (recommendations) run on Opus; Stage 1 extraction
-# and every secondary call run on the fast, low-cost Sonnet; helper calls use
-# Haiku. The climate/sector-lens module keeps its own model constants in
+# and secondary calls default to the fast, low-cost Sonnet; helper calls use
+# Haiku. FCV_RESEARCH_MODEL can override only the core and Climate web searches.
+# The climate/sector-lens module keeps its own model constants in
 # sector_lenses/climate_runtime_config.py (bumped to the same generation).
 MODEL_REASONING = "claude-opus-5-5"    # core Stage 2 + Stage 3
 MODEL_STANDARD = "claude-sonnet-5-5"   # Stage 1, lens recovery, web research, Go Deeper, follow-on, priority points
 MODEL_LIGHT = "claude-haiku-5-5"       # country/sector extraction, condensation, distillation helpers
+
+
+def _effective_fcv_research_model() -> str:
+    """Return the explicitly configured research model or the Sonnet default."""
+    configured = os.environ.get("FCV_RESEARCH_MODEL")
+    if configured is None:
+        return MODEL_STANDARD
+    if configured in {MODEL_STANDARD, MODEL_LIGHT}:
+        return configured
+    raise ValueError(
+        "FCV_RESEARCH_MODEL must be unset or exactly "
+        f"{MODEL_STANDARD!r} or {MODEL_LIGHT!r}."
+    )
+
+
 STREAM_KEEPALIVE_SECONDS = 20
 # Backend per-stage wall-clock caps (seconds). Raised for Stage 2/3 in v9.16:
 # PforR (added in v9.8, after these caps were set in v9.4) produces the largest
@@ -7900,7 +7916,7 @@ def run_fcv_web_research(
     )
     try:
         resp = api_client.beta.messages.create(
-            model=MODEL_STANDARD,
+            model=_effective_fcv_research_model(),
             max_tokens=max_tokens,
             tools=[{
                 "type": "web_search_20250305",
@@ -8090,6 +8106,15 @@ def run_climate_web_research(
         )
         return bundle
 
+    try:
+        research_model = _effective_fcv_research_model()
+    except ValueError as exc:
+        return finish(normalize_climate_research_bundle({
+            "status": "failed",
+            "attempts": 0,
+            "failure_reason": str(exc),
+        }))
+
     def passage_count(
         diagnostics: Any,
         key: str,
@@ -8118,9 +8143,7 @@ def run_climate_web_research(
         try:
             messages = [{"role": "user", "content": prompt}]
             request_options = {
-                "model": MODEL_STANDARD,
-                # Reserve output for cited notes instead of default up-front thinking.
-                "thinking": {"type": "between_tools"},
+                "model": research_model,
                 "max_tokens": 3000,
                 "tools": [{
                     "type": "web_search_20250305",
@@ -8130,6 +8153,10 @@ def run_climate_web_research(
                 }],
                 "betas": ["web-search-2025-03-05"],
             }
+            if research_model == MODEL_STANDARD:
+                # Reserve output for cited notes instead of default up-front thinking.
+                # Haiku 5.5 rejects between_tools; its adaptive default is compatible.
+                request_options["thinking"] = {"type": "between_tools"}
             provider_content = []
             response = api_client.beta.messages.create(
                 **request_options,
@@ -9124,12 +9151,17 @@ BUILD_MARKER = os.environ.get("RENDER_GIT_COMMIT", "")[:12] or "dev"
 @app.route('/health')
 def health():
     verified_runtime = load_verified_climate_runtime()
+    try:
+        research_model = _effective_fcv_research_model()
+    except ValueError:
+        research_model = "invalid"
     return jsonify({
         'status': 'ok',
         'build': BUILD_MARKER,
         'stage1_research_budget_s': STAGE1_RESEARCH_BUDGET_SECONDS,
         'climate_verified_run_mode': verified_runtime.mode,
         'climate_research_mode': os.environ.get('CLIMATE_RESEARCH_MODE', 'live').strip().lower(),
+        'fcv_research_model': research_model,
     })
 
 
