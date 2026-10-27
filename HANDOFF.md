@@ -1,45 +1,37 @@
-### 2026-10-27 Smoke completed; bounded research fix verified before Quality
+### 2026-10-27 Controlled test deployment completed; human review remains
 
 Continue from `docs/20261027_global-country-bank-deployment-acceptance.md`.
-One Climate/Express Smoke completed on ac1eecf, assessment
-74ee9882-e5dc-4a26-bf95-e8bca4635cf2: all three stages, eight native calls,
-three priorities, approved global-bank provenance. Review remained revise with
-visible limits. Both live search calls returned/settled, but Haiku's adaptive
-thinking exhausted the bounded notes output; source admission safely fell back
-to bank-only. This is structural acceptance, not analytical certification.
+The single Smoke and conditional Quality slots are consumed. Quality on app
+`7a0419f8462c15597639308f2929df69d3db687b`, assessment
+`ec265e9d-c0a6-4235-9175-09a58bb8b30c`, completed HTTP200 with all three stages,
+ten returned native calls, five priorities and five admitted live claims from
+four World Bank/UN sources. This configured app uses the qualified 146-country
+bank routinely and supplements it with live research; searches do not update the
+bank. The final offline suite passed 2,051 tests, with two skipped and four
+previously documented Chromium hangs excluded (253.64s).
 
-Haiku core/dedicated web research now explicitly disables thinking, including
-continuations; Sonnet options and all token/search/retry caps stay unchanged.
-Three regressions failed before the fix; 100 focused tests and a final full
-offline suite passed: 2,051 passed, two skipped, four documented hangs excluded
-(253.64s). Smoke's reconstructed conservative debit is 834,866 microUSD with
-no unresolved holds. The single conditional Quality phase can use at most
-14,165,134 microUSD in a fresh ledger. Never reissue the original USD15 or repeat
-Smoke. No Quality upload yet. Push/deploy the fix, verify SHA/modes, consume the
-Quality lock, capture actual evidence, then restore the blocker. Production and
-both draft PR statuses remain protected; raw evidence stays ignored.
+Actual Summary/Detailed, non-first accordion, HTML/DOCX/packet downloads, exact
+session restoration with POST blocked, and mismatched-reader HTTP409 were checked.
+All 13 Word pages were visually inspected and the established design is preserved.
+All four reader verification notes survive exports. The reader remains `revise`;
+validation remains `attention`. Priority 4 still has an unsupported expected
+sector-revenue link in its action narrative, although its suggested drafting was
+repaired. Qualify/remove it before sharing. Two PDF-source claims remain
+independently unverified, and IOM was checked through indexed official text only.
+No named human approval or production/publication acceptance has been recorded.
 
-### 2026-10-27 Controlled global-bank test deployment and fresh allowance
+Combined conservative pilot debit: USD5.740530, not an invoice. No unresolved web
+holds remain. Spending was blocked again with web flag 0, budget 1 microUSD and
+fresh `/tmp/fcv-global146-20261027-finished-blocked.sqlite`. Replacement deployment
+`dep-dbgfanqfngtc738smhr0` became live at 19:04:34 UTC on the tested app SHA.
+Auto-deploy is off; the final branch head adds documentation only. Production
+remains `6f3d5e65e213`, bank-only, Quality. Both PRs stay draft. Keep both branches
+and worktrees, the bank pin `daf594f8ca899a44bcea4e057a85b0d547ed9c33`, and unrelated
+user work. All raw evidence is ignored in `output/20261027-global-bank-deployment/`.
+Load the saved session for unpaid supervised review; do not start another paid run
+or deploy production under this completed allowance.
 
-Read `docs/20261027_global-country-bank-deployment-acceptance.md` first.
-Lindsey authorized the isolated test deployment in FCV LLM Services, then a fresh
-combined USD15 for exactly one Smoke and conditional one Quality run on the full
-standard Somalia PID, including helpers/search/retries/reviews. Old allowances
-remain consumed. No paid call has started; the test service still has its
-one-microUSD blocker. No production deployment or merge is authorized.
-
-The reviewed extension permits explicit budgeted basic web search on Haiku only;
-legacy text reservations remain nonrefundable. Per-request web holds use the
-documented current ten-iteration default and settle only validated usage. Preserve
-all failures/unresolved holds and subtract consumed amounts before any phase
-redeploy; never reissue USD15. `FCV_RESEARCH_MODEL` changes only core/Climate web
-research; defaults remain Sonnet and Quality assessment/review remain Sonnet.
-Both tests use Climate-FCV plus Express. Fresh offline suite: 2,051 passed,
-two skipped, four documented Chromium hangs excluded (292.38s). Guard focused:
-69 passed; research focused: 100 passed. Bank/Word ancestry and pin preserved.
-Next: push, deploy the reviewed commit, verify modes, consume unique local locks,
-run authorized tests, capture actual source/export evidence, then restore blocker.
-Keep both draft PRs and worktrees. Further raw artifacts stay ignored.
+The following entries record earlier milestones; the status above is current.
 
 ### 2026-10-27 Qualified routine bank activation and supplementary research
 
