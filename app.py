@@ -44,7 +44,10 @@ from sector_lenses.climate_verified_render import (
     write_reader_docx,
 )
 from sector_lenses.climate_review_packet import build_review_packet
-from sector_lenses.research import TRUSTED_CLIMATE_HOST_SUFFIXES
+from sector_lenses.research import (
+    TRUSTED_CLIMATE_HOST_SUFFIXES,
+    build_climate_bank_search_context,
+)
 from sector_lenses.pipeline import normalize_climate_assessment
 from sector_lenses import (
     CCDR_RESEARCH_INSTRUCTIONS,
@@ -8577,6 +8580,7 @@ def _iter_stage1_research(
         },
     }
     futures = {}
+    bank = None
     deadline = time.monotonic() + max(1, budget_seconds)
     timed_out = False
     # NOTE: not a `with` block — the context manager's __exit__ calls
@@ -8619,6 +8623,29 @@ def _iter_stage1_research(
                         assessment_id or 'unknown')
         yield {'result': results}
         return
+    climate_project_profile = (
+        dict(project_profile) if isinstance(project_profile, dict) else {}
+    )
+    if (
+        climate_enabled
+        and bank is not None
+        and results["climate_grounding"].get("bank_status") == "ok"
+    ):
+        try:
+            selected_bank = materialize_bank_manifest(
+                bank, results["climate_grounding"]
+            )
+            bank_search_context = build_climate_bank_search_context(
+                selected_bank
+            )
+            if bank_search_context:
+                # Keep bank context out of core research and its existing cache.
+                climate_project_profile["bank_context"] = bank_search_context
+        except Exception:
+            app.logger.warning(
+                "Climate bank search context unavailable: assessment_id=%s",
+                assessment_id or "unknown",
+            )
     pool = ThreadPoolExecutor(max_workers=2)
     try:
         if cached_core:
@@ -8639,7 +8666,7 @@ def _iter_stage1_research(
                 run_climate_web_research,
                 country,
                 sector,
-                research_plan["project_profile"],
+                climate_project_profile,
                 get_research_client(),
                 assessment_id,
                 deadline=deadline,

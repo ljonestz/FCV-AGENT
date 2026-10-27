@@ -1,3 +1,35 @@
+### 2026-10-27 Qualified routine bank activation and supplementary research
+
+Continue from `docs/20261027_global-country-bank-routine-activation.md`.
+Lindsey authorized routine/default use of all 146 remediated country banks on
+27 October. This supersedes the earlier draft-only instruction for qualified
+routine-use approval. Both PRs remain draft; no deployment, hosted setting,
+merge, paid/live assessment or ITS port was performed.
+
+The app pins pushed bank `daf594f8ca899a44bcea4e057a85b0d547ed9c33`:
+`2026.10.27.approved-global-country-bank`, schema 1.1, 146 country profiles,
+1,045 referenced sources, 2,643 evidence and 241 pathways. Old 24-country runtime,
+approval records and freeze manifests are archived/preserved exactly. Country
+review dates are July-October 2027; individual current-evidence deadlines remain
+unchanged, starting 10 November 2026. The 30 October expiry applies only to the
+separate unapproved test artifact, not this routine-use release.
+
+Code defaults to bank plus live research. Dedicated Climate search now receives
+bounded known gaps, local coverage and dated evidence scope to seek updates and
+supplements. Explicit `CLIMATE_RESEARCH_MODE=bank_only` still suppresses both
+providers and cached live context. The hosted health check reported `bank_only`
+on build `6f3d5e65e213`; a later authorized rollout must enable live research.
+Search results do not automatically update the bank. Approval is permission to
+use the bank, not independent certification: only 74 evidence and one pathway
+were claim-verified; all 146 audit dispositions remain `unresolved-limited`.
+
+Default startup passed all 146 countries, 344 identifiers and 438 country/sector
+prompt/search-context checks. Full offline app suite: 1,990 passed, two skipped,
+four documented Chromium hangs excluded, with normal Windows process permissions.
+Final checks and supervised testing instructions are in the activation note.
+Word design ancestry, the approved integration ancestor and unrelated user work
+remain preserved. Keep this branch and its worktrees.
+
 ### 2026-10-27 Country-bank qualifier remediation candidate
 
 The compact bank handoff retains claim status, class, direction, scenario, horizon,

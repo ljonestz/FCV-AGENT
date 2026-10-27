@@ -1,5 +1,10 @@
 # Global Climate-FCV country-bank remediation
 
+This records the draft-only remediation stage. The subsequent qualified
+routine-use approval, normal app pin, approved profile support and final activation
+checks are recorded in [the activation note](20261027_global-country-bank-routine-activation.md).
+The candidate artifacts and source-verification limits below remain unchanged.
+
 ## Scope, method and analytical limits
 
 The remediation covers all 146 countries in the original depth manifest, including

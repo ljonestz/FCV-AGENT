@@ -19,7 +19,7 @@ def approved_bank(monkeypatch):
     class ApprovalDate(date):
         @classmethod
         def today(cls):
-            return cls(2026, 10, 26)
+            return cls(2026, 10, 27)
 
     # Version-bound acceptance; separate expiry tests exercise real date boundaries.
     monkeypatch.setattr(bank_module, "date", ApprovalDate)
@@ -70,17 +70,21 @@ def test_pinned_bank_contains_approved_country_runtime(approved_bank) -> None:
 
     assert bank.status == "ok"
     assert bank.warning_code == ""
-    assert bank.release["content_version"] == "2026.10.26.approved-country-bank"
+    assert bank.release["content_version"] == "2026.10.27.approved-global-country-bank"
     assert bank.release["schema_version"] == "1.1.0"
     assert bank.release["candidate"] is False
-    assert set(bank.release["countries"]) == set(
-        "AFG BFA CAF CMR COD ETH HTI IRN IRQ LBN LBY MLI MMR MOZ NER NGA PNG PSE SDN SOM SSD SYR UKR YEM".split()
+    country_codes = set(bank.release["countries"])
+    assert len(country_codes) == 146
+    original_approved_countries = set(
+        "AFG BFA CAF CMR COD ETH HTI IRN IRQ LBN LBY MLI MMR MOZ NER NGA "
+        "PNG PSE SDN SOM SSD SYR UKR YEM".split()
     )
+    assert original_approved_countries <= country_codes
     assert bank.release["countries"]["SSD"]["status"] == "approved"
     assert bank.release["countries"]["SSD"]["reviewer"] == "Lindsey Jones"
-    assert len(bank.release["evidence_records"]) == 531
-    assert len(bank.release["pathways"]) == 168
-    assert len(bank.release["sources"]) == 272
+    assert len(bank.release["evidence_records"]) == 2_643
+    assert len(bank.release["pathways"]) == 241
+    assert len(bank.release["sources"]) == 1_045
 
 
 @pytest.mark.parametrize("iso3", "AFG BFA CAF CMR COD ETH HTI IRN IRQ LBN LBY MLI MMR MOZ NER NGA PNG PSE SDN SOM SSD SYR UKR YEM".split())

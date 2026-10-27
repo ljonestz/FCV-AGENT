@@ -3,6 +3,7 @@
 import json
 import threading
 from concurrent.futures import Future
+from datetime import date
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -12,6 +13,7 @@ import pytest
 from anthropic._exceptions import OverloadedError
 
 import app as app_module
+import sector_lenses.research as research_module
 from sector_lenses.research import (
     CLIMATE_EVIDENCE_PACKET_MAX_CHARS,
     CLIMATE_RESEARCH_END,
@@ -59,6 +61,63 @@ def _valid_bundle():
             "evidence_gap": "No site-level design flood standard was found.",
         }],
     }
+
+
+def _bank_packet_for_search():
+    return {
+        "bank_status": "ok",
+        "content_version": "approved-global-1",
+        "country_iso3": "SSD",
+        "sources": [{
+            "source_id": "SSD-SRC-001",
+            "title": "South Sudan climate assessment",
+            "organization": "World Bank",
+            "publication_date": "2018",
+            "publication_date_basis": "published_on",
+            "temporal_coverage": "Observations through 2015",
+            "url": "https://openknowledge.worldbank.org/ssd-climate",
+        }],
+        "evidence_records": [{
+            "evidence_id": "SSD-E-001",
+            "compact_statement": "Observed rainfall is highly variable.",
+            "evidence_status": "observed",
+            "evidence_class": "climate_observation",
+            "scenario": "historical",
+            "time_horizons": ["current-near-term"],
+            "confidence": "medium",
+            "uncertainty": "Station coverage is limited outside major towns.",
+            "geographies": ["Jonglei"],
+            "affected_groups": ["Rural households"],
+            "source_refs": [{
+                "source_id": "SSD-SRC-001",
+                "locator": "Chapter 2, p. 14",
+            }],
+        }],
+        "pathways": [],
+        "country_profile": {
+            "coverage": [{
+                "topic": "national climate evidence",
+                "summary": "National-scale evidence; district coverage varies.",
+            }],
+            "known_gaps": [{
+                "topic": "local flood mapping",
+                "summary": "Current district flood mapping was not identified.",
+            }],
+        },
+    }
+
+
+def _valid_two_source_bundle():
+    bundle = _valid_bundle()
+    bundle["sources"].append({
+        "id": "climate-source-2",
+        "source_type": "scientific",
+        "title": "Peer-reviewed flood study",
+        "url": "https://ipcc.ch/example-flood-study",
+        "publication_date": "2024",
+    })
+    bundle["claims"][0]["source_ids"].append("climate-source-2")
+    return bundle
 
 
 def test_passage_registry_preserves_complementary_quotes_and_owns_proof():
@@ -258,18 +317,100 @@ def test_bank_selection_precedes_live_research(monkeypatch):
     ) != caller_thread
 
 
+def test_default_climate_research_uses_bank_and_live_sources(monkeypatch):
+    monkeypatch.delenv("CLIMATE_RESEARCH_MODE", raising=False)
+    plan = _climate_bank_plan()
+    bank = object()
+    manifest = {
+        "bank_status": "ok",
+        "warning_code": "",
+        "schema_version": "1.0.0",
+        "content_version": "approved-global-1",
+        "country_iso3": "SSD",
+        "evidence_ids": ["SSD-E-001"],
+        "pathway_ids": [],
+    }
+    bank_packet = _bank_packet_for_search()
+    calls = []
+    climate_profiles = []
+    core_profiles = []
+
+    monkeypatch.setattr(app_module, "_research_cache", {})
+    monkeypatch.setattr(app_module, "load_climate_bank", lambda: bank)
+    monkeypatch.setattr(
+        app_module,
+        "select_bank_manifest",
+        lambda *_args, **_kwargs: manifest,
+    )
+    monkeypatch.setattr(
+        app_module,
+        "materialize_bank_manifest",
+        lambda *_args, **_kwargs: bank_packet,
+    )
+    monkeypatch.setattr(app_module, "get_research_client", lambda: object())
+
+    def fake_core_search(*_args, project_profile=None, **_kwargs):
+        calls.append("core")
+        core_profiles.append(project_profile)
+        return {
+            "brief": "Fresh FCV context.",
+            "status": "sourced",
+            "sources": [{"url": "https://example.org/fcv-context"}],
+        }
+
+    def fake_climate_search(
+        _country, _sector, project_profile, *_args, **_kwargs
+    ):
+        calls.append("climate")
+        climate_profiles.append(project_profile)
+        return _valid_two_source_bundle()
+
+    monkeypatch.setattr(app_module, "run_fcv_web_research", fake_core_search)
+    monkeypatch.setattr(
+        app_module, "run_climate_web_research", fake_climate_search
+    )
+
+    result = list(
+        app_module._iter_stage1_research(plan, "default-live-bank")
+    )[-1]["result"]
+    grounding, accepted = app_module.resolve_climate_grounding(
+        manifest, result["climate_research"], assessment_id="default-live-bank"
+    )
+
+    assert sorted(calls) == ["climate", "core"]
+    assert result["core_brief"] == "Fresh FCV context."
+    assert grounding["state"] == "bank+research"
+    assert accepted["claims"]
+    assert core_profiles == [plan["project_profile"]]
+    assert "bank_context" in climate_profiles[0]
+
+
 def test_bank_only_mode_never_constructs_provider_or_reuses_live_cache(monkeypatch):
     monkeypatch.setenv('CLIMATE_RESEARCH_MODE', 'bank_only')
+    plan = _climate_bank_plan()
+    cache_key = app_module.research_cache_key(
+        plan["country"], plan["sector"], True, plan["project_profile"]
+    )
+    existing_cache = {
+        cache_key: {
+            "brief": "stale cached core context",
+            "status": "sourced",
+            "sources": [{"url": "https://example.org/old"}],
+            "cached_at": app_module.time.time(),
+        }
+    }
+    monkeypatch.setattr(app_module, "_research_cache", existing_cache)
     monkeypatch.setattr(app_module, 'get_research_client', lambda: pytest.fail('Provider constructed'))
     monkeypatch.setattr(app_module, 'load_climate_bank', lambda: object())
     monkeypatch.setattr(app_module, 'select_bank_manifest', lambda *a, **kw:
                         {'bank_status': 'ok', 'country_iso3': 'SSD', 'evidence_ids': ['SSD-E-001']})
-    result = list(app_module._iter_stage1_research(_climate_bank_plan(), 'bank-only'))[-1]['result']
+    result = list(app_module._iter_stage1_research(plan, 'bank-only'))[-1]['result']
     assert result['climate_grounding']['evidence_ids'] == ['SSD-E-001']
     assert result['core_brief'] == ''
     assert result['lens_context_sources'] == []
     assert result['climate_research']['attempts'] == 0
     assert 'disabled' in result['climate_research']['failure_reason']
+    assert existing_cache[cache_key]["brief"] == "stale cached core context"
 
 
 def test_bank_only_mode_does_not_disable_normal_fcv_research(monkeypatch):
@@ -772,6 +913,143 @@ def test_climate_research_prompt_requires_specific_temporal_claims():
     assert CLIMATE_RESEARCH_START in prompt
     assert "four to six claims" in prompt
     assert "mandatory" not in prompt.casefold()
+
+
+def test_compact_bank_search_context_keeps_scope_and_fits_whole_rows():
+    context = research_module.build_climate_bank_search_context(
+        _bank_packet_for_search()
+    )
+    serialized = json.dumps(
+        context, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    )
+
+    assert len(serialized) <= 2_500
+    assert context["country_profile"]["known_gaps"]
+    assert context["country_profile"]["coverage"]
+    selected = context["selected_scope"][0]
+    assert selected["sources"][0]["publication_date"] == "2018"
+    assert selected["sources"][0]["locator"] == "Chapter 2, p. 14"
+    assert selected["uncertainty"] == (
+        "Station coverage is limited outside major towns."
+    )
+
+
+def test_bank_search_profile_bounds_multiple_coverage_and_gap_rows():
+    packet = _bank_packet_for_search()
+    packet["country_profile"] = {
+        "coverage": [
+            {
+                "topic": f"coverage topic {index}",
+                "summary": "District observations vary by region. " * 5,
+            }
+            for index in range(8)
+        ],
+        "known_gaps": [
+            {
+                "topic": f"gap topic {index}",
+                "summary": "Recent local evidence was not identified. " * 5,
+            }
+            for index in range(8)
+        ],
+    }
+
+    context = research_module.build_climate_bank_search_context(packet)
+    profile = context["country_profile"]
+    serialized_profile = json.dumps(
+        {"country_profile": profile},
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    serialized_context = json.dumps(
+        context, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    )
+
+    assert len(serialized_profile) <= 900
+    assert len(serialized_context) <= 2_500
+    assert profile["coverage"]
+    assert profile["known_gaps"]
+    assert profile["coverage"][0]["topic"] == "coverage topic 0"
+    assert profile["known_gaps"][0]["topic"] == "gap topic 0"
+    assert {"coverage", "known_gaps"}.issubset(
+        profile["truncated_fields"]
+    )
+
+
+def test_bank_search_context_skips_oversized_source_scope_as_a_whole():
+    packet = _bank_packet_for_search()
+    packet["sources"].extend([
+        {
+            "source_id": "SSD-SRC-002",
+            "title": "Oversized source title " * 1_000,
+            "publication_date": "2010",
+            "url": "https://example.org/oversized",
+        },
+        {
+            "source_id": "SSD-SRC-003",
+            "title": "District flood update",
+            "publication_date": "2025",
+            "url": "https://example.org/district-flood-update",
+        },
+    ])
+    packet["evidence_records"] = [
+        {
+            **packet["evidence_records"][0],
+            "evidence_id": "SSD-E-002",
+            "compact_statement": "Oversized assertion " * 1_000,
+            "source_refs": [{
+                "source_id": "SSD-SRC-002",
+                "locator": "Oversized locator " * 1_000,
+            }],
+        },
+        {
+            **packet["evidence_records"][0],
+            "evidence_id": "SSD-E-003",
+            "compact_statement": "Flood mapping is available for two districts.",
+            "source_refs": [{
+                "source_id": "SSD-SRC-003",
+                "locator": "Table 3",
+            }],
+        },
+    ]
+
+    context = research_module.build_climate_bank_search_context(packet)
+    serialized = json.dumps(
+        context, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    )
+
+    assert len(serialized) <= 2_500
+    assert len(context["selected_scope"]) == 1
+    assert context["selected_scope"][0]["statement"] == (
+        "Flood mapping is available for two districts."
+    )
+    assert context["selected_scope"][0]["sources"][0]["source_id"] == (
+        "SSD-SRC-003"
+    )
+    assert context["selected_scope_truncated"] is True
+    assert "Oversized assertion" not in serialized
+
+
+def test_climate_search_prompt_uses_current_date_and_bank_gaps():
+    project_profile = {
+        "beneficiary_countries": ["South Sudan"],
+        "bank_context": research_module.build_climate_bank_search_context(
+            _bank_packet_for_search()
+        ),
+    }
+    prompt = research_module.build_climate_search_prompt(
+        "South Sudan", "Water", project_profile
+    )
+    normalized_prompt = " ".join(prompt.casefold().split())
+
+    assert f"CURRENT DATE: {date.today().isoformat()}" in prompt
+    assert "local flood mapping" in prompt
+    assert "2018" in prompt
+    assert "publication date" in normalized_prompt
+    assert "routine-use approval authorizes the bank" in normalized_prompt
+    assert "does not independently verify its sources" in normalized_prompt
+    assert "prioritize the known gaps" in normalized_prompt
+    assert "omitted items are unknown" in normalized_prompt
 
 
 def test_climate_research_uses_one_focused_request():
