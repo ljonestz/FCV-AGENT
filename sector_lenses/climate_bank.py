@@ -23,6 +23,11 @@ from urllib.parse import urlparse
 CLIMATE_BANK_SCHEMA_VERSION = "1.0.0"
 CLIMATE_BANK_PREVIEW_SCHEMA_VERSION = "1.1.0"
 CLIMATE_BANK_PREVIEW_TOKEN = "reviewed-candidate"
+UNAPPROVED_TEST_ARTIFACT = "unapproved-country-bank-test"
+UNAPPROVED_TEST_NOTICE = (
+    "UNAPPROVED country-bank test content: draft evidence and pathways have not "
+    "received human approval. For isolated testing only; verify before use."
+)
 DEFAULT_RELEASE = (
     Path(__file__).resolve().parents[1]
     / "data"
@@ -144,6 +149,7 @@ class ClimateBankLoad:
     warning_code: str
     release: dict[str, Any]
     candidate_preview: bool = False
+    draft_preview: bool = False
 
     def resolve_country(self, value: str) -> dict[str, Any] | None:
         key = str(value or "").strip().casefold()
@@ -194,13 +200,37 @@ def load_climate_bank(path: str | Path | None = None) -> ClimateBankLoad:
     if not isinstance(release, dict):
         return _unavailable("bank_incompatible")
     schema_version = release.get("schema_version")
+    test_artifact = release.get("artifact_kind") == UNAPPROVED_TEST_ARTIFACT
+    test_lifetime_valid = False
+    if test_artifact:
+        try:
+            generated = date.fromisoformat(str(release.get("generated_at", ""))[:10])
+            expiry = date.fromisoformat(str(release.get("test_expires_on", "")))
+            test_lifetime_valid = (
+                0 <= (expiry - generated).days <= 7
+                and generated <= date.today() <= expiry
+            )
+        except ValueError:
+            pass
+    draft_preview = (
+        test_artifact
+        and schema_version == CLIMATE_BANK_PREVIEW_SCHEMA_VERSION
+        and release.get("candidate") is True
+        and path is None
+        and bool(os.environ.get("CLIMATE_COUNTRY_BANK_PATH"))
+        and os.environ.get("CLIMATE_COUNTRY_BANK_PREVIEW") == "unapproved-test"
+        and os.environ.get("FCV_APP_ENV") == "country-bank-test"
+        and test_lifetime_valid
+    )
+    if "artifact_kind" in release and not draft_preview:
+        return _unavailable("bank_incompatible")
     preview_opt_in = (
         path is None
         and bool(os.environ.get("CLIMATE_COUNTRY_BANK_PATH"))
         and os.environ.get("CLIMATE_COUNTRY_BANK_PREVIEW")
         == CLIMATE_BANK_PREVIEW_TOKEN
     )
-    candidate_preview = (
+    candidate_preview = draft_preview or (
         schema_version == CLIMATE_BANK_PREVIEW_SCHEMA_VERSION
         and release.get("candidate") is True
         and preview_opt_in
@@ -241,7 +271,8 @@ def load_climate_bank(path: str | Path | None = None) -> ClimateBankLoad:
     ):
         return _unavailable("bank_incompatible")
     return ClimateBankLoad(
-        "ok", "", release, candidate_preview=candidate_preview
+        "ok", "", release, candidate_preview=candidate_preview,
+        draft_preview=draft_preview,
     )
 
 
@@ -287,7 +318,14 @@ def _approved_record(
     iso3: str,
     *,
     allow_reviewed: bool = False,
+    allow_draft: bool = False,
 ) -> bool:
+    if allow_draft:
+        return (
+            record.get("iso3") == iso3
+            and record.get("review_status") == "draft"
+            and record.get("review_date") is None
+        )
     allowed_statuses = {"approved", "reviewed"} if allow_reviewed else {"approved"}
     if (
         record.get("iso3") != iso3
@@ -320,6 +358,7 @@ def _valid_evidence_record(
     iso3: str,
     *,
     allow_reviewed: bool = False,
+    allow_draft: bool = False,
     schema_version: str = CLIMATE_BANK_SCHEMA_VERSION,
 ) -> bool:
     scenario = record.get("scenario")
@@ -339,7 +378,8 @@ def _valid_evidence_record(
         )
     return (
         set(record) == expected_fields
-        and _approved_record(record, iso3, allow_reviewed=allow_reviewed)
+        and _approved_record(record, iso3, allow_reviewed=allow_reviewed,
+                             allow_draft=allow_draft)
         and schema_fields_valid
         and record["evidence_id"].startswith(f"{iso3}-E-")
         and _nonempty_string(record.get("statement"))
@@ -368,11 +408,12 @@ def _valid_pathway_record(
     iso3: str,
     *,
     allow_reviewed: bool = False,
+    allow_draft: bool = False,
 ) -> bool:
     return (
         set(record) == _PATHWAY_FIELDS
         and _approved_record(
-            record, iso3, allow_reviewed=allow_reviewed
+            record, iso3, allow_reviewed=allow_reviewed, allow_draft=allow_draft
         )
         and record["pathway_id"].startswith(f"{iso3}-P-")
         and all(
@@ -599,14 +640,21 @@ def materialize_bank_manifest(
     if not isinstance(country, dict):
         return _packet_unavailable("bank_country_unavailable")
     allowed_country_statuses = (
-        {"approved", "reviewed"}
+        {"draft"} if bank.draft_preview else {"approved", "reviewed"}
         if bank.candidate_preview
         else {"approved"}
     )
     if country.get("status") not in allowed_country_statuses:
         return _packet_unavailable("bank_country_unapproved")
+    if bank.draft_preview and any(
+        country.get(key) is not None for key in ("reviewer", "reviewed_on", "review_due")
+    ):
+        return _packet_unavailable("bank_manifest_invalid")
     try:
-        review_due = date.fromisoformat(str(country.get("review_due", "")))
+        review_due = date.fromisoformat(str(
+            release.get("test_expires_on") if bank.draft_preview
+            else country.get("review_due", "")
+        ))
     except ValueError:
         return _packet_unavailable("bank_manifest_invalid")
     if review_due < date.today():
@@ -665,7 +713,8 @@ def materialize_bank_manifest(
         if (
             pathway is None
             or not _valid_pathway_record(
-                pathway, iso3, allow_reviewed=bank.candidate_preview
+                pathway, iso3, allow_reviewed=bank.candidate_preview,
+                allow_draft=bank.draft_preview,
             )
             or not _valid_pathway_refs(pathway, evidence_index)
         ):
@@ -680,6 +729,7 @@ def materialize_bank_manifest(
             evidence is None
             or not _valid_evidence_record(
                 evidence, iso3, allow_reviewed=bank.candidate_preview,
+                allow_draft=bank.draft_preview,
                 schema_version=release["schema_version"],
             )
             or not _valid_evidence_refs(evidence, source_index)
@@ -714,9 +764,11 @@ def materialize_bank_manifest(
     }
     if bank.candidate_preview:
         packet["candidate_preview"] = True
+    if bank.draft_preview:
+        packet["limitations"] = [UNAPPROVED_TEST_NOTICE]
     if expired_ids.intersection(country_evidence_ids):
-        packet["limitations"] = [
+        packet.setdefault("limitations", []).append(
             "Current bank evidence past its review date, and pathways that "
             "depend on it, were omitted. Check current conditions separately."
-        ]
+        )
     return packet

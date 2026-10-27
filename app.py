@@ -13717,7 +13717,7 @@ def download_report():
                         _add_single_para(f'[{source.id}] {citation}', size=9, space_after=2)
             if climate_grounding_state in {'bank+research', 'bank-only'}:
                 bank_heading = (
-                    'Reviewed candidate country evidence bank '
+                    'Candidate country evidence bank '
                     '(preview; not approved)'
                     if climate_grounding.get('candidate_preview') is True
                     else 'Reviewed country evidence bank'
