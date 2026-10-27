@@ -1,3 +1,33 @@
+### 2026-10-27 All-country draft remediation and prompt qualifications
+
+Continue from `docs/20261027_global-country-bank-remediation-results.md`.
+All 146 banks have a new reproducible `2026.10.27.remediated` candidate and audit
+disposition, covering inherited evidence/pathways. Bank commit
+`7a89952dee352b408f6b79132ba61406b8981cb2` was pushed first on
+`feat/global-country-bank-depth-20261026`; bank PR5 stays draft. The app pins it
+immutably. Production's approved 24-country runtime and Word ancestry are preserved.
+
+Candidates total 2,643 evidence/241 pathways; only 74 evidence and one pathway have
+claim-level verification. All other claims carry explicit limits; all countries
+remain `unresolved-limited` and draft/null. PNG numbers retained as verified expected
+reach; bounded Chad reverse pathway and Tuvalu treaty/continuity evidence added;
+Somalia chronology/denominators, Vietnam historical boundaries and Venezuela mirror
+limits corrected. No automatic source certification or human approval.
+
+Shared compaction retains qualifications, source locators, profile gaps/coverage and
+pathway alternatives. Selection/grounding keep whole bundles under unchanged 6,000/
+12,000 budgets; all pathway support must survive. Focused app: 121 passed; bank: 697 passed;
+all 438 country/sector final prompts passed; 146 identities and 878 baseline hashes match;
+post-publish reconstruction matches. Final offline app suite: 1,979 passed, two
+skipped, four documented Chromium hangs excluded (579.52s). Follow-up launcher
+validation: six passed, including two new empty-profile negative tests (14.52s).
+
+Ignored bundle `data/climate-fcv-country-bank/releases/testing/20261027_global146-remediated-test.json`
+expires 2026-10-30; fingerprint and supervised-test commands are in results. No paid/live
+assessment, merge, approval, deployment, hosted setting or ITS port. Preserve branch
+and both worktrees. Source review remains incomplete; browser/model and DOCX visual
+acceptance remain separate gates.
+
 ### 2026-10-26 Approved country bank integrated on Word design base; not deployed
 
 Branch `feat/country-bank-integration-20261026` builds on Word design commit

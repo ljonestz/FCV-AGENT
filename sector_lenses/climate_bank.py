@@ -762,6 +762,21 @@ def materialize_bank_manifest(
         "evidence_records": deepcopy(selected_evidence),
         "pathways": deepcopy(selected_pathways),
     }
+    profile_index = release.get("country_profiles")
+    country_profile = (
+        profile_index.get(iso3) if isinstance(profile_index, dict) else None
+    )
+    if not isinstance(country_profile, dict):
+        country_profile = country.get("profile")
+    if isinstance(country_profile, dict):
+        compact_profile = {
+            key: deepcopy(country_profile[key])
+            for key in ("coverage", "known_gaps")
+            if key in country_profile
+            and isinstance(country_profile[key], list)
+        }
+        if compact_profile:
+            packet["country_profile"] = compact_profile
     if bank.candidate_preview:
         packet["candidate_preview"] = True
     if bank.draft_preview:

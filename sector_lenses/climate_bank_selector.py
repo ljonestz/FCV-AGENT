@@ -242,46 +242,6 @@ def _rank(candidates: Iterable[_Candidate]) -> list[_Candidate]:
     return sorted(candidates, key=lambda item: (-item.score, item.record_id))
 
 
-def _take_diverse(
-    candidates: list[_Candidate],
-    *,
-    limit: int,
-    source_counts: dict[str, int],
-    physical_count: int = 0,
-) -> list[_Candidate]:
-    """Prefer source-diverse items, then fill only when alternatives run out."""
-
-    selected: list[_Candidate] = []
-    deferred: list[_Candidate] = []
-    for candidate in candidates:
-        if len(selected) >= limit:
-            break
-        if candidate.physical_baseline and physical_count >= 2:
-            continue
-        source_id = candidate.primary_source_id
-        if source_id and source_counts.get(source_id, 0) >= _SOURCE_DIVERSITY_CAP:
-            deferred.append(candidate)
-            continue
-        selected.append(candidate)
-        if candidate.physical_baseline:
-            physical_count += 1
-        if source_id:
-            source_counts[source_id] = source_counts.get(source_id, 0) + 1
-
-    for candidate in deferred:
-        if len(selected) >= limit:
-            break
-        if candidate.physical_baseline and physical_count >= 2:
-            continue
-        selected.append(candidate)
-        if candidate.physical_baseline:
-            physical_count += 1
-        source_id = candidate.primary_source_id
-        if source_id:
-            source_counts[source_id] = source_counts.get(source_id, 0) + 1
-    return selected
-
-
 def _unavailable(code: str) -> dict[str, str]:
     return {"bank_status": "unavailable", "warning_code": code}
 
@@ -309,6 +269,85 @@ def _manifest(
     return manifest
 
 
+def _compact_country_profile(value: Any) -> dict[str, Any]:
+    """Keep whole, text-bearing profile rows before record ID lists."""
+
+    if not isinstance(value, dict):
+        return {}
+    profile_max_chars = 1_700
+    field_max_chars = 780
+    profile: dict[str, Any] = {}
+    truncated_fields: set[str] = set()
+    id_fields = {
+        "record_ids": "record_count",
+        "evidence_ids": "evidence_count",
+        "pathway_ids": "pathway_count",
+        "source_ids": "source_count",
+    }
+    for field in ("known_gaps", "coverage"):
+        rows = value.get(field)
+        if not isinstance(rows, list):
+            continue
+        profile[field] = []
+        for row in rows:
+            if isinstance(row, dict):
+                compact_row = {
+                    key: item for key, item in row.items() if key not in id_fields
+                }
+                for key, count_key in id_fields.items():
+                    if isinstance(row.get(key), list):
+                        compact_row[count_key] = len(row[key])
+            else:
+                compact_row = row
+            candidate_rows = [*profile[field], compact_row]
+            candidate = {"country_profile": {field: candidate_rows}}
+            serialized = json.dumps(
+                candidate,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+            if len(serialized) <= field_max_chars:
+                profile[field].append(compact_row)
+            else:
+                truncated_fields.add(field)
+    if truncated_fields:
+        profile["truncated_fields"] = sorted(truncated_fields)
+
+    def profile_length() -> int:
+        return len(json.dumps(
+            {"country_profile": profile},
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ))
+
+    while profile_length() > profile_max_chars:
+        removable_field = next(
+            (
+                field
+                for field in ("coverage", "known_gaps")
+                if len(profile.get(field, [])) > 1
+            ),
+            None,
+        )
+        if removable_field is None:
+            break
+        profile[removable_field].pop()
+        truncated_fields.add(removable_field)
+        profile["truncated_fields"] = sorted(truncated_fields)
+
+    if profile_length() > profile_max_chars:
+        for field in ("known_gaps", "coverage"):
+            if len(profile.get(field, [])) == 1:
+                profile[field] = []
+                truncated_fields.add(field)
+                profile["truncated_fields"] = sorted(truncated_fields)
+                if profile_length() <= profile_max_chars:
+                    break
+    return profile
+
+
 def compact_bank_packet(packet: dict[str, Any]) -> dict[str, Any]:
     """Project canonical records into the bounded Stage-2 grounding shape."""
 
@@ -318,47 +357,86 @@ def compact_bank_packet(packet: dict[str, Any]) -> dict[str, Any]:
     for source in packet.get("sources", []):
         if not isinstance(source, dict):
             continue
-        sources.append({"source_id": source.get("source_id")})
+        compact_source = {
+            key: source[key]
+            for key in (
+                "source_id", "title", "organization", "publication_date",
+                "publication_date_basis", "url",
+            )
+            if key in source and source[key] not in (None, "")
+        }
+        if compact_source.get("source_id"):
+            sources.append(compact_source)
+
     evidence_records = []
+    evidence_fields = (
+        "evidence_id", "compact_statement", "evidence_status",
+        "evidence_class", "analytical_role", "hazard_tags", "impact_tags",
+        "sectors", "interaction_direction", "scenario", "time_horizons",
+        "confidence", "uncertainty", "geographies", "affected_groups",
+        "administrative_level", "ecological_level",
+    )
     for record in packet.get("evidence_records", []):
         if not isinstance(record, dict):
             continue
-        evidence_records.append(
+        source_refs = [
             {
-                **{
-                    key: record.get(key)
-                    for key in (
-                        "evidence_id", "compact_statement", "evidence_status",
-                        "analytical_role",
-                    )
-                },
-                "source_ids": [
-                    ref.get("source_id")
-                    for ref in record.get("source_refs", [])
-                    if isinstance(ref, dict)
-                ],
+                key: ref[key]
+                for key in ("source_id", "locator")
+                if key in ref and ref[key] not in (None, "")
             }
-        )
-    pathways = []
-    for record in packet.get("pathways", []):
-        if not isinstance(record, dict):
-            continue
-        pathways.append(
-            {
-                key: record.get(key)
-                for key in (
-                    "pathway_id", "compact_statement", "evidence_strength",
-                    "supporting_evidence_ids", "interaction_direction",
-                )
-            }
-        )
+            for ref in record.get("source_refs", [])
+            if isinstance(ref, dict)
+        ]
+        compact_record = {
+            key: record[key] for key in evidence_fields if key in record
+        }
+        compact_record["source_refs"] = source_refs
+        compact_record["source_ids"] = list(dict.fromkeys(
+            ref["source_id"] for ref in source_refs if ref.get("source_id")
+        ))
+        evidence_records.append(compact_record)
+
+    pathway_fields = (
+        "pathway_id", "compact_statement", "evidence_strength",
+        "supporting_evidence_ids", "interaction_direction", "geographies",
+        "affected_groups", "alternative_explanations", "uncertainty",
+    )
+    pathways = [
+        {key: record[key] for key in pathway_fields if key in record}
+        for record in packet.get("pathways", [])
+        if isinstance(record, dict)
+    ]
+    profile = packet.get("country_profile")
+    if not isinstance(profile, dict):
+        profile = {
+            key: packet[key]
+            for key in ("coverage", "known_gaps")
+            if key in packet
+        }
+    compact_profile = _compact_country_profile(profile)
     compact = {
         "content_version": packet.get("content_version"),
         "country_iso3": packet.get("country_iso3"),
         "sources": sources,
         "evidence_records": evidence_records,
         "pathways": pathways,
+        "coverage_metadata_available": bool(compact_profile),
+        "coverage_note": (
+            "Country coverage metadata unavailable; selected records do not "
+            "establish complete national or population coverage."
+            if not compact_profile
+            else
+            "Profile coverage and known gaps do not establish complete "
+            "national or population coverage."
+        ),
+        "pathway_coverage_note": (
+            "An empty selected pathway list does not establish that no such "
+            "pathways exist."
+        ),
     }
+    if compact_profile:
+        compact["country_profile"] = compact_profile
     if packet.get("candidate_preview") is True:
         compact["candidate_preview"] = True
     if packet.get("limitations"):
@@ -465,33 +543,68 @@ def select_bank_manifest(
         for item in evidence_records
     )
 
+    selected: list[_Candidate] = []
     source_counts: dict[str, int] = {}
-    selected_pathways = _take_diverse(
-        ranked_pathways,
-        limit=min(2, CLIMATE_BANK_MAX_ITEMS),
-        source_counts=source_counts,
-    )
-    evidence_limit = min(
-        CLIMATE_BANK_TARGET_ITEMS - len(selected_pathways),
-        CLIMATE_BANK_MAX_ITEMS - len(selected_pathways),
-    )
-    selected_evidence = _take_diverse(
-        ranked_evidence,
-        limit=max(0, evidence_limit),
-        source_counts=source_counts,
-    )
-    selected = _rank([*selected_pathways, *selected_evidence])
-    selected = selected[:CLIMATE_BANK_MAX_ITEMS]
+    physical_count = 0
 
-    while True:
-        if not selected:
-            return _unavailable("bank_packet_too_large")
-        manifest = _manifest(bank, resolved, selected)
-        packet = materialize_bank_manifest(bank, manifest)
-        if packet.get("bank_status") != "ok":
-            return _unavailable(
-                str(packet.get("warning_code") or "bank_manifest_invalid")
-            )
-        if _compact_packet_length(packet) <= CLIMATE_BANK_MAX_CHARS:
-            return manifest
-        selected.pop()
+    def try_add(candidate: _Candidate) -> bool:
+        nonlocal physical_count
+        if len(selected) >= CLIMATE_BANK_TARGET_ITEMS:
+            return False
+        if candidate.physical_baseline and physical_count >= 2:
+            return False
+        prospective = _rank([*selected, candidate])
+        packet = materialize_bank_manifest(
+            bank, _manifest(bank, resolved, prospective)
+        )
+        if (
+            packet.get("bank_status") != "ok"
+            or _compact_packet_length(packet) > CLIMATE_BANK_MAX_CHARS
+        ):
+            return False
+        selected[:] = prospective
+        source_id = candidate.primary_source_id
+        if source_id:
+            source_counts[source_id] = source_counts.get(source_id, 0) + 1
+        if candidate.physical_baseline:
+            physical_count += 1
+        return True
+
+    def add_fitting_candidates(
+        candidates: list[_Candidate], limit: int
+    ) -> None:
+        added = 0
+        deferred: list[_Candidate] = []
+        for candidate in candidates:
+            if added >= limit or len(selected) >= CLIMATE_BANK_TARGET_ITEMS:
+                break
+            source_id = candidate.primary_source_id
+            if source_id and source_counts.get(source_id, 0) >= (
+                _SOURCE_DIVERSITY_CAP
+            ):
+                deferred.append(candidate)
+                continue
+            if try_add(candidate):
+                added += 1
+
+        for candidate in deferred:
+            if added >= limit or len(selected) >= CLIMATE_BANK_TARGET_ITEMS:
+                break
+            if try_add(candidate):
+                added += 1
+
+    add_fitting_candidates(ranked_pathways, limit=2)
+    add_fitting_candidates(
+        ranked_evidence,
+        limit=CLIMATE_BANK_TARGET_ITEMS - len(selected),
+    )
+    if not any(item.kind == "evidence" for item in selected):
+        # Keep at least one directly selected evidence item when a pathway's
+        # supporting records leave no room for additional selection.
+        selected.clear()
+        source_counts.clear()
+        physical_count = 0
+        add_fitting_candidates(ranked_evidence, limit=1)
+    if not selected:
+        return _unavailable("bank_packet_too_large")
+    return _manifest(bank, resolved, selected)

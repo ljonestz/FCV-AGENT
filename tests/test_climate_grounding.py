@@ -81,6 +81,21 @@ def test_combined_grounding_is_bounded() -> None:
     assert merged["bank_character_count"] <= 6_000
 
 
+def test_bank_and_live_grounding_share_combined_budget_at_the_edge() -> None:
+    bank = _bank_packet()
+    bank["evidence_records"][0]["compact_statement"] = "b" * 5_000
+    research = _research_bundle()
+    research["claims"][0]["claim"] = "l" * 5_800
+
+    merged = merge_climate_grounding(bank, research)
+
+    assert merged["state"] == "bank+research"
+    assert merged["bank_character_count"] <= 6_000
+    assert merged["combined_character_count"] <= 12_000
+    assert merged["combined_character_count"] > 11_000
+    assert len(merged["prompt_context"]) == merged["combined_character_count"]
+
+
 def test_provenance_and_source_aliases_survive_url_deduplication() -> None:
     bank = _bank_packet()
     research = _research_bundle()

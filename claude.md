@@ -1,3 +1,16 @@
+### 2026-10-27 Country-bank qualifier remediation candidate
+
+The compact bank handoff retains claim status, class, direction, scenario, horizon,
+confidence, uncertainty, geography/population scope, source locators and publication
+metadata. Final grounding budgets whole evidence/source bundles; a pathway is kept
+only with all supporting evidence. Profile gaps and coverage use a bounded text
+projection with explicit truncation and missing-metadata notices. Empty selection
+is not evidence of no climate-FCV pathways. Test bundles alone carry country_profiles;
+the approved 24-country runtime and normal startup bank path remain unchanged.
+Offline test-launcher checks inspect the final merged model prompt and country aliases.
+No model call, bank approval, merge, hosted setting or deployment is authorized here.
+The dated remediation results document records fresh acceptance and its limitations.
+
 ### 2026-10-18 Climate graceful-degradation fixes deployed to production
 
 Honduras IPF PAD (P181166) via the Climate lens produced zero recommendations and a
