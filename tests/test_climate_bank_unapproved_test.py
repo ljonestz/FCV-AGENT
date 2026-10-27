@@ -85,6 +85,8 @@ def test_explicit_path_cannot_authorize_drafts(draft, monkeypatch):
     {'candidate': False}, {'schema_version': '1.0.0'},
     {'test_expires_on': '2000-01-01'}, {'test_expires_on': None},
     {'test_expires_on': '2099-01-01'}, {'generated_at': 'invalid'},
+    {'generated_at': (date.today() + timedelta(days=1)).isoformat() + 'T00:00:00Z',
+     'test_expires_on': (date.today() + timedelta(days=2)).isoformat()},
 ])
 def test_test_bundle_cannot_masquerade_as_production(draft, monkeypatch, changes):
     opt_in(monkeypatch)
