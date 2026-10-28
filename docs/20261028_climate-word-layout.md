@@ -43,21 +43,25 @@ all later pages are pixel-identical to the previously accepted reports. All body
 text values and nonbody Word package parts remain identical across this move.
 The masthead is flush at 0pt on both routes. A long-subtitle fixture also fits.
 
-The final full suite passed: **2,090 passed, two skipped, four deselected** in
-1,381.13s. The four documented headless browser hangs have prior headed Edge
+The final full suite passed: **2,091 passed, two skipped, four deselected** in
+368.11s after the security correction. The four documented headless browser hangs have prior headed Edge
 coverage in the presentation handoff. The run's HEAD, modified source/test path
 set and all 20 source/test hashes stayed unchanged. Final top-scorecard layout
-contracts passed (nine tests); Python compilation, JS syntax and diff checks
+contracts passed (ten tests); Python compilation, JS syntax and diff checks
 also passed. Earlier failed and interrupted runs remain as diagnostic records
-and are superseded by this final full run.
+and are superseded by this final full run. CodeQL identified a polynomial-time
+heading regex in the Word exporter. It now matches only the heading prefix and
+uses string trimming for closing markers. A long-whitespace Word-download
+regression passes; the fix leaves the normal report structure unchanged.
 
 Artifacts remain ignored under `output/20261028-climate-word-layout/`:
 - `template-fidelity/top-scorecard/`: final local Word examples, native Word
   renders, browser metadata checks, content comparison and visual acceptance.
 - `template-fidelity/live/` and `normal-timing/`: earlier full-template checks;
   their lower-scorecard placement is superseded by the final user clarification.
-- `template-fidelity/top-scorecard/final-suite/`: final full-suite log and
-  unchanged source/test hash record. Earlier suites remain in `final-suite/`.
+- `template-fidelity/security-final/`: final full-suite log and unchanged
+  source/test hash record after the heading-parser correction.
+- `template-fidelity/top-scorecard/final-suite/` and `final-suite/`: earlier suites.
 - `template-fidelity/production/`: hosted acceptance helper and release artifacts.
 - `template-fidelity/`: original references and banner-gap comparison.
 The initial full-suite failure record is under `output/20261028-template-fidelity/`.
@@ -77,3 +81,7 @@ acceptance. ITS was not changed or validated; existing bank/source limitations
 remain. Preserve earlier worktrees and unrelated root work.
 
 Production promotion and hosted acceptance are pending at this checkpoint.
+The closing release comment on PR #90 records the exact merge commit, deployment
+and hosted checks. The ITS porting note is
+`20261028_ITS_handover_main_release.md`; it distinguishes the full delta from the
+previous deployed/main version and the narrower PR #90 Word change.

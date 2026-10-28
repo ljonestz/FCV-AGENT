@@ -13230,13 +13230,14 @@ def download_report():
             body_lines.clear()
 
         for line in str(text or '').splitlines():
-            heading = re.match(r'^(#{1,6})\s+(.+?)\s*#*\s*$', line)
+            heading = re.match(r'^(#{1,6})\s+', line)
             if not heading:
                 body_lines.append(line)
                 continue
             flush_body()
             depth = len(heading.group(1))
-            title = heading.group(2).strip()
+            # Strip closing markers without overlapping regex whitespace scans.
+            title = line[heading.end():].strip().rstrip('#').rstrip()
             if depth <= 2:
                 report.h1(title)
             elif depth == 3:

@@ -1,6 +1,7 @@
 ### 2026-10-28 Full approved Word template restored before production
 
-Continue from `docs/20261028_climate-word-layout.md` and draft PR #90 on
+Continue from `docs/20261028_climate-word-layout.md`, the ITS handover
+`20261028_ITS_handover_main_release.md`, and PR #90 on
 `fix/climate-word-parity-20261028`. Bank PR #5 and app PR #89 have merged
 (05b5a097 and 0a2ae95). Existing user authority covers merge and production
 rollout after verification; preserve the branch/worktrees and unrelated root work.
@@ -14,8 +15,9 @@ content and route gates remain. Saved-session filenames survive load/save and
 supply real metadata. Canonical assessments, prompts, retrieval, bank pin 72ce351
 and logo assets are unchanged. This supersedes the partial branding pass.
 
-Final full suite: 2,090 passed, two skipped, four documented headless browser
-hangs excluded; source/test hashes stayed unchanged throughout the run. Actual
+Final full suite: 2,091 passed, two skipped, four documented headless browser
+hangs excluded (368.11s); source/test hashes stayed unchanged throughout the run.
+This includes the final heading-parser security correction and regression. Actual
 browser downloads, input/canonical integrity and native Word visual acceptance
 passed for all 11 Climate and 15 normal pages, plus a long-banner fixture.
 Production acceptance follows in the dated document. No new paid calls; prior conservative

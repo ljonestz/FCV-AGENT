@@ -611,3 +611,19 @@ def test_offline_fcv_unknown_scale6_rating_remains_unscored(tmp_path):
         for cell in meter.rows[0].cells
     ]
     assert fills == [METER_OFF] * 6
+
+
+def test_normal_word_heading_handles_long_whitespace_and_closing_markers():
+    from app import app
+
+    title = "Access" + " " * 2000 + "decisions"
+    response = app.test_client().post(
+        "/api/download-report",
+        json={"summary": f"## {title} ###  \n\nKeep this narrative.\n\n### Who acts? ##"},
+    )
+    assert response.status_code == 200
+    document = Document(BytesIO(response.data))
+    paragraphs = [paragraph.text for paragraph in document.paragraphs]
+    assert any(title in text and "#" not in text for text in paragraphs)
+    assert any("Who acts?" in text and "#" not in text for text in paragraphs)
+    assert "Keep this narrative." in paragraphs
