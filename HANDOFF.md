@@ -1,3 +1,26 @@
+### 2026-10-28 Final opening-preamble cleanup verified on test
+
+Continue from `docs/20261028_readout-presentation-simplification.md`.
+Code `17d45c39a245b72c66e77afe6e7554e1e48f424b` is live only on
+https://fcv-agent-1.onrender.com, deployment `dep-dbgvqkp42hec73e4em90`
+(13:50:24 UTC). Summary, Detailed, Copy and Word/HTML omit generic opening
+review preambles; the offline Word builder also omits the old preparation banner.
+Canonical review metadata and specific qualifications remain. No prompts, bank,
+model schema or Word design files changed; bank pin remains 72ce351.
+
+Final full suite: 2,079 passed, two skipped, four documented headless hangs
+excluded (515.79s). Headed Edge checked all five links, actual Copy/downloads,
+phone layouts and print restoration; all 13 fresh Climate Word pages were
+inspected. Hosted saved-session acceptance passed on the exact code SHA with no
+assessment attempts. Evidence: `output/20261028-readout-presentation/preamble-removal/`.
+
+No new paid calls; conservative prior debit remains USD10.729492. Test spending
+blocker/settings are retained. Production health remains 6f3d5e65e213, bank-only,
+Quality; complete service metadata and its 18 October updatedAt are unchanged.
+Both PRs remain draft; production promotion is a separate permission boundary.
+Keep both worktrees and the 253 unrelated root status entries. Earlier entries
+below describe historical behavior.
+
 ### 2026-10-28 Readout presentation changes verified on test only
 
 Continue from `docs/20261028_readout-presentation-simplification.md`.

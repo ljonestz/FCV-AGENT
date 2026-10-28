@@ -2,16 +2,16 @@
 
 ## Candidate and scope
 
-Presentation code commit: `a36a236fbc0b090bb584848c088e7eb52c7be735`, on
+Presentation code commit: `17d45c39a245b72c66e77afe6e7554e1e48f424b`, on
 `feat/global-country-bank-depth-20261026`. The local-only approved plan is
 `docs/superpowers/plans/2026-10-28-readout-presentation-simplification.md`.
 This continues the bank and deploy-readiness work recorded in
 `docs/20261027_deploy-readiness-follow-through.md`.
 
-Test deployment: `dep-dbgu1tutlv9c73dd2c5g`, **live at 2026-10-28 11:49:33 UTC**.
+Test deployment: `dep-dbgvqkp42hec73e4em90`, **live at 2026-10-28 13:50:24 UTC**.
 Service `fcv-agent-climate-smoke` (`srv-d6gsivcr85hc73a2833g`) serves
 https://fcv-agent-1.onrender.com in the confirmed FCV LLM Services workspace.
-Auto-deploy is off. **Hosted health reports build `a36a236fbc0b`, live research, Quality and Haiku research. The saved-session hosted check passed; no app error/critical logs were returned for the post-live interval checked.**
+Auto-deploy is off. **Hosted health reports build `17d45c39a245`, live research, Quality and Haiku research. The saved-session hosted check passed; no app error/critical logs were returned for the post-live interval checked.**
 
 Production remains on `6f3d5e65e213`, main, bank-only and Quality, with auto-deploy
 off. **The complete service metadata matches the pre-deploy record; updatedAt remains `2026-10-18T14:35:48.223085Z`, and production health still reports the same build and modes.** No merge, production deployment, hosted
@@ -24,9 +24,11 @@ The app still pins bank `72ce351e0f19fe52ff786196b516e6dc4a684290`.
   existing short action and a link to the matching Detailed priority. Climate
   actions in the saved Somalia run are 39-45 words. Action paragraphs use regular
   font weight on both routes; titles and labels retain their emphasis.
-- Summary starts directly with its assessment. The general `reader_review_notice`
-  preamble is omitted only here. Its canonical value and the specific source
-  verification notes remain in Detailed and exports.
+- Summary and Detailed start directly with their assessments. Generic opening
+  `reader_review_notice` preambles are omitted from browser views, Copy and
+  Word/HTML; the offline Word builder also omits `overview_notice` and the old
+  `context_note` preparation banner. Canonical review metadata and specific source
+  qualifications remain unchanged.
 - Summary omits the duplicate Climate sensitivity line, project-cycle blocks,
   specialist reasoning disclosure and What to keep an eye on disclosure. Useful
   timing, qualifications, supporting analysis and follow-up remain in Detailed.
@@ -55,12 +57,49 @@ renderer-version change was needed. Word design/style files, logos and fixtures
 are unchanged; ancestry through `3ab33b598492f8f9ee8882d094b00ee2dfa453a3` is retained.
 The private parity note was updated; ITS was not edited or validated.
 
+## Final opening-preamble cleanup
+
+The final follow-up removes generic opening verification notices from Detailed,
+Copy and Word/HTML, including both equivalent offline Word preambles. It changes
+only three rendering files and four regression-test files: ten insertions and
+18 deletions. Canonical reader data, review verdicts, source-specific qualifications,
+partial/smoke/candidate warnings and actual drafting-route gates are retained.
+
+Focused tests failed before each display removal and passed afterward. The final
+full offline suite passed with unchanged source hashes. Headed Edge repeated the
+saved Somalia check on the final files: all five priority links, Summary/Detailed
+Copy, actual Word/HTML downloads, 390/320-pixel layouts and standalone HTML print
+restoration passed. The canonical reader/assessment restored exactly, including
+the now-hidden generic notice value. No assessment endpoint was called.
+
+The fresh actual Word download rendered read-only in native Word; all 13 pages
+were visually inspected. There is no clipping or layout issue, all five priorities
+and the advisory remain, and the source DOCX hash is unchanged. Page 13 is a short,
+nonempty ending. The normal-route/18-page evidence below is the unchanged preceding
+presentation baseline; it was not regenerated for this climate-only follow-up.
+
+The final hosted saved-session check passed at the exact commit above: Detailed
+has no generic review notice, five compact cards use regular-weight actions,
+Copy/download controls and the full advisory remain, and there are no browser/API
+errors or attempted assessments. GitHub CodeQL passed on this code checkpoint.
+Production health and its complete service metadata still match the pre-deploy
+record. Both PRs remain drafts; this is a test-only deployment.
+
+Fresh ignored evidence is under `output/20261028-readout-presentation/preamble-removal/`:
+`full-suite-final.log`, `full-suite-final-result.json`, `browser-check.json`,
+`final-source-export-checks.json`, `climate-final-report.docx/.html`,
+`climate-final-word-render.json`, `climate-final-word-visual-review.json`, all
+13 page PNGs, `hosted-preview-check.json` and hosted opening screenshots/HTML.
+The earlier interrupted full run is retained as diagnostic evidence and is not
+the final acceptance result. The native Word helper required normal process
+permissions; its successful render and owned process exit are recorded.
+
 ## Verification
 
 - Final full offline app suite: **2,079 passed, two skipped, four deselected** in
-  **409.68s**, exit 0. The four exclusions are the documented hanging headless
+  **515.79s**, exit 0. The four exclusions are the documented hanging headless
   Chromium print/phone cases. Submodule sync/init completed before testing.
-- The first full pass found ten stale presentation assertions or isolated Node
+- An earlier presentation pass found ten stale presentation assertions or isolated Node
   harness dependencies. They were updated without dropping packet, route or source
   safeguards; all ten passed in focused runs, followed by the clean full run.
 - All three inline scripts pass Node syntax checks. Modified Python files compile,
@@ -118,7 +157,8 @@ check, not a fresh native normal-FCV assessment. Long recommendations in that ol
 save remain complete rather than being cut arbitrarily.
 
 The Somalia save remains historical evidence from the earlier paid run. Its three
-minor source notes, `revise` and `attention` are retained in Detailed/exports.
+inline source qualifications remain in Detailed/exports; `revise`, `attention`
+and the generic notice value remain in canonical review metadata.
 Removing a banner does not resolve those findings or record publication approval.
 See the preceding readiness handoff for the source-admission fix and remaining
 country-bank evidence limitations. No new analytical quality claim is made here.
