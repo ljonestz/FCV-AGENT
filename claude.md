@@ -1,3 +1,22 @@
+### 2026-10-28 Word branding and layout correction before production
+
+Continue from `docs/20261028_climate-word-layout.md` on
+`fix/climate-word-parity-20261028`. Bank PR #5 and app PR #89 are merged; their
+merge commits are 05b5a097 and 0a2ae95. User authority now covers final merge and
+production deployment after this Word correction passes.
+
+The live detailed exports now reuse the approved FCV logo, navy masthead, blue
+headings, page geometry and running header/footer. The assessment follows the
+LLM warning; Climate ratings sit below the findings. Normal and Climate priority
+tables retain complete content, avoid splitting rows and use readable widths.
+The approved design ancestry and logo assets are retained; the bank pin remains
+72ce351. Earlier records below describe historical test-only status.
+
+Focused checks have passed; final Word pagination and full-suite acceptance are
+still in progress. Production is still 6f3d5e65e213 with auto-deploy off and no
+configuration change. No new paid calls. Keep the earlier worktrees and unrelated
+root work. Do not count interrupted verification runs as completed tests.
+
 ### 2026-10-28 Final opening-preamble cleanup verified on test
 
 Continue from `docs/20261028_readout-presentation-simplification.md`.

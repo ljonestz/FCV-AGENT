@@ -287,9 +287,9 @@ class Report:
     """lens: 'fcv' or 'climate'.  meta keys: title, project_line, running_label, date, classification,
     generator, disclaimer."""
 
-    def __init__(self, lens, meta):
+    def __init__(self, lens, meta, document=None):
         self.lens, self.meta = lens, meta
-        self.doc = Document()
+        self.doc = document if document is not None else Document()
         z = self.doc.settings.element.find(qn("w:zoom"))
         if z is not None:
             z.set(qn("w:percent"), "100")
@@ -318,7 +318,10 @@ class Report:
     def _running_header(self, header):
         p = header.paragraphs[0]; self._tabbed(p)
         add_run(p, "FCV SCREENER", 7.5, True, color=BLUE, spacing=1)
-        add_run(p, f"   {self.meta['title']}  ·  {self.meta['running_label']}", 7.5, color=GREY_TXT)
+        label = self.meta["title"]
+        if self.meta["running_label"]:
+            label += "  \u00b7  " + self.meta["running_label"]
+        add_run(p, "   " + label, 7.5, color=GREY_TXT)
         if self.lens == "climate":
             add_run(p, "   ")
             add_run(p, " CLIMATE LENS ", 7, True, color="FFFFFF", spacing=0.8, shade=BLUE)

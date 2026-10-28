@@ -98,12 +98,13 @@ def test_style_helper_adds_repeating_contrasting_table_header():
     style_fcv_word_document(document, variant="detail")
 
     header_row = table.rows[0]
-    assert _fill(header_row.cells[0]._tc.tcPr, "w:shd") == "153956"
+    assert _fill(header_row.cells[0]._tc.tcPr, "w:shd") == "002244"
     assert header_row._tr.trPr.find(qn("w:tblHeader")) is not None
+    assert all(row._tr.trPr.find(qn("w:cantSplit")) is not None for row in table.rows)
     assert header_row.cells[0].paragraphs[0].runs[0].font.color.rgb == RGBColor(
         0xFF, 0xFF, 0xFF
     )
-    assert "FCV ASSESSMENT" in document.sections[0].header.paragraphs[0].text
+    assert "FCV SCREENER" in document.sections[0].header.paragraphs[0].text
 
 
 def test_full_report_style_bolds_body_leads_and_preserves_warning_color():

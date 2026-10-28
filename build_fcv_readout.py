@@ -11,16 +11,6 @@ def render(d, meta, path):
     R.banner()
     R.be_aware(BE_AWARE)
 
-    sens, resp = d["ratings"]["FCV Sensitivity"], d["ratings"]["FCV Responsiveness"]
-    levels = [r[2] for r in d["priority_table"]]
-    lines = [(f"{levels.count(k)} {k}", k) for k in ("High", "Medium", "Low") if levels.count(k)]
-    R.scorecard([dict(label="FCV Sensitivity", value=sens["value"], n=6, idx=SCALE6.index(sens["value"]) + 1,
-                      lo=SCALE6[0], hi=SCALE6[-1]),
-                 dict(label="FCV Responsiveness", value=resp["value"], n=6, idx=SCALE6.index(resp["value"]) + 1,
-                      lo=SCALE6[0], hi=SCALE6[-1])],
-                {"label": "Priority actions", "number": len(d["priority_table"]), "lines": lines},
-                note=d["rating_note"])
-
     R.h1("Executive Summary")
     R.info_box(d["exec"]["opening"], label="Opening assessment", bold=True)
     R.h2_caps("Strengths")
@@ -37,6 +27,16 @@ def render(d, meta, path):
             R.body(x)
 
     R.h1("FCV Sensitivity & Responsiveness")
+    sens, resp = d["ratings"]["FCV Sensitivity"], d["ratings"]["FCV Responsiveness"]
+    levels = [r[2] for r in d["priority_table"]]
+    lines = [(f"{levels.count(k)} {k}", k) for k in ("High", "Medium", "Low") if levels.count(k)]
+    R.scorecard([dict(label="FCV Sensitivity", value=sens["value"], n=6, idx=SCALE6.index(sens["value"]) + 1,
+                      lo=SCALE6[0], hi=SCALE6[-1]),
+                 dict(label="FCV Responsiveness", value=resp["value"], n=6, idx=SCALE6.index(resp["value"]) + 1,
+                      lo=SCALE6[0], hi=SCALE6[-1])],
+                {"label": "Priority actions", "number": len(d["priority_table"]), "lines": lines},
+                note=d["rating_note"])
+
     for i, (lab, r) in enumerate((("FCV Sensitivity", sens), ("FCV Responsiveness", resp))):
         R.rating_segment(lab, r["value"], why=r["text"], first=(i == 0))
     R.small(d["rating_note"])

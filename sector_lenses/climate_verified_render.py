@@ -10,6 +10,9 @@ from pathlib import Path
 from typing import Any
 
 from docx import Document
+from docx.shared import Inches, Pt
+
+from fcv_docx_style import BE_AWARE
 
 from fcv_presentation import priority_advisory_text
 
@@ -1726,6 +1729,34 @@ def write_reader_docx(model: dict[str, object], path: str | Path, *, snapshot_sh
 
     output = path if hasattr(path, "write") else Path(path)
     document = Document()
+    for section in document.sections:
+        section.top_margin = section.bottom_margin = Inches(1)
+        section.left_margin = section.right_margin = Inches(1.2)
+    document.add_paragraph("Climate and FCV Recommendations Note", style="Title")
+    for warning in BE_AWARE:
+        paragraph = document.add_paragraph(warning)
+        for run in paragraph.runs:
+            run.font.size = Pt(9)
+            run.italic = True
+    document.add_heading("Overview", level=1)
+    for paragraph in model.get("summary_overview", []) or [model.get("overview_summary", "")]:
+        if _text(paragraph):
+            document.add_paragraph(_text(paragraph))
+    # Native reports use the independently reviewed opening, not its unreviewed precursor.
+    if model.get('reader_contract') != 'final-reader-v1':
+        document.add_heading(HEADINGS[0], level=1)
+        for _exec_para in re.split(r"\n\s*\n+", _text(model.get("executive_readout")).strip()):
+            _exec_para = _exec_para.strip()
+            if not _exec_para:
+                continue
+            _m = re.match(r"^(.*?[.!?])(\s+)([\s\S]*)$", _exec_para)
+            _paragraph = document.add_paragraph()
+            if _m:
+                _paragraph.add_run(_m.group(1)).bold = True
+                _paragraph.add_run(_m.group(2) + _m.group(3))
+            else:
+                _paragraph.add_run(_exec_para).bold = True
+
     if snapshot_sha256:
         document.add_paragraph('Review snapshot: ' + snapshot_sha256)
     if model.get("analysis_status") == "partial" and _text(model.get("analysis_message")):
@@ -1754,34 +1785,6 @@ def write_reader_docx(model: dict[str, object], path: str | Path, *, snapshot_sh
             "Suggested document wording is not shown because the document "
             "type or financing route could not be confirmed reliably."
         )
-    table = document.add_table(rows=1, cols=2)
-    for cell, card in zip(table.rows[0].cells, _rating_cards(model)):
-        cell.paragraphs[0].add_run(card["title"]).bold = True
-        cell.add_paragraph(card["label"] + (f" ({card['level']} of 5)" if card["level"] else " (unscored)"))
-        cell.add_paragraph(card["question"])
-        cell.add_paragraph(card["rationale"])
-    document.add_paragraph("Scale: Very limited / Limited / Moderate / Strong / Very strong. "
-                           "Not expected, Unclear and legacy Emerging are unscored.")
-    document.add_paragraph("Contributing to responsiveness is often a sign of going above and beyond. "
-                           "The expected contribution depends on the project's scope.")
-    document.add_paragraph(SENSITIVITY_RATING_CAVEAT)
-    for paragraph in model.get("summary_overview", []) or [model.get("overview_summary", "")]:
-        if _text(paragraph):
-            document.add_paragraph(_text(paragraph))
-    # Native reports use the independently reviewed opening, not its unreviewed precursor.
-    if model.get('reader_contract') != 'final-reader-v1':
-        document.add_heading(HEADINGS[0], level=1)
-        for _exec_para in re.split(r"\n\s*\n+", _text(model.get("executive_readout")).strip()):
-            _exec_para = _exec_para.strip()
-            if not _exec_para:
-                continue
-            _m = re.match(r"^(.*?[.!?])(\s+)([\s\S]*)$", _exec_para)
-            _paragraph = document.add_paragraph()
-            if _m:
-                _paragraph.add_run(_m.group(1)).bold = True
-                _paragraph.add_run(_m.group(2) + _m.group(3))
-            else:
-                _paragraph.add_run(_exec_para).bold = True
 
     document.add_heading("Assessment findings", level=1)
     for theme in _records(model.get("assessment_themes")):
@@ -1802,6 +1805,21 @@ def write_reader_docx(model: dict[str, object], path: str | Path, *, snapshot_sh
             document.add_paragraph("Optional wider dividends depend on the project's scope; "
                                    "they are not required in every project.")
 
+    document.add_heading("Climate and FCV Sensitivity and Responsiveness", level=1)
+    for card in _rating_cards(model):
+        document.add_heading(card["title"], level=2)
+        paragraph = document.add_paragraph()
+        paragraph.add_run(card["label"] + (
+            f" ({card['level']} of 5)" if card["level"] else " (unscored)"
+        )).bold = True
+        document.add_paragraph(card["question"])
+        document.add_paragraph(card["rationale"])
+    document.add_paragraph("Scale: Very limited / Limited / Moderate / Strong / Very strong. "
+                           "Not expected, Unclear and legacy Emerging are unscored.")
+    document.add_paragraph("Contributing to responsiveness is often a sign of going above and beyond. "
+                           "The expected contribution depends on the project's scope.")
+    document.add_paragraph(SENSITIVITY_RATING_CAVEAT)
+
     document.add_heading(HEADINGS[2], level=1)
     priorities = _records(model.get("priorities"))
     priority_summary = _mapping(model.get("priority_summary"))
@@ -1812,6 +1830,22 @@ def write_reader_docx(model: dict[str, object], path: str | Path, *, snapshot_sh
         document.add_paragraph(advisory)
     if not priorities:
         document.add_paragraph(_no_priority_message(model))
+    if priorities:
+        table = document.add_table(rows=1, cols=2)
+        table.style = "Table Grid"
+        table.autofit = False
+        table.columns[0].width = Inches(0.4)
+        table.columns[1].width = Inches(5.7)
+        for cell, width, label in zip(table.rows[0].cells, (0.4, 5.7), ("#", "Operational priority")):
+            cell.width = Inches(width)
+            cell.text = label
+        for priority in priorities:
+            cells = table.add_row().cells
+            for cell, width in zip(cells, (0.4, 5.7)):
+                cell.width = Inches(width)
+            cells[0].text = str(_rank(priority.get("rank")))
+            cells[1].text = _text(priority.get("title"))
+        document.add_heading("Strategic priorities", level=1)
     for priority in priorities:
         rank = _rank(priority.get("rank"))
         document.add_heading(
@@ -1900,7 +1934,7 @@ def write_reader_docx(model: dict[str, object], path: str | Path, *, snapshot_sh
 
     document.add_paragraph(_text(model.get("advisory_notice")))
     from fcv_word_style import style_fcv_word_document
-    style_fcv_word_document(document, variant="detail")
+    style_fcv_word_document(document, variant="detail", lens="climate")
     document.save(output)
     return output
 

@@ -535,14 +535,11 @@ def test_overview_summary_renders_in_docx_before_executive_readout():
     write_reader_docx(build_reader_model(assessment), stream)
     stream.seek(0)
     texts = [p.text for p in Document(stream).paragraphs]
-    stream.seek(0)
-    document = Document(stream)
-    assert SENSITIVITY_RATING_QUESTION in document.tables[0].cell(0, 0).text
-    assert "Climate & FCV responsiveness" in document.tables[0].cell(0, 1).text
+    assert SENSITIVITY_RATING_QUESTION in texts
+    assert "Climate & FCV responsiveness" in texts
     summary_idx = next(i for i, t in enumerate(texts) if "OVERVIEW_MARKER" in t)
     exec_idx = next(i for i, t in enumerate(texts) if t == HEADINGS[0])
-    # Graphic (rating question line) first, then the summary text, then the
-    # fuller Executive readout heading below.
+    # Legacy saved readers retain their fuller readout after the overview.
     assert summary_idx < exec_idx
 
 
@@ -1395,8 +1392,9 @@ def test_docx_writer_accepts_an_in_memory_stream():
     stream.seek(0)
     texts = [p.text for p in Document(stream).paragraphs]
     # Concrete evidence status and overview remain visible without a generic draft banner.
-    assert texts[0] == "Candidate country evidence: preview; not approved."
-    assert texts[1].startswith("Scale: Very limited")
+    assert texts[0].startswith("Be aware: LLMs are not magic")
+    assert texts.index("Candidate country evidence: preview; not approved.") > texts.index("Overview")
+    assert any(text.startswith("Scale: Very limited") for text in texts)
     assert HEADINGS[0] in texts
 
 
