@@ -1896,7 +1896,7 @@ def test_climate_detailed_exports_place_advisory_and_keep_review_signals():
         assert "Recommendations need review" in output
         assert "Smoke test: validates workflow completion only" in output
         assert "Candidate country evidence: preview; not approved." in output
-        assert model["reader_review_notice"] in output
+        assert model["reader_review_notice"] not in output
         assert "At concept stage" in output
         assert "During preparation" in output
         assert "Confirm the OIS date before the concept review." in output

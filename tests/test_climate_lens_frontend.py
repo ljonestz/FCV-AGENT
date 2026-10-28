@@ -737,8 +737,7 @@ for (const [name,html] of [
   ['summary',renderClimateVerifiedSummary(reader)],
   ['detailed',renderClimateVerifiedAssessment(reader)]
 ]) {{
-  if(name==='summary'&&html.includes(openingNotice))throw new Error('generic verification note remains at the Summary opening');
-  if(name==='detailed'&&!html.includes(openingNotice))throw new Error('Detailed analysis lost its reader verification note');
+  if(html.includes(openingNotice))throw new Error(name+' shows a generic verification preamble before the assessment');
   if (!html.toLowerCase().includes('could not be completed')) {{
     throw new Error(name+' view hides incomplete recommendation state | '+html);
   }}

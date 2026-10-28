@@ -5217,8 +5217,7 @@
     }
     const overviewParagraphs=Array.isArray(r.summary_overview)&&r.summary_overview.length?r.summary_overview:[r.overview_summary||csr&&csr.overview_summary||''];
     const overviewHtml=overviewParagraphs.filter(Boolean).map(text=>`<p>${esc(text)}</p>`).join('');
-    const readerReviewNotice=r.reader_review_notice?`<p class="climate-review-notice">${esc(r.reader_review_notice)}</p>`:'';
-    const overviewBodyHtml=`${readerReviewNotice}${ratingsInSidebar?'':ratingHtml}${overviewHtml}${r.reader_contract==='final-reader-v1'?'':`<h3 class="climate-subheading">Operational context</h3><div class="climate-exec">${execHtml}</div>`}`;
+    const overviewBodyHtml=`${ratingsInSidebar?'':ratingHtml}${overviewHtml}${r.reader_contract==='final-reader-v1'?'':`<h3 class="climate-subheading">Operational context</h3><div class="climate-exec">${execHtml}</div>`}`;
     const themes=Array.isArray(r.assessment_themes)?r.assessment_themes:[];
     const themesHtml=themes.map(theme=>{
       const question=theme.question||{

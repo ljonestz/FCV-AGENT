@@ -31,13 +31,9 @@ def render(d, meta, path):
     # ---- status notices
     for n in d["notices"]:
         R.caution(n["title"], n["body"])
-    if d.get("context_note"):
-        R.info_box(d["context_note"], size=9)
 
     # ---- 01 overview
     R.h1("Overview")
-    if d.get("overview_notice"):
-        R.caution(d["overview_notice"])
     for para in d["overview"]:
         R.body(para)
 

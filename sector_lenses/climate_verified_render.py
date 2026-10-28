@@ -1511,8 +1511,6 @@ def render_reader_html(model: dict[str, object], *, snapshot_sha256: str | None 
             "<p>Suggested document wording is not shown because the "
             "document type or financing route could not be confirmed reliably.</p>"
         )
-    if _text(model.get("reader_review_notice")):
-        parts.append('<p class="climate-review-notice">' + html.escape(_text(model["reader_review_notice"])) + "</p>")
     parts.append(_paired_ratings_html(model))
     for paragraph in model.get("summary_overview", []) or [model.get("overview_summary", "")]:
         if _text(paragraph):
@@ -1767,8 +1765,6 @@ def write_reader_docx(model: dict[str, object], path: str | Path, *, snapshot_sh
     document.add_paragraph("Contributing to responsiveness is often a sign of going above and beyond. "
                            "The expected contribution depends on the project's scope.")
     document.add_paragraph(SENSITIVITY_RATING_CAVEAT)
-    if _text(model.get("reader_review_notice")):
-        document.add_paragraph(_text(model["reader_review_notice"]))
     for paragraph in model.get("summary_overview", []) or [model.get("overview_summary", "")]:
         if _text(paragraph):
             document.add_paragraph(_text(paragraph))
