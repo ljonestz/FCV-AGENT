@@ -71,13 +71,18 @@ def test_pruned_analysis_has_a_plain_reader_limitation():
 def test_pruned_analysis_notice_is_retained_in_html_word_and_both_views():
     from io import BytesIO
     from docx import Document
+    from docx.oxml.ns import qn
+    from docx.text.paragraph import Paragraph
     from sector_lenses.climate_verified_render import render_reader_html, write_reader_docx
     from tests.test_climate_lens_frontend import INDEX, _extract_js_function
     message="Fewer findings or actions do not establish an absence of risks or gaps."
     reader={"analysis_status":"partial","analysis_message":message}
     assert message in render_reader_html(reader)
     stream=BytesIO();write_reader_docx(reader,stream);stream.seek(0)
-    assert message in " ".join(p.text for p in Document(stream).paragraphs)
+    document = Document(stream)
+    word = " ".join(Paragraph(element, document).text
+                    for element in document.element.body.iter(qn("w:p")))
+    assert message in word
     source=INDEX.read_text(encoding="utf-8")
     for name in ("renderClimateVerifiedSummary","renderClimateVerifiedAssessment"):
         helper=_extract_js_function(source,name)

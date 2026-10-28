@@ -18,7 +18,6 @@ def render(d, meta, path):
     R.banner()
     R.be_aware(BE_AWARE)
 
-    # ---- at a glance
     tiles = []
     for r in d["ratings"]:
         lo, hi = scale_ends(r.get("scale_note"))
@@ -28,14 +27,14 @@ def render(d, meta, path):
                         "lines": [(f"+ {n_checks} points to check", None)]},
                 note=d["ratings_disclaimer"])
 
-    # ---- status notices
-    for n in d["notices"]:
-        R.caution(n["title"], n["body"])
-
     # ---- 01 overview
     R.h1("Overview")
     for para in d["overview"]:
         R.body(para)
+
+    # ---- status notices
+    for n in d["notices"]:
+        R.caution(n["title"], n["body"])
 
     # ---- 02 assessment findings
     R.h1("Assessment findings")
@@ -47,7 +46,7 @@ def render(d, meta, path):
             R.related_line("Related operational priorities:",
                            [(t, "priority_" + t.split()[-1]) for t in f["related"]])
 
-    # ---- 03 ratings (compact write-up; the scale graphic is only in the page-1 scorecard)
+    # ---- 03 rating detail after the assessment findings
     R.h1("Climate & FCV Sensitivity & Responsiveness")
     for i, r in enumerate(d["ratings"]):
         R.rating_segment(r["dimension"], r["value"], meaning=r["meaning"], why=r["why"], notes=r["notes"],

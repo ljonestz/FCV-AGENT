@@ -4,6 +4,8 @@ from __future__ import annotations
 from io import BytesIO
 
 from docx import Document
+from docx.oxml.ns import qn
+from docx.text.paragraph import Paragraph
 
 from sector_lenses.climate_verified_pipeline import _admit_minor_climate_points
 from sector_lenses.climate_verified_render import (
@@ -41,6 +43,11 @@ def test_admit_minor_points_gates_on_non_admitted_gaps_and_dedup():
         "Heat exposure for site workers is not addressed"
     ]
     assert result[0]["residual_gap_ids"] == ["RG-009"]
+
+
+def _docx_body_paragraphs(document: Document) -> list[str]:
+    """Return body paragraphs in OOXML order, including paragraphs in tables."""
+    return [Paragraph(element, document).text for element in document.element.body.iter(qn("w:p"))]
 
 
 def _assessment(minor=True) -> dict[str, object]:
@@ -87,15 +94,21 @@ def test_reader_and_render_show_two_points_to_check_groups():
     stream = BytesIO()
     write_reader_docx(model, stream)
     stream.seek(0)
-    text = "\n".join(p.text for p in Document(stream).paragraphs)
-    assert "Document points to confirm" in text
-    assert "Smaller climate & fragility points to consider" in text
-    assert "Heat exposure for site workers is not addressed" in text
-    assert text.index("Smaller climate & fragility points") < text.index(
-        "Document points to confirm"
-    )
-    assert "01 Heat exposure for site workers is not addressed" in text
-    assert "01 Placeholder value in the results framework" in text
+    paragraphs = _docx_body_paragraphs(Document(stream))
+    text = "\n".join(paragraphs)
+    normalized = [paragraph.strip().casefold() for paragraph in paragraphs]
+    smaller_heading = "smaller climate & fragility points to consider"
+    confirm_heading = "document points to confirm"
+    heat_point = "heat exposure for site workers is not addressed"
+    placeholder_point = "placeholder value in the results framework"
+    assert smaller_heading in text.casefold()
+    assert confirm_heading in text.casefold()
+    assert heat_point in text.casefold()
+    assert normalized.index(smaller_heading) < normalized.index(confirm_heading)
+    heat_index = normalized.index(heat_point)
+    placeholder_index = normalized.index(placeholder_point)
+    assert normalized[heat_index - 1] == "01"
+    assert normalized[placeholder_index - 1] == "01"
 
 
 def test_reader_suppresses_points_section_when_both_groups_are_empty():

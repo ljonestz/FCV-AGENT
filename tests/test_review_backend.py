@@ -82,7 +82,7 @@ def test_word_keeps_watch_content_with_single_heading(heading):
     assert result.status_code == 200
     text = "\n".join(p.text for p in Document(io.BytesIO(result.data)).paragraphs)
     assert text.count("Watch List for Supervision") == 1
-    assert "Access risk" in text
+    assert "ACCESS RISK" in text
     assert "Monitor access in Conakry." in text
 
 

@@ -9,7 +9,7 @@ from urllib.parse import urlsplit
 from pathlib import Path
 from typing import Any
 
-from docx import Document
+from fcv_docx_style import BE_AWARE, CONTENT_W, Report
 
 from fcv_presentation import priority_advisory_text
 
@@ -1700,208 +1700,361 @@ def render_reader_html(model: dict[str, object], *, snapshot_sha256: str | None 
     return "".join(parts)
 
 
-def _docx_field(document: Document, label: str, value: object) -> None:
-    text = _field_text(value)
+def _docx_drafting(report: Report, label: str, value: object) -> None:
+    block = _mapping(value)
+    text = _text(block.get("text"))
     if not text:
         return
-    paragraph = document.add_paragraph()
-    paragraph.add_run(f"{label}: ").bold = True
-    paragraph.add_run(text)
-
-
-def _docx_drafting(document: Document, label: str, value: object) -> None:
-    block = _mapping(value)
-    if not block:
-        return
-    document.add_heading(label, level=3)
     destination = " - ".join(_text(block.get(key)) for key in
                               ("target_document", "target_section") if _text(block.get(key)))
-    if destination:
-        document.add_paragraph("For: " + destination)
-    document.add_paragraph(_text(block.get("text")))
+    report.drafting_box(text, destination, label=label, note="")
 
 
-def write_reader_docx(model: dict[str, object], path: str | Path, *, snapshot_sha256: str | None = None) -> Path:
-    """Write the same reader dictionary to a compact Word document."""
+def _docx_priority_target(
+    priority: dict[str, Any], operation_context: dict[str, object]
+) -> str:
+    """Show only targets for drafting blocks that pass the reader route gate."""
+    route = _drafting_route_gate(operation_context, priority)
+    blocks = []
+    if route["can_render"]:
+        blocks.append(_mapping(priority.get("current_document_drafting")))
+    if _drafting_route_gate(operation_context)["confirmed"]:
+        blocks.append(_mapping(priority.get("operational_instrument_drafting")))
+    targets = []
+    for block in blocks:
+        target = " - ".join(
+            _text(block.get(key))
+            for key in ("target_document", "target_section")
+            if _text(block.get(key))
+        )
+        if target and target not in targets:
+            targets.append(target)
+    return "; ".join(targets)
 
-    output = path if hasattr(path, "write") else Path(path)
-    document = Document()
-    if snapshot_sha256:
-        document.add_paragraph('Review snapshot: ' + snapshot_sha256)
+
+def _docx_status_notices(report: Report, model: dict[str, object]) -> None:
+    """Keep genuine evidence/runtime warnings ahead of the assessment."""
     if model.get("analysis_status") == "partial" and _text(model.get("analysis_message")):
-        paragraph = document.add_paragraph("Assessment evidence is incomplete: "
-                                           + _text(model["analysis_message"]))
-        paragraph.runs[0].bold = True
+        report.caution("Assessment evidence is incomplete", [_text(model["analysis_message"])])
     if model.get("recommendation_status") == "partial":
-        paragraph = document.add_paragraph("Recommendations need review: " + (_text(model.get("recommendation_message")) or PARTIAL_RECOMMENDATION_MESSAGE))
-        paragraph.runs[0].bold = True
+        report.caution(
+            "Recommendations need review",
+            [_text(model.get("recommendation_message")) or PARTIAL_RECOMMENDATION_MESSAGE],
+        )
     if model.get("recommendation_status") == "incomplete":
-        paragraph = document.add_paragraph("Recommendations stage incomplete: "
-                                           + INCOMPLETE_RECOMMENDATION_MESSAGE)
-        paragraph.runs[0].bold = True
+        report.caution("Recommendations stage incomplete", [INCOMPLETE_RECOMMENDATION_MESSAGE])
     if _text(model.get("runtime_mode")) == "smoke":
-        paragraph = document.add_paragraph(SMOKE_RUNTIME_WARNING)
-        if paragraph.runs:
-            paragraph.runs[0].bold = True
+        report.caution(SMOKE_RUNTIME_WARNING)
     if _text(model.get("evidence_status")) == "preview; not approved":
-        paragraph = document.add_paragraph(CANDIDATE_PREVIEW_WARNING)
-        if paragraph.runs:
-            paragraph.runs[0].bold = True
+        report.caution(CANDIDATE_PREVIEW_WARNING)
+
+
+def write_reader_docx(
+    model: dict[str, object],
+    path: str | Path,
+    *,
+    snapshot_sha256: str | None = None,
+    report_meta: dict[str, object] | None = None,
+) -> Path:
+    """Write the canonical reader with the approved, branded Word components."""
+    output = path if hasattr(path, "write") else Path(path)
+    defaults: dict[str, object] = {
+        "title": "FCV Recommendations Note",
+        "project_line": "",
+        "running_label": "",
+        "classification": "",
+        "generator": "",
+        "disclaimer": "",
+    }
+    meta = {**defaults, **(report_meta or {})}
+    for key, fallback in defaults.items():
+        if meta.get(key) is None:
+            meta[key] = fallback
+
+    priorities = _records(model.get("priorities"))
+    minor_points = _records(model.get("minor_climate_points"))
+    doc_flags = _records(model.get("review_readiness_flags"))
+    cards = _rating_cards(model)
+    tiles = [
+        {
+            "label": card["title"],
+            "value": card["label"],
+            "n": 5,
+            "idx": card["level"],
+            "lo": "Very limited",
+            "hi": "Very strong",
+        }
+        for card in cards
+    ]
+    check_count = len(minor_points) + len(doc_flags)
+
+    report = Report("climate", meta)
+    report.banner()
+    report.be_aware(BE_AWARE)
+    report.scorecard(
+        tiles,
+        {
+            "label": "Operational priorities",
+            "number": len(priorities),
+            "lines": [(f"+ {check_count} points to check", None)] if check_count else [],
+        },
+    )
+    _docx_status_notices(report, model)
+
+    # The Overview opens with the approved assessment text. Generic reader,
+    # review, preparation-route, and draft-introduction notices stay out of it.
+    report.h1("Overview")
+    overview = model.get("summary_overview") or [model.get("overview_summary", "")]
+    if isinstance(overview, str):
+        overview = [overview]
+    elif not isinstance(overview, (list, tuple)) or not overview:
+        overview = [model.get("overview_summary", "")]
+    for paragraph in overview:
+        if _text(paragraph):
+            report.body(_text(paragraph))
+    if model.get("reader_contract") != "final-reader-v1":
+        legacy_readout = [
+            paragraph.strip()
+            for paragraph in re.split(r"\n\s*\n+", _text(model.get("executive_readout")).strip())
+            if paragraph.strip()
+        ]
+        if legacy_readout:
+            report.h1(HEADINGS[0])
+            for paragraph in legacy_readout:
+                report.body(paragraph)
+
+    report.h1("Assessment findings")
+    themes = _records(model.get("assessment_themes"))
+    for theme in themes:
+        question, paragraphs, ranks = _theme_readout(theme)
+        if question:
+            report.h2_question(question)
+        for paragraph in paragraphs:
+            report.body(paragraph)
+        if ranks:
+            report.related_line(
+                "Related operational priorities:",
+                [(f"Priority {rank}", f"priority_{rank}") for rank in ranks],
+            )
+    gaps = [
+        _text(item.get("text"))
+        for item in _records(model.get("summary_gaps"))
+        if _text(item.get("text"))
+    ]
+    if gaps and not themes:
+        report.h2_caps("Supporting gap findings")
+        for text in gaps:
+            report.body(text)
+        if re.search(r"\b(?:peace|social|dividends?)\b", " ".join(gaps), re.IGNORECASE):
+            report.body(
+                "Optional wider dividends depend on the project's scope; "
+                "they are not required in every project."
+            )
+
+    # Keep the full rating explanations below the assessment findings.
+    report.h1("Climate and FCV Sensitivity and Responsiveness")
+    sensitivity = _mapping(model.get("climate_sensitivity_rating"))
+    for index, card in enumerate(cards):
+        meaning = []
+        if card["key"] == "sensitivity" and _text(sensitivity.get("description")):
+            meaning.append(_text(sensitivity.get("description")))
+        rationale = [_text(card.get("rationale"))] if _text(card.get("rationale")) else []
+        report.rating_segment(
+            card["title"],
+            card["label"],
+            meaning=meaning,
+            why=rationale,
+            question=card["question"],
+            scale="Scale: Very limited / Limited / Moderate / Strong / Very strong.",
+            first=index == 0,
+        )
+    report.small(
+        "Not expected, Unclear and legacy Emerging are unscored. "
+        "Contributing to responsiveness is often a sign of going above and beyond. "
+        "The expected contribution depends on the project's scope."
+    )
+    report.small(SENSITIVITY_RATING_CAVEAT)
+
+    # Keep the full advisory alongside the priority introduction, and link the
+    # overview directly to each complete, bookmarked priority below.
+    report.h1(HEADINGS[2])
+    priority_summary = _mapping(model.get("priority_summary"))
     operation_context = _mapping(model.get("operation_context"))
     drafting_route = _drafting_route_gate(operation_context)
     if operation_context and not drafting_route["confirmed"]:
-        document.add_paragraph(
-            "Suggested document wording is not shown because the document "
-            "type or financing route could not be confirmed reliably."
+        report.caution(
+            "Suggested wording is withheld until the route is confirmed",
+            [
+                "Suggested document wording is not shown because the document type "
+                "or financing route could not be confirmed reliably."
+            ],
         )
-    table = document.add_table(rows=1, cols=2)
-    for cell, card in zip(table.rows[0].cells, _rating_cards(model)):
-        cell.paragraphs[0].add_run(card["title"]).bold = True
-        cell.add_paragraph(card["label"] + (f" ({card['level']} of 5)" if card["level"] else " (unscored)"))
-        cell.add_paragraph(card["question"])
-        cell.add_paragraph(card["rationale"])
-    document.add_paragraph("Scale: Very limited / Limited / Moderate / Strong / Very strong. "
-                           "Not expected, Unclear and legacy Emerging are unscored.")
-    document.add_paragraph("Contributing to responsiveness is often a sign of going above and beyond. "
-                           "The expected contribution depends on the project's scope.")
-    document.add_paragraph(SENSITIVITY_RATING_CAVEAT)
-    for paragraph in model.get("summary_overview", []) or [model.get("overview_summary", "")]:
-        if _text(paragraph):
-            document.add_paragraph(_text(paragraph))
-    # Native reports use the independently reviewed opening, not its unreviewed precursor.
-    if model.get('reader_contract') != 'final-reader-v1':
-        document.add_heading(HEADINGS[0], level=1)
-        for _exec_para in re.split(r"\n\s*\n+", _text(model.get("executive_readout")).strip()):
-            _exec_para = _exec_para.strip()
-            if not _exec_para:
-                continue
-            _m = re.match(r"^(.*?[.!?])(\s+)([\s\S]*)$", _exec_para)
-            _paragraph = document.add_paragraph()
-            if _m:
-                _paragraph.add_run(_m.group(1)).bold = True
-                _paragraph.add_run(_m.group(2) + _m.group(3))
-            else:
-                _paragraph.add_run(_exec_para).bold = True
-
-    document.add_heading("Assessment findings", level=1)
-    for theme in _records(model.get("assessment_themes")):
-        question, paragraphs, ranks = _theme_readout(theme)
-        document.add_heading(question, level=2)
-        for paragraph in paragraphs:
-            document.add_paragraph(_text(paragraph))
-        links = ', '.join('Priority ' + str(rank) for rank in ranks)
-        if links:
-            document.add_paragraph('Related operational priorities: ' + links)
-    gaps = [_text(item.get("text")) for item in _records(model.get("summary_gaps"))[:5]
-            if _text(item.get("text"))]
-    if gaps and not model.get("assessment_themes"):
-        document.add_heading("Supporting gap findings", level=1)
-        for text in gaps:
-            document.add_paragraph(text, style="List Bullet")
-        if re.search(r"\b(?:peace|social|dividends?)\b", " ".join(gaps), re.IGNORECASE):
-            document.add_paragraph("Optional wider dividends depend on the project's scope; "
-                                   "they are not required in every project.")
-
-    document.add_heading(HEADINGS[2], level=1)
-    priorities = _records(model.get("priorities"))
-    priority_summary = _mapping(model.get("priority_summary"))
-    if priorities and _text(priority_summary.get("statement")):
-        document.add_paragraph(_text(priority_summary.get("statement")))
-    advisory = priority_advisory_text("climate")
-    if priorities and advisory not in _text(priority_summary.get("statement")):
-        document.add_paragraph(advisory)
-    if not priorities:
-        document.add_paragraph(_no_priority_message(model))
-    for priority in priorities:
-        rank = _rank(priority.get("rank"))
-        document.add_heading(
-            f"{rank}. {_text(priority.get('title'))}",
-            level=2,
+    if priorities:
+        implementation = _text(meta.get("review_mode")).casefold() == "implementation"
+        advisory = priority_advisory_text("climate", implementation=implementation)
+        intro = "\n\n".join(
+            part
+            for part in (_text(priority_summary.get("statement")), advisory)
+            if part
         )
-        for label, paragraphs in _priority_sections(priority):
-            if paragraphs:
-                document.add_heading(label, level=3)
-                for paragraph in paragraphs:
-                    document.add_paragraph(paragraph)
-        document.add_heading("Practical considerations and Suggested Text", level=3)
-        detail_paragraphs, followup, notes = _priority_detail_content(priority)
-        for paragraph in detail_paragraphs:
-            document.add_paragraph(paragraph)
-        if followup:
-            _docx_field(document, "Optional further work", followup)
-        if notes:
-            document.add_paragraph(' | '.join(label + ': ' + value for label, value in notes))
-        timing = _priority_detail_timing(priority)
-        for label, value in timing:
-            paragraph = document.add_paragraph()
-            paragraph.add_run(label + ':').bold = True
-            paragraph.add_run(' ' + value)
-        current_drafting = priority.get("current_document_drafting") if _drafting_route_gate(
-            operation_context, priority)["can_render"] else None
-        _docx_drafting(document, "Suggested Text", current_drafting)
-        operational_drafting = priority.get("operational_instrument_drafting") if drafting_route["confirmed"] else None
-        _docx_drafting(document, "Suggested Text for an operational instrument", operational_drafting)
-
-    minor_points = _records(model.get("minor_climate_points"))
-    doc_flags = _records(model.get("review_readiness_flags"))
-    if minor_points or doc_flags:
-        document.add_heading(HEADINGS[3], level=1)
-        document.add_heading("Climate decision preparation", level=2)
-        document.add_paragraph("Points to check at the next applicable review.")
-        document.add_paragraph(POINTS_TO_CHECK_INTRO)
-        if minor_points:
-            document.add_heading(
-                "Smaller climate & fragility points to consider", level=2
+        report.info_box(intro, size=9.5, keep=True)
+        table_rows = []
+        for priority in priorities:
+            rank = _rank(priority.get("rank"))
+            title = _text(priority.get("title"))
+            target = _docx_priority_target(priority, operation_context)
+            lead = _text(priority.get("responsible_function"))
+            confidence = _text(priority.get("confidence"))
+            table_rows.append(
+                [
+                    str(rank),
+                    (title, f"priority_{rank}"),
+                    target,
+                    lead,
+                    confidence,
+                ]
             )
-            document.add_paragraph(
+        report.data_table(
+            ["#", "Operational priority", "Drafting target", "Suggested lead", "Confidence"],
+            [0.35, 2.65, 1.15, 1.7, CONTENT_W - 5.85],
+            table_rows,
+            center=(0, 4),
+            pill_cols=(4,),
+            link_col=1,
+        )
+        for priority in priorities:
+            rank = _rank(priority.get("rank"))
+            target = _docx_priority_target(priority, operation_context)
+            header_meta = [
+                ("Drafting target", target),
+                ("Suggested lead", _text(priority.get("responsible_function"))),
+                ("Confidence", _text(priority.get("confidence"))),
+            ]
+            report.priority_header(
+                rank,
+                _text(priority.get("title")),
+                [(label, value) for label, value in header_meta if value],
+                anchor=f"priority_{rank}",
+            )
+            for label, paragraphs in _priority_sections(priority):
+                if paragraphs:
+                    report.label(label)
+                    for paragraph in paragraphs:
+                        report.body(paragraph)
+
+            detail_paragraphs, followup, notes = _priority_detail_content(priority)
+            timing = _priority_detail_timing(priority)
+            practical: list[str | tuple[str, str]] = list(detail_paragraphs)
+            if followup:
+                practical.append(("Optional further work:", followup))
+            practical.extend((label + ":", value) for label, value in timing)
+            practical.extend((label + ":", value) for label, value in notes)
+            if practical:
+                report.grey_box("Practical considerations and Suggested Text", practical)
+
+            current_drafting = (
+                priority.get("current_document_drafting")
+                if _drafting_route_gate(operation_context, priority)["can_render"]
+                else None
+            )
+            _docx_drafting(report, "Suggested Text", current_drafting)
+            operational_drafting = (
+                priority.get("operational_instrument_drafting")
+                if _drafting_route_gate(operation_context)["confirmed"]
+                else None
+            )
+            _docx_drafting(
+                report,
+                "Suggested Text for an operational instrument",
+                operational_drafting,
+            )
+    else:
+        report.body(_no_priority_message(model))
+
+    if minor_points or doc_flags:
+        report.h1(HEADINGS[3])
+        report.h2_caps("Climate decision preparation")
+        report.body("Points to check at the next applicable review.")
+        report.body(POINTS_TO_CHECK_INTRO)
+        if minor_points:
+            report.h2_caps("Smaller climate & fragility points to consider")
+            report.body(
                 "These are smaller, climate- and fragility-specific points that were "
                 "not large enough to become a recommendation above, but are still "
                 "worth a look."
             )
-            for index, point in enumerate(minor_points, start=1):
-                document.add_heading(
-                    f"{index:02d} {_text(point.get('point'))}", level=3
-                )
-                document.add_paragraph(_text(point.get("why")))
-                _docx_field(document, "How to address", point.get("how_to_check"))
+            report.numbered_items(
+                [
+                    {
+                        "num": f"{index:02d}",
+                        "title": _text(point.get("point")),
+                        "why": _text(point.get("why")),
+                        "how": _text(point.get("how_to_check")),
+                    }
+                    for index, point in enumerate(minor_points, start=1)
+                ]
+            )
 
         if doc_flags:
-            document.add_heading("Document points to confirm", level=2)
-        for index, flag in enumerate(doc_flags, start=1):
-            document.add_heading(
-                f"{index:02d} {_text(flag.get('flag'))}", level=3
-            )
-            _docx_field(document, "Why it matters", flag.get("why_it_matters"))
-            _docx_field(
-                document,
-                "Suggested verification",
-                flag.get("suggested_verification"),
+            report.h2_caps("Document points to confirm")
+            report.numbered_items(
+                [
+                    {
+                        "num": f"{index:02d}",
+                        "title": _text(flag.get("flag")),
+                        "why": _text(flag.get("why_it_matters")),
+                        "how": (
+                            "Suggested verification: "
+                            + _text(flag.get("suggested_verification"))
+                            if _text(flag.get("suggested_verification"))
+                            else ""
+                        ),
+                    }
+                    for index, flag in enumerate(doc_flags, start=1)
+                ]
             )
 
     guidance_items = [
-        item for item in _records(model.get("guidance_items"))
+        {
+            "title": _text(item.get("title")),
+            "url": _text(item.get("url")),
+            "use": _text(item.get("practical_value")),
+        }
+        for item in _records(model.get("guidance_items"))
         if _is_public_world_bank_url(item.get("url"))
     ]
     if guidance_items:
-        document.add_heading("Relevant WBG guidance for this project", level=1)
-        document.add_heading("Climate further guidance", level=2)
-        document.add_paragraph("Optional WBG sources for deeper follow-up on the findings.")
-        document.add_heading("Where the team can go for more detailed follow-up", level=2)
-        for item in guidance_items:
-            document.add_heading(_text(item.get("title")), level=3)
-            practical_value = _text(item.get("practical_value"))
-            if practical_value:
-                document.add_paragraph(practical_value)
-            document.add_paragraph(_text(item.get("url")))
+        report.h1("Relevant WBG guidance for this project")
+        report.body("Selected WBG resources to help the team take the findings forward.")
+        report.h2_caps("Where the team can go for more detailed follow-up")
+        report.body(
+            "These sources are selected because they speak directly to the current "
+            "findings. This is not a standard reading list.",
+            size=9,
+            color="5F6B7A",
+            italic=True,
+        )
+        report.link_items(guidance_items)
+
     trail = _mapping(model.get("evidence_trail"))
     if trail:
-        document.add_heading("Limitations", level=1)
-        document.add_paragraph(_field_text(trail.get("limitations")) or _DEFAULT_LIMITATIONS)
+        report.h1("Limitations")
+        limitation_value = trail.get("limitations")
+        if isinstance(limitation_value, (list, tuple)):
+            limitations = [_text(item) for item in limitation_value if _text(item)]
+        else:
+            limitations = [_field_text(limitation_value)] if _field_text(limitation_value) else []
+        if limitations:
+            for limitation in limitations:
+                report.body(limitation)
+        else:
+            report.body(_DEFAULT_LIMITATIONS)
 
-    document.add_paragraph(_text(model.get("advisory_notice")))
-    from fcv_word_style import style_fcv_word_document
-    style_fcv_word_document(document, variant="detail")
-    document.save(output)
+    if snapshot_sha256:
+        report.small("Review snapshot: " + snapshot_sha256)
+    if _text(model.get("advisory_notice")):
+        report.closing(_text(model.get("advisory_notice")))
+    report.save(output)
     return output
 
 _summary_overview_paragraphs = validate_summary_overview

@@ -2701,6 +2701,7 @@
 <script>
   // ── State ──────────────────────────────────────────────────────────────────
   let pF=[],pkF=[],cF=[],hist=[],curS=0,busy=false;
+  let restoredFileNames={project:[],context:[]};
   const MAX_PRIMARY = 1;
   const MAX_PACK = 10;
   const MAX_CTX = 3;
@@ -3373,7 +3374,7 @@
       savedAt: new Date().toISOString(),
       currentStage: curS,
       history: hist,
-      fileNames: { project: pF.map(f=>f.name), context: cF.map(f=>f.name) },
+      fileNames: { project: pF.length?pF.map(f=>f.name):restoredFileNames.project, context: cF.length?cF.map(f=>f.name):restoredFileNames.context },
       docType: docType,
       analysisMode: analysisMode,
       instrumentType: instrumentType,
@@ -3488,6 +3489,14 @@
             return;
           }
         }
+        // A loaded session has names only; do not export names from a previous upload.
+        pF=[];pkF=[];cF=[];
+        ['ip','ipack','ic'].forEach(id=>{document.getElementById(id).value='';});
+        const savedFiles=Array.isArray(state.fileNames)?{project:state.fileNames}:state.fileNames||{};
+        restoredFileNames={
+          project:Array.isArray(savedFiles.project)?savedFiles.project.filter(n=>typeof n==='string'):[],
+          context:Array.isArray(savedFiles.context)?savedFiles.context.filter(n=>typeof n==='string'):[]
+        };
         hist = state.history;
         curS = state.currentStage || 0;
         if(state.instrumentType) instrumentType = state.instrumentType;
@@ -3550,7 +3559,7 @@
           <div class="callout info ani">
             <div class="callout-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
             <div class="callout-body"><strong>Session resumed</strong>Analysis through Stage ${curS} has been loaded.
-            ${state.fileNames.project.length ? '<br>Original files: ' + [...state.fileNames.project,...state.fileNames.context].join(', ') : ''}
+            ${restoredFileNames.project.length ? '<br>Original files: ' + [...restoredFileNames.project,...restoredFileNames.context].map(esc).join(', ') : ''}
             <br>Note: you will need to re-upload your documents if you want to run Stage 1 again.</div>
           </div>`;
         document.getElementById('act-area').innerHTML = curS < 3 ? `
@@ -6085,6 +6094,10 @@
       climate_reader: climateVerifiedReader,
       metadata: {
         date_str: dateStr,
+        country: researchCountry || '',
+        document_type: docType || '',
+        instrument: instrumentType || '',
+        project_file_names: pF.length?pF.map(f=>f.name):restoredFileNames.project,
         review_mode: reviewMode || 'design',
         classification_category: cat,
         classification_reasoning: catReasoning,
@@ -6419,6 +6432,7 @@ ${body}
   }
 
   function reset(){
+    restoredFileNames={project:[],context:[]};
     pF=[];pkF=[];cF=[];fileMetadata={};hist=[];curS=0;sessionName='';busy=false;stageOutputs={};stageHists={};researchBrief='';researchCountry='';priorityQuestions=[];focusQuestionsResult=null;pqPanelEnabled=true;
     ['ip','ipack','ic'].forEach(id=>{document.getElementById(id).value='';});
     activeLenses=[];resolvedLensVersions={};lensSuggestions=[];lensDiagnostic={};lensContextSources=[];climateResearch={};climateGrounding={};climateIntegration=null;climateVerifiedAssessment=null;climateVerifiedFailure=null;climateVerifiedReader=null;lensSelectionTouched=false;lensSelectionLocked=false;renderLensSelector();

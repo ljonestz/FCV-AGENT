@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 from docx import Document
+from docx.oxml.ns import qn
 
 import app as app_module
 import climate_question_bank
@@ -39,6 +40,47 @@ _CANONICAL_BASELINE = {
 }
 
 
+def _docx_text(document):
+    """Return visible DOCX text in body order, including table cells and headers."""
+    def paragraph_texts(container):
+        return [
+            "".join(node.text or "" for node in paragraph.iter(qn("w:t")))
+            for paragraph in container.iter(qn("w:p"))
+        ]
+
+    body_text = paragraph_texts(document.element.body)
+    header_text = []
+    footer_text = []
+    seen_parts = set()
+    for section in document.sections:
+        for name, destination in (
+            ("first_page_header", header_text),
+            ("header", header_text),
+            ("even_page_header", header_text),
+            ("first_page_footer", footer_text),
+            ("footer", footer_text),
+            ("even_page_footer", footer_text),
+        ):
+            part = getattr(section, name, None)
+            if part is None:
+                continue
+            part_name = str(part.part.partname)
+            if part_name in seen_parts:
+                continue
+            seen_parts.add(part_name)
+            destination.extend(paragraph_texts(part._element))
+    return "\n".join(header_text + body_text + footer_text)
+
+
+def _docx_contains(text, expected):
+    """Match display labels independent of the branded heading capitalization."""
+    return expected.casefold() in text.casefold()
+
+
+def _docx_index(text, expected):
+    return text.casefold().index(expected.casefold())
+
+
 
 def test_verified_guidance_purpose_is_shared_by_reader_and_exports():
     purpose = (
@@ -67,7 +109,7 @@ def test_verified_guidance_purpose_is_shared_by_reader_and_exports():
     stream = io.BytesIO()
     write_reader_docx(reader, stream)
     stream.seek(0)
-    document_text = "\n".join(paragraph.text for paragraph in Document(stream).paragraphs)
+    document_text = _docx_text(Document(stream))
     for output in (rendered, document_text):
         assert purpose in output
         assert "For this project" not in output
@@ -262,11 +304,11 @@ def test_downloaded_report_has_sector_source_and_evidence_appendix(monkeypatch):
 
     assert response.status_code == 200
     document = Document(io.BytesIO(response.data))
-    text = "\n".join(paragraph.text for paragraph in document.paragraphs)
-    assert "Appendix: Sector-Lens Sources and Evidence" in text
+    text = _docx_text(document)
+    assert _docx_contains(text, "Appendix: Sector-Lens Sources and Evidence")
     assert "Agriculture Test Guidance" in text
     assert "Water-user groups are used for targeting." in text
-    assert "Sector lenses: test-agriculture" in text
+    assert _docx_contains(text, "Sector lenses test-agriculture")
     assert "invented-lens" not in text
 
 
@@ -341,7 +383,7 @@ def test_docx_surfaces_climate_grounding_state_and_reviewed_bank_sources(
 
     assert response.status_code == 200
     document = Document(io.BytesIO(response.data))
-    text = "\n".join(paragraph.text for paragraph in document.paragraphs)
+    text = _docx_text(document)
     assert calls
     assert calls[0][0] == incoming_manifest
     assert "FORGED CLIENT SOURCE" not in text
@@ -351,7 +393,7 @@ def test_docx_surfaces_climate_grounding_state_and_reviewed_bank_sources(
     else:
         assert "No reviewed country-bank release" not in text
     if has_bank:
-        assert "Reviewed country evidence bank" in text
+        assert _docx_contains(text, "Reviewed country evidence bank")
         assert "Content version: ssd-pilot-2026-07" in text
         assert "South Sudan reviewed climate-FCV source" in text
         assert "https://example.org/ssd-source" in text
@@ -529,29 +571,43 @@ def test_downloaded_report_has_climate_readout_and_context_sources():
 
     assert response.status_code == 200
     document = Document(io.BytesIO(response.data))
-    text = "\n".join(paragraph.text for paragraph in document.paragraphs)
+    text = _docx_text(document)
 
-    assert text.index("How relevant is climate to this project?") < text.index("Summary.")
-    assert "High climate relevance" in text
-    assert "Drought, access, and allocation shape project delivery. Why it matters: Drought and fragility affect delivery." in text
-    # S/R sections are replaced by the integration line in the climate path
-    assert "FCV Sensitivity" not in text
-    assert "FCV Responsiveness" not in text
-    assert text.index("How well does the project integrate climate and FCV?") < text.index(
-        "How climate and FCV dynamics could affect this project"
+    assert _docx_index(text, "Summary.") < _docx_index(
+        text, "How relevant is climate to this project?"
     )
-    assert "How this project could affect climate and FCV dynamics" in text
+    assert _docx_contains(text, "High climate relevance")
+    assert (
+        "Drought, access, and allocation shape project delivery. Why it matters: "
+        "Drought and fragility affect delivery."
+    ) in text
+    # The compact scorecard leads; detailed rating explanations follow findings.
+    assert _docx_contains(text, "FCV Sensitivity")
+    assert _docx_contains(text, "FCV Responsiveness")
+    assert _docx_contains(text, "Adequate")
+    assert _docx_contains(text, "Emerging")
+    assert _docx_index(text, "FCV Sensitivity & Responsiveness") > _docx_index(
+        text, "How climate and FCV dynamics could affect this project"
+    )
+    assert _docx_index(
+        text, "How well does the project integrate climate and FCV?"
+    ) < _docx_index(
+        text, "How climate and FCV dynamics could affect this project"
+    )
+    assert _docx_contains(
+        text, "How this project could affect climate and FCV dynamics"
+    )
     assert "Key locations and components:" in text
     assert "Landing-site rehabilitation" in text
     assert "over the life of the assets" in text
     # Redesign: core-questions section (lay intro + theme answers with source) + S&W;
     # the standalone dividend-synthesis and wider-FCV sections are dropped in module mode.
-    assert "Core climate and FCV questions" in text
+    assert _docx_contains(text, "Core climate and FCV questions")
     assert "Maximizing the Peace and Social Dividends of Climate Action" in text
     assert "Could the design lock in maladaptation?" in text
     assert "For further insights on why this matters, see: FCV-Sensitive Climate Action Framework" in text
     assert "[partial gap]" not in text
-    assert "How the design holds up on climate and FCV" in text
+    assert _docx_contains(text, "How the design holds up on climate and FCV")
     assert "Where the design is stronger" in text
     assert "Community delivery" in text
     assert "Named but no design response." in text
@@ -1587,14 +1643,14 @@ def test_south_sudan_dual_use_fixture_crosses_stage3_and_docx_pipeline():
 
     assert response.status_code == 200
     document = Document(io.BytesIO(response.data))
-    text = "\n".join(paragraph.text for paragraph in document.paragraphs)
-    assert "How climate and FCV dynamics could affect this project" in text
-    assert "How this project could affect climate and FCV dynamics" in text
+    text = _docx_text(document)
+    assert _docx_contains(text, "How climate and FCV dynamics could affect this project")
+    assert _docx_contains(text, "How this project could affect climate and FCV dynamics")
     assert "Key locations and components:" in text
     assert "over the life of the assets" in text
     # Redesign: core-questions + strengths/weaknesses replace the standalone dividend section.
-    assert "Core climate and FCV questions" in text
-    assert "How the design holds up on climate and FCV" in text
+    assert _docx_contains(text, "Core climate and FCV questions")
+    assert _docx_contains(text, "How the design holds up on climate and FCV")
     assert "Wider FCV context" not in text
     assert "Differentiated approach note" not in text
 
@@ -1655,10 +1711,10 @@ def test_docx_climate_notice_title_and_prose_interactions():
     )
     assert response.status_code == 200
     document = Document(io.BytesIO(response.data))
-    text = "\n".join(paragraph.text for paragraph in document.paragraphs)
-    assert "How relevant is climate to this project?" in text
-    assert "How climate and FCV dynamics could affect this project" in text
-    assert "How this project could affect climate and FCV dynamics" in text
+    text = _docx_text(document)
+    assert _docx_contains(text, "How relevant is climate to this project?")
+    assert _docx_contains(text, "How climate and FCV dynamics could affect this project")
+    assert _docx_contains(text, "How this project could affect climate and FCV dynamics")
     assert "Defueling Conflict" in text
 
 
@@ -1951,21 +2007,21 @@ def test_docx_climate_reflections_integration_wider_fcv_boundary_compliance():
     )
     assert response.status_code == 200
     document = Document(io.BytesIO(response.data))
-    text = "\n".join(paragraph.text for paragraph in document.paragraphs)
+    text = _docx_text(document)
 
     # Redesign contract: core-questions section (with source lines) + strengths/weaknesses;
     # standalone reflections/dividends/wider-FCV DOCX sections are gone in module mode.
-    assert "Core climate and FCV questions" in text
-    assert "How well does the project integrate climate and FCV?" in text
-    assert "How the design holds up on climate and FCV" in text        # strengths/weaknesses
-    assert "Wider FCV context" not in text
-    assert "does not determine ESF or ESS compliance" in text          # policy boundary
-    assert "Task Team E&S specialist" in text                          # specialist_referral route
+    assert _docx_contains(text, "Core climate and FCV questions")
+    assert _docx_contains(text, "How well does the project integrate climate and FCV?")
+    assert _docx_contains(text, "How the design holds up on climate and FCV")  # strengths/weaknesses
+    assert not _docx_contains(text, "Wider FCV context")
+    assert _docx_contains(text, "does not determine ESF or ESS compliance")  # policy boundary
+    assert _docx_contains(text, "Task Team E&S specialist")  # specialist_referral route
 
     # order: integration line -> strengths&weaknesses -> core questions (interactions + answers)
-    i_sw = text.index("How the design holds up on climate and FCV")
-    i_q = text.index("Core climate and FCV questions")
-    i_int = text.index("How climate and FCV dynamics could affect this project")
+    i_sw = _docx_index(text, "How the design holds up on climate and FCV")
+    i_q = _docx_index(text, "Core climate and FCV questions")
+    i_int = _docx_index(text, "How climate and FCV dynamics could affect this project")
     assert i_sw < i_q < i_int
 
 
@@ -2595,13 +2651,13 @@ def test_verified_climate_docx_route_uses_canonical_reader():
     assert response.status_code == 200
     from docx import Document
     document = Document(io.BytesIO(response.data))
-    text = "\n".join(item.text for item in document.paragraphs)
-    assert "Core climate-FCV questions" not in text
-    assert "Assessment findings" in text
-    assert "Candidate country evidence: preview; not approved." in text
-    assert "Smoke test: validates workflow completion only" in text
-    assert "Relevant WBG guidance for this project" in text
-    assert "Limitations" in text
+    text = _docx_text(document)
+    assert not _docx_contains(text, "Core climate-FCV questions")
+    assert _docx_contains(text, "Assessment findings")
+    assert _docx_contains(text, "Candidate country evidence: preview; not approved.")
+    assert _docx_contains(text, "Smoke test: validates workflow completion only")
+    assert _docx_contains(text, "Relevant WBG guidance for this project")
+    assert _docx_contains(text, "Limitations")
     assert "FORGED" not in text
 
 

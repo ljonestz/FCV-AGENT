@@ -14,9 +14,9 @@ def render(d, meta, path):
     sens, resp = d["ratings"]["FCV Sensitivity"], d["ratings"]["FCV Responsiveness"]
     levels = [r[2] for r in d["priority_table"]]
     lines = [(f"{levels.count(k)} {k}", k) for k in ("High", "Medium", "Low") if levels.count(k)]
-    R.scorecard([dict(label="FCV Sensitivity", value=sens["value"], n=6, idx=SCALE6.index(sens["value"]) + 1,
+    R.scorecard([dict(label="FCV Sensitivity", value=sens["value"], n=6, idx=(SCALE6.index(sens["value"]) + 1 if sens["value"] in SCALE6 else 0),
                       lo=SCALE6[0], hi=SCALE6[-1]),
-                 dict(label="FCV Responsiveness", value=resp["value"], n=6, idx=SCALE6.index(resp["value"]) + 1,
+                 dict(label="FCV Responsiveness", value=resp["value"], n=6, idx=(SCALE6.index(resp["value"]) + 1 if resp["value"] in SCALE6 else 0),
                       lo=SCALE6[0], hi=SCALE6[-1])],
                 {"label": "Priority actions", "number": len(d["priority_table"]), "lines": lines},
                 note=d["rating_note"])

@@ -1,3 +1,29 @@
+### 2026-10-28 Full approved Word template restored before production
+
+Continue from `docs/20261028_climate-word-layout.md`, the ITS handover
+`20261028_ITS_handover_main_release.md`, and PR #90 on
+`fix/climate-word-parity-20261028`. Bank PR #5 and app PR #89 have merged
+(05b5a097 and 0a2ae95). Existing user authority covers merge and production
+rollout after verification; preserve the branch/worktrees and unrelated root work.
+
+Both Word routes now compose the approved Option 1 / Banner Report components
+directly: logo, flush-top banner with project/run subtitle, amber LLM warning,
+top summary rating graphic, numbered headings, lower detailed rating explanations,
+linked priority overview, blue cards,
+practical notes and Suggested Text boxes. Specific qualifications, optional
+content and route gates remain. Saved-session filenames survive load/save and
+supply real metadata. Canonical assessments, prompts, retrieval, bank pin 72ce351
+and logo assets are unchanged. This supersedes the partial branding pass.
+
+Final full suite: 2,091 passed, two skipped, four documented headless browser
+hangs excluded (368.11s); source/test hashes stayed unchanged throughout the run.
+This includes the final heading-parser security correction and regression. Actual
+browser downloads, input/canonical integrity and native Word visual acceptance
+passed for all 11 Climate and 15 normal pages, plus a long-banner fixture.
+Production acceptance follows in the dated document. No new paid calls; prior conservative
+debit remains USD10.729492. Production is still 6f3d5e65e213 with auto-deploy off
+at this pre-release checkpoint. Earlier entries below are historical.
+
 ### 2026-10-28 Final opening-preamble cleanup verified on test
 
 Continue from `docs/20261028_readout-presentation-simplification.md`.
