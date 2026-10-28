@@ -1,3 +1,28 @@
+### 2026-10-28 Readout presentation changes verified on test only
+
+Continue from `docs/20261028_readout-presentation-simplification.md`.
+Presentation code `a36a236fbc0b090bb584848c088e7eb52c7be735` is live only at
+https://fcv-agent-1.onrender.com, deploy `dep-dbgu1tutlv9c73dd2c5g` (11:49:33 UTC).
+Summary has compact regular-weight actions and no opening reader-review preamble.
+One Copy follows the selected tab; Word/HTML downloads always contain Detailed.
+The full optional-priorities advisory appears on both routes and in exports.
+Detailed uses Practical considerations and Suggested Text; specific notes and
+actual route gates remain. Generic draft/preparation banners are removed without
+recording approval. Canonical reader, prompts, bank pin and Word design are unchanged.
+
+Final app suite: 2,079 passed, two skipped, four documented headless hangs excluded
+(409.68s). Real headed Edge verified both routes, every priority link, Copy,
+actual downloads and 390/320-pixel layouts; standalone print states restore.
+All 13 Climate and 18 normal Word pages were inspected. Syria uses an ignored
+UI-only adapter of the supplied ITS JSON; no new native assessment is claimed.
+The original sessions and canonical Somalia payload remain unchanged.
+
+No new paid calls; conservative prior debit remains USD10.729492. Test spending
+blocker and hosted settings are retained. Production remains 6f3d5e65e213,
+bank-only, Quality, auto-deploy off. Both PRs remain draft. The saved run's three
+minor source notes remain in Detailed/exports. Keep both worktrees and unrelated
+root work. Earlier handoffs below describe historical behavior.
+
 ### 2026-10-28 Deploy-ready candidate; final review can use saved evidence
 
 Continue from `docs/20261027_deploy-readiness-follow-through.md`.
