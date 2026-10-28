@@ -4,6 +4,8 @@ import json
 import re
 import subprocess
 
+import pytest
+
 from tests.test_climate_lens_frontend import INDEX, _extract_js_function, _js_escape_helper
 
 
@@ -99,12 +101,36 @@ def test_exports_include_responsiveness_contribution_and_scope(tmp_path):
         assert "Very limited / Limited / Moderate / Strong / Very strong" in text
 
 
-def test_incomplete_export_warning_precedes_assessment(tmp_path):
+@pytest.mark.parametrize(
+    "status, warning",
+    [
+        pytest.param({"recommendation_status": "incomplete"}, "Recommendations stage incomplete", id="incomplete"),
+        pytest.param(
+            {"analysis_status": "partial", "analysis_message": "Evidence remains incomplete."},
+            "Assessment evidence is incomplete", id="partial",
+        ),
+        pytest.param({"runtime_mode": "smoke"}, "Smoke test: validates workflow completion", id="smoke"),
+        pytest.param(
+            {"evidence_status": "preview; not approved"},
+            "Candidate country evidence: preview; not approved.", id="candidate",
+        ),
+    ],
+)
+def test_genuine_status_warnings_precede_assessment(status, warning, tmp_path):
     from docx import Document
+    from docx.oxml.ns import qn
+    from docx.text.paragraph import Paragraph
     from sector_lenses.climate_verified_render import render_reader_html, write_reader_docx
-    reader = {"recommendation_status": "incomplete", "executive_readout": "Assessment body."}
-    output = tmp_path / "incomplete.docx"
+    reader = {**status, "executive_readout": "Assessment body."}
+    output = tmp_path / "status.docx"
     write_reader_docx(reader, output)
-    text = "\n".join(p.text for p in Document(output).paragraphs)
+    document = Document(output)
+    text = "\n".join(Paragraph(element, document).text
+                        for element in document.element.body.iter(qn("w:p")))
     for content in [text, render_reader_html(reader)]:
-        assert content.index("Recommendations stage incomplete") < content.index("Assessment body.")
+        normalized = content.casefold()
+        warning_index = normalized.find(warning.casefold())
+        body_index = normalized.find("Assessment body.".casefold())
+        assert warning_index >= 0, f"missing status warning: {warning}"
+        assert body_index >= 0, "missing assessment body"
+        assert warning_index < body_index

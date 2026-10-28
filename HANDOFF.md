@@ -1,21 +1,26 @@
-### 2026-10-28 Word branding and layout correction before production
+### 2026-10-28 Full approved Word template restored before production
 
-Continue from `docs/20261028_climate-word-layout.md` on
-`fix/climate-word-parity-20261028`. Bank PR #5 and app PR #89 are merged; their
-merge commits are 05b5a097 and 0a2ae95. User authority now covers final merge and
-production deployment after this Word correction passes.
+Continue from `docs/20261028_climate-word-layout.md` and draft PR #90 on
+`fix/climate-word-parity-20261028`. Bank PR #5 and app PR #89 have merged
+(05b5a097 and 0a2ae95). Existing user authority covers merge and production
+rollout after verification; preserve the branch/worktrees and unrelated root work.
 
-The live detailed exports now reuse the approved FCV logo, navy masthead, blue
-headings, page geometry and running header/footer. The assessment follows the
-LLM warning; Climate ratings sit below the findings. Normal and Climate priority
-tables retain complete content, avoid splitting rows and use readable widths.
-The approved design ancestry and logo assets are retained; the bank pin remains
-72ce351. Earlier records below describe historical test-only status.
+Both Word routes now compose the approved Option 1 / Banner Report components
+directly: logo, flush-top banner with project/run subtitle, amber LLM warning,
+top summary rating graphic, numbered headings, lower detailed rating explanations,
+linked priority overview, blue cards,
+practical notes and Suggested Text boxes. Specific qualifications, optional
+content and route gates remain. Saved-session filenames survive load/save and
+supply real metadata. Canonical assessments, prompts, retrieval, bank pin 72ce351
+and logo assets are unchanged. This supersedes the partial branding pass.
 
-Focused checks have passed; final Word pagination and full-suite acceptance are
-still in progress. Production is still 6f3d5e65e213 with auto-deploy off and no
-configuration change. No new paid calls. Keep the earlier worktrees and unrelated
-root work. Do not count interrupted verification runs as completed tests.
+Final full suite: 2,090 passed, two skipped, four documented headless browser
+hangs excluded; source/test hashes stayed unchanged throughout the run. Actual
+browser downloads, input/canonical integrity and native Word visual acceptance
+passed for all 11 Climate and 15 normal pages, plus a long-banner fixture.
+Production acceptance follows in the dated document. No new paid calls; prior conservative
+debit remains USD10.729492. Production is still 6f3d5e65e213 with auto-deploy off
+at this pre-release checkpoint. Earlier entries below are historical.
 
 ### 2026-10-28 Final opening-preamble cleanup verified on test
 

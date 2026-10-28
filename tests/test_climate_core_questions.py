@@ -4,6 +4,8 @@ from __future__ import annotations
 from io import BytesIO
 
 from docx import Document
+from docx.oxml.ns import qn
+from docx.text.paragraph import Paragraph
 
 from sector_lenses.climate_verified_pipeline import (
     _admit_core_questions,
@@ -14,6 +16,11 @@ from sector_lenses.climate_verified_render import (
     render_reader_html,
     write_reader_docx,
 )
+
+
+def _docx_body_paragraphs(document: Document) -> list[str]:
+    """Return body paragraphs in OOXML order, including paragraphs in tables."""
+    return [Paragraph(element, document).text for element in document.element.body.iter(qn("w:p"))]
 
 
 def _facts() -> list[dict[str, object]]:
@@ -130,11 +137,14 @@ def test_core_questions_stay_internal_to_simplified_exports():
     write_reader_docx(model, stream)
     stream.seek(0)
     document = Document(stream)
-    text = "\n".join([p.text for p in document.paragraphs] + [cell.text for table in document.tables for row in table.rows for cell in row.cells])
-    assert "Core climate-FCV questions" not in text
-    assert "How well does the project recognize and address" in text
-    assert "Strong (4 of 5)" in text
-    assert "Is infrastructure sized for future climate conditions?" not in text
+    paragraphs = _docx_body_paragraphs(document)
+    text = "\n".join(paragraphs)
+    normalized = [paragraph.strip().casefold() for paragraph in paragraphs]
+    assert "core climate-fcv questions" not in text.casefold()
+    assert any("how well does the project recognize and address interacting climate and fcv risks?" in item for item in normalized)
+    assert normalized.index("climate & fcv sensitivity") < normalized.index("strong")
+    assert any("scale: very limited / limited / moderate / strong / very strong." in item for item in normalized)
+    assert "is infrastructure sized for future climate conditions?" not in text.casefold()
 
 
 def test_core_question_summary_is_preserved_in_internal_reader():

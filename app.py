@@ -12836,12 +12836,76 @@ def climate_review_packet():
                      download_name='Climate-FCV-Review-' + snapshot['sha256'][:12] + '.zip')
 
 
+def _word_report_meta(data, title='FCV Recommendations Note'):
+    """Build the approved Word masthead metadata from values supplied by the UI."""
+    metadata = data.get('metadata') if isinstance(data, dict) else None
+    metadata = metadata if isinstance(metadata, dict) else {}
+
+    def supplied_text(value):
+        if isinstance(value, str):
+            return value.strip()
+        if value is None:
+            return ''
+        return str(value).strip()
+
+    project_name = supplied_text(metadata.get('project_name'))
+    project_id = supplied_text(metadata.get('project_id'))
+    if not project_name:
+        filenames = metadata.get('project_file_names')
+        if isinstance(filenames, dict):
+            filenames = filenames.get('project') or filenames.get('files') or []
+        if isinstance(filenames, str):
+            filenames = [filenames]
+        if isinstance(filenames, list):
+            for filename in filenames:
+                filename = supplied_text(filename)
+                if filename:
+                    project_name = os.path.splitext(
+                        os.path.basename(filename.replace('\\', '/'))
+                    )[0]
+                    break
+
+    project_label = project_name
+    if project_id:
+        project_label = f'{project_label} ({project_id})' if project_label else project_id
+
+    project_parts = [
+        project_label,
+        supplied_text(metadata.get('country')),
+        supplied_text(metadata.get('document_type')),
+        supplied_text(metadata.get('instrument')),
+    ]
+    project_line = '  ·  '.join(part for part in project_parts if part)
+    exported = supplied_text(metadata.get('date_str'))
+    if exported:
+        project_line = '  ·  '.join(
+            part for part in (project_line, f'Exported: {exported}') if part
+        )
+
+    report_meta = {
+        'title': title,
+        'project_line': project_line,
+        'running_label': supplied_text(metadata.get('country')),
+        'classification': '',
+    }
+    review_mode = supplied_text(metadata.get('review_mode'))
+    if review_mode:
+        report_meta['review_mode'] = review_mode
+    return report_meta
+
+
 @app.route('/api/download-report', methods=['POST'])
 def download_report():
     """Generate a DOCX mirroring the full Stage 3 web output structure."""
     from docx import Document as DocxDocument
     from docx.shared import Pt, RGBColor, Inches
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
+    from docx.text.run import Run
+    from fcv_docx_style import AMBER_TXT, BE_AWARE, CONTENT_W, Report, VERIFY_BG, put
+    from fcv_word_style import _bold_first_sentence
     import io
+    from copy import deepcopy
 
     data = request.get_json(force=True)
     verified_raw = data.get('climate_assessment') or {}
@@ -12854,7 +12918,9 @@ def download_report():
             return snapshot_error
         reader_model = reader_model['reader']
         verified_buf = io.BytesIO()
-        write_reader_docx(reader_model, verified_buf)
+        write_reader_docx(
+            reader_model, verified_buf, report_meta=_word_report_meta(data)
+        )
         verified_buf.seek(0)
         from flask import send_file
         return send_file(
@@ -13014,66 +13080,243 @@ def download_report():
     # ── Strip DO_NO_HARM_HEADER if still present (belt-and-suspenders) ──
     summary = re.sub(r'^---\s*\n[\s\S]*?---\s*\n+', '', summary).strip()
 
-    # ── Extract project title from first # heading in summary ──
-    project_title = 'FCV Recommendations Note'
+    # The masthead uses supplied project metadata. When older callers omit a
+    # project name and filename, use a specific supplied H1 as a subtitle.
     title_match = re.match(r'^#\s+(.+)$', summary, re.MULTILINE)
+    report_meta = _word_report_meta(data)
     if title_match:
-        project_title = title_match.group(1).strip()
-        # Remove the title line and any following blank line from summary body
+        summary_title = re.sub(r'[*_`]', '', title_match.group(1)).strip()
+        metadata = data.get('metadata') if isinstance(data, dict) else {}
+        metadata = metadata if isinstance(metadata, dict) else {}
+        project_name = str(metadata.get('project_name') or '').strip()
+        filenames = metadata.get('project_file_names')
+        if isinstance(filenames, dict):
+            filenames = filenames.get('project') or filenames.get('files') or []
+        has_filenames = bool(filenames.strip()) if isinstance(filenames, str) else bool(filenames)
+        generic_titles = {
+            'summary', 'executive summary', 'fcv recommendations note',
+            'climate fcv recommendations note',
+        }
+        normalized_title = re.sub(r'[^a-z0-9]+', ' ', summary_title.casefold()).strip()
+        if not project_name and not has_filenames and normalized_title not in generic_titles:
+            existing_line = report_meta.get('project_line', '')
+            report_meta['project_line'] = '  ·  '.join(
+                part for part in (summary_title, existing_line) if part
+            )
         summary = summary[title_match.end():].lstrip('\n').strip()
 
-    def _add_section_heading(text, level=2):
-        h = doc.add_heading(text, level=level)
-        if h.runs:
-            h.runs[0].font.color.rgb = WB_NAVY
-        return h
+    def _add_section_heading(text, level=1):
+        if level <= 1:
+            return report.h1(text)
+        if level == 2:
+            return report.h2_caps(text)
+        if level == 3:
+            return report.h2_question(text)
+        return report.label(text)
 
     def _add_single_para(text, size=None, color=None, bold=False, italic=False, space_before=None, space_after=None):
-        """Add a single-run paragraph. Always one run → fully parser-readable."""
-        p = doc.add_paragraph(str(text))
-        if p.runs:
-            r = p.runs[0]
-            if size:
-                r.font.size = Pt(size)
-            if color:
-                r.font.color.rgb = color
-            if bold:
-                r.bold = True
-            if italic:
-                r.italic = True
+        """Add a styled narrative paragraph while retaining plain export text."""
+        color_value = (
+            ''.join(f'{channel:02X}' for channel in color)
+            if isinstance(color, RGBColor) else color
+        )
+        p = report.body(
+            str(text),
+            size=size,
+            color=color_value,
+            italic=italic,
+            after=6 if space_after is None else space_after,
+        )
+        if bold:
+            for run in p.runs:
+                run.bold = True
         if space_before is not None:
             p.paragraph_format.space_before = Pt(space_before)
-        if space_after is not None:
-            p.paragraph_format.space_after = Pt(space_after)
         return p
 
     def add_field(label, value):
-        """Two single-run paragraphs: bold label line then plain value line."""
+        """Render a field as an approved label and narrative paragraph."""
         if not value:
             return
-        lp = doc.add_paragraph()
-        lp.add_run(f'{label}:').bold = True
-        lp.paragraph_format.space_after = Pt(1)
-        vp = doc.add_paragraph(str(value))
-        vp.paragraph_format.space_before = Pt(0)
+        report.label(label)
+        _add_single_para(value, space_before=0)
 
-    def add_sr_sections():
-        if sensitivity_summary or fcv_rating:
-            _add_section_heading('FCV Sensitivity')
-            if fcv_rating:
-                _add_single_para(
-                    fcv_rating, bold=True, color=WB_NAVY, space_after=2
+    def format_report_body(paragraphs):
+        for paragraph in paragraphs:
+            style_name = paragraph.style.name if paragraph.style is not None else ''
+            runs = [Run(element, paragraph) for element in paragraph._p.iter(qn('w:r'))]
+            visible_runs = [run for run in runs if run.text and run.text.strip()]
+            italic_note = visible_runs and all(run.italic is True for run in visible_runs)
+            if (
+                paragraph.text.strip()
+                and not style_name.startswith('Heading ')
+                and style_name not in {'Title', 'Subtitle', 'Caption', 'Header', 'Footer'}
+                and not italic_note
+            ):
+                _bold_first_sentence(paragraph, paragraph.text)
+
+            # Split only affected runs so qualification notes retain existing
+            # Markdown emphasis, hyperlinks, and surrounding text.
+            paragraph_runs = [
+                element for element in paragraph._p.iter(qn('w:r'))
+                if Run(element, paragraph).text
+            ]
+            run_texts = [Run(element, paragraph).text for element in paragraph_runs]
+            combined = ''.join(run_texts)
+            note_ranges = [
+                (match.start(), match.end())
+                for match in re.finditer(r'\[Verify before sharing:.*?\]', combined)
+            ]
+            if not note_ranges:
+                continue
+            offset = 0
+            for element, run_text in zip(paragraph_runs, run_texts):
+                start, end = offset, offset + len(run_text)
+                offset = end
+                boundaries = {start, end}
+                for note_start, note_end in note_ranges:
+                    if note_start < end and note_end > start:
+                        boundaries.add(max(start, note_start))
+                        boundaries.add(min(end, note_end))
+                overlaps_note = any(
+                    note_start < end and note_end > start
+                    for note_start, note_end in note_ranges
                 )
-            if sensitivity_summary:
-                _md_to_docx_para(doc, sensitivity_summary)
-        if responsiveness_summary or fcv_resp_rating:
-            _add_section_heading('FCV Responsiveness')
-            if fcv_resp_rating:
-                _add_single_para(
-                    fcv_resp_rating, bold=True, color=WB_NAVY, space_after=2
-                )
-            if responsiveness_summary:
-                _md_to_docx_para(doc, responsiveness_summary)
+                if not overlaps_note:
+                    continue
+                points = sorted(boundaries)
+                template = deepcopy(element)
+                segments = [
+                    (
+                        points[index] - start,
+                        points[index + 1] - start,
+                        any(
+                            note_start <= points[index]
+                            and points[index + 1] <= note_end
+                            for note_start, note_end in note_ranges
+                        ),
+                    )
+                    for index in range(len(points) - 1)
+                ]
+                previous = element
+                for index, (left, right, is_note) in enumerate(segments):
+                    segment = element if index == 0 else deepcopy(template)
+                    Run(segment, paragraph).text = run_text[left:right]
+                    if index:
+                        previous.addnext(segment)
+                        previous = segment
+                    if is_note:
+                        Run(segment, paragraph).font.color.rgb = RGBColor.from_string(AMBER_TXT)
+                        rpr = segment.get_or_add_rPr()
+                        shading = rpr.find(qn('w:shd'))
+                        if shading is None:
+                            shading = OxmlElement('w:shd')
+                            put(rpr, shading)
+                        shading.set(qn('w:val'), 'clear')
+                        shading.set(qn('w:color'), 'auto')
+                        shading.set(qn('w:fill'), VERIFY_BG)
+
+    def add_markdown(text):
+        """Render Markdown headings with Report components and keep the body parser."""
+        body_lines = []
+
+        def flush_body():
+            if not any(line.strip() for line in body_lines):
+                body_lines.clear()
+                return
+            first_new = len(doc.paragraphs)
+            _md_to_docx_para(doc, '\n'.join(body_lines))
+            format_report_body(doc.paragraphs[first_new:])
+            body_lines.clear()
+
+        for line in str(text or '').splitlines():
+            heading = re.match(r'^(#{1,6})\s+(.+?)\s*#*\s*$', line)
+            if not heading:
+                body_lines.append(line)
+                continue
+            flush_body()
+            depth = len(heading.group(1))
+            title = heading.group(2).strip()
+            if depth <= 2:
+                report.h1(title)
+            elif depth == 3:
+                if title.endswith('?'):
+                    report.h2_question(title)
+                else:
+                    report.h2_caps(title)
+            else:
+                report.label(title)
+        flush_body()
+
+    rating_rows = (
+        ('FCV Sensitivity', fcv_rating, sensitivity_summary),
+        ('FCV Responsiveness', fcv_resp_rating, responsiveness_summary),
+    )
+    rating_values_present = any(
+        str(value or '').strip() for _, value, _ in rating_rows
+    )
+    rating_summaries_present = any(
+        str(text or '').strip() for _, _, text in rating_rows
+    )
+
+    def add_rating_scorecard():
+        if not rating_values_present and not rating_summaries_present:
+            return
+        if not (rating_values_present or priorities):
+            return
+
+        scale = (
+            'Extremely Low', 'Very Low', 'Low', 'Adequate',
+            'Well Embedded', 'Very Well Embedded',
+        )
+        tiles = []
+        for label, value, _ in rating_rows:
+            value = str(value or '').strip()
+            match = next(
+                (index for index, level in enumerate(scale, start=1)
+                 if level.casefold() == value.casefold()),
+                0,
+            )
+            tiles.append({
+                'label': label,
+                'value': value,
+                'n': len(scale),
+                'idx': match,
+                'lo': scale[0],
+                'hi': scale[-1],
+            })
+        risk_levels = [
+            str(priority.get('risk_level') or '').strip()
+            for priority in priorities
+        ]
+        count_lines = [
+            (f'{risk_levels.count(level)} {level}', level)
+            for level in ('High', 'Medium', 'Low')
+            if risk_levels.count(level)
+        ]
+        report.scorecard(
+            tiles,
+            {
+                'label': 'Priority actions',
+                'number': len(priorities),
+                'lines': count_lines,
+            },
+        )
+
+    def add_rating_sections():
+        if not rating_values_present and not rating_summaries_present:
+            return
+
+        _add_section_heading('FCV Sensitivity & Responsiveness')
+        for index, (label, value, text) in enumerate(rating_rows):
+            value = str(value or '').strip()
+            text = str(text or '').strip()
+            if value:
+                report.rating_segment(label, value, first=(index == 0))
+            elif text:
+                report.h2_caps(label)
+            if text:
+                add_markdown(text)
 
     def add_core_risk_exposure():
         risks_to = risk_exposure.get('risks_to', '')
@@ -13453,104 +13696,79 @@ def download_report():
             'document_commitment': 'Existing project-document commitment',
             'advisory': 'Advisory (good practice)',
         }
+        notes = []
         status = priority.get('policy_status')
         if compliance_labels.get(status):
-            p = doc.add_paragraph()
-            p.add_run('Policy status: ').bold = True
-            p.add_run(compliance_labels[status])
+            notes.append(('Policy status', compliance_labels[status]))
         ref = priority.get('specialist_referral')
         if isinstance(ref, dict) and ref.get('route') and ref.get('reason'):
-            p = doc.add_paragraph()
             label = 'Referral suggested: ' if ref.get('required') else 'Consider referral: '
-            p.add_run(label).bold = True
-            p.add_run(f"{ref['route']} — {ref['reason']}")
+            notes.append((label.strip(' :'), f"{ref['route']} - {ref['reason']}"))
+        return notes
 
     def add_priority_project_cycle(priority):
         cycle = priority.get('project_cycle')
         if not isinstance(cycle, dict):
-            return
-        primary_label = cycle.get('primary_label')
-        primary_text = cycle.get('primary_text')
-        primary_label = primary_label.strip() if isinstance(primary_label, str) else ''
-        primary_text = primary_text.strip() if isinstance(primary_text, str) else ''
-        if not primary_label or not primary_text:
-            return
-        _add_section_heading('Where this fits in the project cycle', level=4)
-        _add_single_para(primary_label, bold=True, color=WB_NAVY, space_after=1)
-        _add_single_para(primary_text, space_before=0, space_after=4)
-        secondary_label = cycle.get('secondary_label')
-        secondary_text = cycle.get('secondary_text')
-        secondary_label = secondary_label.strip() if isinstance(secondary_label, str) else ''
-        secondary_text = secondary_text.strip() if isinstance(secondary_text, str) else ''
-        if secondary_label and secondary_text:
-            _add_single_para(secondary_label, bold=True, color=WB_NAVY, space_after=1)
-            _add_single_para(secondary_text, space_before=0, space_after=4)
+            return []
+        notes = []
+        for stage in ('primary', 'secondary'):
+            label = cycle.get(f'{stage}_label')
+            text = cycle.get(f'{stage}_text')
+            label = label.strip() if isinstance(label, str) else ''
+            text = text.strip() if isinstance(text, str) else ''
+            if label and text:
+                notes.append((label, text))
+        return notes
 
     def add_priority_climate_contribution(priority):
         links = priority.get('climate_links') or {}
         if links.get('status') == 'linked':
-            add_field(
-                'Climate, peace and social dividend contribution',
-                ' '.join(
-                    str(value) for value in (
-                        links.get('contribution'),
-                        links.get('strengthening_effect'),
-                    ) if value
-                ),
+            value = ' '.join(
+                str(item) for item in (
+                    links.get('contribution'),
+                    links.get('strengthening_effect'),
+                ) if item
             )
-            return
-        add_field(
-            'No material dividend pathway identified',
-            links.get('reason') or (
+            return [('Climate, peace and social dividend contribution', value)] if value else []
+        reason = links.get('reason') or (
                 'This priority remains important to the wider FCV assessment '
                 'but has no material Climate-FCV dividend pathway.'
-            ),
-        )
+            )
+        return [('No material dividend pathway identified', reason)]
 
     try:
         doc = DocxDocument()
-
-        # ── Page margins ──
-        for section in doc.sections:
-            section.top_margin = Inches(1)
-            section.bottom_margin = Inches(1)
-            section.left_margin = Inches(1.2)
-            section.right_margin = Inches(1.2)
-
-        # ── Project title (from LLM output # heading) ──
-        title_para = doc.add_paragraph(project_title, style='Title')
-        if title_para.runs:
-            title_para.runs[0].font.color.rgb = WB_NAVY
-
-        # ── Shared LLM warning before the assessment ──
-        from fcv_docx_style import BE_AWARE
-        for warning in BE_AWARE:
-            _add_single_para(warning, size=9, color=WB_GRAY, italic=True, space_after=5)
-
-        # ── Finalized PAD notice ──
-        if finalized_pad and approval_date:
-            notice = doc.add_paragraph(
-                f'Retrospective screening — finalized PAD. This document was Board-approved in '
-                f'{approval_date}. The recommendations below represent the guidance this tool would '
-                f'have provided had the document been reviewed prior to appraisal.'
-            )
-            notice.runs[0].bold = True
-            notice.runs[0].font.color.rgb = AMBER
-
-        add_climate_notice()
+        report = Report(
+            'climate' if climate_active else 'fcv',
+            report_meta,
+            document=doc,
+        )
+        report.banner()
+        report.be_aware(BE_AWARE)
+        add_rating_scorecard()
 
         # ── Main narrative (executive summary, operational context, strengths, gaps) ──
         # The summary text uses markdown headings (## / ###) and body paragraphs.
         # _md_to_docx_para handles headings, skips ---, handles bold/italic.
         # The LLM narrative opens with "This analysis places [country]..." — no duplicate box needed.
         if summary:
-            _md_to_docx_para(doc, bullet_finding_sections(summary))
+            add_markdown(bullet_finding_sections(summary))
 
         # ── AI caveat (appended after the LLM's classification paragraph) ──
         _add_single_para(
             'This is a subjective judgement on the part of this AI tool and does not constitute an official WBG classification.',
             size=9, color=WB_GRAY, italic=True, space_before=0, space_after=8
         )
+
+        # Concrete route and source qualifications follow the assessment opening.
+        if finalized_pad and approval_date:
+            _add_single_para(
+                f'Retrospective screening — finalized PAD. This document was Board-approved in '
+                f'{approval_date}. The recommendations below represent the guidance this tool would '
+                f'have provided had the document been reviewed prior to appraisal.',
+                bold=True, color=AMBER,
+            )
+        add_climate_notice()
 
         # ── FCV Risk Exposure ──
         if climate_valid:
@@ -13564,142 +13782,161 @@ def download_report():
             add_climate_core_questions()
         else:
             add_core_risk_exposure()
-            add_sr_sections()
 
+        add_rating_sections()
 
-        # ── Priority Actions for the Task Team (summary table) ──
+        # ── Priority Actions for the Task Team ──
         if priorities:
             _add_section_heading('Priority Actions for the Task Team')
-            _add_single_para(
+            count_intro = (
                 f'Based on a three-stage assessment of the project documents, {len(priorities)} priority '
                 f'action{"s have" if len(priorities) != 1 else " has"} been identified to strengthen '
-                f'FCV sensitivity and responsiveness in the design and delivery of this project.',
-                space_after=6
+                f'FCV sensitivity and responsiveness in the design and delivery of this project.'
             )
             implementation_mode = (
                 str(meta.get('review_mode') or 'design').strip().casefold()
                 == 'implementation'
             )
-            _add_single_para(
-                priority_advisory_text(implementation=implementation_mode),
-                space_after=8,
+            priority_intro = count_intro + '\n\n' + priority_advisory_text(
+                implementation=implementation_mode
+            )
+            report.info_box(priority_intro, size=9.5, keep=True)
+
+            overview_rows = []
+            for i, priority in enumerate(priorities, start=1):
+                title = re.sub(
+                    r'^Priority\s+\d+\s*[·•]\s*', '',
+                    str(priority.get('title') or ''), flags=re.IGNORECASE,
+                )
+                timing = timing_map.get(
+                    priority.get('action_timing', ''),
+                    priority.get('action_timing', ''),
+                )
+                cycle = priority.get('project_cycle')
+                if not timing and isinstance(cycle, dict):
+                    timing = cycle.get('primary_label') or ''
+                focus = tag_labels.get(
+                    priority.get('tag', ''), priority.get('tag', '')
+                )
+                overview_rows.append([
+                    str(i),
+                    (title, f'priority_{i}'),
+                    str(priority.get('risk_level') or ''),
+                    str(focus or ''),
+                    str(timing or ''),
+                ])
+            report.data_table(
+                ['#', 'Priority Action', 'Priority Level', 'FCV Focus', 'Timing'],
+                [0.35, 3.05, 0.8, 1.2, CONTENT_W - 5.4],
+                overview_rows,
+                pill_cols=(2,),
+                link_col=1,
             )
 
-            # Summary table: #, Priority Action, Priority Level, FCV Focus, Timing
-            tbl = doc.add_table(rows=1 + len(priorities), cols=5)
-            # Match the approved readout: reserve most width for the action text.
-            widths = (0.35, 3.05, 0.8, 1.2, 1.3)
-            tbl.autofit = False
-            for column, width in zip(tbl.columns, widths):
-                column.width = Inches(width)
-            for row in tbl.rows:
-                for cell, width in zip(row.cells, widths):
-                    cell.width = Inches(width)
-            try:
-                tbl.style = 'Table Grid'
-            except Exception:
-                pass
-            hdr = tbl.rows[0].cells
-            for j, col_hdr in enumerate(['#', 'Priority Action', 'Priority Level', 'FCV Focus', 'Timing']):
-                p = hdr[j].paragraphs[0]
-                p.clear()
-                r = p.add_run(col_hdr)
-                r.bold = True
-                r.font.size = Pt(9)
-                r.font.color.rgb = WB_NAVY
-
-            for i, pr in enumerate(priorities):
-                row = tbl.rows[i + 1].cells
-                pr_title = re.sub(r'^Priority\s+\d+\s*[·•]\s*', '', pr.get('title', ''), flags=re.IGNORECASE)
-                timing_val = timing_map.get(pr.get('action_timing', ''), pr.get('action_timing', ''))
-                tag_val = tag_labels.get(pr.get('tag', ''), pr.get('tag', ''))
-
-                for j, txt in enumerate([str(i+1), pr_title, pr.get('risk_level',''), tag_val, timing_val]):
-                    p = row[j].paragraphs[0]
-                    p.clear()
-                    run = p.add_run(txt)
-                    run.font.size = Pt(9)
-
-        # ── Individual Priority Cards ──
-        if priorities:
             _add_section_heading('Strategic Priorities')
+            for i, priority in enumerate(priorities, start=1):
+                title = re.sub(
+                    r'^Priority\s+\d+\s*[·•]\s*', '',
+                    str(priority.get('title') or ''), flags=re.IGNORECASE,
+                )
+                timing = timing_map.get(
+                    priority.get('action_timing', ''),
+                    priority.get('action_timing', ''),
+                )
+                cycle = priority.get('project_cycle')
+                if not timing and isinstance(cycle, dict):
+                    timing = cycle.get('primary_label') or ''
+                focus = tag_labels.get(
+                    priority.get('tag', ''), priority.get('tag', '')
+                )
+                priority_meta = [
+                    (label, str(value))
+                    for label, value in (
+                        ('Dimension', priority.get('fcv_dimension')),
+                        ('Priority', priority.get('risk_level')),
+                        ('Focus', focus),
+                        ('Timing', timing),
+                        ('Scope', priority.get('priority_scope')),
+                    )
+                    if value
+                ]
+                report.priority_header(
+                    i, title, priority_meta, anchor=f'priority_{i}'
+                )
 
-            for i, pr in enumerate(priorities):
-                pr_title = re.sub(r'^Priority\s+\d+\s*[·•]\s*', '', pr.get('title', ''), flags=re.IGNORECASE)
-                h3 = doc.add_heading(f'Priority {i+1} · {pr_title}', level=3)
-                if h3.runs:
-                    h3.runs[0].font.color.rgb = WB_NAVY
+                if priority.get('the_gap'):
+                    report.label('The Gap')
+                    _add_single_para(priority['the_gap'])
+                if priority.get('why_it_matters'):
+                    report.label('Why It Matters')
+                    _add_single_para(priority['why_it_matters'])
 
-                # Metadata line — single run
-                meta_parts = []
-                if pr.get('fcv_dimension'):
-                    meta_parts.append(f'Dimension: {pr["fcv_dimension"]}')
-                if pr.get('risk_level'):
-                    meta_parts.append(f'Priority: {pr["risk_level"]}')
-                if pr.get('tag') and pr['tag'] in tag_labels:
-                    meta_parts.append(f'Focus: {tag_labels[pr["tag"]]}')
-                if pr.get('refresh_shift'):
-                    meta_parts.append(f'FCV Strategy 2026-2030: {pr["refresh_shift"]}')
-                if pr.get('action_timing') and pr['action_timing'] in timing_map:
-                    meta_parts.append(f'Timing: {timing_map[pr["action_timing"]]}')
-                if pr.get('change_type'):
-                    meta_parts.append(f'Change: {pr["change_type"]}')
-                if pr.get('restructuring_level'):
-                    meta_parts.append(f'Restructuring level: {pr["restructuring_level"]}')
-                if pr.get('priority_scope'):
-                    meta_parts.append(f'Scope: {pr["priority_scope"]}')
-                if pr.get('governance_level'):
-                    meta_parts.append(f'Governance level: {pr["governance_level"]}')
-                if pr.get('authority_basis'):
-                    meta_parts.append(f'Authority basis: {str(pr["authority_basis"]).replace("_", " ")}')
-                if pr.get('lens_ids'):
-                    meta_parts.append(f'Sector lenses: {", ".join(pr["lens_ids"])}')
-                if meta_parts:
-                    _add_single_para(' | '.join(meta_parts), size=9, color=WB_GRAY)
-
-                add_field('The Gap', pr.get('the_gap'))
-                add_field('Why It Matters', pr.get('why_it_matters'))
-
-                actions = pr.get('actions', [])
+                actions = priority.get('actions', [])
                 if actions:
-                    ah = doc.add_paragraph()
-                    ah.add_run(f'Essential Action{"s" if len(actions) > 1 else ""}:').bold = True
-                    for act in actions:
-                        if act.get('document_element'):
-                            ep = doc.add_paragraph()
-                            ep.add_run(f'{act["document_element"]}:').bold = True
-                            ep.paragraph_format.space_after = Pt(1)
-                        if act.get('guidance'):
-                            gp = doc.add_paragraph(act['guidance'])
-                            gp.paragraph_format.space_before = Pt(0)
-                        if act.get('suggested_language'):
-                            slp = doc.add_paragraph()
-                            slp.add_run('Suggested text:').bold = True
-                            slp.paragraph_format.space_after = Pt(1)
-                            slt = doc.add_paragraph(act['suggested_language'])
-                            slt.runs[0].italic = True
-                            slt.paragraph_format.space_before = Pt(0)
+                    report.label(
+                        f'Essential Action{"s" if len(actions) != 1 else ""}'
+                    )
+                    for action_index, action in enumerate(actions, start=1):
+                        document_element = str(action.get('document_element') or '').strip()
+                        if document_element:
+                            report.action_heading(
+                                f'{i}.{action_index}', document_element
+                            )
+                        if action.get('guidance'):
+                            _add_single_para(action['guidance'])
+                        if action.get('suggested_language'):
+                            report.drafting_box(
+                                str(action['suggested_language']),
+                                for_text=document_element,
+                                label='Suggested text',
+                            )
 
-                if pr.get('implementation_note'):
-                    add_field('Implementation consideration', pr['implementation_note'])
-
-                add_priority_project_cycle(pr)
-                add_field('CPF Alignment', pr.get('cpf_alignment'))
-                add_field('RRA Driver Alignment', pr.get('rra_driver_alignment'))
+                practical_notes = []
+                if priority.get('implementation_note'):
+                    practical_notes.append((
+                        'Implementation consideration',
+                        str(priority['implementation_note']),
+                    ))
+                practical_notes.extend(add_priority_project_cycle(priority))
+                if priority.get('cpf_alignment'):
+                    practical_notes.append(('CPF Alignment', str(priority['cpf_alignment'])))
+                if priority.get('rra_driver_alignment'):
+                    practical_notes.append((
+                        'RRA Driver Alignment', str(priority['rra_driver_alignment'])
+                    ))
+                for label, key in (
+                    ('FCV Strategy 2026-2030', 'refresh_shift'),
+                    ('Change', 'change_type'),
+                    ('Restructuring level', 'restructuring_level'),
+                    ('Governance level', 'governance_level'),
+                    ('Authority basis', 'authority_basis'),
+                ):
+                    value = priority.get(key)
+                    if value:
+                        if key == 'authority_basis':
+                            value = str(value).replace('_', ' ')
+                        practical_notes.append((label, str(value)))
+                if priority.get('lens_ids'):
+                    practical_notes.append((
+                        'Sector lenses', ', '.join(priority['lens_ids'])
+                    ))
                 if climate_valid:
-                    add_priority_climate_contribution(pr)
-                    add_priority_compliance(pr)
+                    practical_notes.extend(add_priority_climate_contribution(priority))
+                    practical_notes.extend(add_priority_compliance(priority))
+                if practical_notes:
+                    report.grey_box('Practical considerations', practical_notes)
 
-                # Who/When/Resources footer — single run
-                footer_parts = []
-                if pr.get('who_acts'):
-                    footer_parts.append(f'Who acts: {pr["who_acts"]}')
-                if pr.get('when'):
-                    footer_parts.append(f'When: {pr["when"]}')
-                if pr.get('resources'):
-                    footer_parts.append(f'Resources: {pr["resources"]}')
-                if footer_parts:
-                    _add_single_para(' · '.join(footer_parts), size=9, color=WB_GRAY)
+                who_when_resources = [
+                    (label, str(priority[key]))
+                    for label, key in (
+                        ('Who acts', 'who_acts'),
+                        ('When', 'when'),
+                        ('Resources', 'resources'),
+                    )
+                    if priority.get(key)
+                ]
+                if who_when_resources:
+                    report.who_strip(who_when_resources)
 
         # ── Watch List for Supervision ──
         if mid_cycle_watch:
@@ -13724,7 +13961,7 @@ def download_report():
 
         if horizon:
             _add_section_heading('Watch List for Supervision')
-            _md_to_docx_para(doc, horizon)
+            add_markdown(horizon)
 
         # ── Responses to Your Priority Points ──
         focus = data.get('focus_questions') or {}
@@ -13754,9 +13991,7 @@ def download_report():
 
         if recs_table or dnh_checklist or questions_map:
             doc.add_page_break()
-            annex_title = doc.add_heading('Annex: Stage 2 Assessment Tables', level=1)
-            if annex_title.runs:
-                annex_title.runs[0].font.color.rgb = WB_NAVY
+            _add_section_heading('Annex: Stage 2 Assessment Tables')
 
             _add_single_para(
                 'The following tables represent the internal analytical framework used to produce the Stage 2 assessment. '
@@ -13767,24 +14002,22 @@ def download_report():
             if recs_table:
                 _add_section_heading('FCV Operational Standards Assessment (12 Recommendations)', level=2)
                 if not _add_md_table(doc, recs_table):
-                    _md_to_docx_para(doc, recs_table)
+                    add_markdown(recs_table)
 
             if dnh_checklist:
                 _add_section_heading('Do No Harm Checklist (9 Principles)', level=2)
                 if not _add_md_table(doc, dnh_checklist):
-                    _md_to_docx_para(doc, dnh_checklist)
+                    add_markdown(dnh_checklist)
 
             if questions_map:
                 _add_section_heading('Diagnostic Questions Assessment (25 Questions)', level=2)
                 if not _add_md_table(doc, questions_map):
-                    _md_to_docx_para(doc, questions_map)
+                    add_markdown(questions_map)
 
         findings = lens_diagnostic.get('findings', []) if isinstance(lens_diagnostic, dict) else []
         if active_lenses or findings:
             doc.add_page_break()
-            appendix = doc.add_heading('Appendix: Sector-Lens Sources and Evidence', level=1)
-            if appendix.runs:
-                appendix.runs[0].font.color.rgb = WB_NAVY
+            _add_section_heading('Appendix: Sector-Lens Sources and Evidence')
             _add_single_para(
                 'Sector lenses supplement the common FCV framework. They do not create a separate score or alter the rating denominator.',
                 size=9, color=WB_GRAY, italic=True, space_after=8
@@ -13858,9 +14091,6 @@ def download_report():
                     if sources:
                         _add_single_para(f'Source IDs: {sources}', size=8.5, color=WB_LGRAY, italic=True, space_after=5)
 
-        # Apply the shared editable Word presentation after all content is present.
-        from fcv_word_style import style_fcv_word_document
-        style_fcv_word_document(doc, variant="detail", lens="climate" if climate_active else "fcv")
         buf = io.BytesIO()
         doc.save(buf)
         buf.seek(0)

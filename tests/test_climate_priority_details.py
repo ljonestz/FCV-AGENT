@@ -7,12 +7,19 @@ import re
 import subprocess
 
 from docx import Document
+from docx.oxml.ns import qn
+from docx.text.paragraph import Paragraph
 
 from sector_lenses.climate_verified_render import build_reader_model, render_reader_html, write_reader_docx
 from sector_lenses.climate_verified_prompts import _recommendation_prompt
 from sector_lenses.climate_verified_schemas import CANDIDATE_SCHEMA
 from tests.test_climate_verified_render import _assessment
 from tests.test_climate_lens_frontend import INDEX, _extract_js_function, _js_escape_helper
+
+
+def _docx_body_paragraphs(document: Document) -> list[str]:
+    """Return body paragraphs in OOXML order, including paragraphs in tables."""
+    return [Paragraph(element, document).text for element in document.element.body.iter(qn("w:p"))]
 
 
 def _model():
@@ -37,21 +44,26 @@ def test_html_and_word_details_keep_qualifications_without_the_field_dump():
     detail = re.search(r'<details class="climate-priority-detail">(.*?)</details>', page, re.S).group(1)
     output = BytesIO()
     write_reader_docx(model, output)
-    paragraphs = [p.text for p in Document(output).paragraphs]
-    start = paragraphs.index('Practical considerations and Suggested Text')
-    end = paragraphs.index('Points to check before the applicable review')
+    paragraphs = _docx_body_paragraphs(Document(output))
+    normalized_paragraphs = [paragraph.casefold() for paragraph in paragraphs]
+    start = next(i for i, paragraph in enumerate(normalized_paragraphs)
+                 if "practical considerations and suggested text" in paragraph)
+    end = next(i for i, paragraph in enumerate(normalized_paragraphs)
+               if "points to check before the applicable review" in paragraph)
     word = '\n'.join(paragraphs[start:end])
     priority = model['priorities'][0]
     for text in (detail, word):
         for value in (priority['limitation'], priority['caution'], priority['enhanced_action'], priority['enhanced_activation']):
             assert value in text
+        normalized_text = text.casefold()
         for label in ('Minimum action:', 'Decision:', 'Completion evidence:', 'Completion evidence status:',
                       'Limitation:', 'Caution:', 'Guidance basis:', 'Drafting status:',
                       'Where this fits in the project cycle', 'updated_section', 'GUIDE-PCN-DESIGN'):
-            assert label not in text
+            assert label.casefold() not in normalized_text
         assert 'Suggested targeted text for the current project document.' in text
         assert 'PCN' in text and 'Project Description' in text
-        assert 'Confidence' in text and 'medium' in text
+        assert 'Suggested lead: Task team'.casefold() in normalized_text
+        assert 'Confidence: medium'.casefold() in normalized_text
     assert '<p class="climate-priority-detail-prose">' + escape(priority['limitation']) + '</p>' in detail
     assert model == before
     assert assessment['priorities'][0]['completion_evidence_status'] == 'updated_section'

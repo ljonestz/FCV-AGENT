@@ -281,57 +281,7 @@ def _style_footer(section, label: str) -> None:
     _add_page_field(footer)
 
 
-def _apply_report_brand(document, lens: str) -> None:
-    """Use the approved report furniture without rebuilding live report content."""
-    from fcv_docx_style import (
-        AMBER_BG, AMBER_EDGE, AMBER_TXT, BE_AWARE, BLUE, NAVY as REPORT_NAVY,
-        Report, p_border, row_no_split,
-    )
-
-    titles = [p for p in document.paragraphs if p.style.name == "Title"]
-    title = titles[0].text if titles else "FCV Recommendations Note"
-    report = Report(lens, {
-        "title": title, "project_line": "", "running_label": "",
-        "classification": "",
-    }, document=document)
-    report.banner()
-    # The masthead carries the title; the body starts with the LLM warning.
-    for paragraph in titles:
-        paragraph._p.getparent().remove(paragraph._p)
-
-    for paragraph in document.paragraphs:
-        style_name = paragraph.style.name
-        if style_name.startswith("Heading "):
-            color = REPORT_NAVY if style_name == "Heading 1" else BLUE
-            for run in _paragraph_runs(paragraph):
-                run.font.color.rgb = RGBColor.from_string(color)
-            if style_name == "Heading 1":
-                paragraph.paragraph_format.space_before = Pt(18)
-                paragraph.paragraph_format.space_after = Pt(8)
-                p_border(paragraph, "bottom", 12, BLUE, space=3)
-            else:
-                paragraph.paragraph_format.space_before = Pt(10)
-                paragraph.paragraph_format.space_after = Pt(4)
-        if paragraph.text in BE_AWARE:
-            ppr = paragraph._p.get_or_add_pPr()
-            _set_shading(ppr, AMBER_BG)
-            _set_border(ppr, "left", AMBER_EDGE, size="18")
-            paragraph.paragraph_format.space_after = Pt(6)
-            for run in _paragraph_runs(paragraph):
-                _set_font(run.font, size=9, color=RGBColor.from_string(AMBER_TXT))
-        for accent in paragraph._p.xpath("./w:pPr/w:pBdr/w:left"):
-            if accent.get(qn("w:color")) == "007F86":
-                accent.set(qn("w:color"), BLUE)
-
-    for table in document.tables:
-        for row in table.rows:
-            row_no_split(row)
-        if table.rows:
-            for cell in table.rows[0].cells:
-                _set_cell_shading(cell, REPORT_NAVY)
-
-
-def style_fcv_word_document(document, *, variant: str = "brief", lens: str = "fcv"):
+def style_fcv_word_document(document, *, variant: str = "brief"):
     """Apply editable FCV Word styling to a completed document."""
     if variant not in {"brief", "detail"}:
         raise ValueError("Word style variant must be 'brief' or 'detail'.")
@@ -388,9 +338,6 @@ def style_fcv_word_document(document, *, variant: str = "brief", lens: str = "fc
         _style_table(table)
 
     document.settings.odd_and_even_pages_header_footer = False
-    if variant == "detail":
-        _apply_report_brand(document, lens)
-        return document
     header_line_height = 28 if variant == "brief" else 42.5
     for section in document.sections:
         section.different_first_page_header_footer = False

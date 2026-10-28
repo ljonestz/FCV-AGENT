@@ -1,74 +1,79 @@
-# Climate Word output alignment
+# Word export design and release record
 
-The Climate-FCV Word download should follow the normal FCV report's visual system
-and reading order. The previous download used shared typography/header styling,
-but placed a large rating table before the assessment and omitted an Overview
-heading. Production rollout is held until this export correction is verified.
-Bank PR #5 and app PR #89 have already merged as 05b5a097 and 0a2ae95 respectively.
+## Final behavior
 
-## Design
+Both normal FCV and Climate-FCV detailed Word downloads use the approved
+Option 1 / Banner package from `Downloads/fcv_screener_word_export_handoff.zip`
+and its FCV STAR and Climate Somalia reference reports. They compose the existing
+Report components directly from application data: unchanged Mark C logo, navy/blue
+masthead, Arial typography, numbered headings, linked priority overview, blue
+priority cards, practical notes, Suggested Text boxes and running page furniture.
+Management briefs retain their separate style. There is no HTML/DOCX parser in
+the live export path and no hosted ITS URL added to the Render version.
 
-The opening is the approved FCV logo masthead, the shared LLM warning, then Overview and
-its assessment text. It has no generated-date/framework or generic verification
-preamble. Findings follow; Sensitivity and Responsiveness appear lower, before
-priorities, as readable vertical sections like the normal FCV export.
+The masthead touches the physical page top. Native Word previously added its
+0.4-inch header distance to the floating banner, leaving 28.8pt of white space.
+Header distance is now zero; running-header paragraph spacing retains the
+later-page position. The project line beneath Recommendations Note uses supplied
+identity or the original project filename stem, country, document type,
+instrument and an explicitly labelled export date. No project identity,
+classification or assessment date is invented. Session load/save preserves
+original filenames in both current and legacy saves.
 
-A compact rank/title priority overview leads to the full Strategic priorities.
-The complete optional-priorities advisory, practical considerations, Suggested
-Text, qualifications, points to check, guidance and limitations remain. Genuine
-incomplete/smoke/candidate warnings remain visible after the opening.
+Final order follows the user's last clarification: masthead, LLM warning,
+compact sensitivity/responsiveness summary graphic, assessment. Genuine partial,
+incomplete, smoke and candidate warnings precede the assessment when applicable.
+Detailed rating explanations remain below the findings (section 03 for Climate).
+The top graphic applies to both live routes and both offline builders.
+Generic draft/human-review/preparation preambles remain removed. Specific inline
+source qualifications, route gates and snapshot traceability remain. Both routes
+retain the full optional-priorities advisory. Prompts, canonical assessments,
+retrieval, bank pin and approved design ancestry are unchanged by this correction.
 
-The normal live Word route uses the same LLM warning instead of duplicate front
-matter. Offline builders keep the approved branded style and place their rating
-scorecards in the lower ratings section. The approved Option 1 / Banner design
-was previously present only in those builders, not connected to live downloads.
-Both live routes now reuse its existing Report page setup, navy masthead, white
-FCV logo, blue headings and running header/footer through the shared formatter.
-The existing LLM warning receives the same amber colour treatment. The masthead
-carries the title, so no duplicate body title precedes the warning. This keeps
-the live writers and their complete report content, rather than converting them
-to the offline fixture schema. Logo assets, prompts, canonical reader data and
-the immutable country-bank pin are unchanged; the approved design ancestry is
-retained. Brief exports retain their existing separate styling.
+## Verification
 
-## Verification and rollout
+Actual saved-session Word downloads returned HTTP 200 in headed Edge with no
+browser errors or assessment attempts. Source saves and canonical Climate
+payloads stayed unchanged; reopened/resaved filenames are preserved.
 
-Implementation is isolated on fix/climate-word-parity-20261028. Focused document
-contracts precede renderer changes. Final acceptance uses both actual saved-run
-Word downloads, native Word rendering and inspection of every page, then the
-proportionate offline suite and deployed commit/health/export checks.
+Native Microsoft Word rendered 11 Climate and 15 normal pages. All pages of the
+full-template versions were reviewed. Moving the summary graphic changed only
+Climate pages 1–3 and normal pages 1–2; those pages received fresh review, and
+all later pages are pixel-identical to the previously accepted reports. All body
+text values and nonbody Word package parts remain identical across this move.
+The masthead is flush at 0pt on both routes. A long-subtitle fixture also fits.
 
-Raw artifacts stay ignored under output/20261028-climate-word-layout/. No new
-paid assessment is needed; the earlier USD10.729492 conservative debit carries
-forward. After checks pass, existing user authority covers PR merge and production
-rollout with live supplementary research, Haiku research and Quality assessment.
+The final full suite passed: **2,090 passed, two skipped, four deselected** in
+1,381.13s. The four documented headless browser hangs have prior headed Edge
+coverage in the presentation handoff. The run's HEAD, modified source/test path
+set and all 20 source/test hashes stayed unchanged. Final top-scorecard layout
+contracts passed (nine tests); Python compilation, JS syntax and diff checks
+also passed. Earlier failed and interrupted runs remain as diagnostic records
+and are superseded by this final full run.
 
+Artifacts remain ignored under `output/20261028-climate-word-layout/`:
+- `template-fidelity/top-scorecard/`: final local Word examples, native Word
+  renders, browser metadata checks, content comparison and visual acceptance.
+- `template-fidelity/live/` and `normal-timing/`: earlier full-template checks;
+  their lower-scorecard placement is superseded by the final user clarification.
+- `template-fidelity/top-scorecard/final-suite/`: final full-suite log and
+  unchanged source/test hash record. Earlier suites remain in `final-suite/`.
+- `template-fidelity/production/`: hosted acceptance helper and release artifacts.
+- `template-fidelity/`: original references and banner-gap comparison.
+The initial full-suite failure record is under `output/20261028-template-fidelity/`.
 
-## Verification record before rollout
+## Release scope and limitations
 
-The affected export and presentation tests passed (119 tests). The final shared
-branding/pagination subset passed (17 tests); after applying the approved normal
-priority-table column proportions, the seven route/layout tests passed again.
-Python compilation and whitespace checks passed. Each detailed priority table
-keeps rows together and repeats its header across pages.
+Bank PR #5 and app PR #89 are already merged (05b5a097 and 0a2ae95). This correction
+is PR #90 on `fix/climate-word-parity-20261028`. The immutable bank pin remains
+72ce351e0f19fe52ff786196b516e6dc4a684290. User authority covers merge and production
+deployment after verification, retaining auto-deploy off and existing resources.
 
-Both routes were downloaded through headed Edge from a local server that blocks
-assessment endpoints. API responses were HTTP 200, browser errors and assessment
-attempts were zero, and saved inputs were unchanged. The Climate reader and
-assessment objects remained identical to the saved run. The final Climate DOCX
-was rendered in native Microsoft Word: all ten pages passed visual review. Its
-assessment starts after the LLM warning, and ratings appear on page three.
-The normal export is undergoing its final pagination check after the table-width
-correction. The final full regression run and hosted checks are still pending.
+No new paid assessment calls: the earlier conservative USD10.729492 debit is
+unchanged. The Syria example is a historical ITS-to-UI adapter; the Somalia
+example is the saved Quality assessment with its specific source qualifications.
+These checks establish presentation and export behavior, not new analytical
+acceptance. ITS was not changed or validated; existing bank/source limitations
+remain. Preserve earlier worktrees and unrelated root work.
 
-Artifacts are ignored under output/20261028-climate-word-layout/: final/ contains
-the accepted Climate Word example, render record and visual review; normal-table/
-contains the final normal-table check. Earlier branded/ and intermediate renders
-are retained as diagnostics. Interrupted full-suite runs were stopped when new
-visual corrections changed the scope and are not counted as passing tests.
-
-The two historical saved runs test rendering, not new analytical performance.
-The Syria file is an ITS-to-UI adapter. The Somalia file retains its specific
-source qualifications and canonical review metadata. No bank approval, evidence
-claim, prompt, model schema or retrieval behavior changed in this Word correction.
-The previous bank and analytical limitations still apply.
+Production promotion and hosted acceptance are pending at this checkpoint.

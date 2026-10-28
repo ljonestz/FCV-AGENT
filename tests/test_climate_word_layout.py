@@ -9,12 +9,13 @@ import pytest
 from docx import Document
 from docx.oxml.ns import qn
 from docx.opc.constants import RELATIONSHIP_TYPE as RT
+from docx.shared import RGBColor
 from docx.table import Table
 from docx.text.paragraph import Paragraph
 
 import build_climate_readout
 import build_fcv_readout
-from fcv_docx_style import BE_AWARE, BLUE, NAVY, logo_path
+from fcv_docx_style import AMBER_TXT, BE_AWARE, BLUE, METER_OFF, NAVY, logo_path
 from sector_lenses.climate_verified_render import (
     CANDIDATE_PREVIEW_WARNING,
     DIMENSIONS,
@@ -34,12 +35,23 @@ SNAPSHOT = "a" * 64
 
 
 def _body_blocks(document):
-    """Return direct Word body paragraphs and tables in document order."""
-    for child in document.element.body.iterchildren():
-        if child.tag == qn("w:p"):
-            yield Paragraph(child, document)
-        elif child.tag == qn("w:tbl"):
-            yield Table(child, document)
+    """Return body paragraphs and tables, including nested callout content."""
+    def visit(element):
+        for child in element.iterchildren():
+            if child.tag == qn("w:p"):
+                yield Paragraph(child, document)
+            elif child.tag == qn("w:tbl"):
+                table = Table(child, document)
+                yield table
+                seen_cells = set()
+                for row in table.rows:
+                    for cell in row.cells:
+                        if cell._tc in seen_cells:
+                            continue
+                        seen_cells.add(cell._tc)
+                        yield from visit(cell._tc)
+
+    yield from visit(document.element.body)
 
 
 def _block_text(block):
@@ -51,7 +63,9 @@ def _block_text(block):
 
 
 def _all_body_text(blocks):
-    return "\n".join(_block_text(block) for block in blocks)
+    return "\n".join(
+        block.text for block in blocks if isinstance(block, Paragraph)
+    )
 
 
 def _contains_index(blocks, text):
@@ -70,13 +84,25 @@ def _heading_index(blocks, text):
     )
 
 
-def _compact_priority_table_index(blocks, titles):
+def _priority_overview_table_index(blocks, titles):
     return next(
         index
         for index, block in enumerate(blocks)
         if isinstance(block, Table)
-        and len(block.columns) == 2
+        and len(block.columns) >= 2
+        and "Operational priority" in _block_text(block)
         and all(title in _block_text(block) for title in titles)
+    )
+
+
+def _scorecard_table_index(blocks):
+    return next(
+        index
+        for index, block in enumerate(blocks)
+        if isinstance(block, Table)
+        and len(block.columns) == 3
+        and "SENSITIVITY" in _block_text(block).upper()
+        and "RESPONSIVENESS" in _block_text(block).upper()
     )
 
 
@@ -113,9 +139,10 @@ def _part_text(part):
     )
 
 
-def _assert_approved_word_brand(document, report_title):
+def _assert_approved_word_brand(document, report_title, expected_project_line=None):
     section = document.sections[0]
     first_page_header = section.first_page_header
+    assert section.header_distance.inches == pytest.approx(0)
     logo_bytes = Path(logo_path(True)).read_bytes()
     assert any(
         relationship.reltype == RT.IMAGE
@@ -129,8 +156,18 @@ def _assert_approved_word_brand(document, report_title):
         for row in table.rows
         for cell in row.cells
     )
+    banner_position = first_page_header.tables[0]._tbl.tblPr.find(
+        qn("w:tblpPr")
+    )
+    assert banner_position is not None
+    assert banner_position.get(qn("w:vertAnchor")) == "page"
+    assert banner_position.get(qn("w:horzAnchor")) == "page"
+    assert banner_position.get(qn("w:tblpY")) == "0"
+    assert banner_position.get(qn("w:tblpX")) == "0"
     banner_text = _part_text(first_page_header)
     assert report_title in banner_text
+    if expected_project_line is not None:
+        assert expected_project_line in banner_text
     assert "FCV SCREENER" in _part_text(section.header)
     footer_text = _part_text(section.footer)
     assert "AI-assisted output" in footer_text
@@ -138,7 +175,10 @@ def _assert_approved_word_brand(document, report_title):
     assert not any(paragraph.style.name == "Title" for paragraph in document.paragraphs)
 
     heading_colors = set()
-    for paragraph in document.paragraphs:
+    for paragraph in (
+        block for block in _body_blocks(document)
+        if isinstance(block, Paragraph)
+    ):
         if not paragraph.style.name.startswith("Heading"):
             continue
         style_color = paragraph.style.font.color.rgb
@@ -162,19 +202,46 @@ def test_live_climate_word_orders_reader_sections_and_keeps_specific_review_sign
     }
     model = build_reader_model(assessment)
     model["summary_overview"] = [
-        "Overview summary marker: the project evidence supports this assessment."
+        "Overview summary marker: the project evidence supports this assessment. "
+        "[Verify before sharing: confirm project scope against the signed document.]"
     ]
+    model["priorities"][0]["caution"] = (
+        "Source caveat. [Verify before sharing: check the signed annex for the "
+        "priority scope.]"
+    )
     model["reader_review_notice"] = "Generic reader review caveat must stay absent."
     model["runtime_mode"] = "smoke"
     model["analysis_status"] = "partial"
     model["analysis_message"] = "Confirm coverage for remaining project locations."
     model["recommendation_status"] = "partial"
     model["recommendation_message"] = "One proposed action needs confirmation."
+    from app import _word_report_meta
+
+    report_meta = _word_report_meta(
+        {
+            "metadata": {
+                "project_name": "Live layout test project",
+                "project_id": "P123456",
+                "country": "Testland",
+                "document_type": "PCN",
+                "instrument": "IPF",
+                "date_str": "2026-10-27",
+            }
+        },
+        title="Climate and FCV Recommendations Note",
+    )
     path = tmp_path / "climate-reader.docx"
 
-    write_reader_docx(model, path, snapshot_sha256=SNAPSHOT)
+    write_reader_docx(
+        model, path, snapshot_sha256=SNAPSHOT, report_meta=report_meta
+    )
 
     document = Document(path)
+    _assert_approved_word_brand(
+        document,
+        "Climate and FCV Recommendations Note",
+        report_meta["project_line"],
+    )
     blocks = list(_body_blocks(document))
     body = _all_body_text(blocks)
     advisory_index = _contains_index(blocks, BE_AWARE[0])
@@ -190,20 +257,35 @@ def test_live_climate_word_orders_reader_sections_and_keeps_specific_review_sign
     responsiveness_heading_index = _rating_heading_index(
         blocks, "responsiveness", ratings_heading_index
     )
+    scorecard_index = _scorecard_table_index(blocks)
+    status_indices = [
+        _contains_index(blocks, "Assessment evidence is incomplete"),
+        _contains_index(blocks, "Recommendations need review"),
+        _contains_index(blocks, SMOKE_RUNTIME_WARNING),
+        _contains_index(blocks, CANDIDATE_PREVIEW_WARNING),
+    ]
     priorities_heading_index = _heading_index(blocks, HEADINGS[2])
     priority_intro_index = _contains_index(
         blocks, model["priority_summary"]["statement"]
     )
-    priority_table_index = _compact_priority_table_index(
+    priority_table_index = _priority_overview_table_index(
         blocks, model["priority_summary"]["titles"]
     )
-    strategic_index = _heading_index(blocks, "Strategic priorities")
+    priority_card_index = next(
+        index
+        for index, block in enumerate(blocks)
+        if isinstance(block, Table)
+        and "PRIORITY 1" in _block_text(block)
+        and model["priorities"][0]["title"] in _block_text(block)
+    )
     detailed_priority_index = _contains_index(
         blocks, model["priorities"][0]["minimum_action"]
     )
 
-    assert advisory_index < overview_index < overview_text_index
+    assert advisory_index < scorecard_index < min(status_indices)
+    assert max(status_indices) < overview_index < overview_text_index
     assert overview_text_index < findings_index < ratings_heading_index
+    assert scorecard_index < overview_index
     assert ratings_heading_index < sensitivity_heading_index
     assert sensitivity_heading_index < responsiveness_heading_index
     assert responsiveness_heading_index < priorities_heading_index
@@ -212,21 +294,14 @@ def test_live_climate_word_orders_reader_sections_and_keeps_specific_review_sign
         for block in blocks[ratings_heading_index:priorities_heading_index]
     )
     for dimension in (DIMENSIONS[1], DIMENSIONS[2]):
-        assert dimension[1] in rating_section_text
-        assert dimension[2] in rating_section_text
-        assert assessment["judgments"][dimension[0]]["rationale"] in rating_section_text
-    assert not any(
-        isinstance(block, Table)
-        and DIMENSIONS[1][1] in _block_text(block)
-        and DIMENSIONS[2][1] in _block_text(block)
-        for block in blocks
-    )
+        assert dimension[1].casefold() in rating_section_text.casefold()
+        assert dimension[2].casefold() in rating_section_text.casefold()
+        assert assessment["judgments"][dimension[0]]["rationale"].casefold() in rating_section_text.casefold()
     assert priorities_heading_index < priority_intro_index < priority_table_index
-    assert priority_table_index < strategic_index < detailed_priority_index
+    assert priority_table_index < priority_card_index < detailed_priority_index
     assert all(text in body for text in BE_AWARE)
     assert "Generic reader review caveat must stay absent." not in body
     assert "Assessment evidence is incomplete" in body
-    assert overview_text_index < _contains_index(blocks, "Assessment evidence is incomplete") < findings_index
     assert "Recommendations need review" in body
     assert SMOKE_RUNTIME_WARNING in body
     assert CANDIDATE_PREVIEW_WARNING in body
@@ -234,6 +309,35 @@ def test_live_climate_word_orders_reader_sections_and_keeps_specific_review_sign
     assert "Confirm the controlling total." in body
     assert "Suggested document wording is not shown because" in body
     assert f"Review snapshot: {SNAPSHOT}" in body
+    assert "[Verify before sharing: confirm project scope against the signed document.]" in body
+    practical_qualification = (
+        "[Verify before sharing: check the signed annex for the priority scope.]"
+    )
+    assert any(
+        practical_qualification in paragraph.text
+        for paragraph in (block for block in blocks if isinstance(block, Paragraph))
+    )
+
+    qualification_run = next(
+        run
+        for paragraph in (
+            block for block in blocks if isinstance(block, Paragraph)
+        )
+        for run in paragraph.runs
+        if "Verify before sharing" in run.text
+    )
+    assert qualification_run.font.color.rgb == RGBColor.from_string(AMBER_TXT)
+    practical_qualification_runs = [
+        run
+        for paragraph in (block for block in blocks if isinstance(block, Paragraph))
+        for run in paragraph.runs
+        if "check the signed annex for the priority scope" in run.text
+    ]
+    assert practical_qualification_runs
+    assert all(
+        run.font.color.rgb == RGBColor.from_string(AMBER_TXT)
+        for run in practical_qualification_runs
+    )
 
 
 def test_legacy_climate_word_without_priorities_has_no_empty_priority_table(
@@ -241,6 +345,8 @@ def test_legacy_climate_word_without_priorities_has_no_empty_priority_table(
 ):
     assessment = _assessment()
     assessment["priorities"] = []
+    assessment["judgments"]["sensitivity"]["value"] = "unclear"
+    assessment["judgments"]["responsiveness"]["value"] = "not_expected"
     model = build_reader_model(assessment)
     path = tmp_path / "legacy-climate-reader.docx"
 
@@ -258,52 +364,109 @@ def test_legacy_climate_word_without_priorities_has_no_empty_priority_table(
         and "priority" in block.rows[0].cells[1].text.casefold()
         for block in blocks
     )
+    assert "Unclear" in body
+    assert "Not expected for this project" in body
+
+
+def test_climate_docx_preserves_standalone_qualification_in_amber(tmp_path):
+    model = build_reader_model(_assessment())
+    qualification = (
+        "[Verify before sharing: confirm the documented financing total.]"
+    )
+    model["summary_overview"] = [qualification]
+    path = tmp_path / "climate-qualification.docx"
+
+    write_reader_docx(model, path)
+
+    document = Document(path)
+    paragraphs = [
+        block for block in _body_blocks(document)
+        if isinstance(block, Paragraph)
+    ]
+    assert any(paragraph.text == qualification for paragraph in paragraphs)
+    highlighted = [
+        run
+        for paragraph in paragraphs
+        for run in paragraph.runs
+        if "Verify before sharing" in run.text
+    ]
+    assert highlighted
+    assert all(
+        run.font.color.rgb == RGBColor.from_string(AMBER_TXT)
+        for run in highlighted
+    )
 
 
 def test_normal_report_download_opens_with_shared_advisory_and_narrative_before_ratings():
-    from app import app
+    from app import _word_report_meta, app
 
-    response = app.test_client().post(
-        "/api/download-report",
-        json={
-            "summary": (
-                "# Test Project\n\n"
-                "Narrative ordering marker: the project context is set out first."
-            ),
-            "priorities": [
-                {
-                    "title": "Priority 1 - Keep the alternate delivery route available",
-                    "the_gap": "The route is not yet recorded in the project document.",
-                    "why_it_matters": "Access can change during implementation.",
-                    "actions": [
-                        {
-                            "document_element": "Operations Manual",
-                            "guidance": "Record the alternate route and responsible unit.",
-                            "suggested_language": (
-                                "The project will document an alternate delivery route."
-                            ),
-                        }
-                    ],
-                    "when": "Implementation",
-                    "who_acts": "Project implementation unit",
-                }
-            ],
-            "fcv_rating": "Well Embedded",
-            "sensitivity_summary": "Rating rationale marker for sensitivity.",
+    payload = {
+        "summary": (
+            "# Narrative title that should not override metadata\n\n"
+            "Narrative ordering marker: the project context is set out first."
+        ),
+        "metadata": {
+            "project_name": "Supplied metadata project",
+            "project_id": "P765432",
+            "country": "Testland",
+            "document_type": "PCN",
+            "instrument": "IPF",
+            "date_str": "2026-10-27",
         },
-    )
+        "priorities": [
+            {
+                "title": "Priority 1 - Keep the alternate delivery route available",
+                "the_gap": "The route is not yet recorded in the project document.",
+                "why_it_matters": "Access can change during implementation.",
+                "actions": [
+                    {
+                        "document_element": "Operations Manual",
+                        "guidance": "Record the alternate route and responsible unit.",
+                        "suggested_language": (
+                            "The project will document an alternate delivery route."
+                        ),
+                    }
+                ],
+                "when": "Implementation",
+                "who_acts": "Project implementation unit",
+                "project_cycle": {
+                    "primary_label": "At concept stage",
+                    "primary_text": "Confirm the route against the approved project cycle.",
+                },
+            }
+        ],
+        "fcv_rating": "Well Embedded",
+        "sensitivity_summary": "Rating rationale marker for sensitivity.",
+    }
+    response = app.test_client().post("/api/download-report", json=payload)
 
     assert response.status_code == 200, response.get_data(as_text=True)
     document = Document(BytesIO(response.data))
+    report_meta = _word_report_meta(payload)
+    _assert_approved_word_brand(
+        document, "FCV Recommendations Note", report_meta["project_line"]
+    )
     blocks = list(_body_blocks(document))
-    priority_table = next(table for table in document.tables if "Priority Action" in table.cell(0, 1).text)
-    assert priority_table.columns[1].width > 6 * priority_table.columns[0].width
     body = _all_body_text(blocks)
     narrative_index = _contains_index(blocks, "Narrative ordering marker")
     advisory_indices = [_contains_index(blocks, paragraph) for paragraph in BE_AWARE]
+    scorecard_index = _scorecard_table_index(blocks)
+    first_assessment_heading_index = next(
+        index
+        for index, block in enumerate(blocks)
+        if isinstance(block, Paragraph)
+        and block.style.name.startswith("Heading")
+    )
     ratings_index = _heading_index(blocks, "FCV Sensitivity")
-    assert max(advisory_indices) < narrative_index < ratings_index
+    assert max(advisory_indices) < scorecard_index < first_assessment_heading_index
+    assert scorecard_index < narrative_index < ratings_index
     assert all(text in body for text in BE_AWARE)
+    assert "At concept stage" in body
+    assert "Supplied metadata project" in _part_text(document.sections[0].first_page_header)
+    assert "Narrative title that should not override metadata" not in _part_text(
+        document.sections[0].first_page_header
+    )
+    assert "Narrative title that should not override metadata" not in body
     assert "Generated by WBG FCV Project Screener" not in body
     assert "AI-assisted output. Analytical framework:" not in body
 
@@ -312,26 +475,32 @@ def test_normal_report_download_opens_with_shared_advisory_and_narrative_before_
 def test_live_download_routes_use_the_approved_word_brand(verified):
     from app import app
 
+    expected_project_line = None
     if verified:
         payload = _verified_download_payload()
-        expected_title = "Climate and FCV Recommendations Note"
+        expected_title = "FCV Recommendations Note"
     else:
+        fallback_title = "Somalia Water Access Operation"
         payload = {
             "summary": (
-                "# Test Project\n\n"
+                f"# {fallback_title}\n\n"
                 "## Overview\n\n"
                 "A short narrative keeps the route local and avoids model calls."
             ),
             "priorities": [],
             "fcv_rating": "Well Embedded",
         }
-        expected_title = "Test Project"
+        expected_title = "FCV Recommendations Note"
+        expected_project_line = fallback_title
 
     response = app.test_client().post("/api/download-report", json=payload)
 
     assert response.status_code == 200, response.get_data(as_text=True)
     document = Document(BytesIO(response.data))
-    _assert_approved_word_brand(document, expected_title)
+    _assert_approved_word_brand(document, expected_title, expected_project_line)
+    if expected_project_line:
+        body = _all_body_text(list(_body_blocks(document)))
+        assert expected_project_line not in body
 
 
 @pytest.mark.parametrize(
@@ -355,7 +524,7 @@ def test_live_download_routes_use_the_approved_word_brand(verified):
         ),
     ],
 )
-def test_offline_builder_scorecard_follows_summary_and_risk_text(
+def test_offline_builder_scorecard_precedes_narrative_and_detail_ratings(
     builder, fixture_name, narrative_markers, tmp_path
 ):
     data = json.loads((FIXTURES / fixture_name).read_text(encoding="utf-8"))
@@ -385,4 +554,60 @@ def test_offline_builder_scorecard_follows_summary_and_risk_text(
         and len(block.columns) == 3
         and "FCV RESPONSIVENESS" in _block_text(block).upper()
     )
-    assert max(markers) < scorecard_index
+    advisory_index = _contains_index(blocks, BE_AWARE[0])
+    first_assessment_heading_index = next(
+        index
+        for index, block in enumerate(blocks)
+        if isinstance(block, Paragraph)
+        and block.style.name.startswith("Heading")
+    )
+    detail_ratings_index = next(
+        index
+        for index, block in enumerate(blocks)
+        if index > max(markers)
+        and isinstance(block, Paragraph)
+        and block.style.name.startswith("Heading")
+        and "sensitivity" in block.text.casefold()
+        and "responsiveness" in block.text.casefold()
+    )
+    assert advisory_index < scorecard_index < first_assessment_heading_index
+    assert scorecard_index < min(markers) <= max(markers) < detail_ratings_index
+
+
+def test_offline_fcv_unknown_scale6_rating_remains_unscored(tmp_path):
+    data = json.loads(
+        (FIXTURES / "fcv_readout_sample.json").read_text(encoding="utf-8")
+    )
+    data["ratings"]["FCV Sensitivity"]["value"] = "Not yet assessed"
+    path = tmp_path / "fcv-unknown-rating.docx"
+
+    build_fcv_readout.render(
+        data,
+        {
+            "title": "Unknown rating test",
+            "project_line": "",
+            "running_label": "",
+            "classification": "",
+            "generator": "",
+            "disclaimer": "",
+            "its_url": "",
+        },
+        str(path),
+    )
+
+    blocks = list(_body_blocks(Document(path)))
+    scorecard = next(
+        block
+        for block in blocks
+        if isinstance(block, Table)
+        and len(block.columns) == 3
+        and "FCV SENSITIVITY" in _block_text(block).upper()
+        and "NOT YET ASSESSED" in _block_text(block).upper()
+    )
+    assert "Not yet assessed" in _block_text(scorecard)
+    meter = scorecard.cell(0, 0).tables[0]
+    fills = [
+        cell._tc.get_or_add_tcPr().find(qn("w:shd")).get(qn("w:fill"))
+        for cell in meter.rows[0].cells
+    ]
+    assert fills == [METER_OFF] * 6

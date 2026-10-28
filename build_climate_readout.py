@@ -18,6 +18,15 @@ def render(d, meta, path):
     R.banner()
     R.be_aware(BE_AWARE)
 
+    tiles = []
+    for r in d["ratings"]:
+        lo, hi = scale_ends(r.get("scale_note"))
+        tiles.append(dict(label=r["dimension"], value=r["value"], n=r["valuemax"] or 5, idx=r["valuenow"] or 0, lo=lo, hi=hi))
+    n_checks = sum(len(g["items"]) for g in d["checks"]["groups"])
+    R.scorecard(tiles, {"label": "Operational priorities", "number": len(d["priorities"]),
+                        "lines": [(f"+ {n_checks} points to check", None)]},
+                note=d["ratings_disclaimer"])
+
     # ---- 01 overview
     R.h1("Overview")
     for para in d["overview"]:
@@ -37,18 +46,8 @@ def render(d, meta, path):
             R.related_line("Related operational priorities:",
                            [(t, "priority_" + t.split()[-1]) for t in f["related"]])
 
-    # ---- 03 ratings after the assessment findings
+    # ---- 03 rating detail after the assessment findings
     R.h1("Climate & FCV Sensitivity & Responsiveness")
-    # ---- at a glance
-    tiles = []
-    for r in d["ratings"]:
-        lo, hi = scale_ends(r.get("scale_note"))
-        tiles.append(dict(label=r["dimension"], value=r["value"], n=r["valuemax"] or 5, idx=r["valuenow"] or 0, lo=lo, hi=hi))
-    n_checks = sum(len(g["items"]) for g in d["checks"]["groups"])
-    R.scorecard(tiles, {"label": "Operational priorities", "number": len(d["priorities"]),
-                        "lines": [(f"+ {n_checks} points to check", None)]},
-                note=d["ratings_disclaimer"])
-
     for i, r in enumerate(d["ratings"]):
         R.rating_segment(r["dimension"], r["value"], meaning=r["meaning"], why=r["why"], notes=r["notes"],
                          question=r["question"], scale=r["scale_note"], first=(i == 0))
