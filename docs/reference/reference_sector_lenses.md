@@ -840,3 +840,27 @@ valid affected-population access analysis. Duplicate NARR-inclusion issues faile
 the existing reader correction-admission gate. Native JSON validity and 13/14 ID
 agreement do not establish acceptance. Runtime/deployment unchanged; see
 [results](../20261015_climate-source-scope-review-results.md).
+
+
+## 2026-10-27 Compact country-bank evidence qualifications
+
+`compact_bank_packet` preserves evidence status/class, direction, scenario/horizon,
+confidence/uncertainty, geographic and affected-group scope, source references and
+publication metadata. `merge_climate_grounding` includes whole evidence/source
+bundles within the existing 6,000-character bank and 12,000-character combined
+budgets, and admits pathways only with every supporting evidence capsule retained.
+It never trims the text of a selected claim or its qualifications.
+
+Unapproved test artifacts retain `country_profiles[ISO3]` coverage and known gaps.
+Materialization passes only those two profile sections; compact grounding projects
+bounded whole text rows and substitutes counts for bulky profile ID lists. It flags
+truncated profile sections or omitted bank limitations. Older approved bundles
+without profiles disclose missing coverage metadata. A zero selected-pathway count
+does not establish absence of a mechanism and does not classify the evidence as
+hazard-only. Claim-level qualifications remain attached even when profile rows are
+omitted. The offline test launcher checks canonical qualifiers in final prompts,
+source support, budgets and ISO/name/alias resolution without provider calls.
+
+ITS adoption must mirror these shared evidence semantics and preserve its own
+retrieval implementation. No ITS port or hosted acceptance is asserted. Production
+release data, approval gates, routes, exports and Word layout are unchanged.

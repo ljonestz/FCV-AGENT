@@ -844,11 +844,12 @@ def test_downloads_remain_detailed_only():
     for forbidden in (
         "renderNormalFcvSummary",
         "renderClimateVerifiedSummary",
-        "renderStage3AdvisoryTransition",
         "renderSummaryPriorityAccordion",
         "stageConciseReadout",
     ):
         assert forbidden not in exports
+    assert exports.count("renderStage3AdvisoryTransition") == 1
+    assert "review_mode: reviewMode || 'design'" in exports
 
 
 def test_concise_cycle_mismatch_uses_canonical_priority_fallback():
@@ -1354,7 +1355,7 @@ if(labels.includes({json.dumps(forbidden_label)}))throw new Error('inapplicable 
     assert result.returncode == 0, result.stderr
 
 
-def test_normal_fcv_watch_disclosure_follows_priorities_without_guidance_or_deeper_refs():
+def test_normal_summary_omits_watch_disclosure_without_guidance_or_deeper_refs():
     source = open(os.path.join(os.path.dirname(app.__file__), "index.html"), encoding="utf-8").read()
     helpers = "\n".join(_extract_js_function(source, name) for name in ("normalizeVisibleText", "findVisibleSentenceEnd", "boldVisibleFirstSentence", "renderNormalSummaryGaps", "renderFcvRatingIndicators", "getConcisePriority", "renderNormalSummaryPriorities", "normalFcvWatchGroups", "renderNormalFcvWatchDisclosure", "renderNormalFcvSummary"))
     script = f"""
@@ -1364,10 +1365,10 @@ let fcvRating='Adequate'; let fcvResponsivenessRating='Emerging'; let reviewMode
 let midCycleWatch=['Check access <i>triggers</i>.']; let dpfWatch=[]; let p4rWatch=[]; let regionalWatch=[]; let horizonConsiderations='';
 const renderStage3AdvisoryTransition=()=>'<p>advisory</p>';
 {helpers}
-const html=renderNormalFcvSummary(); const order=['summary-priority-list','What to keep an eye on'];
-if(html.indexOf(order[0])<0||html.indexOf(order[1])<0)throw new Error('missing order marker: '+html);
-if(!(html.indexOf(order[0])<html.indexOf(order[1])))throw new Error('watch disclosure order changed: '+html);
-if(html.includes('Relevant WBG guidance')||html.includes('Go Deeper')||html.includes('go deeper'))throw new Error('watch disclosure aggregated forbidden content');
+const html=renderNormalFcvSummary();
+if(!html.includes('id="summary-priority-list"'))throw new Error('normal priorities are missing');
+if(html.includes('What to keep an eye on')||html.includes('Check access'))throw new Error('normal Summary retained the watch disclosure');
+if(html.includes('Relevant WBG guidance')||html.includes('Go Deeper')||html.includes('go deeper'))throw new Error('Summary aggregated guidance or deeper references');
 """
     result = subprocess.run(["node", "-e", script], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr

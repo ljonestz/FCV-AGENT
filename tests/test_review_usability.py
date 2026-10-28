@@ -37,17 +37,24 @@ def _run_node(script: str) -> None:
     assert result.returncode == 0, result.stderr
 
 
-def test_stage3_controls_offer_distinct_summary_and_full_copy_actions():
+def test_stage3_controls_offer_one_active_view_copy_action():
     source = _source()
-    assert "Copy summary" in source
-    assert "Copy full report" in source
-    assert "onclick=\"copySummary()\"" in source
-    assert "onclick=\"copyFullReport()\"" in source
+    assert 'id="copy-active-view"' in source
+    assert 'onclick="copyActiveView()"' in source
+    assert 'onclick="copySummary()"' not in source
+    assert 'onclick="copyFullReport()"' not in source
 
 
 def test_full_copy_uses_canonical_priority_actions_watch_risk_and_ratings():
     source = _source()
-    helper = _extract_js_function(source, "buildFullReportText")
+    helpers = "\n".join(
+        _extract_js_function(source, name)
+        for name in (
+            "isClimateLensActive",
+            "renderStage3AdvisoryTransition",
+            "buildFullReportText",
+        )
+    )
     payload = {
         "stage3": "Narrative lead",
         "priorities": [
@@ -78,12 +85,15 @@ const stageRiskExposure = state.risk;
 const horizonConsiderations = state.watch;
 const fcvRating = state.sensitivity;
 const fcvResponsivenessRating = state.responsiveness;
+let activeLenses=[];
+let reviewMode='design';
 let midCycleWatch = [], dpfWatch = [], p4rWatch = [], regionalWatch = [];
 const stageSensitivitySummary='',stageResponsivenessSummary='',focusQuestionsResult=null;
 const supportsClimateVerifiedStage3View=()=>false,md=x=>x,esc=x=>x,stripWatchHeading=x=>x,reportPlainText=x=>x;
 const renderRiskExposure=x=>JSON.stringify(x),renderSRCards=()=>'',_buildExportPriorityCard=x=>JSON.stringify(x);
-{helper}
+{helpers}
 const out = buildFullReportText();
+if(!out.includes('The following priorities are suggestions')) throw new Error('Detailed copy omitted the full-priority advisory');
 for (const expected of Object.values(state)) {{
   const values = typeof expected === 'object' ? Object.values(expected).flatMap(value => typeof value === 'object' ? Object.values(value) : [value]) : [expected];
   for (const value of values) if (typeof value === 'string' && value && !out.includes(value)) throw new Error('missing ' + value + '\\n' + out);

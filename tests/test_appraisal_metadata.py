@@ -61,8 +61,15 @@ def test_metadata_helpers_disable_thinking_and_select_text_blocks():
     assert all(call["max_tokens"] >= 128 for call in calls)
 
 
-def test_unresolved_preparation_notice_has_browser_and_export_parity():
+def test_preparation_route_banner_is_removed_but_drafting_gate_remains():
     root = Path(app.__file__).parent
     notice = "Preparation route: confirm the OIS date and applicable review; the upload does not establish them."
-    assert (root / "index.html").read_text(encoding="utf-8").count(notice) == 2
-    assert (root / "sector_lenses/climate_verified_render.py").read_text(encoding="utf-8").count(notice) == 2
+    browser = (root / "index.html").read_text(encoding="utf-8")
+    renderer = (root / "sector_lenses/climate_verified_render.py").read_text(encoding="utf-8")
+    assert notice not in browser
+    assert notice not in renderer
+    assert "withheld_unresolved_route" in browser
+    assert "Suggested document wording is not shown because the document type or financing route could not be confirmed reliably." in browser
+    assert "withheld_unresolved_route" in renderer
+    assert "Suggested document wording is not shown because the " in renderer
+    assert "type or financing route could not be confirmed reliably." in renderer

@@ -11,6 +11,8 @@ from typing import Any
 
 from docx import Document
 
+from fcv_presentation import priority_advisory_text
+
 from sector_lenses.climate_final_reader import reviewed_final_reader, reader_review_notice, review_display_text
 
 from climate_question_bank import CLIMATE_LITERATURE_REFERENCES
@@ -25,12 +27,6 @@ from sector_lenses.climate_verified_schemas import (
 # Saved assessments remain readable; generation is still checked against ALLOWED.
 # The UI and exports label Emerging as legacy and never assign it a new score.
 _READER_ALLOWED = {**ALLOWED, "responsiveness": ALLOWED["responsiveness"] | {"emerging"}}
-
-
-DRAFT_REVIEW_NOTICE = (
-    "Draft - human review required. Named approval of this version must be "
-    "recorded separately before sharing. This app does not record human approval."
-)
 
 
 DIMENSIONS = (
@@ -1484,8 +1480,7 @@ def _priority_detail_timing(priority: dict[str, object]) -> list[tuple[str, str]
 def render_reader_html(model: dict[str, object], *, snapshot_sha256: str | None = None) -> str:
     """Render escaped HTML from the canonical reader dictionary."""
 
-    parts = ['<article class="climate-verified-assessment">',
-             '<p class="climate-review-status" role="note">' + html.escape(DRAFT_REVIEW_NOTICE) + '</p>']
+    parts = ['<article class="climate-verified-assessment">']
     if snapshot_sha256:
         parts.append('<p>Review snapshot: ' + html.escape(snapshot_sha256) + '</p>')
     if model.get("analysis_status") == "partial" and _text(model.get("analysis_message")):
@@ -1511,15 +1506,11 @@ def render_reader_html(model: dict[str, object], *, snapshot_sha256: str | None 
         )
     operation_context = _mapping(model.get("operation_context"))
     drafting_route = _drafting_route_gate(operation_context)
-    if operation_context.get("preparation_regime") == "unresolved_policy_source":
-        parts.append("<p>Preparation route: confirm the OIS date and applicable review; the upload does not establish them.</p>")
     if operation_context and not drafting_route["confirmed"]:
         parts.append(
             "<p>Suggested document wording is not shown because the "
             "document type or financing route could not be confirmed reliably.</p>"
         )
-    if _text(model.get("reader_review_notice")):
-        parts.append('<p class="climate-review-notice">' + html.escape(_text(model["reader_review_notice"])) + "</p>")
     parts.append(_paired_ratings_html(model))
     for paragraph in model.get("summary_overview", []) or [model.get("overview_summary", "")]:
         if _text(paragraph):
@@ -1554,12 +1545,15 @@ def render_reader_html(model: dict[str, object], *, snapshot_sha256: str | None 
     parts.append(_heading(2, HEADINGS[2]))
     priorities = _records(model.get("priorities"))
     priority_summary = _mapping(model.get("priority_summary"))
-    if priorities and _text(priority_summary.get("statement")):
-        parts.append(
-            '<p class="climate-priority-summary">'
-            + html.escape(_text(priority_summary.get("statement")))
-            + "</p>"
-        )
+    advisory = priority_advisory_text("climate")
+    if priorities:
+        statement = _text(priority_summary.get("statement"))
+        parts.append('<div class="climate-priority-summary">')
+        if statement:
+            parts.append("<p>" + html.escape(statement) + "</p>")
+        if advisory not in statement:
+            parts.append("<p>" + html.escape(advisory) + "</p>")
+        parts.append("</div>")
     if not priorities:
         parts.append(f"<p>{html.escape(_no_priority_message(model))}</p>")
     for priority in priorities:
@@ -1580,7 +1574,7 @@ def render_reader_html(model: dict[str, object], *, snapshot_sha256: str | None 
                 for paragraph in paragraphs:
                     parts.append('<p class="pc-narr">' + html.escape(paragraph) + '</p>')
                 parts.append('</section>')
-        parts.append('<details class="climate-priority-detail"><summary>Practical considerations</summary>')
+        parts.append('<details class="climate-priority-detail"><summary>Practical considerations and Suggested Text</summary>')
         detail_paragraphs, followup, notes = _priority_detail_content(priority)
         for paragraph in detail_paragraphs:
             parts.append('<p class="climate-priority-detail-prose">' + html.escape(paragraph) + '</p>')
@@ -1593,14 +1587,18 @@ def render_reader_html(model: dict[str, object], *, snapshot_sha256: str | None 
                          + '</small></p>')
         timing = _priority_detail_timing(priority)
         if timing:
-            parts.append('<p class="climate-priority-detail-timing"><small>'
-                         + ' | '.join(html.escape(label + ': ' + value) for label, value in timing)
-                         + '</small></p>')
+            parts.append('<div class="climate-priority-detail-timing">')
+            for label, value in timing:
+                parts.append(
+                    '<p><strong>' + html.escape(label) + ':</strong> '
+                    + html.escape(value) + '</p>'
+                )
+            parts.append('</div>')
         current_drafting = priority.get("current_document_drafting") if _drafting_route_gate(
             operation_context, priority)["can_render"] else None
-        parts.append(_drafting_html("Suggested drafting for the current document", current_drafting))
+        parts.append(_drafting_html("Suggested Text", current_drafting))
         operational_drafting = priority.get("operational_instrument_drafting") if drafting_route["confirmed"] else None
-        parts.append(_drafting_html("Suggested drafting for an operational instrument", operational_drafting))
+        parts.append(_drafting_html("Suggested Text for an operational instrument", operational_drafting))
         parts.append("</details></div></details>")
 
     # Secondary points remain visible, prose-led and locally numbered.
@@ -1728,7 +1726,6 @@ def write_reader_docx(model: dict[str, object], path: str | Path, *, snapshot_sh
 
     output = path if hasattr(path, "write") else Path(path)
     document = Document()
-    document.add_paragraph(DRAFT_REVIEW_NOTICE)
     if snapshot_sha256:
         document.add_paragraph('Review snapshot: ' + snapshot_sha256)
     if model.get("analysis_status") == "partial" and _text(model.get("analysis_message")):
@@ -1752,8 +1749,6 @@ def write_reader_docx(model: dict[str, object], path: str | Path, *, snapshot_sh
             paragraph.runs[0].bold = True
     operation_context = _mapping(model.get("operation_context"))
     drafting_route = _drafting_route_gate(operation_context)
-    if operation_context.get("preparation_regime") == "unresolved_policy_source":
-        document.add_paragraph("Preparation route: confirm the OIS date and applicable review; the upload does not establish them.")
     if operation_context and not drafting_route["confirmed"]:
         document.add_paragraph(
             "Suggested document wording is not shown because the document "
@@ -1770,8 +1765,6 @@ def write_reader_docx(model: dict[str, object], path: str | Path, *, snapshot_sh
     document.add_paragraph("Contributing to responsiveness is often a sign of going above and beyond. "
                            "The expected contribution depends on the project's scope.")
     document.add_paragraph(SENSITIVITY_RATING_CAVEAT)
-    if _text(model.get("reader_review_notice")):
-        document.add_paragraph(_text(model["reader_review_notice"]))
     for paragraph in model.get("summary_overview", []) or [model.get("overview_summary", "")]:
         if _text(paragraph):
             document.add_paragraph(_text(paragraph))
@@ -1814,6 +1807,9 @@ def write_reader_docx(model: dict[str, object], path: str | Path, *, snapshot_sh
     priority_summary = _mapping(model.get("priority_summary"))
     if priorities and _text(priority_summary.get("statement")):
         document.add_paragraph(_text(priority_summary.get("statement")))
+    advisory = priority_advisory_text("climate")
+    if priorities and advisory not in _text(priority_summary.get("statement")):
+        document.add_paragraph(advisory)
     if not priorities:
         document.add_paragraph(_no_priority_message(model))
     for priority in priorities:
@@ -1827,7 +1823,7 @@ def write_reader_docx(model: dict[str, object], path: str | Path, *, snapshot_sh
                 document.add_heading(label, level=3)
                 for paragraph in paragraphs:
                     document.add_paragraph(paragraph)
-        document.add_heading("Practical considerations", level=3)
+        document.add_heading("Practical considerations and Suggested Text", level=3)
         detail_paragraphs, followup, notes = _priority_detail_content(priority)
         for paragraph in detail_paragraphs:
             document.add_paragraph(paragraph)
@@ -1836,13 +1832,15 @@ def write_reader_docx(model: dict[str, object], path: str | Path, *, snapshot_sh
         if notes:
             document.add_paragraph(' | '.join(label + ': ' + value for label, value in notes))
         timing = _priority_detail_timing(priority)
-        if timing:
-            document.add_paragraph(' | '.join(label + ': ' + value for label, value in timing))
+        for label, value in timing:
+            paragraph = document.add_paragraph()
+            paragraph.add_run(label + ':').bold = True
+            paragraph.add_run(' ' + value)
         current_drafting = priority.get("current_document_drafting") if _drafting_route_gate(
             operation_context, priority)["can_render"] else None
-        _docx_drafting(document, "Suggested drafting for the current document", current_drafting)
+        _docx_drafting(document, "Suggested Text", current_drafting)
         operational_drafting = priority.get("operational_instrument_drafting") if drafting_route["confirmed"] else None
-        _docx_drafting(document, "Suggested drafting for an operational instrument", operational_drafting)
+        _docx_drafting(document, "Suggested Text for an operational instrument", operational_drafting)
 
     minor_points = _records(model.get("minor_climate_points"))
     doc_flags = _records(model.get("review_readiness_flags"))

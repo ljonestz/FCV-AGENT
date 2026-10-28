@@ -2463,10 +2463,10 @@ def test_verified_climate_ui_contract_is_ranked_and_multidimensional():
     assert "No operational priorities were identified in this assessment. Review the assessment findings and points to check below." in body
     assert "current_document_drafting" in body
     assert "operational_instrument_drafting" in body
-    assert "Suggested drafting for the current document" in body
-    assert "Suggested drafting for an operational instrument" in body
+    assert "Suggested Text" in body
+    assert "Suggested Text for an operational instrument" in body
     # The card leads with the model narrative; the useful structured fields fold
-    # into a "Practical considerations" collapsible, and app-internal routing/coded
+    # into a "Practical considerations and Suggested Text" collapsible, and app-internal routing/coded
     # references are dropped from the user view entirely.
     assert "Practical considerations" in body
     assert "pc-narr" in body

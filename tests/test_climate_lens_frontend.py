@@ -3,6 +3,7 @@
 import json
 import re
 import subprocess
+from html.parser import HTMLParser
 from pathlib import Path
 
 
@@ -13,6 +14,45 @@ SOUTH_SUDAN_FIXTURE = (
     / "climate"
     / "south_sudan_dual_use.json"
 )
+
+
+class _InlineStyleExtractor(HTMLParser):
+    """Collect real inline styles while leaving script strings untouched."""
+
+    def __init__(self):
+        super().__init__()
+        self._in_style = False
+        self._styles = []
+
+    def handle_starttag(self, tag, attrs):
+        if tag.lower() == "style":
+            self._in_style = True
+            self._styles.append([])
+
+    def handle_endtag(self, tag):
+        if tag.lower() == "style":
+            self._in_style = False
+
+    def handle_data(self, data):
+        if self._in_style:
+            self._styles[-1].append(data)
+
+
+def _extract_inline_styles(source: str) -> str:
+    parser = _InlineStyleExtractor()
+    parser.feed(source)
+    parser.close()
+    return "\n".join("".join(style) for style in parser._styles)
+
+
+def test_inline_style_extractor_ignores_exporter_markup_inside_scripts():
+    source = (
+        "<style>.first{color:red}</style>"
+        "<script>const exported='<style>not-css{}</style>';</script>"
+        "<style>.second{display:grid}</style>"
+    )
+
+    assert _extract_inline_styles(source) == ".first{color:red}\n.second{display:grid}"
 
 
 def _extract_js_function(source: str, name: str) -> str:
@@ -28,7 +68,17 @@ def _extract_js_function(source: str, name: str) -> str:
         elif source[index] == "}":
             depth -= 1
             if depth == 0:
-                dependency = _extract_js_function(source, "climateVerifiedRatingCards") + "\n" if name == "renderClimateVerifiedAssessment" else ""
+                if name == "renderClimateVerifiedAssessment":
+                    dependency = "\n".join((
+                        _extract_js_function(source, "climateVerifiedRatingCards"),
+                        _extract_js_function(source, "renderStage3AdvisoryTransition"),
+                    )) + "\n"
+                elif name == "renderClimateVerifiedSummary":
+                    dependency = _extract_js_function(source, "renderNormalSummaryPriorities") + "\n"
+                elif name == "renderNormalSummaryPriorities":
+                    dependency = _extract_js_function(source, "normalizeVisibleText") + "\n"
+                else:
+                    dependency = ""
                 return dependency + source[start:index + 1]
     raise AssertionError(f"Unterminated body for {name}()")
 
@@ -293,7 +343,7 @@ if (html.includes('Climate-FCV design readout')) throw new Error('summary contai
 if (!html.includes('Second overview paragraph')) throw new Error('summary omitted the longer overview');
 if (html.includes('A fourth positive design feature')) throw new Error('summary exceeded the three-tile cap');
 if (!html.includes('class="concise-strength-text"')) throw new Error('strength explanation lacks readable body element');
-if (!html.includes('id="summary-priority-accordion"')) throw new Error('summary omitted the priority accordion');
+if (!html.includes('id="summary-priority-list"') || html.includes('summary-priority-accordion')) throw new Error('summary did not use compact priority cards');
 if (html.includes('Review context') || html.includes('Document: Program Paper | Instrument: PforR')) throw new Error('summary retained removed routing metadata');
 for (const removed of [
   '<summary>Technical routing details</summary>',
@@ -319,7 +369,7 @@ def test_climate_summary_uses_canonical_overview_and_closed_follow_up_disclosure
     assert "summary_overview" in summary
     assert "executive_readout" not in summary
     assert "boldEscapedFirstSentence" in summary
-    assert "renderClimateWatchDisclosure" in summary
+    assert "renderClimateWatchDisclosure" not in summary
     assert "renderClimateRelevantGuidance" in summary
     assert "Relevant WBG guidance for this project" in summary
     assert "buildClimateGuidanceItems" not in summary
@@ -370,9 +420,9 @@ const html=renderClimateVerifiedSummary({{
 if (!html.includes('<strong>Overall finding &lt;unsafe&gt;.</strong>')) throw new Error('first sentence was not semantic or escaped | '+html);
 if (!html.includes('<strong>Relevance, sensitivity, responsiveness, and operationalization are all addressed.</strong>')) throw new Error('all overview paragraphs were not rendered | '+html);
 if (html.includes('executive')) throw new Error('executive content leaked into Summary | '+html);
-if ((html.match(/<details/g)||[]).length < 2) throw new Error('missing native follow-up disclosures | '+html);
-if (html.includes('<details class="climate-summary-watch-disclosure" open') || html.includes('<details class="climate-summary-guidance-disclosure" open')) throw new Error('follow-up disclosure opened by default | '+html);
-if ((html.match(/Monitor seasonal access\\./g)||[]).length !== 1) throw new Error('watch list was not stably deduplicated | '+html);
+if ((html.match(/<details/g)||[]).length !== 1) throw new Error('expected the relevant-guidance disclosure only | '+html);
+if (html.includes('<details class="climate-summary-guidance-disclosure" open')) throw new Error('guidance disclosure opened by default | '+html);
+if (html.includes('Monitor seasonal access.') || html.includes('Check inclusive representation.')) throw new Error('watch cues should remain in Detailed analysis | '+html);
 """
     result = subprocess.run(
         ["node", "-"], input=script, capture_output=True, text=True, check=False
@@ -564,7 +614,7 @@ const closing='For supporting evidence and completion signals behind each priori
 for (const expected of [bridge,closing]) {{
   if (!html.includes(expected)) throw new Error('missing '+expected+' | '+html);
 }}
-if (!(html.indexOf(bridge) < html.indexOf('id="summary-priority-accordion"') && html.indexOf('id="summary-priority-accordion"') < html.indexOf(closing))) {{
+if (!(html.indexOf(bridge) < html.indexOf('id="summary-priority-list"') && html.indexOf('id="summary-priority-list"') < html.indexOf(closing))) {{
   throw new Error('summary narrative order is incoherent | '+html);
 }}
 if (html.includes('Priority 1 - Strengthen adaptive delivery')) throw new Error('duplicate priority prefix remains');
@@ -662,6 +712,7 @@ def test_incomplete_recommendations_are_fail_loud_in_both_climate_views():
     )
     reader = {
         "recommendation_status": "incomplete",
+        "reader_review_notice": "Verification notes identify unresolved claims in opening, climate risks and delivery, peace and social dividends; human source review is required before sharing.",
         "recommendation_message": (
             "The recommendation stage could not be completed. "
             "Do not treat this Recommendations Note as complete."
@@ -681,10 +732,12 @@ const reviewMode='design';
 let openSummaryPriority=0;
 {helpers}
 const reader = {json.dumps(reader)};
+const openingNotice='Verification notes identify unresolved claims in opening, climate risks and delivery, peace and social dividends; human source review is required before sharing.';
 for (const [name,html] of [
   ['summary',renderClimateVerifiedSummary(reader)],
   ['detailed',renderClimateVerifiedAssessment(reader)]
 ]) {{
+  if(html.includes(openingNotice))throw new Error(name+' shows a generic verification preamble before the assessment');
   if (!html.toLowerCase().includes('could not be completed')) {{
     throw new Error(name+' view hides incomplete recommendation state | '+html);
   }}
@@ -727,7 +780,7 @@ if (cards[1].title !== cards[1].text) throw new Error('one-sentence fallback was
 def test_climate_summary_initial_render_hydrates_priority_navigation():
     source = INDEX.read_text(encoding="utf-8")
 
-    assert "if(host)host.innerHTML=renderSummaryPriorityAccordion(summaryPriorities);" in source
+    assert "if(host)host.innerHTML=renderNormalSummaryPriorities(summaryPriorities,'climate');" in source
     assert "el.style.display=showSummary||supportsClimateVerifiedStage3View()?'none':''" in source
     assert "if(supportsClimateVerifiedStage3View())stageThreePriorities=Array.isArray(climateVerifiedReader&&climateVerifiedReader.priorities)?climateVerifiedReader.priorities:[];" in source
     assert "if(supportsClimateVerifiedStage3View()&&stageThreePriorities&&stageThreePriorities.length)initStage3UI();" in source
@@ -789,7 +842,7 @@ def test_climate_summary_reprojects_during_hydration_and_view_switch():
         assert "supportsClimateVerifiedStage3View()" in function_source
         assert "climateSummaryPriorityItems(climateVerifiedReader)" in function_source
         assert (
-            "renderSummaryPriorityAccordion(summaryPriorities)" in function_source
+            "renderNormalSummaryPriorities(summaryPriorities,'climate')" in function_source
         )
 
 def test_climate_summary_projection_does_not_replace_detailed_priority_state():
@@ -2032,7 +2085,7 @@ for (const expected of [
   'Seasonal flooding and insecurity can disrupt works. The project needs agreed triggers for pausing and restarting activity.',
   'These triggers should be discussed with local delivery partners. They can reduce uneven access to project benefits.',
   'Include seasonal access triggers in the implementation arrangements.',
-  'Practical considerations', '<article class="climate-verified-assessment">',
+  'Practical considerations and Suggested Text', '<article class="climate-verified-assessment">',
   '<section class="climate-report-section', '<header class="climate-section-heading">',
   '<details class="climate-priority-detail">',
   'Complete drafting paragraph for priority four.',
@@ -2321,7 +2374,7 @@ const html = renderClimateVerifiedAssessment({{
 }});
 for (const expected of [
   '<details id="climate-priority-2" class="climate-priority-card" open><summary>',
-  '<details class="climate-priority-detail"><summary>Practical considerations</summary>',
+  '<details class="climate-priority-detail"><summary>Practical considerations and Suggested Text</summary>',
   '<h2>Limitations</h2>',
   'Closed priority narrative.', 'Closed priority decision.',
   'Closed limitations text.'
@@ -2620,7 +2673,7 @@ console.log(renderClimateVerifiedAssessment({{
         assert script_result.returncode == 0, script_result.stderr
         handler_script = script_result.stdout
 
-    css = "\n".join(re.findall(r"<style[^>]*>([\s\S]*?)</style>", source))
+    css = _extract_inline_styles(source)
     exported_html = (
         '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>'
         + css
@@ -2992,7 +3045,7 @@ def test_result_stage_tabs_do_not_overflow_phone_viewport():
     from playwright.sync_api import sync_playwright
 
     source = INDEX.read_text(encoding="utf-8")
-    css = "\n".join(re.findall(r"<style[^>]*>([\s\S]*?)</style>", source))
+    css = _extract_inline_styles(source)
     result_tabs = """
 <div class="stepper-wrap" style="display:block">
   <nav class="stepper" aria-label="Analysis stages">
@@ -3029,7 +3082,7 @@ def test_result_download_header_wraps_inside_phone_card():
     from playwright.sync_api import sync_playwright
 
     source = INDEX.read_text(encoding="utf-8")
-    css = "\n".join(re.findall(r"<style[^>]*>([\s\S]*?)</style>", source))
+    css = _extract_inline_styles(source)
     result_header = """
 <main class="main">
   <div class="out-card">
@@ -3077,7 +3130,7 @@ def test_result_session_bar_wraps_inside_phone_viewport():
     from playwright.sync_api import sync_playwright
 
     source = INDEX.read_text(encoding="utf-8")
-    css = "\n".join(re.findall(r"<style[^>]*>([\s\S]*?)</style>", source))
+    css = _extract_inline_styles(source)
     session_bar = """
 <div class="session-bar" id="session-bar">
   <svg width="13" height="13"></svg>

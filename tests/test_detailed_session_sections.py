@@ -130,6 +130,6 @@ def test_reset_clears_detailed_sections_and_summary_link_explains_detail_target(
     ):
         assert f"{field}={value}" in reset
     assert (
-        "See full Priority ${idx+1} details and suggested text for the project package in Detailed Analysis"
+        "See Priority ${rank} in Detailed analysis"
         in source
     )

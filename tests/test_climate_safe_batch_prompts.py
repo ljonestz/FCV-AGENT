@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import json
+
+import pytest
+
 from sector_lenses.climate_verified_prompts import build_verified_stage_prompt
 
 
@@ -39,3 +43,28 @@ def test_analysis_prompt_requires_lay_ready_existing_response_descriptions():
     assert "short, self-contained first sentence" in lowered
     assert "concrete project anchor" in lowered
     assert "why the response matters" in lowered
+
+
+@pytest.mark.parametrize("stage", [
+    "recommendation_compiler", "drafting_compiler", "conditional_review",
+    "reader_compiler", "reader_review",
+])
+def test_final_prompt_keeps_unspecified_funding_allocation_open(stage):
+    # A general maintenance framework cannot establish its asset-level allocation.
+    payload = {
+        "facts": [{"fact_id": "PF-001", "statement":
+                   "Sector revenues may support maintenance frameworks; "
+                   "the allocation among coastal roads and rural bridges is unspecified."}],
+        "recommendations": [{"recommendation_id": "REC-001", "minimum_action":
+                             "Assess a funding approach for upkeep of rural bridges."}],
+    }
+    prompt = build_verified_stage_prompt(stage, payload)
+    instruction, package = prompt.rsplit("INPUT PACKAGE\n", 1)
+    package_json = package.split("\n", 1)[1].rsplit(
+        "\n</untrusted_evidence_package>", 1)[0]
+    assert json.loads(package_json) == payload
+    rules = " ".join(instruction.lower().split())
+    assert "preserve unknown funding allocations as open questions" in rules
+    assert "expected to receive funding" in rules
+    assert "ask whether and how the revenue could contribute" in rules
+    assert "narrative, structured action and suggested drafting" in rules

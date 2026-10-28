@@ -35,8 +35,9 @@ def test_packet_binds_exact_exported_files_and_leaves_review_blank(pair):
         doc = Document(BytesIO(z.read('report.docx')))
         word = '\n'.join(p.text for p in doc.paragraphs)
         html = z.read('report.html').decode()
-        for text in [manifest['snapshot_sha256'], 'Draft - human review required']:
-            assert text in word and text in html
+        assert manifest['snapshot_sha256'] in word and manifest['snapshot_sha256'] in html
+        assert 'Draft - human review required' not in word
+        assert 'Draft - human review required' not in html
         assert pair['climate_reader']['priorities'][0]['minimum_action'] in word
         assert 'unflagged' in z.read('REVIEW_INSTRUCTIONS.txt').decode()
 
@@ -62,13 +63,31 @@ def test_changed_version_cannot_reuse_packet_identity(pair):
         assert json.loads(a.read('manifest.json'))['snapshot_sha256'] != json.loads(b.read('manifest.json'))['snapshot_sha256']
 
 
-def test_client_approval_flags_cannot_remove_draft_notice(pair):
+def test_client_approval_flags_do_not_change_exported_artifacts(pair):
     reader = pair['climate_reader']
+    before_html = render_reader_html(reader)
+    before_docx = BytesIO()
+    write_reader_docx(reader, before_docx)
+    before_word = Document(BytesIO(before_docx.getvalue()))
+    before_content = (
+        [paragraph.text for paragraph in before_word.paragraphs],
+        [[cell.text for row in table.rows for cell in row.cells] for table in before_word.tables],
+    )
+
     reader.update(publication_approved=True, human_review_complete=True, reviewer_name='Untrusted')
-    stream = BytesIO()
-    write_reader_docx(reader, stream)
-    assert 'Draft - human review required' in render_reader_html(reader)
-    assert 'Draft - human review required' in '\n'.join(p.text for p in Document(stream).paragraphs)
+    after_html = render_reader_html(reader)
+    after_docx = BytesIO()
+    write_reader_docx(reader, after_docx)
+    after_word = Document(BytesIO(after_docx.getvalue()))
+    after_content = (
+        [paragraph.text for paragraph in after_word.paragraphs],
+        [[cell.text for row in table.rows for cell in row.cells] for table in after_word.tables],
+    )
+
+    assert 'Draft - human review required' not in after_html
+    assert 'Draft - human review required' not in '\n'.join(after_content[0])
+    assert after_html == before_html
+    assert after_content == before_content
 
 
 @pytest.mark.parametrize('scenario', ['ok', 'reject', 'changed', 'offline'])
@@ -97,13 +116,12 @@ HELPER
     assert result.returncode == 0, result.stderr
 
 
-def test_browser_views_always_include_draft_notice():
+def test_browser_views_omit_generic_draft_notice():
     from tests.test_climate_lens_frontend import INDEX, _extract_js_function
-    from sector_lenses.climate_verified_render import DRAFT_REVIEW_NOTICE
     source = INDEX.read_text(encoding='utf-8')
     for name in ['renderClimateVerifiedSummary', 'renderClimateVerifiedAssessment']:
         helper = _extract_js_function(source, name)
-        assert DRAFT_REVIEW_NOTICE in helper
+        assert 'Draft - human review required' not in helper
         assert 'publication_approved' not in helper
 
 

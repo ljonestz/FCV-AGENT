@@ -27,7 +27,7 @@ def review_for(final, identifier='NARR-inclusion', severity='minor'):
     return {'verdict': 'revise', 'object_ids': [identifier], 'reason_codes': list(issue['reason_codes']), 'issues': [issue]}
 
 
-def test_minor_retains_prose_and_visible_review_across_exports(assessment, tmp_path):
+def test_minor_retains_prose_and_review_metadata_without_render_preamble(assessment, tmp_path):
     final = assessment['final_reader']
     assessment['reader_review'] = review_for(final)
     summary, narratives = reviewed_final_reader(final, assessment['reader_review'], assessment)
@@ -36,9 +36,9 @@ def test_minor_retains_prose_and_visible_review_across_exports(assessment, tmp_p
     assert model['reader_review_notice']
     assert 'minor' in model['reader_review_notice'].lower()
     assert all(t['narrative_status'] == 'generated' for t in model['assessment_themes'])
-    assert model['reader_review_notice'] in render_reader_html(model)
+    assert model['reader_review_notice'] not in render_reader_html(model)
     path = write_reader_docx(model, tmp_path/'review.docx')
-    assert model['reader_review_notice'] in '\n'.join(p.text for p in Document(path).paragraphs)
+    assert model['reader_review_notice'] not in '\n'.join(p.text for p in Document(path).paragraphs)
     assert assessment['reader_review']['verdict'] == 'revise'
 
 
@@ -145,7 +145,7 @@ def test_review_notice_is_bound_to_export_snapshot(assessment):
     assert client.post('/api/climate-report-snapshot', json=pair).status_code == 409
 
 
-def test_browser_escapes_and_shows_review_notice():
+def test_browser_omits_reader_review_notice_and_unreviewed_precursor():
     import subprocess
     from tests.test_climate_lens_frontend import INDEX, _extract_js_function, _js_escape_helper
     source = INDEX.read_text(encoding='utf-8')
@@ -154,7 +154,7 @@ def test_browser_escapes_and_shows_review_notice():
         'climateSummaryWatchItems', 'renderClimateVerifiedAssessment'))
     script = _js_escape_helper() + "const renderClimateRelevantGuidance=()=>'';\n" + renderer + """
 const html=renderClimateVerifiedAssessment({priorities:[],reader_review_notice:'Review <script>unsafe</script>'});
-if(!html.includes('Review &lt;script&gt;unsafe&lt;/script&gt;') || html.includes('<script>unsafe')) throw new Error('Notice missing or unescaped');
+if(html.includes('Review &lt;script&gt;unsafe&lt;/script&gt;') || html.includes('<script>unsafe')) throw new Error('Reader review notice should be omitted');
 const native=renderClimateVerifiedAssessment({priorities:[],reader_contract:'final-reader-v1',executive_readout:'UNREVIEWED_EXECUTIVE_SENTINEL'});
 if(native.includes('UNREVIEWED_EXECUTIVE_SENTINEL')) throw new Error('Unreviewed native precursor leaked');
 """
@@ -170,7 +170,7 @@ def test_native_reports_do_not_reintroduce_unreviewed_executive(assessment, tmp_
     assert assessment['executive_readout'] == 'UNREVIEWED_EXECUTIVE_SENTINEL'
 
 
-def test_summary_view_shows_same_escaped_review_notice():
+def test_summary_view_omits_detailed_review_notice():
     import subprocess
     from tests.test_climate_lens_frontend import INDEX, _extract_js_function, _js_escape_helper
     renderer = _extract_js_function(INDEX.read_text(encoding='utf-8'), 'renderClimateVerifiedSummary')
@@ -178,7 +178,7 @@ def test_summary_view_shows_same_escaped_review_notice():
 const climateSummaryStrengths=()=>[], climateSummaryPriorityItems=()=>[], renderClimateSummaryGaps=()=>'', renderClimateWatchDisclosure=()=>'', renderClimateRelevantGuidance=()=>'', renderStage3AdvisoryTransition=()=>'';
 """ + renderer + """
 const html=renderClimateVerifiedSummary({reader_review_notice:'Minor <uncertainty> remains.'});
-if(!html.includes('Minor &lt;uncertainty&gt; remains.'))throw new Error('Summary review notice missing');
+if(html.includes('Minor &lt;uncertainty&gt; remains.') || html.includes('Minor <uncertainty> remains.'))throw new Error('Summary duplicates the Detailed review notice');
 """
     result = subprocess.run(['node','-'],input=script,text=True,capture_output=True)
     assert result.returncode == 0, result.stderr

@@ -165,7 +165,7 @@ const links=(()=>{{
 }})();
 if(!links.includes('href="#priority-card-area"'))throw new Error('missing detailed anchor');
 if(!links.includes('openDetailedPriority(1)'))throw new Error('second priority link is not identity-specific');
-if(!links.includes('See full Priority 2 details and suggested text for the project package in Detailed Analysis'))throw new Error('detailed link does not explain the destination');
+if(!links.includes('See Priority 2 in Detailed analysis'))throw new Error('detailed link does not explain the destination');
 openDetailedPriority(1);
 if(currentPriority!==1)throw new Error('detailed priority identity was not preserved');
 if(called.length!==1||called[0][0]!=='detailed'||called[0][1]!==true)throw new Error('tab selection was not persisted');
@@ -198,7 +198,7 @@ if(disclosure.includes(' open'))throw new Error('alignment should be closed by d
         assert forbidden not in source
 
 
-def test_summary_gaps_and_action_cards_bold_safe_first_sentences_and_preserve_order():
+def test_summary_gaps_bold_safe_first_sentences_but_actions_are_regular_weight():
     source = INDEX.read_text(encoding="utf-8")
     helpers = "\n".join(
         _extract_js_function(source, name)
@@ -213,6 +213,7 @@ def test_summary_gaps_and_action_cards_bold_safe_first_sentences_and_preserve_or
         )
     )
     priorities = [_priority(index) for index in range(1, 4)]
+    priorities[0]["minimum_action"] = "Set an access trigger for Bentiu."
     priorities[0]["concise"]["gap"] = (
         "US$158.5 million is exposed. Dr. Ada reviews https://example.org/a.b?x=1.2. "
         "FCV. Next step is to confirm ownership. <script>alert(1)</script>"
@@ -240,13 +241,19 @@ const renderStage3AdvisoryTransition=()=>'<p>Suggestions for the team.</p>';
 const renderNormalFcvWatchDisclosure=()=>'';
 {helpers}
 const html=renderNormalFcvSummary();
+const normalCards=renderNormalSummaryPriorities(stageThreePriorities,'normal');
+const climateCards=renderNormalSummaryPriorities(stageThreePriorities,'climate');
 const gaps=html.indexOf('normal-summary-gaps');
 const prioritiesStart=html.indexOf('summary-priority-list');
 if(gaps<0||prioritiesStart<0||gaps>=prioritiesStart)throw new Error('gaps are not before priorities');
 if((html.match(/class="normal-summary-gap"/g)||[]).length!==3)throw new Error('wrong gap count');
 if(!html.includes('<strong>US$158.5 million is exposed.</strong>'))throw new Error('robust gap boundary failed');
 if(!html.includes('<strong>Second gap - needs a decision.</strong>'))throw new Error('emdash normalization or gap bolding failed');
-if(!html.includes('<strong>Set an access trigger for Bentiu.</strong>'))throw new Error('leading action is not bold');
+for(const [route,cards] of [['normal',normalCards],['climate',climateCards]]){{
+  const action=cards.match(/<p class="normal-summary-priority-action">([\\s\\S]*?)<\\/p>/);
+  if(!action||!action[1].includes('Set an access trigger for Bentiu.'))throw new Error(route+' Suggested action is missing');
+  if(action[1].includes('<strong>'))throw new Error(route+' Suggested action should use regular weight');
+}}
 if(html.includes('normal-summary-priority-label">Why it matters'))throw new Error('summary priority repeats why');
 if(html.includes('<script>')||!html.includes('&lt;script&gt;alert(1)&lt;/script&gt;'))throw new Error('plain text was not safely escaped');
 if(html.includes(String.fromCharCode(0x2014)))throw new Error('visible em dash remains');
@@ -336,46 +343,47 @@ if(html.includes('<script>'))throw new Error('raw script reached watch markup');
     assert result.returncode == 0, result.stderr
 
 
-def test_stage3_download_note_distinguishes_brief_and_full_downloads():
+def test_stage3_full_report_download_menu_is_available_across_summary_and_detailed_tabs():
     source = INDEX.read_text(encoding="utf-8")
     toggle = _extract_js_function(source, "stage3ViewToggleHtml")
     script = f"""
 let stage3View='summary';
-let valid=true;
-const supportsConciseStage3View=()=>valid;
 {toggle}
-if(!stage3ViewToggleHtml().includes('Brief downloads summarize priorities'))throw new Error('valid standard Summary lost brief note');
-stage3View='detailed';
-if(!stage3ViewToggleHtml().includes('Downloads include the comprehensive analysis.'))throw new Error('Detailed view lost full report note');
-stage3View='summary';
-valid=false;
-if(!stage3ViewToggleHtml().includes('Downloads include the comprehensive analysis.'))throw new Error('legacy or climate note was changed');
+for(const view of ['summary','detailed']){{
+  stage3View=view;
+  const tabs=stage3ViewToggleHtml();
+  if(!tabs.includes('Word and HTML downloads include the complete analysis.'))throw new Error(view+' lost the full-report download note');
+  if(tabs.includes('Brief downloads'))throw new Error(view+' advertises a brief download');
+}}
 """
     result = subprocess.run(["node", "-e", script], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
+    menu_start = source.index('class="report-download-menu"')
+    output_start = source.index('id="out-txt"', menu_start)
+    menu_and_toolbar = source[menu_start:output_start]
+    assert source.count('class="report-download-menu"') == 1
+    assert "Full Detailed report formats" in menu_and_toolbar
+    assert "Word (.docx)" in menu_and_toolbar and "HTML (.html)" in menu_and_toolbar
 
 
-def test_brief_download_controls_follow_summary_detailed_tab_switches():
+def test_summary_detailed_tab_switches_do_not_reinsert_management_brief_controls():
     source = INDEX.read_text(encoding="utf-8")
-    helpers = "\n".join(_extract_js_function(source, name) for name in (
-        "renderManagementBriefControls", "setStage3View",
-    ))
+    set_view = _extract_js_function(source, "setStage3View")
     script = """
 let stage3View='detailed', currentPriority=0, openSummaryPriority=0;
 let horizonConsiderations='';
 const host={innerHTML:''};
 const document={getElementById:id=>id==='management-brief-controls'?host:null,querySelector:()=>null};
 const supportsAnyStage3Summary=()=>true;
-const supportsConciseStage3View=()=>true;
 const supportsClimateVerifiedStage3View=()=>false;
 const renderPrioritiesIntro=()=>{}, renderPriorityStepper=()=>{}, showPriority=()=>{};
-""" + helpers + """
+""" + set_view + """
 setStage3View('summary');
-if(!host.innerHTML.includes('Brief Word'))throw new Error('brief downloads not shown after opening Summary');
+if(host.innerHTML)throw new Error('management brief controls were inserted in Summary');
 setStage3View('detailed');
-if(host.innerHTML)throw new Error('unusable brief controls remain in Detailed');
+if(host.innerHTML)throw new Error('management brief controls were inserted in Detailed');
 setStage3View('summary');
-if(!host.innerHTML.includes('Brief HTML'))throw new Error('brief downloads not restored');
+if(host.innerHTML)throw new Error('management brief controls were reinserted after switching back to Summary');
 """
     result = subprocess.run(["node", "-e", script], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr

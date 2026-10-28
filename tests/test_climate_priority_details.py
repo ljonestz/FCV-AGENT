@@ -1,4 +1,4 @@
-"""Practical considerations keep readable qualifications and hide machine metadata."""
+"""Climate priority details keep readable qualifications and hide machine metadata."""
 from copy import deepcopy
 from html import escape
 from io import BytesIO
@@ -38,7 +38,7 @@ def test_html_and_word_details_keep_qualifications_without_the_field_dump():
     output = BytesIO()
     write_reader_docx(model, output)
     paragraphs = [p.text for p in Document(output).paragraphs]
-    start = paragraphs.index('Practical considerations')
+    start = paragraphs.index('Practical considerations and Suggested Text')
     end = paragraphs.index('Points to check before the applicable review')
     word = '\n'.join(paragraphs[start:end])
     priority = model['priorities'][0]
@@ -73,8 +73,8 @@ def test_browser_details_match_the_export_content_and_escape_prose():
     source = INDEX.read_text(encoding='utf-8')
     helpers = '\n'.join(_extract_js_function(source, name) for name in (
         'renderPriorityProjectCycle', 'climateAccessibleRouteValue', 'climateDraftingRouteGate',
-        'climateSummaryWatchItems', 'renderClimateVerifiedAssessment'))
-    script = _js_escape_helper() + '\nconst renderClimateRelevantGuidance=()=>"";\n' + helpers + '\n' + rf'''
+        'climateSummaryWatchItems', 'renderStage3AdvisoryTransition', 'renderClimateVerifiedAssessment'))
+    script = _js_escape_helper() + '\nlet reviewMode="design"; const renderClimateRelevantGuidance=()=>"";\n' + helpers + '\n' + rf'''
 const reader={json.dumps(model)};
 const html=renderClimateVerifiedAssessment(reader);
 const detail=html.match(/<details class="climate-priority-detail">([\s\S]*?)<\/details>/)[1];

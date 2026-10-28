@@ -1,3 +1,198 @@
+### 2026-10-28 Final opening-preamble cleanup verified on test
+
+Continue from `docs/20261028_readout-presentation-simplification.md`.
+Code `17d45c39a245b72c66e77afe6e7554e1e48f424b` is live only on
+https://fcv-agent-1.onrender.com, deployment `dep-dbgvqkp42hec73e4em90`
+(13:50:24 UTC). Summary, Detailed, Copy and Word/HTML omit generic opening
+review preambles; the offline Word builder also omits the old preparation banner.
+Canonical review metadata and specific qualifications remain. No prompts, bank,
+model schema or Word design files changed; bank pin remains 72ce351.
+
+Final full suite: 2,079 passed, two skipped, four documented headless hangs
+excluded (515.79s). Headed Edge checked all five links, actual Copy/downloads,
+phone layouts and print restoration; all 13 fresh Climate Word pages were
+inspected. Hosted saved-session acceptance passed on the exact code SHA with no
+assessment attempts. Evidence: `output/20261028-readout-presentation/preamble-removal/`.
+
+No new paid calls; conservative prior debit remains USD10.729492. Test spending
+blocker/settings are retained. Production health remains 6f3d5e65e213, bank-only,
+Quality; complete service metadata and its 18 October updatedAt are unchanged.
+Both PRs remain draft; production promotion is a separate permission boundary.
+Keep both worktrees and the 253 unrelated root status entries. Earlier entries
+below describe historical behavior.
+
+### 2026-10-28 Readout presentation changes verified on test only
+
+Continue from `docs/20261028_readout-presentation-simplification.md`.
+Presentation code `a36a236fbc0b090bb584848c088e7eb52c7be735` is live only at
+https://fcv-agent-1.onrender.com, deploy `dep-dbgu1tutlv9c73dd2c5g` (11:49:33 UTC).
+Summary has compact regular-weight actions and no opening reader-review preamble.
+One Copy follows the selected tab; Word/HTML downloads always contain Detailed.
+The full optional-priorities advisory appears on both routes and in exports.
+Detailed uses Practical considerations and Suggested Text; specific notes and
+actual route gates remain. Generic draft/preparation banners are removed without
+recording approval. Canonical reader, prompts, bank pin and Word design are unchanged.
+
+Final app suite: 2,079 passed, two skipped, four documented headless hangs excluded
+(409.68s). Real headed Edge verified both routes, every priority link, Copy,
+actual downloads and 390/320-pixel layouts; standalone print states restore.
+All 13 Climate and 18 normal Word pages were inspected. Syria uses an ignored
+UI-only adapter of the supplied ITS JSON; no new native assessment is claimed.
+The original sessions and canonical Somalia payload remain unchanged.
+
+No new paid calls; conservative prior debit remains USD10.729492. Test spending
+blocker and hosted settings are retained. Production remains 6f3d5e65e213,
+bank-only, Quality, auto-deploy off. Both PRs remain draft. The saved run's three
+minor source notes remain in Detailed/exports. Keep both worktrees and unrelated
+root work. Earlier handoffs below describe historical behavior.
+
+### 2026-10-28 Deploy-ready candidate; final review can use saved evidence
+
+Continue from `docs/20261027_deploy-readiness-follow-through.md`.
+Final code `f1a1bca0d8b720ff37b425d51f90af71665fb330` is live only on
+`fcv-agent-climate-smoke`, https://fcv-agent-1.onrender.com, deployment
+`dep-dbgjn1cipgvc73doeq00` (28 October 00:03:29 UTC). Health confirms live
+research, Quality and Haiku research; Quality assessment/review remains Sonnet.
+The app pins pushed bank `72ce351e0f19fe52ff786196b516e6dc4a684290`, with unchanged
+qualified 146-country runtime. Final full suites: app 2,064 passed, two skipped,
+four documented headless hangs deselected (192.75s); bank 702 passed (342.67s).
+Headed Edge print/phone checks, actual downloads and all 13 fresh Word pages were
+verified. Word design files and ancestry remain unchanged.
+
+The fresh paid Quality run on preceding c1468ab completed HTTP200, all three
+stages, ten native calls and five priorities. Its funding recommendation leaves
+allocations open. Three minor verification notes remain visible and exported;
+reader `revise` / validation `attention` are intentional, not forced to pass.
+Source review found a modeled GDP excerpt tagged observed and Banadir figures
+assigned nationally. The final guard rejects incomplete previews and numeric
+title-only geography, adds a whole source-context caveat, and keeps full legacy
+Stage 2 claim/caveat/status fields. Captured-preview reconstruction and valid
+controls passed offline; there was no further paid assessment after that fix.
+The original c1468ab session/exports remain unchanged, with source findings linked.
+
+Combined conservative ledger debit: USD10.729492, not an invoice; no unresolved
+web hold or later export-time charge. The additional USD5 was not spent. Test
+spending is blocked again: web flag0, budget1 microUSD, fresh finished-blocked
+SQLite path recorded in the handoff. Load the saved session for unpaid review.
+Do not treat it as a new assessment under the final admission guard or as named
+publication approval. Snippet limitations can cause partial research/bank fallback.
+
+Both existing PRs stay draft and now target main. Production is unchanged at
+6f3d5e65e213, bank-only, Quality, auto-deploy off. No merge, production change or
+ITS port occurred. Keep the branches/worktrees and unrelated root work (253
+preexisting status entries). The routine release does not expire on 30 October;
+that date belongs to the separate unapproved test artifact, and individual
+current-evidence deadlines still apply. Earlier entries below are historical.
+
+### 2026-10-27 Controlled test deployment completed; human review remains
+
+Continue from `docs/20261027_global-country-bank-deployment-acceptance.md`.
+The single Smoke and conditional Quality slots are consumed. Quality on app
+`7a0419f8462c15597639308f2929df69d3db687b`, assessment
+`ec265e9d-c0a6-4235-9175-09a58bb8b30c`, completed HTTP200 with all three stages,
+ten returned native calls, five priorities and five admitted live claims from
+four World Bank/UN sources. This configured app uses the qualified 146-country
+bank routinely and supplements it with live research; searches do not update the
+bank. The final offline suite passed 2,051 tests, with two skipped and four
+previously documented Chromium hangs excluded (253.64s).
+
+Actual Summary/Detailed, non-first accordion, HTML/DOCX/packet downloads, exact
+session restoration with POST blocked, and mismatched-reader HTTP409 were checked.
+All 13 Word pages were visually inspected and the established design is preserved.
+All four reader verification notes survive exports. The reader remains `revise`;
+validation remains `attention`. Priority 4 still has an unsupported expected
+sector-revenue link in its action narrative, although its suggested drafting was
+repaired. Qualify/remove it before sharing. Two PDF-source claims remain
+independently unverified, and IOM was checked through indexed official text only.
+No named human approval or production/publication acceptance has been recorded.
+
+Combined conservative pilot debit: USD5.740530, not an invoice. No unresolved web
+holds remain. Spending was blocked again with web flag 0, budget 1 microUSD and
+fresh `/tmp/fcv-global146-20261027-finished-blocked.sqlite`. Replacement deployment
+`dep-dbgfanqfngtc738smhr0` became live at 19:04:34 UTC on the tested app SHA.
+Auto-deploy is off; the final branch head adds documentation only. Production
+remains `6f3d5e65e213`, bank-only, Quality. Both PRs stay draft. Keep both branches
+and worktrees, the bank pin `daf594f8ca899a44bcea4e057a85b0d547ed9c33`, and unrelated
+user work. All raw evidence is ignored in `output/20261027-global-bank-deployment/`.
+Load the saved session for unpaid supervised review; do not start another paid run
+or deploy production under this completed allowance.
+
+The following entries record earlier milestones; the status above is current.
+
+### 2026-10-27 Qualified routine bank activation and supplementary research
+
+Continue from `docs/20261027_global-country-bank-routine-activation.md`.
+Lindsey authorized routine/default use of all 146 remediated country banks on
+27 October. This supersedes the earlier draft-only instruction for qualified
+routine-use approval. Both PRs remain draft; no deployment, hosted setting,
+merge, paid/live assessment or ITS port was performed.
+
+The app pins pushed bank `daf594f8ca899a44bcea4e057a85b0d547ed9c33`:
+`2026.10.27.approved-global-country-bank`, schema 1.1, 146 country profiles,
+1,045 referenced sources, 2,643 evidence and 241 pathways. Old 24-country runtime,
+approval records and freeze manifests are archived/preserved exactly. Country
+review dates are July-October 2027; individual current-evidence deadlines remain
+unchanged, starting 10 November 2026. The 30 October expiry applies only to the
+separate unapproved test artifact, not this routine-use release.
+
+Code defaults to bank plus live research. Dedicated Climate search now receives
+bounded known gaps, local coverage and dated evidence scope to seek updates and
+supplements. Explicit `CLIMATE_RESEARCH_MODE=bank_only` still suppresses both
+providers and cached live context. The hosted health check reported `bank_only`
+on build `6f3d5e65e213`; a later authorized rollout must enable live research.
+Search results do not automatically update the bank. Approval is permission to
+use the bank, not independent certification: only 74 evidence and one pathway
+were claim-verified; all 146 audit dispositions remain `unresolved-limited`.
+
+Default startup passed all 146 countries, 344 identifiers and 438 country/sector
+prompt/search-context checks. Full offline app suite: 1,990 passed, two skipped,
+four documented Chromium hangs excluded, with normal Windows process permissions.
+Final checks and supervised testing instructions are in the activation note.
+Word design ancestry, the approved integration ancestor and unrelated user work
+remain preserved. Keep this branch and its worktrees.
+
+### 2026-10-27 All-country draft remediation and prompt qualifications
+
+Continue from `docs/20261027_global-country-bank-remediation-results.md`.
+All 146 banks have a new reproducible `2026.10.27.remediated` candidate and audit
+disposition, covering inherited evidence/pathways. Bank commit
+`7a89952dee352b408f6b79132ba61406b8981cb2` was pushed first on
+`feat/global-country-bank-depth-20261026`; bank PR5 stays draft. The app pins it
+immutably. Production's approved 24-country runtime and Word ancestry are preserved.
+
+Candidates total 2,643 evidence/241 pathways; only 74 evidence and one pathway have
+claim-level verification. All other claims carry explicit limits; all countries
+remain `unresolved-limited` and draft/null. PNG numbers retained as verified expected
+reach; bounded Chad reverse pathway and Tuvalu treaty/continuity evidence added;
+Somalia chronology/denominators, Vietnam historical boundaries and Venezuela mirror
+limits corrected. No automatic source certification or human approval.
+
+Shared compaction retains qualifications, source locators, profile gaps/coverage and
+pathway alternatives. Selection/grounding keep whole bundles under unchanged 6,000/
+12,000 budgets; all pathway support must survive. Focused app: 121 passed; bank: 697 passed;
+all 438 country/sector final prompts passed; 146 identities and 878 baseline hashes match;
+post-publish reconstruction matches. Final offline app suite: 1,979 passed, two
+skipped, four documented Chromium hangs excluded (579.52s). Follow-up launcher
+validation: six passed, including two new empty-profile negative tests (14.52s).
+
+Ignored bundle `data/climate-fcv-country-bank/releases/testing/20261027_global146-remediated-test.json`
+expires 2026-10-30; fingerprint and supervised-test commands are in results. No paid/live
+assessment, merge, approval, deployment, hosted setting or ITS port. Preserve branch
+and both worktrees. Source review remains incomplete; browser/model and DOCX visual
+acceptance remain separate gates.
+
+### 2026-10-26 Approved country bank integrated on Word design base; not deployed
+
+Branch `feat/country-bank-integration-20261026` builds on Word design commit
+`3ab33b5`, with Word files unchanged. Pins bank `cccf251`: approved schema 1.1,
+24 countries, 272 sources, 531 evidence records, 168 pathways. Carries over the
+prepared approved-schema/expiry support from `3ee149e`, absent from the Word base.
+Bank: 316 passed; app: 1,941 passed, two skipped, four known browser hangs deselected;
+all 24 country selections/materializations passed. No merge, deployment, paid call,
+hosted configuration or ITS change. Five country deadlines expire after 10 November 2026.
+See `docs/20261026_approved-country-bank-integration.md` for approval provenance,
+exact pins, checks, limitations and future deployment requirements. Preserve branches/worktrees.
+
 ### 2026-10-18 Climate graceful-degradation fixes deployed to production
 
 Honduras IPF PAD (P181166) via the Climate lens produced zero recommendations and a

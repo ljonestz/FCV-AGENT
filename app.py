@@ -15,7 +15,11 @@ from flask import Flask, request, jsonify, send_from_directory, Response, stream
 from werkzeug.exceptions import RequestEntityTooLarge
 import anthropic
 from pilot_spend_guard import pilot_http_client
-from fcv_presentation import bullet_finding_sections, strip_watch_heading
+from fcv_presentation import (
+    bullet_finding_sections,
+    priority_advisory_text,
+    strip_watch_heading,
+)
 from fcv_core_research import (
     build_core_research_prompt, core_research_analysis_context,
     normalize_core_research_response,
@@ -44,7 +48,10 @@ from sector_lenses.climate_verified_render import (
     write_reader_docx,
 )
 from sector_lenses.climate_review_packet import build_review_packet
-from sector_lenses.research import TRUSTED_CLIMATE_HOST_SUFFIXES
+from sector_lenses.research import (
+    TRUSTED_CLIMATE_HOST_SUFFIXES,
+    build_climate_bank_search_context,
+)
 from sector_lenses.pipeline import normalize_climate_assessment
 from sector_lenses import (
     CCDR_RESEARCH_INSTRUCTIONS,
@@ -149,12 +156,28 @@ MAX_UPLOAD_MB = max(1, int(os.environ.get("MAX_UPLOAD_MB", "100")))
 
 # Model tiers (Claude 5.5 generation, Oct 2026). The reasoning-heavy core Stage 2
 # (FCV assessment) and Stage 3 (recommendations) run on Opus; Stage 1 extraction
-# and every secondary call run on the fast, low-cost Sonnet; helper calls use
-# Haiku. The climate/sector-lens module keeps its own model constants in
+# and secondary calls default to the fast, low-cost Sonnet; helper calls use
+# Haiku. FCV_RESEARCH_MODEL can override only the core and Climate web searches.
+# The climate/sector-lens module keeps its own model constants in
 # sector_lenses/climate_runtime_config.py (bumped to the same generation).
 MODEL_REASONING = "claude-opus-5-5"    # core Stage 2 + Stage 3
 MODEL_STANDARD = "claude-sonnet-5-5"   # Stage 1, lens recovery, web research, Go Deeper, follow-on, priority points
 MODEL_LIGHT = "claude-haiku-5-5"       # country/sector extraction, condensation, distillation helpers
+
+
+def _effective_fcv_research_model() -> str:
+    """Return the explicitly configured research model or the Sonnet default."""
+    configured = os.environ.get("FCV_RESEARCH_MODEL")
+    if configured is None:
+        return MODEL_STANDARD
+    if configured in {MODEL_STANDARD, MODEL_LIGHT}:
+        return configured
+    raise ValueError(
+        "FCV_RESEARCH_MODEL must be unset or exactly "
+        f"{MODEL_STANDARD!r} or {MODEL_LIGHT!r}."
+    )
+
+
 STREAM_KEEPALIVE_SECONDS = 20
 # Backend per-stage wall-clock caps (seconds). Raised for Stage 2/3 in v9.16:
 # PforR (added in v9.8, after these caps were set in v9.4) produces the largest
@@ -1282,16 +1305,18 @@ def build_lens_stage_context(
         if "climate" in active_ids:
             research_decision = climate_research_evidence_gate(climate_research)
             research = research_decision['bundle'] if research_decision['ok'] else {'claims': []}
+            # Normalization bounds these fields; keep statements and qualifications whole.
             compact_claims = [{
                 "id": claim["id"],
-                "claim": claim["claim"][:350],
+                "claim": claim["claim"],
                 "project_elements": claim["project_elements"][:2],
                 "geographies": claim["geographies"][:2],
                 "affected_groups": claim["affected_groups"][:2],
                 "systems_or_assets": claim["systems_or_assets"][:2],
                 "time_horizons": claim["time_horizons"],
+                "evidence_status": claim["evidence_status"],
                 "confidence": claim["confidence"],
-                "evidence_gap": claim["evidence_gap"][:200],
+                "evidence_gap": claim["evidence_gap"],
             } for claim in research["claims"][:3]]
             research_context = json.dumps(
                 {"claims": compact_claims},
@@ -7896,17 +7921,21 @@ def run_fcv_web_research(
         country, sector, project_profile, max_uses=max_uses, as_of=researched_at,
     )
     try:
-        resp = api_client.beta.messages.create(
-            model=MODEL_STANDARD,
-            max_tokens=max_tokens,
-            tools=[{
+        research_model = _effective_fcv_research_model()
+        request_options = {
+            "model": research_model,
+            "max_tokens": max_tokens,
+            "tools": [{
                 "type": "web_search_20250305",
                 "name": "web_search",
                 "max_uses": max_uses,
             }],
-            messages=[{"role": "user", "content": prompt}],
-            betas=["web-search-2025-03-05"]
-        )
+            "messages": [{"role": "user", "content": prompt}],
+            "betas": ["web-search-2025-03-05"],
+        }
+        if research_model == MODEL_LIGHT:
+            request_options["thinking"] = {"type": "disabled"}
+        resp = api_client.beta.messages.create(**request_options)
         result = normalize_core_research_response(
             resp.content, country, researched_at=researched_at,
         )
@@ -8087,6 +8116,15 @@ def run_climate_web_research(
         )
         return bundle
 
+    try:
+        research_model = _effective_fcv_research_model()
+    except ValueError as exc:
+        return finish(normalize_climate_research_bundle({
+            "status": "failed",
+            "attempts": 0,
+            "failure_reason": str(exc),
+        }))
+
     def passage_count(
         diagnostics: Any,
         key: str,
@@ -8115,9 +8153,7 @@ def run_climate_web_research(
         try:
             messages = [{"role": "user", "content": prompt}]
             request_options = {
-                "model": MODEL_STANDARD,
-                # Reserve output for cited notes instead of default up-front thinking.
-                "thinking": {"type": "between_tools"},
+                "model": research_model,
                 "max_tokens": 3000,
                 "tools": [{
                     "type": "web_search_20250305",
@@ -8127,6 +8163,12 @@ def run_climate_web_research(
                 }],
                 "betas": ["web-search-2025-03-05"],
             }
+            if research_model == MODEL_STANDARD:
+                # Reserve output for cited notes instead of default up-front thinking.
+                request_options["thinking"] = {"type": "between_tools"}
+            elif research_model == MODEL_LIGHT:
+                # Haiku's adaptive default can consume the bounded notes budget.
+                request_options["thinking"] = {"type": "disabled"}
             provider_content = []
             response = api_client.beta.messages.create(
                 **request_options,
@@ -8577,6 +8619,7 @@ def _iter_stage1_research(
         },
     }
     futures = {}
+    bank = None
     deadline = time.monotonic() + max(1, budget_seconds)
     timed_out = False
     # NOTE: not a `with` block — the context manager's __exit__ calls
@@ -8619,6 +8662,29 @@ def _iter_stage1_research(
                         assessment_id or 'unknown')
         yield {'result': results}
         return
+    climate_project_profile = (
+        dict(project_profile) if isinstance(project_profile, dict) else {}
+    )
+    if (
+        climate_enabled
+        and bank is not None
+        and results["climate_grounding"].get("bank_status") == "ok"
+    ):
+        try:
+            selected_bank = materialize_bank_manifest(
+                bank, results["climate_grounding"]
+            )
+            bank_search_context = build_climate_bank_search_context(
+                selected_bank
+            )
+            if bank_search_context:
+                # Keep bank context out of core research and its existing cache.
+                climate_project_profile["bank_context"] = bank_search_context
+        except Exception:
+            app.logger.warning(
+                "Climate bank search context unavailable: assessment_id=%s",
+                assessment_id or "unknown",
+            )
     pool = ThreadPoolExecutor(max_workers=2)
     try:
         if cached_core:
@@ -8639,7 +8705,7 @@ def _iter_stage1_research(
                 run_climate_web_research,
                 country,
                 sector,
-                research_plan["project_profile"],
+                climate_project_profile,
                 get_research_client(),
                 assessment_id,
                 deadline=deadline,
@@ -9097,12 +9163,17 @@ BUILD_MARKER = os.environ.get("RENDER_GIT_COMMIT", "")[:12] or "dev"
 @app.route('/health')
 def health():
     verified_runtime = load_verified_climate_runtime()
+    try:
+        research_model = _effective_fcv_research_model()
+    except ValueError:
+        research_model = "invalid"
     return jsonify({
         'status': 'ok',
         'build': BUILD_MARKER,
         'stage1_research_budget_s': STAGE1_RESEARCH_BUDGET_SECONDS,
         'climate_verified_run_mode': verified_runtime.mode,
         'climate_research_mode': os.environ.get('CLIMATE_RESEARCH_MODE', 'live').strip().lower(),
+        'fcv_research_model': research_model,
     })
 
 
@@ -13504,6 +13575,14 @@ def download_report():
                 f'FCV sensitivity and responsiveness in the design and delivery of this project.',
                 space_after=6
             )
+            implementation_mode = (
+                str(meta.get('review_mode') or 'design').strip().casefold()
+                == 'implementation'
+            )
+            _add_single_para(
+                priority_advisory_text(implementation=implementation_mode),
+                space_after=8,
+            )
 
             # Summary table: #, Priority Action, Priority Level, FCV Focus, Timing
             tbl = doc.add_table(rows=1 + len(priorities), cols=5)
@@ -13717,7 +13796,7 @@ def download_report():
                         _add_single_para(f'[{source.id}] {citation}', size=9, space_after=2)
             if climate_grounding_state in {'bank+research', 'bank-only'}:
                 bank_heading = (
-                    'Reviewed candidate country evidence bank '
+                    'Candidate country evidence bank '
                     '(preview; not approved)'
                     if climate_grounding.get('candidate_preview') is True
                     else 'Reviewed country evidence bank'

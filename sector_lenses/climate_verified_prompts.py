@@ -77,6 +77,13 @@ Keep those actions distinct in the visible paragraph and suggested document edit
 A broad gap statement or accepted recommendation cannot override a more specific
 source fact. If one clause blurs these scopes, correct that clause and retain the
 useful proposal; do not discard a whole priority or invent a need to reselect sites.
+Preserve unknown funding allocations as open questions. A broad revenue or
+maintenance framework does not establish that a specific asset, site or recipient
+is funded, excluded or expected to receive funding. Without a source-backed
+allocation, ask whether and how the revenue could contribute, leaving the funding
+source and allocation open. Apply this boundary to the narrative, structured action
+and suggested drafting. Calling an action a proposal or not a funding commitment
+does not resolve a specific unsupported expectation about who or what it funds.
 """
 
 

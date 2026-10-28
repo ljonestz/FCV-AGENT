@@ -98,12 +98,12 @@ PROMPT_VERSIONS = {
     "fact_extraction": "climate-facts-v2.9",
     "bounded_analysis": "climate-analysis-v2.13",
     "judgment_review": "climate-judgments-v2.17",
-    "recommendation_compiler": "climate-recommendations-v2.24",
-    "conditional_review": "climate-review-v2.24",
-    "drafting_compiler": "climate-drafting-v1.8",
-    "reader_compiler": "climate-final-reader-v1.13",
+    "recommendation_compiler": "climate-recommendations-v2.25",
+    "conditional_review": "climate-review-v2.25",
+    "drafting_compiler": "climate-drafting-v1.9",
+    "reader_compiler": "climate-final-reader-v1.14",
     "reader_correction": "climate-reader-correction-v1.8",
-    "reader_review": "climate-reader-review-v1.15",
+    "reader_review": "climate-reader-review-v1.16",
 }
 
 

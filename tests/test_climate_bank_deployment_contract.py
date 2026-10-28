@@ -1,13 +1,31 @@
 """Deployment contract for the public Climate-FCV country-bank runtime."""
 
+from datetime import date
 from pathlib import Path
 
+import pytest
 import render_build
+import sector_lenses.climate_bank as bank_module
 
-from sector_lenses.climate_bank import load_climate_bank
+from sector_lenses.climate_bank import load_climate_bank, materialize_bank_manifest
+from sector_lenses.climate_bank_selector import select_bank_manifest
 
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+@pytest.fixture
+def approved_bank(monkeypatch):
+    class ApprovalDate(date):
+        @classmethod
+        def today(cls):
+            return cls(2026, 10, 27)
+
+    # Version-bound acceptance; separate expiry tests exercise real date boundaries.
+    monkeypatch.setattr(bank_module, "date", ApprovalDate)
+    monkeypatch.delenv("CLIMATE_COUNTRY_BANK_PATH", raising=False)
+    monkeypatch.delenv("CLIMATE_COUNTRY_BANK_PREVIEW", raising=False)
+    return load_climate_bank()
 
 
 def test_public_submodule_and_override_are_documented() -> None:
@@ -47,14 +65,37 @@ def test_render_build_initializes_pinned_submodules_before_dependencies() -> Non
     ]
 
 
-def test_pinned_bank_contains_approved_south_sudan_runtime() -> None:
-    bank = load_climate_bank()
+def test_pinned_bank_contains_approved_country_runtime(approved_bank) -> None:
+    bank = approved_bank
 
     assert bank.status == "ok"
     assert bank.warning_code == ""
-    assert bank.release["content_version"] == "2026.07.south-sudan-pilot"
+    assert bank.release["content_version"] == "2026.10.27.approved-global-country-bank"
+    assert bank.release["schema_version"] == "1.1.0"
+    assert bank.release["candidate"] is False
+    country_codes = set(bank.release["countries"])
+    assert len(country_codes) == 146
+    original_approved_countries = set(
+        "AFG BFA CAF CMR COD ETH HTI IRN IRQ LBN LBY MLI MMR MOZ NER NGA "
+        "PNG PSE SDN SOM SSD SYR UKR YEM".split()
+    )
+    assert original_approved_countries <= country_codes
     assert bank.release["countries"]["SSD"]["status"] == "approved"
     assert bank.release["countries"]["SSD"]["reviewer"] == "Lindsey Jones"
-    assert len(bank.release["sources"]) == 12
-    assert len(bank.release["evidence_records"]) == 19
-    assert len(bank.release["pathways"]) == 7
+    assert len(bank.release["evidence_records"]) == 2_643
+    assert len(bank.release["pathways"]) == 241
+    assert len(bank.release["sources"]) == 1_045
+
+
+@pytest.mark.parametrize("iso3", "AFG BFA CAF CMR COD ETH HTI IRN IRQ LBN LBY MLI MMR MOZ NER NGA PNG PSE SDN SOM SSD SYR UKR YEM".split())
+def test_approved_country_selects_without_preview_token(iso3, approved_bank) -> None:
+    bank = approved_bank
+    manifest = select_bank_manifest(
+        bank, country=iso3, country_scope="single", resolved_country_count=1,
+        sector="Agriculture", project_signals="water drought flood livelihoods displacement",
+    )
+    assert manifest["bank_status"] == "ok", manifest
+    assert manifest["country_iso3"] == iso3
+    assert manifest["evidence_ids"], manifest
+    packet = materialize_bank_manifest(bank, manifest)
+    assert packet["bank_status"] == "ok", packet
