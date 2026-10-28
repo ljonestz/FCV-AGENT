@@ -159,6 +159,113 @@ def test_passage_registry_does_not_claim_uncovered_country_or_accept_long_proof(
     assert result["uncovered_countries"] == ["DRC"]
 
 
+def test_passage_registry_omits_truncated_and_unbalanced_source_quotes():
+    truncated_gdp = (
+        "The largest climate impacts on GDP were heat stress effects on labor, "
+        "impacts on livestock production,. and flood impacts on transport "
+        "infrastructure...."
+    )
+    truncated_displacement = (
+        "By Q2 2026, however, conflict accounted for\n\n52,661 people, or 80 per "
+        "cent of recorded displacement, followed by drought with 11,190 people, "
+        "or 17 per..."
+    )
+    malformed_quotes = [
+        truncated_gdp,
+        truncated_displacement,
+        "In Somalia, reported losses reached 42 per cent (with district variation.",
+        "In Somalia, reported losses reached 42 per cent [across districts.",
+    ]
+    packet = build_climate_evidence_packet([{
+        "type": "text",
+        "citations": [
+            {"url": f"https://www.worldbank.org/report-{index}",
+             "title": "Somalia climate report", "cited_text": quote}
+            for index, quote in enumerate(malformed_quotes)
+        ],
+    }], {"beneficiary_countries": ["Somalia"]})
+
+    assert packet["passages"] == []
+    assert packet["passage_diagnostics"]["missing_quote"] == 4
+    assert packet["passage_diagnostics"]["admitted"] == 0
+
+
+def test_passage_resolver_rejects_malformed_quote_in_supplied_packet():
+    from sector_lenses.research import resolve_climate_passage_selections
+
+    packet = {
+        "passages": [{
+            "id": "CP-001",
+            "url": "https://www.worldbank.org/report",
+            "title": "Somalia climate report",
+            "publication_date": "2025",
+            "excerpt": "In Somalia, modeled GDP losses reach 8 per cent (under SSP5-8.5.",
+        }],
+        "project_profile": {
+            "project_elements": ["Landing-site rehabilitation"],
+            "beneficiary_countries": ["Somalia"],
+        },
+    }
+    labels = {key: value for key, value in _valid_bundle()["claims"][0].items()
+              if key not in {"id", "claim", "source_ids"}}
+    labels["project_elements"] = ["Landing-site rehabilitation"]
+
+    result = resolve_climate_passage_selections({"selections": [{
+        **labels, "passage_id": "CP-001", "geographies": ["Somalia"],
+    }]}, packet)
+
+    assert result["claims"] == []
+    assert result["passage_diagnostics"] == {
+        "received_count": 1,
+        "selected_count": 1,
+        "invalid_selection_count": 1,
+        "admitted_claim_count": 0,
+    }
+
+
+def test_passage_resolver_requires_numeric_geography_in_excerpt_and_keeps_controls():
+    from sector_lenses.research import resolve_climate_passage_selections
+
+    quotes = [
+        ("https://www.worldbank.org/title-only", "Somalia climate report",
+         "Under the high-emissions scenario, modeled GDP losses could reach 8 per cent by 2050; this is a projection, not an observed loss."),
+        ("https://www.worldbank.org/projection", "Somalia climate report",
+         "In Somalia, under the high-emissions scenario (SSP5-8.5), modeled GDP losses could reach 8 per cent by 2050; this is a projection, not an observed loss."),
+        ("https://www.un.org/banadir", "Somalia displacement update",
+         "In Banadir, Somalia, conflict accounted for 52,661 people, or 80 per cent of recorded displacement in Q2 2026."),
+    ]
+    packet = build_climate_evidence_packet([{
+        "type": "text",
+        "citations": [
+            {"url": url, "title": title, "cited_text": quote}
+            for url, title, quote in quotes
+        ],
+    }], {
+        "beneficiary_countries": ["Somalia"],
+        "project_elements": ["Landing-site rehabilitation"],
+    })
+    labels = {key: value for key, value in _valid_bundle()["claims"][0].items()
+              if key not in {"id", "claim", "source_ids"}}
+    labels["project_elements"] = ["Landing-site rehabilitation"]
+    selections = [{
+        **labels,
+        "passage_id": passage["id"],
+        "geographies": ["Somalia" if passage["id"] != "CP-003" else "Banadir"],
+        "evidence_status": "projected",
+    } for passage in packet["passages"]]
+
+    result = resolve_climate_passage_selections({"selections": selections}, packet)
+
+    assert result["passage_diagnostics"] == {
+        "received_count": 3,
+        "selected_count": 3,
+        "invalid_selection_count": 1,
+        "admitted_claim_count": 2,
+    }
+    assert [claim["claim"] for claim in result["claims"]] == [quotes[1][2], quotes[2][2]]
+    assert result["status"] == "partial"
+
+
 def test_insufficient_proof_is_retained_for_inspection_but_not_admitted_grounding(monkeypatch):
     bundle = _valid_bundle()
     bundle["status"] = "partial"
@@ -913,6 +1020,124 @@ def test_climate_research_prompt_requires_specific_temporal_claims():
     assert CLIMATE_RESEARCH_START in prompt
     assert "four to six claims" in prompt
     assert "mandatory" not in prompt.casefold()
+
+    search_prompt = research_module.build_climate_search_prompt(
+        "South Sudan", "Natural resources", {"beneficiary_countries": ["South Sudan"]}
+    )
+    selection_prompt = research_module.build_climate_passage_selection_prompt({"passages": []})
+    for text in (search_prompt, prompt, selection_prompt):
+        assert "time window" in text.casefold()
+        assert "geographic" in text.casefold()
+        assert "denominator" in text.casefold()
+        assert "scenario" in text.casefold()
+        assert "past tense" in text.casefold()
+        assert "publication date" in text.casefold()
+        assert "historical" in text.casefold()
+
+
+def test_legacy_verifier_rejects_truncated_native_quote_and_counts_it():
+    quote = (
+        "The largest climate impacts on GDP were heat stress effects on labor, "
+        "impacts on livestock production,. and flood impacts on transport "
+        "infrastructure...."
+    )
+    bundle = _valid_bundle()
+    bundle["sources"][0]["url"] = "https://www.worldbank.org/report"
+    bundle["claims"][0]["claim"] = quote
+    bundle["claims"][0]["source_excerpt"] = quote
+    content = [{"type": "text", "citations": [{
+        "url": "https://www.worldbank.org/report",
+        "title": "Somalia climate report",
+        "cited_text": quote,
+    }]}]
+
+    result = research_module.verify_climate_research_claims(bundle, content)
+
+    assert result["claims"] == []
+    assert result["passage_diagnostics"] == {
+        "received_count": 1,
+        "selected_count": 1,
+        "invalid_selection_count": 1,
+        "admitted_claim_count": 0,
+    }
+
+
+def test_legacy_verifier_requires_numeric_geography_inside_excerpt():
+    quote = (
+        "Under SSP5-8.5, modeled GDP losses could reach 8 per cent by 2050; "
+        "this is a projection, not an observed loss."
+    )
+    bundle = _valid_bundle()
+    bundle["sources"][0]["title"] = "Somalia climate report"
+    bundle["sources"][0]["url"] = "https://www.worldbank.org/report"
+    bundle["claims"][0]["claim"] = quote
+    bundle["claims"][0]["source_excerpt"] = quote
+    bundle["claims"][0]["geographies"] = ["Somalia"]
+    content = [{"type": "text", "citations": [{
+        "url": "https://www.worldbank.org/report",
+        "title": "Somalia climate report",
+        "cited_text": quote,
+    }]}]
+
+    result = research_module.verify_climate_research_claims(bundle, content)
+
+    assert result["claims"] == []
+    assert result["passage_diagnostics"]["invalid_selection_count"] == 1
+
+
+def test_source_context_caveat_is_preserved_and_idempotent_across_gates():
+    from sector_lenses.research import resolve_climate_passage_selections
+
+    concrete_gap = "No site-level design flood standard was found."
+    quote = "Flood timing affects access in Somalia."
+    citation = {
+        "url": "https://www.worldbank.org/report",
+        "title": "Somalia climate report",
+        "cited_text": quote,
+    }
+    packet = build_climate_evidence_packet([{
+        "type": "text", "citations": [citation],
+    }], {
+        "beneficiary_countries": ["Somalia"],
+        "project_elements": ["Landing-site rehabilitation"],
+    })
+    labels = {key: value for key, value in _valid_bundle()["claims"][0].items()
+              if key not in {"id", "claim", "source_ids"}}
+    labels.update({
+        "evidence_gap": concrete_gap,
+        "project_elements": ["Landing-site rehabilitation"],
+        "geographies": ["Somalia"],
+    })
+    source_first = resolve_climate_passage_selections({"selections": [{
+        **labels, "passage_id": packet["passages"][0]["id"],
+    }]}, packet)
+    caveated_gap = source_first["claims"][0]["evidence_gap"]
+
+    assert concrete_gap in caveated_gap
+    assert (
+        "Received excerpt only; original context may narrow place, time, population or scenario."
+        in caveated_gap
+    )
+    assert "Classification is provisional; check the original source." in caveated_gap
+    assert caveated_gap.count("Classification is provisional") == 1
+
+    legacy_input = {
+        **source_first,
+        "claims": [{**source_first["claims"][0], "evidence_gap": concrete_gap}],
+    }
+    content = [{"type": "text", "citations": [citation]}]
+    legacy_result = research_module.verify_climate_research_claims(legacy_input, content)
+    repeated_result = research_module.verify_climate_research_claims(legacy_result, content)
+
+    assert legacy_result["claims"][0]["evidence_gap"] == caveated_gap
+    assert repeated_result["claims"][0]["evidence_gap"] == caveated_gap
+
+    overflow_labels = {**labels, "evidence_gap": "x" * 480}
+    overflow_result = resolve_climate_passage_selections({"selections": [{
+        **overflow_labels, "passage_id": packet["passages"][0]["id"],
+    }]}, packet)
+    assert overflow_result["claims"] == []
+    assert overflow_result["passage_diagnostics"]["invalid_selection_count"] == 1
 
 
 def test_compact_bank_search_context_keeps_scope_and_fits_whole_rows():

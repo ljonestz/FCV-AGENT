@@ -18,6 +18,10 @@ CLIMATE_EVIDENCE_PACKET_MAX_CHARS = 12_000
 CLIMATE_BANK_SEARCH_CONTEXT_MAX_CHARS = 2_500
 # Preserve whole provider passages up to the existing claim-text budget.
 CLIMATE_SOURCE_PASSAGE_MAX_CHARS = 700
+CLIMATE_SOURCE_CONTEXT_CAVEAT = (
+    "Received excerpt only; original context may narrow place, time, population or scenario. "
+    "Classification is provisional; check the original source."
+)
 CLIMATE_TIME_HORIZONS = {
     "current-near-term",
     "project-lifetime",
@@ -87,6 +91,31 @@ def _block_value(item: Any, name: str, default: Any = None) -> Any:
     if isinstance(item, dict):
         return item.get(name, default)
     return getattr(item, name, default)
+
+
+def _usable_source_quote(quote: str) -> bool:
+    """Reject visibly truncated excerpts and unmatched parentheses or brackets."""
+    if not quote.strip() or re.search(r"(?:\.{3,}|…)", quote):
+        return False
+    pairs = {")": "(", "]": "["}
+    opened: list[str] = []
+    for character in quote:
+        if character in "([":
+            opened.append(character)
+        elif character in pairs:
+            if not opened or opened.pop() != pairs[character]:
+                return False
+    return not opened
+
+
+def _with_source_context_caveat(value: Any) -> str | None:
+    """Retain the bounded concrete gap and add the provisional-source caveat whole."""
+    gap = _bounded(value, 500)
+    if CLIMATE_SOURCE_CONTEXT_CAVEAT.casefold() in gap.casefold():
+        return gap
+    if len(gap) + (1 if gap else 0) + len(CLIMATE_SOURCE_CONTEXT_CAVEAT) > 500:
+        return None
+    return f"{gap} {CLIMATE_SOURCE_CONTEXT_CAVEAT}".strip()
 
 
 
@@ -163,6 +192,8 @@ def build_climate_evidence_packet(
         duplicate = any(passage["url"].casefold().rstrip("/") == url_key
                         and passage["excerpt"] == quote for passage in passages)
         if not quote:
+            counts['missing_quote'] += 1
+        elif not _usable_source_quote(quote):
             counts['missing_quote'] += 1
         elif len(quote) > CLIMATE_SOURCE_PASSAGE_MAX_CHARS:
             counts['overlong_quote'] += 1
@@ -275,6 +306,13 @@ Groups and assets must appear in that source proof; do not invent them.
 Project linkage is analytical relevance, not a claim
 that the web source describes this project. Use only project features evidenced
 in project_profile; geography must follow the passage, never a neighboring country.
+Use only whole received quotations. Omit excerpts containing ellipses or unmatched
+parentheses/brackets; never reconstruct omitted source context. For numeric evidence,
+the geography must appear in the excerpt itself, not only in its title. Preserve the
+source time window, geographic and population scope, denominator, scenario/model,
+and uncertainty qualifications in the quote. Past tense alone does not establish
+observed status. Keep publication date distinct from the event period; time_horizons
+describe project relevance, not source recency, and historical dates must stay visible.
 Retain measured quantity, units, timeframe and conditions. Prefer complementary
 proof across the beneficiary countries; return fewer items if evidence is limited.
 Never interpret a missing document detail as an established design omission.
@@ -301,16 +339,25 @@ def resolve_climate_passage_selections(payload: Any, packet: dict[str, Any]) -> 
         if not passage or passage["id"] in seen:
             invalid += 1
             continue
+        if not _usable_source_quote(str(passage.get("excerpt") or "")):
+            invalid += 1
+            continue
         elements = [allowed_elements[" ".join(value.casefold().split())]
                     for value in _strings(selection.get("project_elements"), 4, 180)
                     if " ".join(value.casefold().split()) in allowed_elements]
         proof = passage["title"] + " " + passage["excerpt"]
+        geography_proof = passage["excerpt"] if re.search(r"\d", passage["excerpt"]) else proof
         geographies = [value for value in _strings(selection.get("geographies"), 4, 160)
-                       if _source_label_matches(value, proof)]
+                       if _source_label_matches(value, geography_proof)]
         if not elements or not geographies:
             invalid += 1
             continue
+        evidence_gap = _with_source_context_caveat(selection.get("evidence_gap"))
+        if evidence_gap is None:
+            invalid += 1
+            continue
         selection = {**selection, "project_elements": elements, "geographies": geographies,
+                     "evidence_gap": evidence_gap,
                      "affected_groups": [value for value in _strings(selection.get("affected_groups"), 4, 160)
                                          if _source_label_matches(value, proof)],
                      "systems_or_assets": [value for value in _strings(selection.get("systems_or_assets"), 4, 180)
@@ -360,19 +407,26 @@ def verify_climate_research_claims(bundle: dict[str, Any], content: Any) -> dict
     """Use matching provider source passages, never uncited model paraphrases."""
     passages: dict[str, list[str]] = {}
     publication_dates: dict[str, str] = {}
+    received_passages = 0
     for block in (content if isinstance(content, list) else [])[:40]:
         kind = _block_value(block, "type")
         items = _block_value(block, "citations", []) if kind == "text" else (
             _block_value(block, "content", []) if kind == "web_search_tool_result" else []
         )
         for item in (items if isinstance(items, list) else [])[:8]:
+            received_passages += 1
             url = _bounded(_block_value(item, "url"), 1000)
             if _trusted_https(url):
                 date = _publication_date(_block_value(item, "publication_date"))
                 if date:
                     publication_dates.setdefault(url.casefold().rstrip("/"), date)
             passage = str(_block_value(item, "cited_text") or _block_value(item, "snippet") or "").strip()
-            if not _trusted_https(url) or not passage or len(passage) > 6000:
+            if (
+                not _trusted_https(url)
+                or not passage
+                or not _usable_source_quote(passage)
+                or len(passage) > 6000
+            ):
                 continue
             key = url.casefold().rstrip("/")
             passages.setdefault(key, []).append(re.sub(r"\s+", " ", passage).casefold())
@@ -380,9 +434,19 @@ def verify_climate_research_claims(bundle: dict[str, Any], content: Any) -> dict
     source_urls = {source["id"]: source["url"].casefold().rstrip("/")
                    for source in bundle.get("sources", [])}
     claims = []
+    invalid = 0
     for claim in bundle.get("claims", []):
         quote = str(claim.get("source_excerpt") or "").strip()
-        if not quote or len(quote) > CLIMATE_SOURCE_PASSAGE_MAX_CHARS:
+        if (
+            not quote
+            or not _usable_source_quote(quote)
+            or len(quote) > CLIMATE_SOURCE_PASSAGE_MAX_CHARS
+        ):
+            invalid += 1
+            continue
+        evidence_gap = _with_source_context_caveat(claim.get("evidence_gap"))
+        if evidence_gap is None:
+            invalid += 1
             continue
         normalized_quote = re.sub(r"\s+", " ", quote).casefold()
         source_ids = [source_id for source_id in claim["source_ids"]
@@ -390,12 +454,22 @@ def verify_climate_research_claims(bundle: dict[str, Any], content: Any) -> dict
                              passages.get(source_urls.get(source_id, ""), []))]
         claim_numbers = set(re.findall(r"\b\d+(?:[.,]\d+)?", claim["claim"]))
         quote_numbers = set(re.findall(r"\b\d+(?:[.,]\d+)?", quote))
+        geographies = claim.get("geographies", [])
+        if re.search(r"\d", quote):
+            geographies = [value for value in _strings(geographies, 4, 160)
+                           if _source_label_matches(value, quote)]
+            if not geographies:
+                invalid += 1
+                continue
         if not source_ids or claim_numbers - quote_numbers or not validate_summary_fragment(
             quote if quote.endswith((".", "!", "?")) else quote + ".", canonical_text=quote
         ):
+            invalid += 1
             continue
         # Preserve the source's measured quantity and qualifiers in downstream context.
-        claims.append({**claim, "claim": quote, "source_excerpt": quote, "source_ids": source_ids})
+        claims.append({**claim, "claim": quote, "source_excerpt": quote,
+                       "source_ids": source_ids, "evidence_gap": evidence_gap,
+                       "geographies": geographies})
     kept_ids = {claim["id"] for claim in claims}
     original_ids = {claim["id"] for claim in bundle.get("claims", [])}
     for claim in claims:
@@ -408,6 +482,12 @@ def verify_climate_research_claims(bundle: dict[str, Any], content: Any) -> dict
         for source in bundle.get("sources", []) if source["id"] in cited_ids
     ]
     result = {**bundle, "sources": sources, "claims": claims}
+    result["passage_diagnostics"] = {
+        "received_count": min(received_passages, 24),
+        "selected_count": min(len(bundle.get("claims", [])), 24),
+        "invalid_selection_count": min(invalid, 24),
+        "admitted_claim_count": min(len(claims), 24),
+    }
     if len(claims) < len(bundle.get("claims", [])):
         result["status"] = "partial" if claims else "failed"
         result["failure_reason"] = "Some research claims lack a matching provider source passage."
@@ -469,6 +549,14 @@ prioritize public country/sector search terms; do not copy bank statements,
 source IDs, or document excerpts as search queries. If no update or local
 evidence is found, state that limitation instead of treating the bank record
 as freshly verified.
+For every cited passage, preserve the source time window, narrow geography,
+affected-population scope and denominator, and scenario/model or uncertainty
+qualifications. Keep the event period distinct from the publication date;
+time_horizons describe project relevance, not source recency, and historical
+dates must stay visible. Past tense alone does not establish observed status.
+Use complete received excerpts; do not rely on ellipses, unmatched parentheses
+or brackets, or reconstructed source context. Numeric findings must name their
+geography in the excerpt.
 
 PROJECT PROFILE:
 {profile}
@@ -687,6 +775,13 @@ distributional effects, and both directions of project influence. Distinguish
 current-near-term, project-lifetime, and asset-system-lifetime implications.
 Every claim must name a project element and a geography, group, system, or
 asset. Do not return generic country statements. {scope}
+Preserve each source's time window, narrow geography, affected-population scope
+and denominator, plus scenario/model and uncertainty qualifications in the quote.
+Past tense alone does not establish observed status. Keep event period distinct
+from publication date; time_horizons describe project relevance, not source
+recency, and historical dates must stay visible. Use complete received quotes;
+omit ellipses and unmatched parentheses/brackets without reconstructing context.
+For numeric findings, geography must appear in the excerpt, not only in the title.
 
 Return no prose. Return one JSON object between {CLIMATE_RESEARCH_START} and
 {CLIMATE_RESEARCH_END} using this exact shape:

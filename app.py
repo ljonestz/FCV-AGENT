@@ -1301,16 +1301,18 @@ def build_lens_stage_context(
         if "climate" in active_ids:
             research_decision = climate_research_evidence_gate(climate_research)
             research = research_decision['bundle'] if research_decision['ok'] else {'claims': []}
+            # Normalization bounds these fields; keep statements and qualifications whole.
             compact_claims = [{
                 "id": claim["id"],
-                "claim": claim["claim"][:350],
+                "claim": claim["claim"],
                 "project_elements": claim["project_elements"][:2],
                 "geographies": claim["geographies"][:2],
                 "affected_groups": claim["affected_groups"][:2],
                 "systems_or_assets": claim["systems_or_assets"][:2],
                 "time_horizons": claim["time_horizons"],
+                "evidence_status": claim["evidence_status"],
                 "confidence": claim["confidence"],
-                "evidence_gap": claim["evidence_gap"][:200],
+                "evidence_gap": claim["evidence_gap"],
             } for claim in research["claims"][:3]]
             research_context = json.dumps(
                 {"claims": compact_claims},
