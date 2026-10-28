@@ -1,3 +1,41 @@
+### 2026-10-28 Deploy-ready candidate; final review can use saved evidence
+
+Continue from `docs/20261027_deploy-readiness-follow-through.md`.
+Final code `f1a1bca0d8b720ff37b425d51f90af71665fb330` is live only on
+`fcv-agent-climate-smoke`, https://fcv-agent-1.onrender.com, deployment
+`dep-dbgjn1cipgvc73doeq00` (28 October 00:03:29 UTC). Health confirms live
+research, Quality and Haiku research; Quality assessment/review remains Sonnet.
+The app pins pushed bank `72ce351e0f19fe52ff786196b516e6dc4a684290`, with unchanged
+qualified 146-country runtime. Final full suites: app 2,064 passed, two skipped,
+four documented headless hangs deselected (192.75s); bank 702 passed (342.67s).
+Headed Edge print/phone checks, actual downloads and all 13 fresh Word pages were
+verified. Word design files and ancestry remain unchanged.
+
+The fresh paid Quality run on preceding c1468ab completed HTTP200, all three
+stages, ten native calls and five priorities. Its funding recommendation leaves
+allocations open. Three minor verification notes remain visible and exported;
+reader `revise` / validation `attention` are intentional, not forced to pass.
+Source review found a modeled GDP excerpt tagged observed and Banadir figures
+assigned nationally. The final guard rejects incomplete previews and numeric
+title-only geography, adds a whole source-context caveat, and keeps full legacy
+Stage 2 claim/caveat/status fields. Captured-preview reconstruction and valid
+controls passed offline; there was no further paid assessment after that fix.
+The original c1468ab session/exports remain unchanged, with source findings linked.
+
+Combined conservative ledger debit: USD10.729492, not an invoice; no unresolved
+web hold or later export-time charge. The additional USD5 was not spent. Test
+spending is blocked again: web flag0, budget1 microUSD, fresh finished-blocked
+SQLite path recorded in the handoff. Load the saved session for unpaid review.
+Do not treat it as a new assessment under the final admission guard or as named
+publication approval. Snippet limitations can cause partial research/bank fallback.
+
+Both existing PRs stay draft and now target main. Production is unchanged at
+6f3d5e65e213, bank-only, Quality, auto-deploy off. No merge, production change or
+ITS port occurred. Keep the branches/worktrees and unrelated root work (253
+preexisting status entries). The routine release does not expire on 30 October;
+that date belongs to the separate unapproved test artifact, and individual
+current-evidence deadlines still apply. Earlier entries below are historical.
+
 ### 2026-10-27 Controlled test deployment completed; human review remains
 
 Continue from `docs/20261027_global-country-bank-deployment-acceptance.md`.
