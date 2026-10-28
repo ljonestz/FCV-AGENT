@@ -1,6 +1,7 @@
 """Climate-lens readout -> .docx.  render(data, meta, path) takes the dict produced by parse_climate_html.py."""
 import json, re, sys
 from fcv_docx_style import Report, CONTENT_W, BE_AWARE
+from fcv_presentation import priority_advisory_text
 
 
 
@@ -15,8 +16,6 @@ def scale_ends(scale_note, fallback=("Very limited", "Very strong")):
 def render(d, meta, path):
     R = Report("climate", meta)
     R.banner()
-    if meta.get("disclaimer"):
-        R.status_line(meta["disclaimer"])
     R.be_aware(BE_AWARE)
 
     # ---- at a glance
@@ -61,7 +60,11 @@ def render(d, meta, path):
 
     # ---- 04 priorities
     R.h1("Ranked operational priorities")
-    R.info_box(d["priority_intro"], size=9.5, keep=True)
+    priority_intro = str(d["priority_intro"] or "")
+    advisory = priority_advisory_text("climate")
+    if d["priorities"] and advisory not in priority_intro:
+        priority_intro = "\n\n".join(part for part in (priority_intro, advisory) if part)
+    R.info_box(priority_intro, size=9.5, keep=True)
     rows = [[p["rank"], (p["title"], f"priority_{p['rank']}"), p["drafting_for"], p["lead"], p["confidence"]]
             for p in d["priorities"]]
     R.data_table(["#", "Operational priority", "Drafting target", "Suggested lead", "Confidence"],
@@ -81,7 +84,7 @@ def render(d, meta, path):
         if p.get("followup"):
             prac.append(("Optional further work:", p["followup"]))
         if prac:
-            R.grey_box("Practical considerations", prac)
+            R.grey_box("Practical considerations and Suggested Text", prac)
         if p.get("drafting"):
             R.drafting_box(p["drafting"], p["drafting_for"], label=p.get("drafting_title") or "Suggested drafting")
 
@@ -125,7 +128,6 @@ if __name__ == "__main__":
         running_label="Somalia",
         classification="Official Use Only",
         generator="",
-        disclaimer=data.get("review_status") or "Draft - human review required. Named approval of this version must be recorded separately before sharing. This app does not record human approval.",
         its_url="https://fcvriskdashboardqa.worldbank.org/project-screener",
     )
     print(render(data, meta, sys.argv[2]))

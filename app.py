@@ -15,7 +15,11 @@ from flask import Flask, request, jsonify, send_from_directory, Response, stream
 from werkzeug.exceptions import RequestEntityTooLarge
 import anthropic
 from pilot_spend_guard import pilot_http_client
-from fcv_presentation import bullet_finding_sections, strip_watch_heading
+from fcv_presentation import (
+    bullet_finding_sections,
+    priority_advisory_text,
+    strip_watch_heading,
+)
 from fcv_core_research import (
     build_core_research_prompt, core_research_analysis_context,
     normalize_core_research_response,
@@ -13570,6 +13574,14 @@ def download_report():
                 f'action{"s have" if len(priorities) != 1 else " has"} been identified to strengthen '
                 f'FCV sensitivity and responsiveness in the design and delivery of this project.',
                 space_after=6
+            )
+            implementation_mode = (
+                str(meta.get('review_mode') or 'design').strip().casefold()
+                == 'implementation'
+            )
+            _add_single_para(
+                priority_advisory_text(implementation=implementation_mode),
+                space_after=8,
             )
 
             # Summary table: #, Priority Action, Priority Level, FCV Focus, Timing

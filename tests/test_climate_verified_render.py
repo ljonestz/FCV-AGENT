@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from html import unescape
 from io import BytesIO
 
 import pytest
@@ -8,7 +9,6 @@ from docx import Document
 from climate_question_bank import CLIMATE_LITERATURE_REFERENCES
 from sector_lenses.climate_verified_render import (
     HEADINGS,
-    DRAFT_REVIEW_NOTICE,
     SENSITIVITY_RATING_QUESTION,
     attach_provenance,
     build_climate_guidance_items,
@@ -381,7 +381,11 @@ def test_unconfirmed_route_withholds_current_and_operational_drafting_everywhere
         "guidance_ids": ["GUIDE-FCV-CONTINUITY"],
     }
     for context in (
-        {"document_type": "Unknown", "instrument_type": "IPF"},
+        {
+            "document_type": "Unknown",
+            "instrument_type": "IPF",
+            "preparation_regime": "unresolved_policy_source",
+        },
         {"document_type": "PCN", "instrument_type": "Unknown"},
         None,
     ):
@@ -397,12 +401,16 @@ def test_unconfirmed_route_withholds_current_and_operational_drafting_everywhere
         rendered = render_reader_html(model)
         assert "Current document drafting" not in rendered
         assert "Operational instrument drafting" not in rendered
+        assert "Draft - human review required" not in rendered
+        assert "Preparation route:" not in rendered
         stream = BytesIO()
         write_reader_docx(model, stream)
         stream.seek(0)
         document_text = "\n".join(paragraph.text for paragraph in Document(stream).paragraphs)
         assert "Current document drafting" not in document_text
         assert "Operational instrument drafting" not in document_text
+        assert "Draft - human review required" not in document_text
+        assert "Preparation route:" not in document_text
         if context is not None:
             assert rendered.count(warning) == 1
             assert document_text.count(warning) == 1
@@ -1019,8 +1027,8 @@ def test_html_and_docx_share_headings_and_priority_order():
     # Drafting blocks stay; model-internal routing metadata and raw evidence
     # codes are no longer rendered in the visible priority card.
     for expected in (
-        "Suggested drafting for the current document",
-        "Suggested drafting for an operational instrument",
+        "Suggested Text",
+        "Suggested Text for an operational instrument",
         "Suggested targeted text for the current project document.",
         "Distinct operational instrument text for continuity.",
     ):
@@ -1033,10 +1041,12 @@ def test_html_and_docx_share_headings_and_priority_order():
         paragraph.text.rstrip().endswith(("[", "{", "..."))
         for paragraph in document.paragraphs
     )
-    assert html.count("Suggested drafting for an operational instrument") == 1
-    assert document_text.count("Suggested drafting for an operational instrument") == 1
-    assert html.index("Suggested drafting for the current document") < html.index(
-        "Suggested drafting for an operational instrument"
+    assert html.count("Suggested Text for an operational instrument") == 1
+    assert document_text.count("Suggested Text for an operational instrument") == 1
+    assert "Suggested drafting for the current document" not in html
+    assert "Suggested drafting for an operational instrument" not in document_text
+    assert html.index("Suggested Text") < html.index(
+        "Suggested Text for an operational instrument"
     )
 
 
@@ -1384,10 +1394,9 @@ def test_docx_writer_accepts_an_in_memory_stream():
     assert returned is stream
     stream.seek(0)
     texts = [p.text for p in Document(stream).paragraphs]
-    # Draft status leads; candidate evidence and the overview remain visible.
-    assert texts[0] == DRAFT_REVIEW_NOTICE
-    assert texts[1] == "Candidate country evidence: preview; not approved."
-    assert texts[2].startswith("Scale: Very limited")
+    # Concrete evidence status and overview remain visible without a generic draft banner.
+    assert texts[0] == "Candidate country evidence: preview; not approved."
+    assert texts[1].startswith("Scale: Very limited")
     assert HEADINGS[0] in texts
 
 
@@ -1838,3 +1847,86 @@ def test_native_reader_only_allows_absent_optional_draft_not_malformed(missing):
         assert len(reader["priorities"]) == 4
     else:
         assert "CURRENT_DRAFTING_INCOMPLETE" in validate_reader_model(reader)
+
+
+def test_climate_detailed_exports_place_advisory_and_keep_review_signals():
+    assessment = _assessment()
+    assessment["operation_context"] = {
+        "document_type": "PCN",
+        "instrument_type": "IPF",
+        "preparation_regime": "unresolved_policy_source",
+    }
+    model = build_reader_model(assessment)
+    model["priorities"][0]["project_cycle"].update(
+        primary_text="Confirm the OIS date before the concept review.",
+        secondary_text="Verify route details during preparation.",
+    )
+    model["runtime_mode"] = "smoke"
+    model["analysis_status"] = "partial"
+    model["analysis_message"] = "Confirm coverage for the remaining project locations."
+    model["recommendation_status"] = "partial"
+    model["recommendation_message"] = "One proposed action needs confirmation."
+    model["reader_review_notice"] = (
+        "Verify the project-specific denominators against the signed project annex."
+    )
+
+    advisory = (
+        "The following priorities are suggestions to strengthen the project's design "
+        "in its climate and FCV context. They are not mandatory requirements, nor may "
+        "they all be relevant. The task team may wish to focus on those they believe "
+        "to be more pertinent based on their own sectoral expertise and knowledge of "
+        "the context within which the project will be applied. For more complex or "
+        "difficult issues raised, the team are encouraged to reach out and discuss "
+        "them with the FCV Country Coordinator or relevant Global Practice experts "
+        "as needed."
+    )
+    html = render_reader_html(model)
+    stream = BytesIO()
+    write_reader_docx(model, stream)
+    stream.seek(0)
+    docx_paragraphs = [paragraph.text for paragraph in Document(stream).paragraphs]
+    document_text = "\n".join(docx_paragraphs)
+
+    decoded_html = unescape(html)
+    for output in (decoded_html, document_text):
+        assert output.count(advisory) == 1
+        assert "Draft - human review required" not in output
+        assert "Preparation route:" not in output
+        assert "Assessment evidence is incomplete" in output
+        assert "Recommendations need review" in output
+        assert "Smoke test: validates workflow completion only" in output
+        assert "Candidate country evidence: preview; not approved." in output
+        assert model["reader_review_notice"] in output
+        assert "At concept stage" in output
+        assert "During preparation" in output
+        assert "Confirm the OIS date before the concept review." in output
+        assert "Verify route details during preparation." in output
+        assert "Practical considerations and Suggested Text" in output
+        assert "Practical considerations</summary>" not in output
+        assert "Suggested Text for an operational instrument" in output
+        assert "Suggested drafting for the current document" not in output
+        assert "Suggested drafting for an operational instrument" not in output
+
+    statement = model["priority_summary"]["statement"]
+    summary_start = decoded_html.index('<div class="climate-priority-summary">')
+    summary_end = decoded_html.index("</div>", summary_start)
+    summary_box = decoded_html[summary_start:summary_end]
+    assert statement in summary_box
+    assert advisory in summary_box
+    assert decoded_html.index(statement) < decoded_html.index(advisory)
+    assert decoded_html.index(advisory) < decoded_html.index('id="climate-priority-1"')
+    assert document_text.index(statement) < document_text.index(advisory)
+    timing_block = (
+        '<div class="climate-priority-detail-timing">'
+        "<p><strong>At concept stage:</strong> Confirm the OIS date before the "
+        "concept review.</p><p><strong>During preparation:</strong> Verify "
+        "route details during preparation.</p></div>"
+    )
+    assert timing_block in decoded_html
+    assert "At concept stage: Confirm the OIS date before the concept review." in docx_paragraphs
+    assert "During preparation: Verify route details during preparation." in docx_paragraphs
+    assert docx_paragraphs.index(
+        "At concept stage: Confirm the OIS date before the concept review."
+    ) < docx_paragraphs.index(
+        "During preparation: Verify route details during preparation."
+    )
