@@ -809,6 +809,8 @@
     .modal-note{font-size:12px;color:var(--muted);background:var(--off-white);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:20px;line-height:1.55}
     .modal-foot{display:flex;align-items:center;justify-content:space-between;gap:12px}
     .modal-foot label{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);cursor:pointer}
+    .onboarding-stage-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+    @media(max-width:640px){.onboarding-stage-grid{grid-template-columns:1fr}}
 
     /* ── Session / Utility bar ── */
     .session-bar{display:flex;align-items:center;gap:8px;padding:0 32px;height:40px;background:#fff;border-bottom:1px solid var(--color-border);font-size:12px;color:var(--color-text-muted);position:sticky;top:56px;z-index:99}
@@ -2146,220 +2148,49 @@
     <div class="modal-hdr" style="padding:24px 32px 20px">
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:var(--wbg-cyan);margin-bottom:8px;display:flex;align-items:center;gap:8px"><span style="display:inline-block;width:16px;height:2px;background:var(--wbg-cyan)"></span>WBG FCV Analytics Unit</div>
       <h2 style="font-size:24px;margin-bottom:6px">FCV Project Screener</h2>
-      <p style="font-size:14px;font-style:italic;color:rgba(255,255,255,.6)">A tool for screening WBG projects for recommendations to strengthen FCV sensitivity and responsiveness</p>
+      <p style="font-size:14px;font-style:italic;color:rgba(255,255,255,.6)">An early first pass on FCV risks and project design</p>
     </div>
     <div class="modal-body" style="padding:0;max-height:84vh;overflow-y:auto">
 
-      <!-- Compact intro -->
+      <!-- Why and what -->
       <div style="padding:20px 32px;border-bottom:1px solid var(--border)">
-        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:10px">What this tool does</div>
-        <p style="font-size:14px;line-height:1.65;color:var(--text)">This tool uses an AI language model to screen WBG appraisal and design-stage documents - PCNs, PIDs, PADs, Additional Financing, Restructuring Papers, DPF/DPO Program Documents, PforR documents, MPAs, and regional operations - for FCV dynamics. It generates structured recommendations on how to strengthen FCV sensitivity and responsiveness, drawing on the WBG FCV Strategy 2026-2030, the OST Manual, the FCV Operational Playbook, and Good Practice Notes on Peace &amp; Inclusion Lenses and FCV-Sensitive Programming.</p>
-        <p style="font-size:14px;line-height:1.65;color:var(--text);margin-top:10px">The tool automatically detects document type and adjusts the depth, framing, and tone of its analysis accordingly. It is designed to support — not replace — expert FCV analysis, and works best as a starting point for peer review conversations between FCV specialists and Task Team Leaders.</p>
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:10px">Why use the Screener?</div>
+        <p style="font-size:14px;line-height:1.65;color:var(--text)">Reviewing a project's fragility, conflict and violence (FCV) implications takes time. Project packages can be long, while relevant advice sits across FCV guidance and country material. The Screener gives task teams an early first pass: it brings those sources together, identifies issues relevant to the draft design, and suggests changes the team can examine while choices are still open.</p>
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:18px 0 10px">What it does</div>
+        <p style="font-size:14px;line-height:1.65;color:var(--text)">The main project document anchors the assessment. You can add supporting package documents and country material, particularly a CPF or RRA. The Screener draws on FCV guidance and supplemental country research to examine how FCV conditions may affect delivery, whether project choices could cause harm, and where the design could respond to fragility drivers.</p>
       </div>
 
       <!-- Compact 3-stage cards -->
       <div style="padding:20px 32px;border-bottom:1px solid var(--border)">
         <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:14px">How to use it — three stages</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+        <div class="onboarding-stage-grid">
           <div style="border:1px solid var(--border);border-radius:6px;padding:12px 14px;border-top:3px solid var(--s1)">
             <div style="font-size:11px;font-weight:700;color:var(--s1);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Stage 1 · Context &amp; Extraction</div>
-            <p style="font-size:12.5px;color:var(--text);line-height:1.55">Upload your project document. The tool auto-detects the document type, runs live web research on the country context, and extracts all FCV-relevant content. Review what it finds and correct anything before proceeding.</p>
+            <p style="font-size:12.5px;color:var(--text);line-height:1.55">The Screener extracts relevant material from the uploaded documents and supplements it with country research. Check consequential findings against the source documents.</p>
           </div>
           <div style="border:1px solid var(--border);border-radius:6px;padding:12px 14px;border-top:3px solid var(--s2)">
             <div style="font-size:11px;font-weight:700;color:var(--s2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Stage 2 · FCV Assessment</div>
-            <p style="font-size:12.5px;color:var(--text);line-height:1.55">The AI assesses the project's FCV sensitivity and responsiveness using the OST framework — 12 recommendations, 25 key questions, and a 9-point Do No Harm checklist. Detailed analytical evidence is available in expandable “Under the Hood” panels.</p>
+            <p style="font-size:12.5px;color:var(--text);line-height:1.55">It examines risks in both directions: how FCV may affect delivery and how project choices may affect the context. It distinguishes sensitivity from responsiveness and records strengths and gaps.</p>
           </div>
           <div style="border:1px solid var(--border);border-radius:6px;padding:12px 14px;border-top:3px solid var(--s3)">
             <div style="font-size:11px;font-weight:700;color:var(--s3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Stage 3 · Recommendations Note</div>
-            <p style="font-size:12.5px;color:var(--text);line-height:1.55">A memo addressed to the TTL with priority cards tailored to the project's lifecycle stage. Each priority includes specific actions, suggested project-document language, and timing. Optional “Go Deeper” panels provide Playbook references and an evidence trail.</p>
+            <p style="font-size:12.5px;color:var(--text);line-height:1.55">It suggests ranked priorities for the task team, with reasons, possible actions and, where useful, draft language for the project paper. Review the advice before using it.</p>
           </div>
         </div>
       </div>
 
-      <!-- Expandable: How it works in detail -->
       <details style="border-bottom:1px solid var(--border)">
-        <summary style="padding:14px 32px;font-size:13px;font-weight:600;color:#009FDA;cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px">
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          How this tool works in detail
-        </summary>
-        <div style="padding:20px 28px 24px">
-          <p class="hiw-lead">Upload your project document and — without any further input — the screener reads it, researches the country context, checks it against WBG standards, and delivers specific, actionable recommendations. Here is what happens at each step.</p>
-
-          <div class="hiw-grid">
-
-          <!-- Stage 1 -->
-          <div class="hiw-card">
-            <div class="hiw-card-bar" style="background:linear-gradient(90deg,#009FDA,#0080B3)"></div>
-            <div class="hiw-card-body">
-              <div class="hiw-card-tag-row">
-                <span class="hiw-badge" style="background:#EFF9FF;color:#0080B3">Stage 1</span>
-                <span class="hiw-badge-num">of 3</span>
-              </div>
-              <div class="hiw-card-title-wrap">
-                <span class="hiw-wm">1</span>
-                <div class="hiw-card-title">Read your document and research the country</div>
-              </div>
-              <p class="hiw-narrative">You upload your appraisal-stage project document - a PCN, PID, PAD, AF, restructuring paper, DPF/DPO Program Document, PforR document, MPA, or regional operation. The screener reads every section carefully and runs live web searches on the project country: conflict conditions, fragility trends, key risks. You can see exactly where every piece of information came from.</p>
-            </div>
-            <div class="hiw-stat" style="background:#EFF9FF">
-              <div class="hiw-stat-row">
-                <span class="hiw-stat-num" style="color:#009FDA" data-hiw-target="9">9</span>
-                <div class="hiw-stat-right">
-                  <div class="hiw-stat-lbl">web searches run in parallel</div>
-                  <div class="hiw-stat-sub">Conflict · fragility drivers · sector dynamics</div>
-                  <div class="hiw-bar-track"><div class="hiw-bar" style="background:#009FDA" data-hiw-width="20"></div></div>
-                </div>
-              </div>
-            </div>
-            <div class="hiw-details">
-              <div class="hiw-detail">
-                <svg style="flex-shrink:0;margin-top:1px" width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6.5" stroke="#009FDA" stroke-width="1"/><path d="M4 7l2 2 4-3.5" stroke="#009FDA" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                <div class="hiw-detail-text"><strong>Works across WBG appraisal documents</strong> - PCN, PID, PAD, AF, restructuring, DPF/DPO, PforR, MPA, and regional operations. Add a SORT table, ESCP, policy matrix, DLI matrix, or RRA for sharper analysis.</div>
-              </div>
-              <div class="hiw-detail">
-                <svg style="flex-shrink:0;margin-top:1px" width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6.5" stroke="#009FDA" stroke-width="1"/><path d="M4 7l2 2 4-3.5" stroke="#009FDA" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                <div class="hiw-detail-text"><strong>Three tiers of evidence, clearly labelled.</strong> Uploaded documents carry the most weight. Live web research adds current context. AI background knowledge fills gaps — always marked separately.</div>
-              </div>
-              <div class="hiw-detail">
-                <svg style="flex-shrink:0;margin-top:1px" width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6.5" stroke="#009FDA" stroke-width="1"/><path d="M4 7l2 2 4-3.5" stroke="#009FDA" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                <div class="hiw-detail-text"><strong>Country classification built in.</strong> The project country is placed within the WBG's four FCV categories, shaping everything that follows.</div>
-              </div>
-            </div>
-            <div class="hiw-bridge">With a full picture of your document and country context in hand, the analysis begins.</div>
-          </div>
-
-          <!-- Connector 1→2 -->
-          <div class="hiw-conn">
-            <div class="hiw-conn-dot" style="background:#009FDA"></div>
-            <svg width="2" height="34" viewBox="0 0 2 34" fill="none"><line x1="1" y1="0" x2="1" y2="34" stroke="url(#hg12)" stroke-width="2" stroke-dasharray="3 2.5" stroke-linecap="round"/><defs><linearGradient id="hg12" x1="0" y1="0" x2="0" y2="1" gradientUnits="objectBoundingBox"><stop offset="0%" stop-color="#009FDA"/><stop offset="100%" stop-color="#16A34A"/></linearGradient></defs></svg>
-            <svg width="10" height="7" viewBox="0 0 10 7" fill="none"><path d="M1 1l4 5 4-5" stroke="#94A3B8" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
-            <span class="hiw-conn-label">then</span>
-          </div>
-
-          <!-- Stage 2 -->
-          <div class="hiw-card">
-            <div class="hiw-card-bar" style="background:linear-gradient(90deg,#16A34A,#15803D)"></div>
-            <div class="hiw-card-body">
-              <div class="hiw-card-tag-row">
-                <span class="hiw-badge" style="background:#F0FDF4;color:#15803D">Stage 2</span>
-                <span class="hiw-badge-num">of 3</span>
-              </div>
-              <div class="hiw-card-title-wrap">
-                <span class="hiw-wm">2</span>
-                <div class="hiw-card-title">Check your project against WBG standards</div>
-              </div>
-              <p class="hiw-narrative">The screener checks against four sets of WBG guidance — the OST Manual, FCV Strategy 2026-2030, FCV Playbook, and Good Practice Notes. It also makes a key distinction: is the project <strong>sensitive to</strong> the FCV context (aware of it, designed around it), or <strong>responsive to</strong> it (actively working to change it)? Both are rated separately.</p>
-            </div>
-            <div class="hiw-stat" style="background:#F0FDF4">
-              <div class="hiw-stat-row">
-                <span class="hiw-stat-num" style="color:#16A34A" data-hiw-target="46">46</span>
-                <div class="hiw-stat-right">
-                  <div class="hiw-stat-lbl">standards and questions checked</div>
-                  <div class="hiw-stat-sub">12 OST standards · 25 diagnostic questions · 9 Do No Harm</div>
-                  <div class="hiw-bar-track"><div class="hiw-bar" style="background:#16A34A" data-hiw-width="100"></div></div>
-                </div>
-              </div>
-            </div>
-            <div class="hiw-details">
-              <div class="hiw-detail">
-                <svg style="flex-shrink:0;margin-top:1px" width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6.5" stroke="#16A34A" stroke-width="1"/><path d="M4 7l2 2 4-3.5" stroke="#16A34A" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                <div class="hiw-detail-text"><strong>Do No Harm comes first.</strong> A 9-point checklist asks whether the project could inadvertently make things worse through resource flows, inclusion gaps, or unaddressed risks.</div>
-              </div>
-              <div class="hiw-detail">
-                <svg style="flex-shrink:0;margin-top:1px" width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6.5" stroke="#16A34A" stroke-width="1"/><path d="M4 7l2 2 4-3.5" stroke="#16A34A" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                <div class="hiw-detail-text"><strong>Nothing hidden.</strong> Every standard checked and every question asked is visible in expandable panels — so you can see exactly what was found.</div>
-              </div>
-            </div>
-            <div class="hiw-bridge">From this assessment, the most important gaps are turned into specific recommendations.</div>
-          </div>
-
-          <!-- Connector 2→3 -->
-          <div class="hiw-conn">
-            <div class="hiw-conn-dot" style="background:#16A34A"></div>
-            <svg width="2" height="34" viewBox="0 0 2 34" fill="none"><line x1="1" y1="0" x2="1" y2="34" stroke="url(#hg23)" stroke-width="2" stroke-dasharray="3 2.5" stroke-linecap="round"/><defs><linearGradient id="hg23" x1="0" y1="0" x2="0" y2="1" gradientUnits="objectBoundingBox"><stop offset="0%" stop-color="#16A34A"/><stop offset="100%" stop-color="#7C3AED"/></linearGradient></defs></svg>
-            <svg width="10" height="7" viewBox="0 0 10 7" fill="none"><path d="M1 1l4 5 4-5" stroke="#94A3B8" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
-            <span class="hiw-conn-label">then</span>
-          </div>
-
-          <!-- Stage 3 -->
-          <div class="hiw-card">
-            <div class="hiw-card-bar" style="background:linear-gradient(90deg,#7C3AED,#6D28D9)"></div>
-            <div class="hiw-card-body">
-              <div class="hiw-card-tag-row">
-                <span class="hiw-badge" style="background:#F5F3FF;color:#6D28D9">Stage 3</span>
-                <span class="hiw-badge-num">of 3</span>
-              </div>
-              <div class="hiw-card-title-wrap">
-                <span class="hiw-wm">3</span>
-                <div class="hiw-card-title">Get recommendations for your specific document</div>
-              </div>
-              <p class="hiw-narrative">The output is a memo for the Task Team Leader — clear, specific, and tied to the document you uploaded. Every recommendation names a particular section: the PDO, the results framework, the environmental commitments. It says what to change, suggests exact wording, and tells you when to act.</p>
-            </div>
-            <div class="hiw-stat" style="background:#F5F3FF">
-              <div class="hiw-stat-row">
-                <span class="hiw-stat-num" style="color:#7C3AED" data-hiw-target="5">5</span>
-                <div class="hiw-stat-right">
-                  <div class="hiw-stat-lbl">prioritised recommendations on average</div>
-                  <div class="hiw-stat-sub">Each linked to a document section, timeline, and suggested wording</div>
-                  <div class="hiw-bar-track"><div class="hiw-bar" style="background:#7C3AED" data-hiw-width="55"></div></div>
-                </div>
-              </div>
-            </div>
-            <div class="hiw-details">
-              <div class="hiw-detail">
-                <svg style="flex-shrink:0;margin-top:1px" width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6.5" stroke="#7C3AED" stroke-width="1"/><path d="M4 7l2 2 4-3.5" stroke="#7C3AED" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                <div class="hiw-detail-text"><strong>Calibrated to your document type.</strong> A PCN gets strategic framing; a PAD gets section-by-section guidance. Every recommendation has a timing — before appraisal, at board, or in supervision.</div>
-              </div>
-              <div class="hiw-detail">
-                <svg style="flex-shrink:0;margin-top:1px" width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6.5" stroke="#7C3AED" stroke-width="1"/><path d="M4 7l2 2 4-3.5" stroke="#7C3AED" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                <div class="hiw-detail-text"><strong>Ready to download and share.</strong> Export the full recommendations note as a Word document for review, annotation, or circulation.</div>
-              </div>
-            </div>
-            <div class="hiw-bridge">The full recommendations note is ready to download and share.</div>
-          </div>
-
-        </div><!-- /hiw-grid -->
-
-        <!-- Knowledge strip -->
-        <div class="hiw-strip">
-          <div class="hiw-strip-sec">
-            <div class="hiw-strip-eye">Knowledge engine</div>
-            <div class="hiw-strip-head">Built on WBG operational guidance</div>
-            <div class="hiw-strip-sub">Four authoritative sources loaded into every analysis.</div>
-            <div class="hiw-src-tags">
-              <span class="hiw-src-tag">OST Operational Manual</span>
-              <span class="hiw-src-tag">FCV Strategy 2026-2030</span>
-              <span class="hiw-src-tag">FCV Playbook</span>
-              <span class="hiw-src-tag">Good Practice Notes</span>
-            </div>
-            <div class="hiw-strip-counts">
-              <div><div class="hiw-strip-num" data-hiw-target="12">12</div><div class="hiw-strip-lbl">OST standards</div></div>
-              <div><div class="hiw-strip-num" data-hiw-target="25">25</div><div class="hiw-strip-lbl">Diagnostic questions</div></div>
-              <div><div class="hiw-strip-num" data-hiw-target="9">9</div><div class="hiw-strip-lbl">Do No Harm principles</div></div>
-              <div><div class="hiw-strip-num" data-hiw-target="4">4</div><div class="hiw-strip-lbl">Strategy shifts</div></div>
-            </div>
-          </div>
-          <div class="hiw-strip-div"></div>
-          <div class="hiw-strip-sec">
-            <div class="hiw-strip-eye">What you get</div>
-            <div class="hiw-strip-head">A memo you can act on immediately</div>
-            <div class="hiw-strip-sub">Every output is tied to your document — not a generic FCV checklist.</div>
-            <div class="hiw-out-list">
-              <div class="hiw-out-row"><div class="hiw-out-pip"></div>Sensitivity and responsiveness ratings, with full reasoning shown</div>
-              <div class="hiw-out-row"><div class="hiw-out-pip"></div>Prioritised recommendations, each linked to a document section</div>
-              <div class="hiw-out-row"><div class="hiw-out-pip"></div>Suggested language you can paste directly into your document</div>
-              <div class="hiw-out-row"><div class="hiw-out-pip"></div>A watch list of risks to monitor through supervision</div>
-              <div class="hiw-out-row"><div class="hiw-out-pip"></div>Downloadable as a Word document for review and circulation</div>
-            </div>
-          </div>
-        </div><!-- /hiw-strip -->
-
+        <summary style="padding:14px 32px;font-size:13px;font-weight:600;color:#009FDA;cursor:pointer">Questions behind the assessment</summary>
+        <div style="padding:4px 32px 20px;font-size:13px;line-height:1.65;color:var(--text)">
+          <p>The common FCV assessment asks whether country analysis shapes the design, who benefits or bears risks, and whether delivery, grievance and monitoring arrangements fit the context. It draws on the OST Manual's 12 recommendations and uses a 25-question checklist and nine Do No Harm dimensions adapted for this tool. The numbered checks are not official fixed Manual frameworks; the Screener applies them according to the operation and its stage.</p>
+          <p style="margin-top:10px"><strong>Sensitivity</strong> concerns how the design recognises FCV risks and avoids harm. <strong>Responsiveness</strong> concerns an active contribution to addressing fragility drivers or strengthening resilience, where relevant to the project's purpose. The Screener assesses these separately; responsiveness is not expected of every operation.</p>
+          <p style="margin-top:10px">An optional Climate-FCV lens adds questions about climate hazards, adaptation choices and FCV dynamics when selected. It adds depth to the same project assessment.</p>
         </div>
       </details>
 
       <div style="padding:20px 32px;border-bottom:1px solid var(--border)">
-        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:10px">Refining the analysis</div>
-        <p style="font-size:13.5px;line-height:1.65;color:var(--text)">After each stage, the AI will ask you 1–2 clarifying questions about things it is uncertain about. Answering these improves the quality of subsequent stages. You can also use the <strong>Refine</strong> box at any point to correct the AI, add local knowledge, or redirect its focus. The AI's reasoning is visible throughout — you are in control of the analysis.</p>
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:10px">Working with the result</div>
+        <p style="font-size:13.5px;line-height:1.65;color:var(--text)">Run all three stages automatically with Express, or use Step-by-Step to review findings and add context between stages. The Summary gives a quick view of strengths, gaps and priorities. Detailed analysis shows the supporting questions, evidence and caveats. Check consequential findings against the project documents and current country knowledge. A missing passage may reflect information the team has not supplied; questions about local power, access or delivery may need specialist judgement.</p>
       </div>
 
       <div style="padding:20px 32px;background:#fff8f8;border-bottom:1px solid #fca5a5">
@@ -2415,8 +2246,8 @@
   <div class="hero-inner">
     <div class="hero-eyebrow">FCV Project Screener</div>
     <h1>FCV <strong>Project Screener</strong></h1>
-    <p class="hero-sub">A tool for screening WBG projects for recommendations to strengthen <em>FCV sensitivity and responsiveness</em></p>
-    <p style="font-size:14px;color:rgba(255,255,255,.82);line-height:1.65;max-width:600px;margin-bottom:18px;">Screen WBG appraisal and design-stage documents for FCV dynamics and generate actionable recommendations to strengthen sensitivity and responsiveness. Upload your documents and review the AI's analysis at each stage.</p>
+    <p class="hero-sub">Bring FCV considerations into project design earlier.</p>
+    <p style="font-size:14px;color:rgba(255,255,255,.82);line-height:1.65;max-width:600px;margin-bottom:18px;">Upload a draft project document for a first-pass assessment of how fragility, conflict and violence may affect delivery, and how project choices may affect people and the wider context. The Screener draws on FCV guidance and available country material to suggest priorities for the task team to check and act on.</p>
     <div style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:6px;padding:10px 14px;max-width:560px;margin-bottom:20px;display:flex;align-items:flex-start;gap:8px;">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="2" style="flex-shrink:0;margin-top:2px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
       <span style="font-size:12.5px;color:rgba(255,255,255,.72);line-height:1.5;">Output is generated by an LLM and should be approached with care. It is not a replacement for expert analysis and should be used as a supplementary input only.</span>
@@ -2430,7 +2261,7 @@
     </div>
     <div style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:6px;padding:10px 14px;max-width:560px;margin-top:18px;display:flex;align-items:flex-start;gap:8px;">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="2.5" style="flex-shrink:0;margin-top:2px" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
-      <span style="font-size:12.5px;color:rgba(255,255,255,.72);line-height:1.5;"><strong style="color:rgba(255,255,255,.9)">Pre-loaded:</strong> WBG FCV Strategy 2026-2030, OST Manual, FCV Playbook, and Good Practice Notes on Peace &amp; Inclusion Lenses and FCV-Sensitive Programming — no upload needed. Country-specific risk documents (e.g. RRA, CPF, risk summaries) should be uploaded separately per project.</span>
+      <span style="font-size:12.5px;color:rgba(255,255,255,.72);line-height:1.5;"><strong style="color:rgba(255,255,255,.9)">FCV guidance is built in.</strong> Add country-specific documents, such as a CPF or RRA, when available.</span>
     </div>
   </div>
 </div>
