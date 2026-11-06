@@ -5197,132 +5197,18 @@
 
   installClimatePrintDisclosureHandler(document);
 
-  function renderClimateVerifiedAssessment(reader,ratingsInSidebar=false){
+  function renderClimateVerifiedAssessment(reader){
     const r=reader&&typeof reader==='object'?reader:{};
-    const analysisHtml=r.analysis_status==='partial'&&r.analysis_message?`<div class="finalized-pad-notice"><div class="fpn-body"><strong>Assessment evidence is incomplete.</strong><p>${esc(r.analysis_message)}</p></div></div>`:'';
-    const draftingRoute=climateDraftingRouteGate(r);
-    const relevantGuidanceHtml=renderClimateRelevantGuidance(r);
-    const runtimeMode=String(r.runtime_mode||'quality').toLowerCase();
-    const smokeHtml=runtimeMode==='smoke'?`<div class="finalized-pad-notice"><div class="fpn-body"><strong>Smoke test: validates workflow completion only; not a quality benchmark.</strong></div></div>`:'';
-    const previewHtml=String(r.evidence_status||'').toLowerCase()==='preview; not approved'?`<div class="finalized-pad-notice"><div class="fpn-body"><strong>Candidate country evidence: preview; not approved.</strong></div></div>`:'';
-    const operationContextHtml=(()=>{
-      const context=r.operation_context&&typeof r.operation_context==='object'?r.operation_context:null;
-      if(!context)return '';
-      const warning=!climateDraftingRouteGate(r).confirmed?'<p class="climate-route-warning">Suggested document wording is not shown because the document type or financing route could not be confirmed reliably.</p>':'';
-      const preparation=context.preparation_regime==='unresolved_policy_source'?'<p>Preparation route: confirm the OIS date and applicable review; the upload does not establish them.</p>':'';
-      return warning||preparation?'<section class="climate-operation-context">'+warning+preparation+'</section>':'';
-    })();
-    const executive=esc(r.executive_readout||'The verified assessment did not return an executive readout.');
-    const boldFirstSentence=p=>{const m=p.match(/^(.*?[.!?])(\s+)([\s\S]*)$/);return m?`<strong>${esc(m[1])}</strong>${esc(m[2]+m[3])}`:`<strong>${esc(p)}</strong>`;};
-    const execHtml=(String(r.executive_readout||'').split(/\n\s*\n+/).map(p=>p.trim()).filter(Boolean).map(p=>`<p>${boldFirstSentence(p)}</p>`).join(''))||`<p>${executive}</p>`;
-    let climateSectionNumber=0;
-    const nextClimateSectionHeading=title=>{
-      climateSectionNumber+=1;
-      const number=String(climateSectionNumber).padStart(2,'0');
-      return `<header class="climate-section-heading"><span class="climate-section-number">${number}</span><h2>${esc(title)}</h2></header>`;
-    };
-    const climateReportSection=(title,className,body)=>{
-      const descriptions={
-        'climate-points-to-check':'Smaller checks to resolve alongside the main operational priorities.',
-        'climate-guidance':'Selected WBG resources to help the team take the findings forward.',
-        'climate-methodology-section':'Understand the method, source coverage and limits of this assessment.'
-      };
-      const description=descriptions[className];
-      return `<section class="climate-report-section ${className}${description?' climate-reference-panel':''}">${nextClimateSectionHeading(title)}${description?`<p class="climate-section-description">${description}</p>`:''}${body}</section>`;
-    };
-    const csr=r.climate_sensitivity_rating&&typeof r.climate_sensitivity_rating==='object'?r.climate_sensitivity_rating:null;
-    const ratingHtml=`<div class="climate-paired-ratings" style="display:flex;flex-wrap:wrap;gap:16px">${climateVerifiedRatingCards(r)}</div><p class="stage3-rating-description">Advisory judgments, not official WBG ratings.</p>`;
-    const supportingGaps=(Array.isArray(r.summary_gaps)?r.summary_gaps:[]).map(item=>String(item&&item.text||'').trim()).filter(text=>text&&text.split(/\s+/).length<=75).slice(0,5);
-    const gapScopeHtml=/\b(?:peace|social|dividends?)\b/i.test(supportingGaps.join(' '))?`<p>Optional wider dividends depend on the project's scope; they are not required in every project.</p>`:'';
-    const supportingGapsHtml=supportingGaps.length?`<section class="climate-supporting-gaps"><h3 class="climate-subheading">Supporting gap findings</h3><ul>${supportingGaps.map(text=>`<li>${esc(text)}</li>`).join('')}</ul>${gapScopeHtml}</section>`:'';
-    const draftingBlock=(label,block)=>{
-      if(!block||typeof block!=='object')return '';
-      const destination=[block.target_document,block.target_section].filter(Boolean).map(esc).join(' - ');
-      const destinationHtml=destination?`<p class="climate-drafting-destination">For: ${destination}</p>`:'';
-      const text=block.text?`<div class="climate-drafting-text">${esc(block.text)}</div>`:'';
-      if(!destinationHtml&&!text)return '';
-      return `<section class="climate-drafting-block"><h4>${esc(label)}</h4>${destinationHtml}${text}</section>`;
-    };
-    const recommendationsIncomplete=r.recommendation_status==='incomplete';
-    const noPriorityMessage=recommendationsIncomplete
-      ?(r.recommendation_message||'The recommendation stage could not be completed. Do not treat this Recommendations Note as complete; rerun the analysis or contact support.')
-      :'No operational priorities were identified in this assessment. Review the assessment findings and points to check below.';
-    const priorities=Array.isArray(r.priorities)?r.priorities.slice().sort((a,b)=>(Number(a.rank)||999)-(Number(b.rank)||999)).slice(0,5):[];
-    const priorityNoun=priorities.length===1?'priority':'priorities';
-    const prioritySummary=r.priority_summary&&typeof r.priority_summary==='object'?r.priority_summary:{};
-    const prioritySummaryHtml=priorities.length?`<p class="climate-priority-summary">${esc(prioritySummary.statement||`Drawing on the assessment findings, the analysis identifies ${priorities.length} main operational ${priorityNoun} for strengthening climate resilience, conflict sensitivity and implementation readiness in this project. These are followed by secondary points to check before the applicable review and issues to keep under review as preparation advances.`)}</p>`:'';
-    const priorityHtml=priorities.length?priorities.map((priority,index)=>{
-      const currentDraft=draftingRoute.confirmed&&priority.current_document_drafting&&typeof priority.current_document_drafting==='object'?priority.current_document_drafting:null;
-      const operationalDraft=draftingRoute.confirmed&&priority.operational_instrument_drafting&&typeof priority.operational_instrument_drafting==='object'?priority.operational_instrument_drafting:null;
-      const draftHtml=draftingBlock('Suggested drafting for the current document',currentDraft)+draftingBlock('Suggested drafting for an operational instrument',operationalDraft);
-      const paragraphs=String(priority.narrative||'').split(/\n\s*\n+/).map(p=>p.trim()).filter(Boolean);
-      const why=paragraphs.length?paragraphs.slice(0,1):[priority.limitation||''];
-      const action=paragraphs.length>1?paragraphs.slice(1):[priority.minimum_action||priority.decision||''];
-      const zone=(title,items,style)=>items.filter(Boolean).length?`<section class="pc-zone ${style}"><h4 class="pc-zone-title">${title}</h4>${items.filter(Boolean).map(p=>`<p class="pc-narr">${esc(p)}</p>`).join('')}</section>`:'';
-      const bodyHtml=zone('Why this matters',why,'zone-why')+zone('What the team could do',action,'zone-act');
-      const normalize=text=>String(text||'').trim().replace(/\s+/g,' ').toLowerCase();
-      const visibleParagraphs=[...why,...action].map(normalize);
-      const visible=visibleParagraphs.join(' ');
-      const seen=new Set();
-      const detailProse=['limitation','caution'].map(key=>String(priority[key]||'').trim()).filter(text=>{
-        const normalized=normalize(text);
-        if(!text||visibleParagraphs.includes(normalized)||seen.has(normalized))return false;
-        seen.add(normalized);return true;
-      }).map(text=>`<p class="climate-priority-detail-prose">${esc(text)}</p>`).join('');
-      const further=[priority.enhanced_action,priority.enhanced_activation].map(text=>String(text||'').trim());
-      const followup=further[0]&&further.some(text=>text&&!visible.includes(normalize(text)))?`<p class="climate-priority-detail-followup"><strong>Optional further work:</strong> ${esc(further.filter(Boolean).join(' '))}</p>`:'';
-      const notes=[['Suggested lead','responsible_function'],['Confidence','confidence']].filter(([,key])=>priority[key]).map(([label,key])=>esc(`${label}: ${priority[key]}`)).join(' | ');
-      const noteHtml=notes?`<p class="climate-priority-detail-note"><small>${notes}</small></p>`:'';
-      const cycle=priority.project_cycle||{};
-      const known=normalize([...why,...action,priority.minimum_action,priority.completion_evidence].filter(Boolean).join(' '));
-      const timing=['primary','secondary'].filter(prefix=>cycle[`${prefix}_label`]&&cycle[`${prefix}_text`]&&!known.includes(normalize(cycle[`${prefix}_text`]))).map(prefix=>esc(`${cycle[`${prefix}_label`]}: ${cycle[`${prefix}_text`]}`)).join(' | ');
-      const timingHtml=timing?`<p class="climate-priority-detail-timing"><small>${timing}</small></p>`:'';
-      const detailHtml=`<details class="climate-priority-detail"><summary>Practical considerations</summary>${detailProse}${followup}${noteHtml}${timingHtml}${draftHtml}</details>`;
-      return `<details id="climate-priority-${Number(priority.rank)||index+1}" class="climate-priority-card" open><summary><h3 class="pc-title"><span class="pc-rank">${esc(priority.rank||index+1)}</span><span class="pc-title-text">${esc(priority.title||'Untitled action')}</span></h3></summary><div class="climate-priority-body">${bodyHtml}${detailHtml}</div></details>`;
-    }).join(''):`<p>${esc(noPriorityMessage)}</p>`;
-    const flags=Array.isArray(r.review_readiness_flags)?r.review_readiness_flags.slice(0,4):[];
-    const minorPoints=Array.isArray(r.minor_climate_points)?r.minor_climate_points.slice(0,3):[];
-    const flagsIntro='<p class="climate-check-intro">These are smaller things for the team to confirm or consider at the applicable review. They are not the main recommendations above, and none is a reason to stop the project - think of them as a checklist.</p>';
-    const numberedCheckItem=(title,body,check,index)=>`<section class="climate-check-item climate-numbered-item"><span class="climate-item-number">${String(index+1).padStart(2,'0')}</span><div class="climate-numbered-content"><h4>${esc(title)}</h4><p>${esc(body)}</p><p class="climate-check-action"><strong>How to address:</strong> ${esc(check)}</p></div></section>`;
-    const minorPointsHtml=minorPoints.length?`<section class="climate-check-group"><h3>Smaller climate and fragility points to consider</h3><p class="climate-check-intro">These are smaller, climate- and fragility-specific points that were not large enough to become a recommendation above, but are still worth a look.</p>${minorPoints.map((point,index)=>numberedCheckItem(point.point||'',point.why||'',point.how_to_check||'',index)).join('')}</section>`:'';
-    const docFlagsHtml=flags.length?`<section class="climate-check-group"><h3>Document points to confirm</h3>${flags.map((flag,index)=>numberedCheckItem(flag.flag||'Point to verify',flag.why_it_matters||'',flag.suggested_verification||'',index)).join('')}</section>`:'';
-    const pointsToCheckBodyHtml=(flags.length||minorPoints.length)?`<details class="climate-fold"><summary>Checks for the project team</summary><div class="climate-purpose-band climate-decision-preparation"><span class="climate-purpose-icon" aria-hidden="true">!</span><div><strong>Climate decision preparation</strong><p>Points to check at the next applicable review.</p></div></div>${flagsIntro}${minorPointsHtml}${docFlagsHtml}</details>`:'';
-    let limitationsHtml='';
-    const trail=r.evidence_trail&&typeof r.evidence_trail==='object'?r.evidence_trail:null;
-    if(trail){
-      const raw=trail.limitations;
-      const limitations=Array.isArray(raw)?raw.filter(Boolean).join(' '):String(raw||'').trim();
-      limitationsHtml=`<p>${esc(limitations||'This automated screening is advisory and is limited by the coverage and detail of the uploaded documents. The team should confirm material findings through project and country expertise.')}</p>`;
-    }
-    const overviewParagraphs=Array.isArray(r.summary_overview)&&r.summary_overview.length?r.summary_overview:[r.overview_summary||csr&&csr.overview_summary||''];
-    const overviewHtml=overviewParagraphs.filter(Boolean).map(text=>`<p>${esc(text)}</p>`).join('');
-    const readerReviewNotice=r.reader_review_notice?`<p class="climate-review-notice">${esc(r.reader_review_notice)}</p>`:'';
-    const overviewBodyHtml=`${readerReviewNotice}${ratingsInSidebar?'':ratingHtml}${overviewHtml}${r.reader_contract==='final-reader-v1'?'':`<h3 class="climate-subheading">Operational context</h3><div class="climate-exec">${execHtml}</div>`}`;
-    const themes=Array.isArray(r.assessment_themes)?r.assessment_themes:[];
-    const themesHtml=themes.map(theme=>{
-      const question=theme.question||{
-        'Climate risks, design and delivery':'Does the project address interacting climate and FCV risks in design and delivery?',
-        'Wider peace and social dividends':'Could the project generate wider peace and social benefits, and how could these be strengthened?',
-        'Access, inclusion and potential harm':'Will people benefit fairly, and could delivery create exclusion or harm?'
-      }[theme.title]||theme.title||'';
-      const findings=Array.isArray(theme.findings)?theme.findings:[];
-      const paragraphs=Array.isArray(theme.paragraphs)&&theme.paragraphs.length?theme.paragraphs:[findings.map(f=>f.text||'').join(' ')];
-      const ranks=Array.isArray(theme.priority_ranks)?theme.priority_ranks:[...new Set(findings.flatMap(f=>f.priority_ranks||[]))];
-      const links=ranks.filter(Number.isInteger).map(rank=>`<a href="#climate-priority-${rank}">Priority ${rank}</a>`).join(' · ');
-      return `<section class="climate-assessment-answer"><h3>${esc(question)}</h3>${paragraphs.filter(Boolean).map(p=>`<p>${esc(p)}</p>`).join('')}${links?`<p class="climate-assessment-links">Related operational priorities: ${links}</p>`:''}</section>`;
-    }).join('');
-    const prioritiesBodyHtml=`${prioritySummaryHtml}${priorityHtml}`;
-    const numberedSections=
-      climateReportSection('Overview','climate-overview',overviewBodyHtml)+
-      ((themesHtml||supportingGapsHtml)?climateReportSection('Assessment findings','climate-assessment-findings',themesHtml||supportingGapsHtml):'')+
-      climateReportSection('Ranked operational priorities','climate-priorities',prioritiesBodyHtml)+
-      (pointsToCheckBodyHtml?climateReportSection('Points to check before the applicable review','climate-points-to-check',pointsToCheckBodyHtml):'')+
-      (relevantGuidanceHtml?climateReportSection('Relevant WBG guidance for this project','climate-guidance',relevantGuidanceHtml):'')+
-      (limitationsHtml?climateReportSection('Limitations','climate-limitations-section',limitationsHtml):'');
-    const advisoryHtml=r.advisory_notice?`<p class="climate-advisory">${esc(r.advisory_notice)}</p>`:'';
-    const needsReview=recommendationsIncomplete||r.recommendation_status==='partial';
-    const incompleteHtml=needsReview&&!ratingsInSidebar?`<p><strong>${recommendationsIncomplete?'Recommendations stage incomplete':'Recommendations need review'}:</strong> ${esc(r.recommendation_message||'Do not rely on this note as a completed assessment.')}</p>`:'';
-    return `<article class="climate-verified-assessment"><p class="climate-review-status" role="note">Draft - human review required. Named approval of this version must be recorded separately before sharing. This app does not record human approval.</p>${analysisHtml}${incompleteHtml}${smokeHtml}${previewHtml}${operationContextHtml}${numberedSections}${advisoryHtml}</article>`;
+    const route=climateDraftingRouteGate(r);
+    const notices=[];
+    notices.push('<p class="climate-review-status" role="note">Draft - human review required. Named approval of this version must be recorded separately before sharing. This app does not record human approval.</p>');
+    if(r.analysis_status==='partial'&&r.analysis_message)notices.push(`<div class="finalized-pad-notice"><div class="fpn-body"><strong>Assessment evidence is incomplete.</strong><p>${esc(r.analysis_message)}</p></div></div>`);
+    if(r.recommendation_status==='incomplete'||r.recommendation_status==='partial')notices.push(`<div class="finalized-pad-notice"><div class="fpn-body"><strong>${r.recommendation_status==='incomplete'?'Recommendations stage incomplete':'Recommendations need review'}:</strong> ${esc(r.recommendation_message||'Do not rely on this note as a completed assessment.')}</div></div>`);
+    if(String(r.runtime_mode||'').toLowerCase()==='smoke')notices.push('<div class="finalized-pad-notice"><div class="fpn-body"><strong>Smoke test: validates workflow completion only; not a quality benchmark.</strong></div></div>');
+    if(String(r.evidence_status||'').toLowerCase()==='preview; not approved')notices.push('<div class="finalized-pad-notice"><div class="fpn-body"><strong>Candidate country evidence: preview; not approved.</strong></div></div>');
+    if(!route.confirmed)notices.push('<p class="climate-route-warning">Suggested document wording is not shown because the document type or financing route could not be confirmed reliably.</p>');
+    if(r.operation_context&&r.operation_context.preparation_regime==='unresolved_policy_source')notices.push('<p class="climate-route-warning">Preparation route: confirm the OIS date and applicable review; the upload does not establish them.</p>');
+    return frApi().renderClimate(r,{noticesHtml:notices.join(''),draftingAllowed:route.confirmed});
   }
 
   // Blunt, upfront caveat shown above the Stage 3 Summary and Detailed readouts.
@@ -5365,7 +5251,7 @@
       :`<strong>${c.t}</strong>${c.b}`;
     let _outBodyContent;
     if(_verifiedV2){
-      _outBodyContent=renderClimateVerifiedAssessment(climateVerifiedReader,true);
+      _outBodyContent=renderClimateVerifiedAssessment(climateVerifiedReader);
     }else if(isLast){
       // On-screen dedupe: screenerCaveatHtml() is now the single on-screen advisory
       // banner, so strip the legacy in-body DO_NO_HARM_HEADER block from the displayed

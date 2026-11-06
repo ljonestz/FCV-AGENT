@@ -23,3 +23,11 @@ def test_normal_route_uses_readout_module():
     assert "frApi().renderNormal(" in source
     assert "function renderGoDeeperHtml(idx)" in source
     assert "priorityExtras:" in source
+
+
+def test_climate_route_uses_readout_module():
+    source = html()
+    start = source.index("function renderClimateVerifiedAssessment(")
+    body = source[start:source.index("\n  }\n", start)]
+    assert "frApi().renderClimate(" in body
+    assert "Draft - human review required." in body
