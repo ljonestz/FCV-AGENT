@@ -109,3 +109,61 @@ def test_priority_card_open_state_extras_and_escaping():
     assert 'id="deeper-details-0"' in first
     assert "When to address:" in first
     assert '<details class="fr-pc" id="fr-priority-2">' in second
+
+
+NORMAL_PRIORITY = {
+    "title": "Priority 1 \u00b7 Embed early warning indicators",
+    "risk_level": "High", "fcv_dimension": "Security", "tag": "[S]",
+    "action_timing": "required-before-appraisal",
+    "the_gap": "No leading indicators exist. More detail.",
+    "why_it_matters": "Risks go undetected. Costs rise.",
+    "actions": [{"document_element": "Results Framework", "guidance": "Add a GRM indicator.",
+                 "suggested_language": "Indicator: GRM resolution rate."}],
+    "implementation_note": "Before mobilisation.",
+}
+
+
+def normal(extra: dict) -> str:
+    data = {"stage3Markdown": STANDARD_MD, "fcvRating": "Adequate", "fcvResponsivenessRating": "Low",
+            "sensitivitySummary": "Sensitivity is Adequate. Detail.", "responsivenessSummary": "Responsiveness is Low.",
+            "riskExposure": {"risks_to": "Crime threatens delivery.", "risks_from": "Influx raises SEA risk."},
+            "priorities": [NORMAL_PRIORITY, dict(NORMAL_PRIORITY, title="Priority 2 \u00b7 Second", risk_level="Medium", tag="[S+R]")],
+            "watchHtml": "<p>Watch item</p>", "noticesHtml": "<div id='n'></div>", "tailHtml": "<div id='tail'></div>"}
+    data.update(extra)
+    return run_js(f"process.stdout.write(api.renderNormal(Object.assign({json.dumps(data)}, "
+                  "{priorityExtras:(p,i)=>'<div class=\"extra-'+i+'\"></div>'})));")
+
+
+def test_normal_readout_section_order_and_content():
+    html = normal({})
+    order = ["id='n'", "fr-scorecard", ">Executive Summary<", "Assessment snapshot", ">FCV Risk Exposure<",
+             ">FCV Sensitivity &amp; Responsiveness<", ">Priority Actions for the Task Team<",
+             ">Strategic Priorities<", ">Watch List for Supervision<", "id='tail'"]
+    positions = [html.index(marker) for marker in order]
+    assert positions == sorted(positions)
+    assert ">01<" in html and ">06<" in html
+    assert html.count('class="fr-ms fr-c') == 4 + 3
+    assert "Required before Decision Review (DM/ROC)" in html
+    assert "<td>Sensitivity + Responsiveness</td>" in html
+    assert 'id="fr-priority-1" open>' in html and 'id="fr-priority-2">' in html
+    assert 'class="extra-0"' in html and 'class="extra-1"' in html
+    assert "Priority 1 \u00b7 Embed" not in html
+    assert "1 High" in html and "1 Medium" in html
+
+
+def test_normal_readout_omits_missing_sections_and_renumbers():
+    html = normal({"riskExposure": None, "watchHtml": "", "priorities": []})
+    assert "FCV Risk Exposure" not in html and "Watch List" not in html and "Strategic Priorities" not in html
+    assert ">02</span><h2 class=\"fr-h1-txt\">FCV Sensitivity" in html
+    assert 'class="fr-sc-count-num">0<' in html
+
+
+def test_normal_readout_falls_back_to_full_markdown():
+    html = normal({"stage3Markdown": "Plain text only, no headings."})
+    assert "data-md" in html and "Plain text only" in html
+    assert "Assessment snapshot" not in html
+
+
+def test_normal_readout_escapes_model_text():
+    html = normal({"priorities": [dict(NORMAL_PRIORITY, the_gap="<script>alert(1)</script>")]})
+    assert "<script>" not in html
