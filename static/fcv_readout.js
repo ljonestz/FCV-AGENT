@@ -10,14 +10,15 @@
     return String(text || '').replace(/\*\*/g, '').trim();
   }
 
-  function firstParagraph(text) {
+  function splitParagraphs(text) {
     return String(text || '').split(/\n\s*\n+/).map(p => p.trim()).filter(Boolean);
   }
 
   function parseStage3Sections(markdown) {
     let text = String(markdown || '').replace(/\r\n?/g, '\n');
-    text = text.replace(/^\s*---\s*\n[\s\S]*?\n---\s*\n/, '');
+    text = text.replace(/^\s*---\s*\n[\s\S]*?\n---[ \t]*(?:\n|$)/, '');
     text = text.replace(/%{2,3}[A-Z][A-Z0-9_]*(?::[^%\n]*)?%{2,3}/g, '');
+    text = text.replace(/^\s*(?:-{3,}|\*{3,}|_{3,})\s*$/gm, '');
     text = text.replace(/^#\s+.*$/m, '');
     const sections = { snapshot: '', context: '', strengths: '', gaps: '', risk: '', other: [], found: false };
     const blocks = [];
@@ -32,13 +33,21 @@
       }
     });
     blocks.push(current);
-    let lead = '';
+    const keyOf = block => block.heading.replace(/[*_:]/g, '').trim().toLowerCase();
+    const bodyOf = block => block.lines.join('\n').trim();
+    const isTop = block => !block.heading || block.level === 2;
+    const leadBlock = blocks.find(b => isTop(b) && /executive summary/.test(keyOf(b)) && bodyOf(b))
+      || blocks.find(b => isTop(b) && bodyOf(b));
+    let watchLevel = 0;
     blocks.forEach(block => {
-      const body = block.lines.join('\n').trim();
-      const key = block.heading.replace(/[*_:]/g, '').trim().toLowerCase();
-      if (!block.heading || block.level === 2) {
-        if (body && !lead) lead = body;
-        else if (body) sections.other.push({ heading: block.level === 2 ? block.heading : '', body });
+      const body = bodyOf(block);
+      const key = keyOf(block);
+      if (watchLevel) {
+        if (block.level > watchLevel) return;
+        watchLevel = 0;
+      }
+      if (isTop(block)) {
+        if (body && block !== leadBlock) sections.other.push({ heading: block.level === 2 ? block.heading : '', body });
         return;
       }
       if (/^opening assessment/.test(key)) sections.snapshot = body;
@@ -46,15 +55,17 @@
       else if (/^strengths?$/.test(key)) sections.strengths = body;
       else if (/^(potential |key )?gaps$/.test(key)) sections.gaps = body;
       else if (/^fcv risk exposure/.test(key)) sections.risk = body;
-      else if (/watch list/.test(key)) return;
+      else if (/watch list/.test(key)) watchLevel = block.level;
       else if (body) sections.other.push({ heading: block.heading, body });
     });
+    const lead = leadBlock ? bodyOf(leadBlock) : '';
+    const leadHeading = leadBlock && leadBlock.level === 2 && !/executive summary/.test(keyOf(leadBlock)) ? leadBlock.heading : '';
     if (!sections.snapshot && lead) {
-      const paragraphs = firstParagraph(lead);
+      const paragraphs = splitParagraphs(lead);
       sections.snapshot = paragraphs.shift() || '';
-      if (paragraphs.length) sections.other.unshift({ heading: '', body: paragraphs.join('\n\n') });
+      if (paragraphs.length) sections.other.unshift({ heading: leadHeading, body: paragraphs.join('\n\n') });
     } else if (lead) {
-      sections.other.unshift({ heading: '', body: lead });
+      sections.other.unshift({ heading: leadHeading, body: lead });
     }
     sections.snapshot = stripBold(sections.snapshot);
     sections.found = !!(sections.context || sections.strengths || sections.gaps ||
@@ -76,7 +87,7 @@
       let rest = String(text || '').trim();
       const out = [];
       while (rest && out.length < count) {
-        const end = sentenceEnd(rest);
+        const end = Math.max(1, sentenceEnd(rest));
         out.push(rest.slice(0, end).trim());
         rest = rest.slice(end).trim();
       }
@@ -84,7 +95,7 @@
     }
 
     function prose(body) {
-      return firstParagraph(body).map(p =>
+      return splitParagraphs(body).map(p =>
         (/^\s*(?:[-*+]|\d+[.)])\s/m.test(p) || /\*\*|^#|\|/.test(p))
           ? `<div class="fr-md">${md(p)}</div>`
           : `<p class="fr-p">${boldFirst(p)}</p>`).join('');
@@ -157,9 +168,9 @@
       return items.map((it, i) => `<div class="fr-check"><span class="fr-check-num">${String(i + 1).padStart(2, '0')}</span><div><h4 class="fr-check-title">${esc(it.title)}</h4>${it.why ? `<p class="fr-p">${esc(it.why)}</p>` : ''}${it.how ? `<p class="fr-check-how"><strong>How to address:</strong> ${esc(it.how)}</p>` : ''}</div></div>`).join('');
     }
 
-    function pill(level) {
+    function pill(level, cls) {
       const key = String(level || '').toLowerCase();
-      return level ? `<span class="fr-pill fr-pill-${esc(key)}">${esc(level)}</span>` : '';
+      return level ? `<span class="fr-pill ${cls ? esc(cls) : 'fr-pill-' + esc(key)}">${esc(level)}</span>` : '';
     }
 
     const kit = { esc, md, boldFirst, timingLabel, takeSentences, prose, paragraphs, numbering, sub, intro, infoBox, section, meter, scorecard, ratingRows, priorityTable, priorityCard, disclosure, checkItems, pill };
@@ -272,6 +283,13 @@
     return 'fr-rv-unclear';
   }
 
+  const CONFIDENCE_CLASS = { high: 'fr-pill-conf-high', medium: 'fr-pill-medium', low: 'fr-pill-conf-low' };
+
+  function confidencePill(k, confidence, suffix) {
+    const key = String(confidence || '').toLowerCase();
+    return key ? k.pill(climateLabel(key) + (suffix || ''), CONFIDENCE_CLASS[key] || 'fr-pill-medium') : '';
+  }
+
   function safeUrl(url) {
     return /^https?:\/\//i.test(String(url || '')) ? String(url) : '';
   }
@@ -304,7 +322,7 @@
       snapshot = overview[0];
       context = overview.slice(1, 3);
     } else {
-      const paras = firstParagraph(r.executive_readout);
+      const paras = splitParagraphs(r.executive_readout);
       const split = k.takeSentences(paras[0] || '', 2);
       snapshot = split.head;
       context = [split.rest, paras[1]].filter(Boolean);
@@ -318,12 +336,14 @@
       + (working.length ? k.sub('What is already working') + k.paragraphs(working) : '')
       + (gaps.length ? k.sub('Key gaps at this stage') + k.paragraphs(gaps) : ''));
 
+    const rankIndex = new Map();
+    priorities.forEach((p, i) => { const n = Number(p.rank); if (Number.isInteger(n) && !rankIndex.has(n)) rankIndex.set(n, i + 1); });
     const themes = (Array.isArray(r.assessment_themes) ? r.assessment_themes : []).map(t => {
       const question = t.question || THEME_QUESTIONS[t.title] || t.title || '';
       const findings = Array.isArray(t.findings) ? t.findings : [];
       const paras = Array.isArray(t.paragraphs) && t.paragraphs.length ? t.paragraphs : [findings.map(f => f.text || '').join(' ')];
       const ranks = Array.isArray(t.priority_ranks) ? t.priority_ranks : [];
-      const links = ranks.filter(Number.isInteger).map(n => `<a href="#fr-priority-${n}" onclick="var d=document.getElementById('fr-priority-${n}');if(d)d.open=true;">Priority ${n}</a>`).join(' &middot; ');
+      const links = ranks.map(n => rankIndex.get(n)).filter(Boolean).map(n => `<a href="#fr-priority-${n}" onclick="var d=document.getElementById('fr-priority-${n}');if(d)d.open=true;">Priority ${n}</a>`).join(' &middot; ');
       return `<div class="fr-theme"><h3 class="fr-theme-q">${k.esc(question)}</h3>${k.paragraphs(paras)}${links ? `<p class="fr-theme-links">Related operational priorities: ${links}</p>` : ''}</div>`;
     }).join('');
     if (themes) html += k.section('fr-themes', h('Assessment Findings') + k.intro('Three cross-cutting questions about how the project interacts with climate and FCV dynamics. Each links to the operational priorities below.') + `<div class="fr-themes-stack">${themes}</div>`);
@@ -342,15 +362,15 @@
     const statement = (r.priority_summary && r.priority_summary.statement) || '';
     if (priorities.length) {
       const rows = priorities.map((p, i) => ({
-        id: `fr-priority-${Number(p.rank) || i + 1}`, rank: Number(p.rank) || i + 1, title: priorityTitle(p.title),
-        cells: [k.pill(climateLabel(p.confidence)), k.esc(p.responsible_function || '')],
+        id: `fr-priority-${i + 1}`, rank: i + 1, title: priorityTitle(p.title),
+        cells: [confidencePill(k, p.confidence), k.esc(p.responsible_function || '')],
       }));
       html += k.section('fr-ptable-sec', h('Ranked Operational Priorities')
         + (statement ? k.infoBox('', k.boldFirst(statement)) : '')
         + k.priorityTable(['#', 'Operational priority', 'Confidence', 'Suggested lead'], rows));
       const cards = priorities.map((p, i) => {
-        const rank = Number(p.rank) || i + 1;
-        const paras = firstParagraph(p.narrative);
+        const rank = i + 1;
+        const paras = splitParagraphs(p.narrative);
         const why = paras.length ? paras.slice(0, 1) : [p.limitation];
         const act = paras.length > 1 ? paras.slice(1) : [p.minimum_action || p.decision];
         const cur = o.draftingAllowed && p.current_document_drafting ? p.current_document_drafting : null;
@@ -359,7 +379,7 @@
         const cycle = p.project_cycle || {};
         return k.priorityCard({
           id: `fr-priority-${rank}`, rank, open: i === 0, title: priorityTitle(p.title),
-          supHtml: [`Priority ${rank}`, p.confidence ? k.pill(climateLabel(p.confidence) + ' confidence') : '', k.esc(target)].filter(Boolean).join(' &middot; '),
+          supHtml: [`Priority ${rank}`, confidencePill(k, p.confidence, ' confidence'), k.esc(target)].filter(Boolean).join(' &middot; '),
           zones: [{ label: 'Why this matters', html: k.paragraphs(why) }, { label: 'What the team could do', html: k.paragraphs(act) },
             { label: 'Optional further work', html: p.enhanced_action ? k.paragraphs([p.enhanced_action]) : '' }],
           drafts: [cur && { label: 'Suggested drafting', forText: target, text: cur.text },

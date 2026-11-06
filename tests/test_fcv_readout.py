@@ -235,3 +235,44 @@ def test_climate_zero_priorities_and_withheld_drafting():
     assert "Strategic Priorities" not in html
     html = climate(CLIMATE_READER, {"draftingAllowed": False})
     assert "Draft one." not in html
+
+
+def test_parser_prefers_executive_summary_block_for_snapshot():
+    s = parse("# FCV Support Note\n\n## FCV Support Note: Road Project\n\n**Project:** P123 | **Stage:** PID\n\n"
+              "## EXECUTIVE SUMMARY\n\n**Real verdict sentence.**\n\n### Strengths\n\nS.")
+    assert s["snapshot"] == "Real verdict sentence."
+    assert {"heading": "FCV Support Note: Road Project", "body": "**Project:** P123 | **Stage:** PID"} in s["other"]
+
+
+def test_parser_strips_horizontal_rules():
+    s = parse("## Executive Summary\n\n### Opening Assessment\n\nSnap.\n\n---\n\n### Strengths\n\nS.")
+    assert s["snapshot"] == "Snap."
+    assert "---" not in json.dumps(s)
+
+
+def test_parser_strips_disclaimer_at_end_of_input():
+    s = parse("---\n**AI-Generated Output**\n---")
+    assert "AI-Generated" not in json.dumps(s)
+
+
+def test_parser_skips_watch_list_subheadings():
+    s = parse("## Executive Summary\n\n### Strengths\n\nS.\n\n### Watch List for Supervision\n\nW.\n\n#### Sub watch\n\nLeak.\n\n### Gaps\n\nG.")
+    assert "Leak" not in json.dumps(s) and "Sub watch" not in json.dumps(s)
+    assert s["gaps"] == "G."
+
+
+def test_climate_priority_ids_unique_and_dangling_links_dropped():
+    reader = dict(CLIMATE_READER, priorities=[
+        {"rank": 1, "title": "A", "confidence": "high", "narrative": "W.\n\nA."},
+        {"rank": 1, "title": "B", "confidence": "high", "narrative": "W.\n\nA."}],
+        assessment_themes=[{"title": "T", "paragraphs": ["p."], "priority_ranks": [7, 1]}])
+    html = climate(reader)
+    assert html.count('id="fr-priority-1"') == 1 and html.count('id="fr-priority-2"') == 1
+    assert "Priority 7" not in html and "fr-priority-7" not in html
+    assert ">Priority 1</a>" in html
+
+
+def test_climate_missing_confidence_shows_no_pill():
+    reader = dict(CLIMATE_READER, priorities=[{"rank": 1, "title": "A", "narrative": "W.\n\nA."}])
+    html = climate(reader)
+    assert "Unclear" not in html
