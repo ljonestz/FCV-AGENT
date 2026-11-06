@@ -2976,7 +2976,11 @@ def test_express_recovery_keeps_valid_detailed_output_when_summary_is_unavailabl
     restorable = _extract_js_function(source, "isRestorableExpressStage3Output")
     script = f"""
 {restorable}
+let stageThreePriorities=[{{title:'Valid detailed priority'}}];
+function supportsClimateVerifiedStage3View(){{return false;}}
 if (!isRestorableExpressStage3Output('Completed detailed output')) throw new Error('valid output rejected');
+stageThreePriorities=[];
+if (isRestorableExpressStage3Output('Incomplete JSON output')) throw new Error('unparsed output restored');
 for (const invalid of ['', '   ', null, 42, {{result:'detailed'}}]) {{
   if (isRestorableExpressStage3Output(invalid)) throw new Error('invalid output accepted');
 }}

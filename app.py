@@ -6873,6 +6873,21 @@ def _fallback_concise_priority(priority: dict[str, Any]) -> dict[str, Any] | Non
     }
 
 
+def log_stage3_parse_failure(assessment_id, response_text, parsed, max_tokens):
+    if parsed.get('error'):
+        app.logger.warning(
+            'Stage 3 parse failed: assessment_id=%s stop_reason=%s '
+            'output_tokens=%s max_tokens=%s text_chars=%s json_start=%s json_end=%s',
+            assessment_id or 'unknown',
+            getattr(_stream_stage, '_last_stop_reason', None) or 'unknown',
+            getattr(_stream_stage, '_last_output_tokens', None),
+            max_tokens,
+            len(response_text or ''),
+            '%%%JSON_START%%%' in (response_text or ''),
+            '%%%JSON_END%%%' in (response_text or ''),
+        )
+
+
 def extract_priorities(
     text: str,
     uploaded_doc_names: list = None,
@@ -10336,6 +10351,11 @@ def run_stage():
                         instrument=data.get('instrument_type', '') or '',
                         document_type=stage3_document_type,
                     )
+                    log_stage3_parse_failure(
+                        assessment_id, full_text, parsed,
+                        NATIVE_CLIMATE_STAGE3_MAX_TOKENS if _native_climate_stage3
+                        else _stage_output_budget(3),
+                    )
                     if _native_climate_stage3:
                         parsed = enforce_climate_priority_provenance(
                             parsed, _native_climate_stage3_diagnostic
@@ -10744,6 +10764,7 @@ def _stream_stage(
     stream_q = _q.Queue()
     started_at = time.monotonic()
     _stream_stage._last_stop_reason = None
+    _stream_stage._last_output_tokens = None
     if max_seconds is None:
         max_seconds = _stage_timeout_seconds(stage_num)
 
@@ -10771,6 +10792,9 @@ def _stream_stage(
                         final = s.get_final_message()
                         _stream_stage._last_stop_reason = getattr(
                             final, 'stop_reason', None
+                        )
+                        _stream_stage._last_output_tokens = getattr(
+                            getattr(final, 'usage', None), 'output_tokens', None
                         )
                     except Exception:
                         _stream_stage._last_stop_reason = None
@@ -11952,6 +11976,11 @@ def run_express():
                     preparation_regime=(regime_context or {}).get('preparation_regime', 'unresolved_policy_source'),
                     instrument=instrument_type or '',
                     document_type=doc_type,
+                )
+                log_stage3_parse_failure(
+                    assessment_id, stage3_output, parsed,
+                    NATIVE_CLIMATE_STAGE3_MAX_TOKENS if _native_climate_s3
+                    else _stage_output_budget(3),
                 )
                 if _native_climate_s3:
                     parsed = enforce_climate_priority_provenance(

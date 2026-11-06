@@ -3256,7 +3256,8 @@
   localStorage.removeItem('fcv_review_mode');
 
   function isRestorableExpressStage3Output(value){
-    return typeof value==='string' && value.trim().length>0;
+    return typeof value==='string' && value.trim().length>0 &&
+      (stageThreePriorities.length>0 || supportsClimateVerifiedStage3View());
   }
 
   // Express recovery: checkpoints cannot restore browser File objects after a reload.
@@ -4024,6 +4025,7 @@
     let buf='';
     let currentStage=1;
     let _expressDone=false;
+    let stage3ParseError='';
 
     try{
       while(true){
@@ -4145,6 +4147,7 @@
             else if(sn===3){
               stageOutputs[3]=p.result;
               hist=p.history||hist;stageHists[3]=hist.slice();
+              if(p.parse_error)stage3ParseError=p.parse_error_message||'Stage 3 output could not be parsed. The Recommendations Note is incomplete.';
               stageGapTable=p.gap_table||null;
               stageRiskExposure=p.risk_exposure||null;
               stageSensitivitySummary=p.sensitivity_summary||'';
@@ -4166,7 +4169,8 @@
               horizonConsiderations=typeof p.horizon_considerations==='string'?p.horizon_considerations:'';
               if(p.applied_snippets)stageAppliedSnippets=p.applied_snippets;
               fcvSafeLocalStorageSet('stage3_timestamp',Date.now());
-              updateExpressStage(3,'done','Complete');
+              if(stage3ParseError)showExpressError(3,stage3ParseError);
+              else updateExpressStage(3,'done','Complete');
               epSafeStore(stageOutputs,stageHists,'3');
             }
           }
@@ -4182,6 +4186,9 @@
           // ── Express complete ──
           else if(p.express_done){
             clearTimeout(expressTimeout);
+            if(stage3ParseError){
+              busy=false;_expressDone=true;reader.cancel();break;
+            }
             hideExpressProgress();
             document.getElementById('stepper-wrap').style.display='';
             document.getElementById('main').style.display='';
@@ -5990,7 +5997,7 @@
     const sum=document.getElementById('ep-summary-'+stage);
     sum.innerHTML='<div style="color:#DC2626;font-size:13px;margin-top:6px">'+esc(errorMsg)+'</div>'+
       '<div class="ep-error-actions">'+
-      '<button class="btn" onclick="retryExpressStage('+stage+')" style="background:var(--wbg-navy);color:#fff;border:none;border-radius:5px;font-size:12px;padding:6px 14px;cursor:pointer">Retry this stage</button>'+
+      '<button class="btn" onclick="retryExpressStage('+stage+')" style="background:var(--wbg-navy);color:#fff;border:none;border-radius:5px;font-size:12px;padding:6px 14px;cursor:pointer">Restart full analysis</button>'+
       '<button class="btn" onclick="switchToStepByStep('+stage+')" style="background:#fff;color:var(--wbg-navy);border:1px solid #D1D5DB;border-radius:5px;font-size:12px;padding:6px 14px;cursor:pointer">Switch to step-by-step</button>'+
       '</div>';
     sum.style.color='';
