@@ -254,7 +254,142 @@
     }
     return `<article class="fr-readout fr-route-fcv">${html}${d.tailHtml || ''}</article>`;
   }
-  function renderClimate() { return ''; }
+  const THEME_QUESTIONS = {
+    'Climate risks, design and delivery': 'Does the project address interacting climate and FCV risks in design and delivery?',
+    'Wider peace and social dividends': 'Could the project generate wider peace and social benefits, and how could these be strengthened?',
+    'Access, inclusion and potential harm': 'Will people benefit fairly, and could delivery create exclusion or harm?',
+  };
+
+  function climateLabel(value) {
+    if (value === 'not_expected') return 'Not expected';
+    return String(value || 'unclear').replace(/_/g, ' ').replace(/^./, c => c.toUpperCase());
+  }
+
+  function climatePillClass(value) {
+    if (['strong', 'very_strong', 'high'].includes(value)) return 'fr-rv-strong';
+    if (value === 'moderate') return 'fr-rv-moderate';
+    if (['limited', 'very_limited'].includes(value)) return 'fr-rv-limited';
+    return 'fr-rv-unclear';
+  }
+
+  function safeUrl(url) {
+    return /^https?:\/\//i.test(String(url || '')) ? String(url) : '';
+  }
+
+  function renderClimate(k, reader, opts) {
+    const r = reader && typeof reader === 'object' ? reader : {};
+    const o = opts || {};
+    const h = k.numbering();
+    const judgments = Array.isArray(r.judgments) ? r.judgments : [];
+    const judgment = key => judgments.find(j => j && j.dimension === key) || {};
+    const csr = r.climate_sensitivity_rating || {};
+    const sens = Object.assign({}, judgment('sensitivity'));
+    if (!sens.value && csr.value) sens.value = csr.value;
+    const resp = judgment('responsiveness');
+    const level = v => CLIMATE_SCALE.indexOf(String(v || '')) + 1;
+    const priorities = (Array.isArray(r.priorities) ? r.priorities : []).slice()
+      .sort((a, b) => (Number(a.rank) || 999) - (Number(b.rank) || 999)).slice(0, 5);
+
+    let html = o.noticesHtml || '';
+    html += k.scorecard([
+      { key: 'climate-sensitivity', label: 'Climate sensitivity', value: climateLabel(sens.value), steps: 5, level: level(sens.value), lo: 'Very limited', hi: 'Very strong', def: 'How well does the design address interacting climate and FCV risks?' },
+      { key: 'climate-responsiveness', label: 'Climate responsiveness', value: climateLabel(resp.value), steps: 5, level: level(resp.value), lo: 'Very limited', hi: 'Very strong', def: 'Does the project generate wider climate, peace and social dividends?' },
+    ], { label: 'Priorities', number: priorities.length, pills: countPills(priorities, p => String(p.confidence || '').toLowerCase(), [
+      { key: 'high', text: 'High confidence', cls: 'fr-pill-conf-high' }, { key: 'medium', text: 'Medium confidence', cls: 'fr-pill-medium' }, { key: 'low', text: 'Low confidence', cls: 'fr-pill-conf-low' }]) });
+
+    const overview = (Array.isArray(r.summary_overview) ? r.summary_overview : [r.summary_overview]).map(t => String(t || '').trim()).filter(Boolean);
+    let snapshot = '';
+    let context = [];
+    if (r.summary_overview_status === 'generated' && overview.length) {
+      snapshot = overview[0];
+      context = overview.slice(1, 3);
+    } else {
+      const paras = firstParagraph(r.executive_readout);
+      const split = k.takeSentences(paras[0] || '', 2);
+      snapshot = split.head;
+      context = [split.rest, paras[1]].filter(Boolean);
+    }
+    const working = (Array.isArray(r.existing_responses) ? r.existing_responses : []).map(x => x && x.description).filter(Boolean).slice(0, 4);
+    const gaps = (Array.isArray(r.summary_gaps) ? r.summary_gaps : []).map(x => x && x.text).filter(Boolean).slice(0, 5);
+    html += k.section('fr-exec', h('Overview')
+      + (r.reader_review_notice ? `<p class="fr-notice">${k.esc(r.reader_review_notice)}</p>` : '')
+      + (snapshot ? k.infoBox('Assessment snapshot', `<strong>${k.esc(snapshot)}</strong>`) : '')
+      + k.paragraphs(context)
+      + (working.length ? k.sub('What is already working') + k.paragraphs(working) : '')
+      + (gaps.length ? k.sub('Key gaps at this stage') + k.paragraphs(gaps) : ''));
+
+    const themes = (Array.isArray(r.assessment_themes) ? r.assessment_themes : []).map(t => {
+      const question = t.question || THEME_QUESTIONS[t.title] || t.title || '';
+      const findings = Array.isArray(t.findings) ? t.findings : [];
+      const paras = Array.isArray(t.paragraphs) && t.paragraphs.length ? t.paragraphs : [findings.map(f => f.text || '').join(' ')];
+      const ranks = Array.isArray(t.priority_ranks) ? t.priority_ranks : [];
+      const links = ranks.filter(Number.isInteger).map(n => `<a href="#fr-priority-${n}" onclick="var d=document.getElementById('fr-priority-${n}');if(d)d.open=true;">Priority ${n}</a>`).join(' &middot; ');
+      return `<div class="fr-theme"><h3 class="fr-theme-q">${k.esc(question)}</h3>${k.paragraphs(paras)}${links ? `<p class="fr-theme-links">Related operational priorities: ${links}</p>` : ''}</div>`;
+    }).join('');
+    if (themes) html += k.section('fr-themes', h('Assessment Findings') + k.intro('Three cross-cutting questions about how the project interacts with climate and FCV dynamics. Each links to the operational priorities below.') + `<div class="fr-themes-stack">${themes}</div>`);
+
+    const ops = judgment('operationalization');
+    const rel = judgment('relevance');
+    const notes = [rel.value ? `<p><strong>Climate relevance: ${k.esc(climateLabel(rel.value))}.</strong> ${k.esc(rel.rationale || '')}</p>` : '',
+      ops.value ? `<p><strong>Operationalization: ${k.esc(climateLabel(ops.value))}.</strong> ${k.esc(ops.rationale || '')}</p>` : ''].join('');
+    html += k.section('fr-ratings-sec', h('Climate & FCV Sensitivity & Responsiveness')
+      + k.intro('The ratings below explain the judgments behind the scorecard above.')
+      + k.ratingRows([
+        { dim: 'Climate sensitivity', value: climateLabel(sens.value), cls: climatePillClass(sens.value), def: 'How well does the project recognize and address interacting climate and FCV risks?', whyHtml: k.paragraphs([sens.rationale || sens.description]) },
+        { dim: 'Climate responsiveness', value: climateLabel(resp.value), cls: climatePillClass(resp.value), def: 'Does the project use relevant opportunities to generate wider peace and social dividends? Not expected for every project.', whyHtml: k.paragraphs([resp.rationale || resp.description]) },
+      ]) + (notes ? `<div class="fr-ops-note">${notes}</div>` : '') + '<p class="fr-note">Advisory judgments, not official WBG ratings.</p>');
+
+    const statement = (r.priority_summary && r.priority_summary.statement) || '';
+    if (priorities.length) {
+      const rows = priorities.map((p, i) => ({
+        id: `fr-priority-${Number(p.rank) || i + 1}`, rank: Number(p.rank) || i + 1, title: priorityTitle(p.title),
+        cells: [k.pill(climateLabel(p.confidence)), k.esc(p.responsible_function || '')],
+      }));
+      html += k.section('fr-ptable-sec', h('Ranked Operational Priorities')
+        + (statement ? k.infoBox('', k.boldFirst(statement)) : '')
+        + k.priorityTable(['#', 'Operational priority', 'Confidence', 'Suggested lead'], rows));
+      const cards = priorities.map((p, i) => {
+        const rank = Number(p.rank) || i + 1;
+        const paras = firstParagraph(p.narrative);
+        const why = paras.length ? paras.slice(0, 1) : [p.limitation];
+        const act = paras.length > 1 ? paras.slice(1) : [p.minimum_action || p.decision];
+        const cur = o.draftingAllowed && p.current_document_drafting ? p.current_document_drafting : null;
+        const opd = o.draftingAllowed && p.operational_instrument_drafting ? p.operational_instrument_drafting : null;
+        const target = cur ? [cur.target_document, cur.target_section].filter(Boolean).join(' - ') : '';
+        const cycle = p.project_cycle || {};
+        return k.priorityCard({
+          id: `fr-priority-${rank}`, rank, open: i === 0, title: priorityTitle(p.title),
+          supHtml: [`Priority ${rank}`, p.confidence ? k.pill(climateLabel(p.confidence) + ' confidence') : '', k.esc(target)].filter(Boolean).join(' &middot; '),
+          zones: [{ label: 'Why this matters', html: k.paragraphs(why) }, { label: 'What the team could do', html: k.paragraphs(act) },
+            { label: 'Optional further work', html: p.enhanced_action ? k.paragraphs([p.enhanced_action]) : '' }],
+          drafts: [cur && { label: 'Suggested drafting', forText: target, text: cur.text },
+            opd && { label: 'Suggested drafting for an operational instrument', forText: [opd.target_document, opd.target_section].filter(Boolean).join(' - '), text: opd.text }].filter(Boolean),
+          cycle: { label: cycle.primary_label || 'When to address', text: cycle.primary_text || '' },
+          extraHtml: typeof o.priorityExtras === 'function' ? o.priorityExtras(p, i) : '',
+        });
+      }).join('');
+      html += k.section('fr-cards-sec', h('Strategic Priorities') + `<div class="fr-cards">${cards}</div>`);
+    } else {
+      html += k.section('fr-ptable-sec', h('Ranked Operational Priorities') + `<p class="fr-p">${k.esc(r.recommendation_message || 'No operational priorities were identified in this assessment. Review the assessment findings and points to check below.')}</p>`);
+    }
+
+    const checks = [].concat(
+      (Array.isArray(r.review_readiness_flags) ? r.review_readiness_flags : []).map(f => ({ title: f.flag || 'Point to verify', why: f.why_it_matters, how: f.suggested_verification })),
+      (Array.isArray(r.minor_climate_points) ? r.minor_climate_points : []).map(m => ({ title: m.point || 'Point to consider', why: m.why, how: m.how_to_check })));
+    if (checks.length) html += k.section('fr-checks', h('Points to Check Before the Applicable Review') + k.disclosure('Smaller checks for the project team to confirm', '<p class="fr-intro">These sit alongside the main priorities above. None is a reason to stop the project.</p>' + k.checkItems(checks)));
+
+    const guides = (Array.isArray(r.guidance_items) ? r.guidance_items : []).filter(g => g && g.title).map(g => {
+      const url = safeUrl(g.url);
+      const title = url ? `<a class="fr-guide-title" href="${k.esc(url)}" target="_blank" rel="noopener noreferrer">${k.esc(g.title)}</a>` : `<span class="fr-guide-title">${k.esc(g.title)}</span>`;
+      return `<div class="fr-guide">${title}${g.use ? `<p class="fr-p">${k.esc(g.use)}</p>` : ''}</div>`;
+    }).join('');
+    if (guides) html += k.section('fr-guidance', h('Relevant WBG Guidance') + k.disclosure('Selected WBG resources for the team', guides));
+
+    const trail = r.evidence_trail || {};
+    const limits = Array.isArray(trail.limitations) ? trail.limitations.filter(Boolean).join(' ') : String(trail.limitations || '').trim();
+    html += k.section('fr-limits', h('Limitations') + `<div class="fr-limits">${k.paragraphs([limits || 'This automated screening is advisory and is limited by the coverage and detail of the uploaded documents. The team should confirm material findings through project and country expertise.', r.advisory_notice])}</div>`);
+    return `<article class="fr-readout fr-route-climate">${html}</article>`;
+  }
 
   const api = { FCV_SCALE, CLIMATE_SCALE, FOCUS_LABELS, parseStage3Sections, create };
   root.FcvReadout = api;

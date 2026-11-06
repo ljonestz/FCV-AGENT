@@ -167,3 +167,71 @@ def test_normal_readout_falls_back_to_full_markdown():
 def test_normal_readout_escapes_model_text():
     html = normal({"priorities": [dict(NORMAL_PRIORITY, the_gap="<script>alert(1)</script>")]})
     assert "<script>" not in html
+
+
+CLIMATE_READER = {
+    "summary_overview": ["Snapshot sentence from overview.", "Second overview paragraph."],
+    "summary_overview_status": "generated",
+    "executive_readout": "Exec first sentence. Exec second sentence. Exec third.",
+    "judgments": [
+        {"dimension": "relevance", "value": "high", "rationale": "Floods intensify."},
+        {"dimension": "sensitivity", "value": "moderate", "rationale": "Main hazards addressed."},
+        {"dimension": "responsiveness", "value": "not_expected", "rationale": "Scope limited."},
+        {"dimension": "operationalization", "value": "early", "rationale": "Criteria agreed."},
+    ],
+    "existing_responses": [{"description": f"Response {i}. Detail."} for i in range(6)],
+    "summary_gaps": [{"text": "Gap one. Detail."}, {"text": "Gap two."}],
+    "assessment_themes": [{"title": "Climate risks, design and delivery", "paragraphs": ["Theme para."], "priority_ranks": [1]}],
+    "priorities": [
+        {"rank": 2, "title": "Second", "confidence": "low", "narrative": "Why two.\n\nAct two.", "responsible_function": "Team"},
+        {"rank": 1, "title": "First", "confidence": "medium", "narrative": "Why one.\n\nAct one.",
+         "current_document_drafting": {"target_document": "PID", "target_section": "concept", "text": "Draft one."},
+         "project_cycle": {"primary_label": "In the PID", "primary_text": "State the basis."}},
+    ],
+    "priority_summary": {"statement": "Two priorities follow."},
+    "review_readiness_flags": [{"flag": "List unsettled", "why_it_matters": "Screening needs it.", "suggested_verification": "Confirm list."}],
+    "minor_climate_points": [{"point": "Warnings reach", "why": "Last mile.", "how_to_check": "Review chain."}],
+    "guidance_items": [{"title": "Good", "url": "https://example.org/a"}, {"title": "Bad", "url": "javascript:alert(1)"}],
+    "evidence_trail": {"limitations": "Concept stage only."},
+    "advisory_notice": "Supports judgment.",
+}
+
+
+def climate(reader: dict, opts: dict | None = None) -> str:
+    return run_js(f"process.stdout.write(api.renderClimate({json.dumps(reader)}, {json.dumps(opts or {'draftingAllowed': True, 'noticesHtml': '<div id=cn></div>'})}));")
+
+
+def test_climate_readout_structure():
+    html = climate(CLIMATE_READER)
+    order = ["id=cn", "fr-scorecard", ">Overview<", "Snapshot sentence from overview.", "What is already working",
+             "Key gaps at this stage", ">Assessment Findings<", ">Climate &amp; FCV Sensitivity &amp; Responsiveness<",
+             ">Ranked Operational Priorities<", ">Strategic Priorities<", ">Points to Check Before the Applicable Review<",
+             ">Relevant WBG Guidance<", ">Limitations<"]
+    positions = [html.index(marker) for marker in order]
+    assert positions == sorted(positions)
+    assert html.count('class="fr-ms fr-c') == 3
+    assert "Not expected" in html
+    assert html.count("Response ") == 4
+    assert html.index('id="fr-priority-1"') < html.index('id="fr-priority-2"')
+    assert "Draft one." in html and "In the PID:" in html
+    assert "Operationalization: Early." in html and "Climate relevance: High." in html
+    assert 'href="https://example.org/a"' in html and "javascript:" not in html
+    assert "Concept stage only." in html and "Supports judgment." in html
+
+
+def test_climate_snapshot_uses_executive_readout_when_overview_is_fallback():
+    reader = dict(CLIMATE_READER, summary_overview_status="fallback",
+                  summary_overview=["The automated Summary could not be independently verified."])
+    html = climate(reader)
+    assert "Exec first sentence. Exec second sentence." in html
+    assert "could not be independently verified" not in html
+
+
+def test_climate_zero_priorities_and_withheld_drafting():
+    reader = dict(CLIMATE_READER, priorities=[], recommendation_message="Recommendations were withheld.")
+    html = climate(reader, {"draftingAllowed": False})
+    assert "Recommendations were withheld." in html
+    assert 'class="fr-sc-count-num">0<' in html
+    assert "Strategic Priorities" not in html
+    html = climate(CLIMATE_READER, {"draftingAllowed": False})
+    assert "Draft one." not in html
