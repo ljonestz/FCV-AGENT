@@ -83,3 +83,29 @@ def test_parser_accepts_gap_heading_variants_and_skips_watch_list():
 def test_parser_reports_not_found_for_unstructured_text():
     s = parse("Just a paragraph with no headings.")
     assert s["found"] is False
+
+
+def test_scorecard_meter_and_unknown_rating():
+    html = run_js("process.stdout.write(api.scorecard(["
+                  "{key:'sensitivity',label:'FCV Sensitivity',value:'Adequate',steps:6,level:4,lo:'Extremely Low',hi:'Very Well Embedded',def:'Fit?'},"
+                  "{key:'responsiveness',label:'FCV Responsiveness',value:'Odd value',steps:6,level:0,lo:'a',hi:'b',def:'Drivers?'}],"
+                  "{label:'Priority actions',number:3,pills:[{text:'2 High',cls:'fr-pill-high'}]}));")
+    assert html.count('class="fr-ms fr-c') == 4
+    assert html.count('class="fr-meter"') == 1
+    assert "Odd value" in html and "Drivers?" in html
+    assert 'class="fr-sc-count-num">3<' in html
+    assert "Advisory judgments, not official WBG ratings." in html
+
+
+def test_priority_card_open_state_extras_and_escaping():
+    html = run_js("process.stdout.write(api.priorityCard({id:'fr-priority-1',rank:1,open:true,supHtml:'Priority 1',"
+                  "title:'<b>x</b>',zones:[{label:'The gap',html:'<p>g</p>'},{label:'Empty',html:''}],"
+                  "drafts:[{label:'Suggested text',forText:'PAD',text:'Draft <i>'}],cycle:{label:'When to address',text:'Before Board'},"
+                  "extraHtml:'<div id=\"deeper-details-0\"></div>'}) + '|' + api.priorityCard({id:'fr-priority-2',rank:2,open:false,supHtml:'',title:'t',zones:[],drafts:[]}));")
+    first, second = html.split("|")
+    assert '<details class="fr-pc" id="fr-priority-1" open>' in first
+    assert "&lt;b&gt;x&lt;/b&gt;" in first and "Draft &lt;i&gt;" in first
+    assert "Empty" not in first
+    assert 'id="deeper-details-0"' in first
+    assert "When to address:" in first
+    assert '<details class="fr-pc" id="fr-priority-2">' in second
