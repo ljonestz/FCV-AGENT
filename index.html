@@ -3372,7 +3372,7 @@
       instrumentType=savedLensState.instrumentType||instrumentType;
       countryScope=savedLensState.countryScope||countryScope;
       if(supportsClimateVerifiedStage3View())stageThreePriorities=Array.isArray(climateVerifiedReader&&climateVerifiedReader.priorities)?climateVerifiedReader.priorities:[];
-      stage3View=supportsAnyStage3Summary()?'summary':'detailed';
+      stage3View='detailed';
       // Restore any usable Detailed result; Summary is an optional enhancement.
       if(hasSavedStage3Output&&isRestorableExpressStage3Output(outputs[3])){
         stageOutputs=outputs;
@@ -3600,7 +3600,7 @@
         regionalWatch = Array.isArray(state.regionalWatch) ? state.regionalWatch : (Array.isArray(state.regional_watch) ? state.regional_watch : []);
         horizonConsiderations = typeof state.horizonConsiderations === 'string' ? state.horizonConsiderations : (typeof state.horizon_considerations === 'string' ? state.horizon_considerations : '');
         if(supportsClimateVerifiedStage3View())stageThreePriorities=Array.isArray(climateVerifiedReader&&climateVerifiedReader.priorities)?climateVerifiedReader.priorities:[];
-        stage3View=supportsAnyStage3Summary()?'summary':'detailed';
+        stage3View='detailed';
         const currentVersions=Object.fromEntries(lensCatalogue.map(l=>[l.id,l.version]));
         const staleLens=state.version>=3&&state.currentStage<3&&activeLenses.some(id=>!state.lensVersions||!state.lensVersions[id]||currentVersions[id]!==state.lensVersions[id]);
         if(staleLens){hist=[];curS=0;stageOutputs={};stageHists={};activeLenses=[];resolvedLensVersions={};lensDiagnostic={};lensContextSources=[];climateResearch={};climateGrounding={};lensSelectionLocked=false;renderLensSelector();document.getElementById('upload-panel').style.display='block';document.getElementById('analysis-panel').style.display='none';alert('A selected sector lens is unavailable or has been updated. Re-upload the project document and rerun from Stage 1 to avoid mixing module versions.');return;}
@@ -4224,7 +4224,7 @@
               if(p.fcv_responsiveness_rating)fcvResponsivenessRating=p.fcv_responsiveness_rating;
               if(p.priorities)stageThreePriorities=p.priorities;
               if(supportsClimateVerifiedStage3View())stageThreePriorities=Array.isArray(climateVerifiedReader&&climateVerifiedReader.priorities)?climateVerifiedReader.priorities:[];
-              stage3View=supportsAnyStage3Summary()?'summary':'detailed';
+              stage3View='detailed';
               if(p.climate_unlinked!==undefined)climatePriorityUnlinked=p.climate_unlinked;
               if(p.climate_total!==undefined)climatePriorityTotal=p.climate_total;
               if(p.wider_fcv_context!==undefined)stageWiderFcvContext=p.wider_fcv_context||null;
@@ -4515,7 +4515,7 @@
                 if(p.fcv_responsiveness_rating)fcvResponsivenessRating=p.fcv_responsiveness_rating;
                 if(p.priorities)stageThreePriorities=p.priorities;
                 if(supportsClimateVerifiedStage3View())stageThreePriorities=Array.isArray(climateVerifiedReader&&climateVerifiedReader.priorities)?climateVerifiedReader.priorities:[];
-                stage3View=supportsAnyStage3Summary()?'summary':'detailed';
+                stage3View='detailed';
                 if(p.applied_snippets)stageAppliedSnippets=p.applied_snippets;
               }
               // Write timestamps BEFORE renderOut so the consistency check inside renderOut reads the current run's value
@@ -5211,9 +5211,8 @@
     return frApi().renderClimate(r,{noticesHtml:notices.join(''),draftingAllowed:route.confirmed});
   }
 
-  // Blunt, upfront caveat shown above the Stage 3 Summary and Detailed readouts.
-  // Sits in the #stage-disp template outside #out-txt, so it persists when the user
-  // toggles between Summary and Detailed (setStage3View only rewrites #out-txt).
+  // Blunt, upfront caveat shown above the Stage 3 readout. Sits in the #stage-disp
+  // template outside #out-txt.
   function screenerCaveatHtml(){
     return '<div class="screener-caveat" role="note" aria-label="Important caveat about this output">'
       +'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
@@ -5234,7 +5233,6 @@
     const c=CALLS[stage];
     const _verifiedV2=!!(isLast&&climateVerifiedAssessment&&climateVerifiedAssessment.schema_version==='climate-verified-v2.1'&&climateVerifiedReader);
     const _supportsClimateStage3=isLast&&supportsClimateVerifiedStage3View();
-    const _supportsStage3Tabs=isLast&&supportsAnyStage3Summary();
     const _recommendationsIncomplete=!!(
       _verifiedV2&&climateVerifiedReader&&
       climateVerifiedReader.recommendation_status==='incomplete'
@@ -5296,7 +5294,7 @@
           renderClimateStrengthsWeaknesses(_climateEntry)+
           renderClimateCoreQuestions(_climateEntry)+
           renderClimateGroundingSources(climateGrounding)
-        )+'<div id="priorities-intro"></div>'+docChecksHtml;
+        )+renderLegacyClimatePrioritiesHtml()+docChecksHtml;
       }else{
         _outBodyContent=wrapSRTerms(renderNormalReadoutHtml(result,_closedProjectNotice+_padNotice+_stageBadge+_climateNotice,(_climateActive?renderClimateGroundingSources(climateGrounding):'')+docChecksHtml));
       }
@@ -5314,15 +5312,8 @@
         _outBodyContent = wrapSRTerms(catBadge + srDefPrefix + md(cleanResult));
       }
     }
-    if(isLast){
-      stage3DetailedHtml=_outBodyContent;
-      if(_supportsStage3Tabs&&stage3View==='summary')_outBodyContent=renderStage3Summary();
-      else if(!_supportsStage3Tabs)_outBodyContent=conciseUnavailableHtml()+_outBodyContent;
-    }
-    const _showDetailedRail=isLast;
-    const _outPanelAttrs=isLast&&_supportsStage3Tabs
-      ?` role="tabpanel" aria-labelledby="${stage3View==='summary'?'stage3-summary-tab':'stage3-detailed-tab'}" data-stage3-view="${stage3View}"`
-      :'';
+    if(isLast)stage3DetailedHtml=_outBodyContent;
+    const _showDetailedRail=isLast&&isClimateLensActive()&&!_verifiedV2;
     document.getElementById('stage-disp').innerHTML=`
       <div class="stage-hdr ani">
         <div class="stage-badge ${COL[stage]}">${stage}</div>
@@ -5341,7 +5332,7 @@
         <div class="callout-body">${_calloutContent}</div>
       </div>
       ${isLast?screenerCaveatHtml():''}
-      ${_showDetailedRail?`<div class="stage3-reading-shell ${stage3View==='summary'?'is-summary':'is-detailed'}" data-stage3-view="${stage3View}">${stage3OverviewHtml()}<div class="stage3-reading-main">`:'<div>'}
+      ${_showDetailedRail?`<div class="stage3-reading-shell is-detailed" data-stage3-view="detailed">${stage3OverviewHtml()}<div class="stage3-reading-main">`:'<div>'}
           <div class="out-card ani">
             <div class="out-hdr">
               <div class="out-hdr-l"><span class="dot done"></span>${NAMES[stage]}</div>
@@ -5359,14 +5350,8 @@
               </div>
             </div>
             ${isLast?`<p style="font-size:12px;color:var(--muted);padding:0 20px">Full report includes all priority actions and drafting. HTML also includes the research briefing and Stage 2 Annex; Word export omits these supplements. Optional Playbook exploration is separate.</p>`:''}
-            <div class="out-body" id="out-txt"${_outPanelAttrs}>${isLast&&_supportsStage3Tabs?stage3ViewToggleHtml():''}${_outBodyContent}</div>
+            <div class="out-body" id="out-txt">${_outBodyContent}</div>
           </div>
-          ${isLast&&!_verifiedV2?`
-          <!-- ── PRIORITY STEPPER ── -->
-          <div class="priority-stepper" id="priority-stepper"></div>
-          <!-- ── PRIORITY CARD ── -->
-          <div id="priority-card-area"></div>
-          `:''}
       </div>${_showDetailedRail?'</div>':''}
       `;
 
@@ -5574,7 +5559,7 @@
   function copyFullReport(){return copyReportText(buildFullReportText());}
   function copySummary(){
     const notice=supportsClimateVerifiedStage3View()&&climateVerifiedReader.recommendation_status==='partial'?climateVerifiedReader.recommendation_message+'\n\n':'';
-    return copyReportText(notice+reportPlainText(supportsAnyStage3Summary()?renderStage3Summary():md(stageOutputs[3]||'')));
+    return copyReportText(notice+reportPlainText(stage3DetailedHtml||md(stageOutputs[3]||'')));
   }
 
   function copyOut(){
@@ -5922,7 +5907,7 @@
 
 
   function renderManagementBriefControls(){
-    if(stage3View!=='summary'||!supportsConciseStage3View())return '';
+    if(!supportsConciseStage3View())return '';
     return `<span class="brief-download-actions" aria-label="Management brief downloads">
       <button type="button" class="btn btn-ghost btn-sm" onclick="downloadManagementBrief('html',this)" title="Download the concise management brief as print-ready HTML">Brief HTML</button>
       <button type="button" class="btn btn-ghost btn-sm" onclick="downloadManagementBrief('docx',this)" title="Download the concise management brief as a Word document">Brief Word</button>
@@ -5930,7 +5915,7 @@
   }
 
   async function downloadManagementBrief(format,btn){
-    if(!['html','docx'].includes(format)||stage3View!=='summary'||!supportsConciseStage3View()){
+    if(!['html','docx'].includes(format)||!supportsConciseStage3View()){
       alert('The management brief is available only when a complete standard FCV Summary is shown.');
       return;
     }
@@ -6712,21 +6697,7 @@ ${body}
     return activeLenses.length===0&&!!readout&&text(readout.headline)&&text(readout.overview)&&text(readout.strengths_transition)&&text(readout.priorities_transition)&&text(readout.closing)&&validStrengths&&validPriorities;
   }
 
-  function supportsAnyStage3Summary(){
-    return supportsConciseStage3View()||supportsClimateVerifiedStage3View();
-  }
-
-  function conciseUnavailableHtml(){
-    return activeLenses.length===0&&!supportsConciseStage3View()
-      ?'<div class="callout info" data-diagnostic="concise_readout_unavailable">The summary was unavailable for this run; the full analysis is shown.</div>'
-      :'';
-  }
-
-  function renderStage3AdvisoryTransition(route){
-    const subject=reviewMode==='implementation'?"project's design and implementation arrangements":"project's design";
-    const context=route==='climate'?'climate and FCV':'FCV';
-    return `<p class="summary-priority-advisory stage3-advisory-transition">The following priorities are suggestions to strengthen the ${subject} in its ${context} context. They are not mandatory requirements. The task team may wish to focus on those most relevant and discuss them with the FCV Country Coordinator or relevant Global Practice experts as needed.</p>`;
-  }
+  function supportsAnyStage3Summary(){return false;}
 
   function renderFcvRatingIndicators(){
     return `<div class="concise-rating-indicators" aria-label="FCV assessment indicators"><div class="concise-rating-indicator"><span>FCV sensitivity</span><strong>${esc(fcvRating||'Not available')}</strong></div><div class="concise-rating-indicator"><span>FCV responsiveness</span><strong>${esc(fcvResponsivenessRating||'Not available')}</strong></div></div>`;
@@ -6776,17 +6747,6 @@ ${body}
     return groups;
   }
 
-  function renderNormalFcvWatchDisclosure(context){
-    const groups=normalFcvWatchGroups(context);if(!groups.length)return '';
-    const body=groups.map(group=>{
-      const content=group.narrative
-        ?'<div class="normal-fcv-watch-narrative">'+md(group.narrative)+'</div>'
-        :'<ul>'+group.items.map(item=>'<li>'+esc(item)+'</li>').join('')+'</ul>';
-      return '<section class="normal-fcv-watch-group"><h3>'+esc(group.label)+'</h3>'+content+'</section>';
-    }).join('');
-    return '<details class="normal-fcv-watch-disclosure"><summary>What to keep an eye on</summary><div class="normal-fcv-watch-body">'+body+'</div></details>';
-  }
-
   function renderNormalFcvWatchBody(context){
     const groups=normalFcvWatchGroups(context);if(!groups.length)return '';
     const showLabels=groups.length>1;
@@ -6797,324 +6757,56 @@ ${body}
   }
 
   function renderNormalPriorityExtras(pr,idx){
-    return renderStandardPriorityContext(pr)+renderPriorityCompliance(pr)+renderGoDeeperHtml(idx);
+    return renderPriorityWarningsHtml(pr,idx)+renderStandardPriorityContext(pr)+renderPriorityCompliance(pr)+renderGoDeeperHtml(idx);
   }
 
-  function renderNormalReadoutHtml(markdownText,noticesHtml,tailHtml){
+  // Share .html export: no interactive Go Deeper or dismissible warnings (their handlers do not exist in the exported file).
+  function renderNormalExportPriorityExtras(pr){
+    return renderStandardPriorityContext(pr)+renderPriorityCompliance(pr);
+  }
+
+  function renderNormalReadoutHtml(markdownText,noticesHtml,tailHtml,forExport=false){
     return frApi().renderNormal({
       stage3Markdown:markdownText,fcvRating,fcvResponsivenessRating,
       sensitivitySummary:stageSensitivitySummary,responsivenessSummary:stageResponsivenessSummary,
       riskExposure:stageRiskExposure,priorities:stageThreePriorities,
       watchHtml:renderNormalFcvWatchBody(),noticesHtml,tailHtml,
-      priorityExtras:renderNormalPriorityExtras
+      priorityExtras:forExport?renderNormalExportPriorityExtras:renderNormalPriorityExtras
     });
   }
 
-  function renderNormalSummaryGaps(priorities=stageThreePriorities){
-    const items=(Array.isArray(priorities)?priorities:[]).slice(0,5).map((priority,idx)=>{
-      const concise=getConcisePriority(priority);
-      const gap=String(concise.gap||concise.why||'').trim();
-      return `<li class="normal-summary-gap" data-priority-index="${idx}">${boldVisibleFirstSentence(gap)}</li>`;
+  // Legacy climate-lens route (no verified v2 reader): the stepper is gone, so its
+  // priorities render as readout cards appended after the legacy climate prose.
+  function renderLegacyClimatePrioritiesHtml(){
+    const priorities=(Array.isArray(stageThreePriorities)?stageThreePriorities:[]).slice(0,5);
+    const k=frApi();
+    const watch=renderNormalFcvWatchBody();
+    const watchHtml=watch?k.disclosure('Watch List for Supervision: Risks to Monitor During Implementation','<p class="fr-intro">These are FCV risks or dynamics the team cannot act on now but should monitor during implementation. They do not affect the FCV ratings above.</p>'+watch):'';
+    if(!priorities.length)return watchHtml?`<div class="fr-readout fr-route-legacy-climate">${watchHtml}</div>`:'';
+    const n=priorities.length;
+    const linkNotice=climatePriorityUnlinked>0?`<div class="climate-partial-notice">Climate provenance could not be validated for ${climatePriorityUnlinked} of ${climatePriorityTotal} priorities. Those recommendations are shown but not tagged to a specific climate-FCV pathway.</div>`:'';
+    const cards=priorities.map((p,i)=>{
+      const actions=Array.isArray(p.actions)?p.actions:[];
+      const actionsHtml=actions.length?`<ol class="fr-actions">${actions.map(a=>`<li>${a.document_element?`<strong>${esc(a.document_element)}:</strong> `:''}${esc(a.guidance||'')}</li>`).join('')}</ol>`:(p.recommendation?k.prose(p.recommendation):'');
+      const title=String(p.title||'Priority action').replace(/^\s*Priority\s+\d+\s*(?:[·•:.\-–]\s*)?/i,'').trim()||'Priority action';
+      const sup=[`Priority ${i+1}`,k.pill(p.risk_level),esc(p.dimension||''),esc(k.timingLabel(p.action_timing))].filter(Boolean).join(' &middot; ');
+      return k.priorityCard({
+        id:`fr-priority-${i+1}`,rank:i+1,open:i===0,supHtml:sup,title,
+        zones:[{label:'The gap',html:k.prose(p.the_gap||p.body||'')},{label:'Why it matters',html:k.prose(p.why_it_matters||'')},{label:'Essential actions',html:actionsHtml}],
+        drafts:actions.map(a=>({label:'Suggested text',forText:a.document_element||'',text:a.suggested_language||''})),
+        cycle:{label:'When to address',text:p.implementation_note||''},
+        extraHtml:renderPriorityWarningsHtml(p,i)+renderPriorityClimateContribution(p)+renderPriorityCompliance(p)+renderGoDeeperHtml(i)
+      });
     }).join('');
-    return items?`<section class="normal-summary-gaps"><div class="concise-section-label">Potential gaps</div><ul class="normal-summary-gap-list">${items}</ul></section>`:'';
-  }
-
-  function renderNormalFcvSummary(){
-    const readout=stageConciseReadout&&typeof stageConciseReadout==='object'?stageConciseReadout:{};
-    const strengths=(Array.isArray(readout.strengths)?readout.strengths:[]).map(strength=>`<div class="concise-strength"><strong>${esc(normalizeVisibleText(strength.title||'Project strength'))}</strong><span class="concise-strength-text">${boldVisibleFirstSentence(strength.text||'')}</span></div>`).join('');
-    const interpretation='<p class="concise-interpretation"><strong>How to read the FCV assessment:</strong> sensitivity describes whether the design fits its FCV context. Responsiveness describes whether the project contributes directly to FCV drivers, and is not expected for every project.</p>';
-    const watchDisclosure=renderNormalFcvWatchDisclosure();
-    return `<div class="concise-readout normal-fcv-summary"><div class="concise-read-time">Five-minute readout</div><div class="concise-section-label">Overall assessment</div><h2 class="concise-headline">${esc(normalizeVisibleText(readout.headline||'FCV assessment summary'))}</h2><p class="concise-overview">${boldVisibleFirstSentence(readout.overview||'')}</p>${interpretation}${strengths.length?'<div class="concise-section-label">What the project does well</div><div class="concise-strengths">'+strengths+'</div>':''}${renderNormalSummaryGaps()}${renderStage3AdvisoryTransition('normal')}<div class="concise-section-label">Priority actions for the task team</div><div id="summary-priority-list" class="normal-summary-priorities">${renderNormalSummaryPriorities()}</div>${watchDisclosure}</div>`;
-  }
-
-  function renderStage3Summary(){
-    if(supportsClimateVerifiedStage3View())return renderClimateVerifiedSummary(climateVerifiedReader);
-    if(supportsConciseStage3View())return renderNormalFcvSummary();
-    return '';
+    return `<div class="fr-readout fr-route-legacy-climate">${linkNotice}<section class="fr-section fr-cards-sec"><header class="fr-h1"><h2 class="fr-h1-txt">Priority Actions for the Task Team</h2></header>${k.infoBox('',`<strong>Based on a three-stage assessment of the project documents, ${n} priority ${n===1?'action has':'actions have'} been identified</strong> to strengthen FCV sensitivity and responsiveness in the design and delivery of this project.`)}<div class="fr-cards">${cards}</div></section>${watchHtml}</div>`;
   }
 
   function supportsClimateVerifiedStage3View(){
     return reviewMode==='design' && !!(climateVerifiedAssessment && climateVerifiedAssessment.schema_version==='climate-verified-v2.1' && climateVerifiedReader);
   }
 
-  function climateSummaryStrengths(reader){
-    const r=reader&&typeof reader==='object'?reader:{};
-    const strengths=[];
-    const seen=new Set();
-    const add=(title,text,keyText)=>{
-      const body=String(text||'').trim();
-      const key=String(keyText||body).trim().toLowerCase().replace(/\s+/g,' ');
-      if(!body||seen.has(key)||strengths.length>=3)return;
-      seen.add(key);
-      strengths.push({title:String(title||'What is already working').trim(),text:body});
-    };
-    (Array.isArray(r.existing_responses)?r.existing_responses:[]).forEach(response=>{
-      const description=String(response&&response.description||'').trim();
-      if(!description)return;
-      const suppliedTitle=String(response&&response.title||'').trim();
-      const sentenceMatch=!suppliedTitle&&description.match(/^(.+?[.!?](?:["')\]]+)?)(?:\s+)([\s\S]+)$/);
-      const title=suppliedTitle||(sentenceMatch?sentenceMatch[1].trim():description)||'Existing project response';
-      const body=sentenceMatch?sentenceMatch[2].trim():description;
-      add(title,body,description);
-    });
-    (Array.isArray(r.judgments)?r.judgments:[]).forEach(judgment=>{
-      const value=String(judgment&&judgment.value||'').toLowerCase();
-      const dimension=String(judgment&&judgment.dimension||'').toLowerCase();
-      const positive=(dimension==='responsiveness'&&['strong','very_strong'].includes(value))||(dimension==='operationalization'&&value==='embedded');
-      if(positive)add(judgment.title||judgment.dimension||'Assessment strength',judgment.rationale||judgment.description||'');
-    });
-    return strengths;
-  }
-
-  function climateSummaryPriorityItems(reader){
-    const r=reader&&typeof reader==='object'?reader:{};
-    const draftingRoute=climateDraftingRouteGate(r);
-    return (Array.isArray(r.priorities)?r.priorities:[]).slice().sort((a,b)=>(Number(a.rank)||999)-(Number(b.rank)||999)).slice(0,5).map((priority,index)=>{
-      const draft=draftingRoute.canRender&&priority.current_document_drafting&&typeof priority.current_document_drafting==='object'?priority.current_document_drafting:{};
-      const target=[draft.target_document,draft.target_section].filter(Boolean).join(' - ');
-      const rawTitle=String(priority.title||'Untitled action').trim();
-      const normalizedTitle=rawTitle.replace(/^\s*Priority\s+\d+\s*(?:[-:.\u00b7\u2013\u2014\u2022]\s*)?/i,'').trim()||rawTitle;
-      const cycle=priority.project_cycle&&typeof priority.project_cycle==='object'?priority.project_cycle:{};
-      return {...priority,rank:Number(priority.rank)||index+1,title:normalizedTitle,risk_level:'',the_gap:String(priority.limitation||''),concise:{title:normalizedTitle,why:String(priority.narrative||priority.decision||priority.minimum_action||''),how:[priority.minimum_action,priority.enhanced_action,priority.completion_evidence].filter(Boolean).slice(0,4),suggested_wording:{document_element:target,text:String(draft.text||'')},project_cycle:{...cycle}}};
-    });
-  }
-
-  function stage3ViewToggleHtml(){
-    return `<div class="stage3-viewbar"><div class="stage3-view-tabs" role="tablist" aria-label="Recommendations detail level" onkeydown="handleStage3ViewKeydown(event)"><button id="stage3-summary-tab" class="stage3-view-tab ${stage3View==='summary'?'active':''}" role="tab" aria-controls="out-txt" aria-selected="${stage3View==='summary'}" tabindex="${stage3View==='summary'?'0':'-1'}" onclick="setStage3View('summary',true,'stage3-summary-tab')">Summary</button><button id="stage3-detailed-tab" class="stage3-view-tab ${stage3View==='detailed'?'active':''}" role="tab" aria-controls="out-txt" aria-selected="${stage3View==='detailed'}" tabindex="${stage3View==='detailed'?'0':'-1'}" onclick="setStage3View('detailed',true,'stage3-detailed-tab')">Detailed analysis</button></div><div class="stage3-download-note">${stage3View==='summary'&&supportsConciseStage3View()?'Brief downloads summarize priorities; full report downloads include the complete analysis.':'Downloads include the comprehensive analysis.'}</div></div>`;
-  }
-
-  function getConcisePriority(priority){
-    if(priority&&priority.concise)return priority.concise;
-    const firstAction=(priority&&priority.actions||[])[0]||{};
-    const rawTitle=String(priority&&priority.title||'Untitled action');
-    return {title:rawTitle.replace(/^Priority\s+\d+\s*(?:[-:\u2022]\s*)?/i,'')||rawTitle,why:priority&&priority.why_it_matters||priority&&priority.the_gap||'',how:(priority&&priority.actions||[]).slice(0,4).map(action=>action.guidance).filter(Boolean),suggested_wording:{document_element:firstAction.document_element||'',text:firstAction.suggested_language||''},project_cycle:{primary_label:'When to address',primary_text:priority&&priority.implementation_note||'',secondary_label:'',secondary_text:''}};
-  }
-
-
-
-  function renderNormalSummaryPriorities(priorities=stageThreePriorities){
-    return (Array.isArray(priorities)?priorities:[]).slice(0,5).map((priority,idx)=>{
-      const concise=getConcisePriority(priority);
-      const leadingAction=Array.isArray(concise.how)?concise.how[0]:'';
-      return `<article class="normal-summary-priority" data-priority-index="${idx}">
-        <div class="normal-summary-priority-head"><span class="normal-summary-priority-rank" aria-hidden="true">${idx+1}</span><h3>${esc(normalizeVisibleText(concise.title||priority.title||'Priority action'))}</h3></div>
-        <p class="normal-summary-priority-action"><span class="normal-summary-priority-label">Leading action</span>${boldVisibleFirstSentence(leadingAction)}</p>
-        <a class="normal-summary-priority-link" href="#priority-card-area" onclick="openDetailedPriority(${idx});return false;">See full Priority ${idx+1} details and suggested text for the project package in Detailed Analysis</a>
-      </article>`;
-    }).join('');
-  }
-
-  function renderSummaryPriorityAccordion(priorities=stageThreePriorities){
-    return priorities.map((priority,idx)=>{
-      const concise=getConcisePriority(priority);
-      const wording=concise.suggested_wording||{};
-      const cycle=concise.project_cycle||{};
-      const expanded=supportsClimateVerifiedStage3View()||idx===openSummaryPriority;
-      const how=(Array.isArray(concise.how)?concise.how:[]).map(item=>`<li>${esc(item)}</li>`).join('');
-      const specialist=String(priority.the_gap||priority.why_it_matters||'').trim();
-      return `<article class="summary-priority-item"><h3><button type="button" id="summary-priority-toggle-${idx}" class="summary-priority-toggle" aria-expanded="${expanded}" aria-controls="summary-priority-panel-${idx}" onclick="toggleSummaryPriority(${idx})"><span class="summary-priority-rank">${idx+1}</span><span>${esc(concise.title||priority.title||'Priority action')}</span><span class="summary-priority-chevron" aria-hidden="true">⌄</span></button></h3><div id="summary-priority-panel-${idx}" class="summary-priority-panel" role="region" aria-labelledby="summary-priority-toggle-${idx}"${expanded?'':' hidden'}><section><h4>Why this is suggested</h4><p>${esc(concise.why||'')}</p></section><section class="concise-how"><h4>How it can be addressed</h4><ul>${how}</ul></section>${wording.text?`<section class="concise-wording"><h4>Suggested wording for the current document</h4><p>${esc(wording.text)}</p>${wording.document_element?`<div class="concise-wording-target">For: ${esc(wording.document_element)}</div>`:''}</section>`:''}<aside class="concise-cycle"><h4>Where this fits in the project cycle</h4><div class="concise-cycle-items"><div><strong>${esc(cycle.primary_label||'When to address')}</strong><p>${esc(cycle.primary_text||'')}</p></div>${cycle.secondary_label||cycle.secondary_text?`<div><strong>${esc(cycle.secondary_label||'Next step')}</strong><p>${esc(cycle.secondary_text||'')}</p></div>`:''}</div></aside>${specialist?`<details class="concise-specialist"><summary>Specialist reasoning, evidence and operational references</summary><p>${esc(specialist)}</p></details>`:''}</div></article>`;
-    }).join('');
-  }
-
-  function toggleSummaryPriority(idx,forceOpen=false){
-    const summaryPriorities=supportsClimateVerifiedStage3View()?climateSummaryPriorityItems(climateVerifiedReader):stageThreePriorities;
-    if(!Number.isInteger(idx)||idx<0||idx>=summaryPriorities.length)return;
-    openSummaryPriority=idx;
-    currentPriority=idx;
-    if(supportsClimateVerifiedStage3View()){
-      // Climate starts with every priority visible; toggles affect only this panel.
-      const panel=document.getElementById(`summary-priority-panel-${idx}`);
-      const button=document.getElementById(`summary-priority-toggle-${idx}`);
-      if(panel&&button){
-        panel.hidden=forceOpen?false:!panel.hidden;
-        button.setAttribute('aria-expanded',String(!panel.hidden));
-        button.focus();
-      }
-      return;
-    }
-    const host=document.getElementById('summary-priority-accordion');
-    if(host)host.innerHTML=renderSummaryPriorityAccordion(summaryPriorities);
-    const button=document.getElementById(`summary-priority-toggle-${idx}`);
-    if(button)button.focus();
-  }
-  function climateSummaryWatchItems(reader){
-    const r=reader&&typeof reader==='object'?reader:{};
-    const seen=new Set();
-    const items=[];
-    const normalize=value=>String(value??'').replace(/\s+/g,' ').trim().replace(/[.!?]+$/,'').toLowerCase();
-    (Array.isArray(r.core_questions)?r.core_questions:[]).forEach(question=>{
-      const watch=String(question&&question.watch||'').trim().replace(/\s+/g,' ');
-      const key=normalize(watch);
-      if(!watch||seen.has(key))return;
-      seen.add(key);
-      items.push({question:String(question&&question.question||'').trim().replace(/\s+/g,' '),watch});
-    });
-    return items;
-  }
-
-  function renderClimateWatchDisclosure(reader){
-    const items=climateSummaryWatchItems(reader);
-    if(!items.length)return '';
-    return `<details class="climate-summary-watch-disclosure"><summary>What to keep an eye on</summary><div class="climate-summary-watch-body"><p>Supporting follow-up cues from the question analysis. Check these against the priorities and evidence limitations.</p><ul>${items.map(item=>`<li>${esc(item.watch)}</li>`).join('')}</ul></div></details>`;
-  }
-
-  function renderClimateSummaryGaps(reader,priorities){
-    const r=reader&&typeof reader==='object'?reader:{};
-    const source=Array.isArray(r.summary_gaps)?r.summary_gaps:
-      (Array.isArray(priorities)?priorities:[]).map(priority=>({text:priority.limitation}));
-    const gaps=[];const seen=new Set();
-    for(const item of source){
-      const text=String(item&&item.text||'').replace(/\s+/g,' ').trim();
-      // Keep complete qualifications; oversized saved prose stays in Detailed.
-      const key=text.toLowerCase().replace(/[.!?]+$/,'');
-      if(!text||text.split(' ').length>75||seen.has(key))continue;
-      seen.add(key);gaps.push(text);
-      if(gaps.length===5)break;
-    }
-    const scopeHtml=/\b(?:peace|social|dividends?)\b/i.test(gaps.join(' '))?`<p class="concise-transition">Optional wider dividends depend on the project's scope; they are not required in every project.</p>`:'';
-    return gaps.length?`<section class="normal-summary-gaps"><div class="concise-section-label">Potential gaps</div><ul class="normal-summary-gap-list">${gaps.map(text=>{
-      const finding=(Array.isArray(r.assessment_themes)?r.assessment_themes:[]).flatMap(theme=>Array.isArray(theme.findings)?theme.findings:[]).find(item=>item.text===text);
-      const links=finding?(finding.priority_ranks||[]).filter(Number.isInteger).map(rank=>`<a href="#summary-priority-toggle-${rank-1}" onclick="toggleSummaryPriority(${rank-1},true);return false;">Priority ${rank}</a>`).join(' · '):'';
-      const followUp=finding&&!links?`<p>${esc(finding.follow_up||'')}</p>`:'';
-      return `<li class="normal-summary-gap">${boldEscapedFirstSentence(text)}${links?`<p>${links}</p>`:followUp}</li>`;
-    }).join('')}</ul>${scopeHtml}</section>`:'';
-  }
-
-  function renderClimateVerifiedSummary(reader){
-    const r=reader&&typeof reader==='object'?reader:{};
-    const readerReviewNotice=r.reader_review_notice?`<p class="climate-review-notice" role="note">${esc(r.reader_review_notice)}</p>`:'';
-    const analysisHtml=r.analysis_status==='partial'&&r.analysis_message?`<div class="finalized-pad-notice"><div class="fpn-body"><strong>Assessment evidence is incomplete.</strong><p>${esc(r.analysis_message)}</p></div></div>`:'';
-    const operationContextHtml=(()=>{
-      const context=r.operation_context&&typeof r.operation_context==='object'?r.operation_context:null;
-      if(!context)return '';
-      const warning=!climateDraftingRouteGate(r).confirmed?'<p class="climate-summary-route-warning">Suggested document wording is not shown because the document type or financing route could not be confirmed reliably.</p>':'';
-      const preparation=context.preparation_regime==='unresolved_policy_source'?'<p>Preparation route: confirm the OIS date and applicable review; the upload does not establish them.</p>':'';
-      return warning||preparation?'<section class="climate-summary-context">'+warning+preparation+'</section>':'';
-    })();
-    const summaryRecord=r.summary_overview&&typeof r.summary_overview==='object'?r.summary_overview:{};
-    const overviewParagraphs=(Array.isArray(r.summary_overview)?r.summary_overview:Array.isArray(summaryRecord.paragraphs)?summaryRecord.paragraphs:[]).map(item=>String(item||'').trim()).filter(Boolean);
-    const overviewHtml=overviewParagraphs.length?overviewParagraphs.map(item=>`<p class="climate-summary-overview-paragraph">${boldEscapedFirstSentence(item)}</p>`).join(''):'<p class="climate-summary-overview-paragraph"><strong>No standalone summary was returned for this run.</strong></p>';
-    const sensitivity=r.climate_sensitivity_rating&&typeof r.climate_sensitivity_rating==='object'?r.climate_sensitivity_rating:{};
-    const signal=sensitivity.label?`<p class="concise-priority-intro"><strong>Climate-FCV sensitivity:</strong> ${esc(sensitivity.label)}</p>`:'';
-    const strengths=climateSummaryStrengths(r);
-    const strengthsHtml=strengths.length?strengths.map(strength=>`<div class="concise-strength climate-strength-card"><strong>${esc(strength.title)}</strong><span class="concise-strength-text">${esc(strength.text)}</span></div>`).join(''):'<p class="concise-priority-intro">No distinct strengths were evidenced in the verified reader for this run.</p>';
-    const priorities=climateSummaryPriorityItems(r);
-    const gapsHtml=renderClimateSummaryGaps(r,priorities);
-    const recommendationsIncomplete=r.recommendation_status==='incomplete';
-    const emptyPriorityMessage=recommendationsIncomplete
-      ?(r.recommendation_message||'The recommendation stage could not be completed. Do not treat this Recommendations Note as complete; rerun the analysis or contact support.')
-      :'No ranked operational priorities were returned for this run.';
-    const prioritiesHtml=priorities.length?`<div id="summary-priority-accordion">${renderSummaryPriorityAccordion(priorities)}</div>`:`<p class="concise-priority-intro">${esc(emptyPriorityMessage)}</p>`;
-    const prioritySummary=r.priority_summary&&typeof r.priority_summary==='object'?r.priority_summary:{};
-    const bridge=!recommendationsIncomplete&&String(prioritySummary.statement||'').trim()?`<p class="concise-transition">${esc(String(prioritySummary.statement).trim())}</p>`:'';
-    const totalPriorities=Array.isArray(r.priorities)?r.priorities.length:0;
-    const shownPriorities=priorities.length;
-    const countHtml=totalPriorities>shownPriorities?`<p class="climate-summary-priority-count">Showing the ${shownPriorities} highest-ranked of ${totalPriorities} priorities. See Detailed analysis for all ${totalPriorities}.</p>`:'';
-    const watchHtml=renderClimateWatchDisclosure(r);
-    const guidanceHtml=renderClimateRelevantGuidance(r,'Relevant WBG guidance for this project','climate-summary-guidance-disclosure');
-    const closingText=recommendationsIncomplete
-      ?'Recommendations are incomplete. Review the Detailed analysis and rerun the assessment or contact support before relying on this note.'
-      :(priorities.length?'For supporting evidence and completion signals behind each priority, continue to Detailed analysis.':'Continue to Detailed analysis for the supporting evidence and points to check from this assessment.');
-    return `<div class="concise-readout climate-verified-summary"><p class="climate-review-status" role="note">Draft - human review required. Named approval of this version must be recorded separately before sharing. This app does not record human approval.</p><div class="concise-read-time">Five-minute readout</div>${analysisHtml}${operationContextHtml}${readerReviewNotice}<div class="concise-section-label">Overall assessment</div><div class="climate-summary-overview">${overviewHtml}</div>${signal}<div class="concise-section-label">What is already working</div><div class="concise-strengths">${strengthsHtml}</div>${gapsHtml||bridge}${renderStage3AdvisoryTransition('climate')}<div class="concise-section-label">Priority actions for the task team</div>${countHtml}${prioritiesHtml}${watchHtml}${guidanceHtml}<p class="concise-closing">${esc(closingText)}</p></div>`;
-  }
-
-  function handleStage3ViewKeydown(event){
-    const tabs=Array.from(document.querySelectorAll('.stage3-view-tab:not([disabled])'));
-    const current=tabs.indexOf(document.activeElement);
-    if(current<0||!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
-    event.preventDefault();
-    const next=event.key==='Home'?0:event.key==='End'?tabs.length-1:(current+(event.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;
-    const nextId=tabs[next].id;
-    setStage3View(nextId==='stage3-summary-tab'?'summary':'detailed',true,nextId);
-  }
-
-  function setStage3View(view,preservePriority=true,focusTabId=''){
-    if(!supportsAnyStage3Summary())return;
-    if(view!=='summary'&&view!=='detailed')view='summary';
-    stage3View=view;
-    const briefControls=document.getElementById('management-brief-controls');
-    if(briefControls)briefControls.innerHTML=renderManagementBriefControls();
-    const summaryTab=document.getElementById('stage3-summary-tab'), detailedTab=document.getElementById('stage3-detailed-tab');
-    [summaryTab,detailedTab].forEach(tab=>{if(tab)tab.classList.remove('active')});
-    if(summaryTab){summaryTab.classList.toggle('active',view==='summary');summaryTab.setAttribute('aria-selected',String(view==='summary'));summaryTab.tabIndex=view==='summary'?0:-1;}
-    if(detailedTab){detailedTab.classList.toggle('active',view==='detailed');detailedTab.setAttribute('aria-selected',String(view==='detailed'));detailedTab.tabIndex=view==='detailed'?0:-1;}
-    const showSummary=view==='summary';
-    const readingShell=document.querySelector('.stage3-reading-shell');
-    if(readingShell){
-      readingShell.dataset.stage3View=view;
-      readingShell.setAttribute('data-stage3-view',view);
-      readingShell.classList.toggle('is-summary',showSummary);
-      readingShell.classList.toggle('is-detailed',!showSummary);
-    }
-    const stageDisplay=document.getElementById('stage-disp');
-    if(stageDisplay){
-      stageDisplay.dataset.stage3View=view;
-      stageDisplay.setAttribute('data-stage3-view',view);
-      stageDisplay.classList.toggle('stage3-summary-active',showSummary);
-    }
-    const out=document.getElementById('out-txt');
-    if(out){out.setAttribute('aria-labelledby',view==='summary'?'stage3-summary-tab':'stage3-detailed-tab');out.dataset.stage3View=view;out.setAttribute('data-stage3-view',view);out.innerHTML=stage3ViewToggleHtml()+(view==='summary'?renderStage3Summary():stage3DetailedHtml);}
-    ['priority-stepper','priority-card-area'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=showSummary||supportsClimateVerifiedStage3View()?'none':'';});
-    if(showSummary){
-      if(!preservePriority)openSummaryPriority=0;
-      if(supportsClimateVerifiedStage3View()){
-        const summaryPriorities=climateSummaryPriorityItems(climateVerifiedReader);
-        const host=document.getElementById('summary-priority-accordion');if(host)host.innerHTML=renderSummaryPriorityAccordion(summaryPriorities);
-      }else{
-        const host=document.getElementById('summary-priority-list');if(host)host.innerHTML=renderNormalSummaryPriorities();
-      }
-    }else if(!supportsClimateVerifiedStage3View()){
-      renderPrioritiesIntro();renderPriorityStepper();showPriority(preservePriority?currentPriority:0);
-      if(typeof horizonConsiderations==='string'&&horizonConsiderations.trim()){
-        renderHorizonPanel(horizonConsiderations);
-      }
-    }
-    if(focusTabId){
-      const focusTab=document.getElementById(focusTabId);
-      if(focusTab)focusTab.focus();
-    }
-  }
-
-  function openDetailedPriority(idx){
-    if(!Number.isInteger(idx)||idx<0||idx>=stageThreePriorities.length)return;
-    currentPriority=idx;
-    setStage3View('detailed',true,'stage3-detailed-tab');
-    const cardArea=typeof document!=='undefined'?document.getElementById('priority-card-area'):null;
-    if(cardArea&&typeof cardArea.scrollIntoView==='function')cardArea.scrollIntoView({behavior:'smooth',block:'start'});
-  }
-
-  function showConcisePriority(idx){
-    const priority=stageThreePriorities[idx];if(!priority)return;
-    const concise=getConcisePriority(priority), wording=concise.suggested_wording||{}, cycle=concise.project_cycle||{};
-    const how=(concise.how||[]).map(item=>`<li>${esc(item)}</li>`).join('');
-    const cardArea=document.getElementById('priority-card-area');if(!cardArea)return;
-    cardArea.innerHTML=`<article class="concise-priority-card ani"><header class="concise-priority-head"><span class="concise-priority-num">${idx+1}</span><div><div class="concise-priority-kicker">Priority ${idx+1} of ${stageThreePriorities.length}</div><h3>${esc(concise.title)}</h3></div></header><section><h4>Why this is suggested</h4><p>${esc(concise.why)}</p></section><section class="concise-how"><h4>How it can be addressed</h4><ul>${how}</ul></section>${wording.text?`<section class="concise-wording"><h4>Suggested wording for the current document</h4><p>${esc(wording.text)}</p><div class="concise-wording-target">For: ${esc(wording.document_element)}</div></section>`:''}<aside class="concise-cycle"><h4>Where this fits in the project cycle</h4><div class="concise-cycle-items"><div><strong>${esc(cycle.primary_label||'When to address')}</strong><p>${esc(cycle.primary_text||'')}</p></div>${cycle.secondary_label||cycle.secondary_text?`<div><strong>${esc(cycle.secondary_label||'Next step')}</strong><p>${esc(cycle.secondary_text||'')}</p></div>`:''}</div></aside><details class="concise-specialist"><summary>Specialist reasoning, evidence and operational references</summary><p>${esc(priority.the_gap||'')}</p></details></article>`;
-  }
-
   function initStage3UI(){
     maybeRunPriorityQuestions();
-    if(!stageThreePriorities.length) return;
-    const summaryActive=supportsAnyStage3Summary()&&stage3View==='summary';
-    ['priority-stepper','priority-card-area'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=summaryActive||supportsClimateVerifiedStage3View()?'none':'';});
-    if(summaryActive){
-      openSummaryPriority=0;
-      if(supportsClimateVerifiedStage3View()){
-        const summaryPriorities=climateSummaryPriorityItems(climateVerifiedReader);
-        const host=document.getElementById('summary-priority-accordion');
-        if(host)host.innerHTML=renderSummaryPriorityAccordion(summaryPriorities);
-      }else{
-        const host=document.getElementById('summary-priority-list');
-        if(host)host.innerHTML=renderNormalSummaryPriorities();
-      }
-    }else if(!supportsClimateVerifiedStage3View()){
-      currentPriority=0;
-      renderPrioritiesIntro();
-      renderPriorityStepper();
-      showPriority(0);
-      if(typeof horizonConsiderations==='string'&&horizonConsiderations.trim()){
-        renderHorizonPanel(horizonConsiderations);
-      }
-    }
     updateSidebar();
   }
 
@@ -7208,55 +6900,6 @@ ${body}
     </div>`;
   }
 
-  function renderHorizonPanel(text){
-    const container=document.getElementById('out-txt');
-    if(!container)return;
-    const existing=document.getElementById('horizon-panel');
-    if(existing)existing.remove();
-    const panel=document.createElement('details');
-    panel.id='horizon-panel';
-    panel.className='horizon-panel ani';
-    const watch=stripWatchHeading(text);
-    const rendered=typeof md==='function'?md(watch):esc(watch).replace(/\n/g,'<br>');
-    panel.innerHTML='<summary>Watch List for Supervision: Risks to Monitor During Implementation</summary>'
-      +'<div class="horizon-body">'
-      +'<p class="horizon-disclaimer">These are FCV risks or dynamics the team cannot act on now but should monitor during implementation. They do not affect the FCV ratings above.</p>'
-      +rendered
-      +'</div>';
-    container.appendChild(panel);
-  }
-
-  function renderPrioritiesIntro(){
-    const el = document.getElementById('priorities-intro');
-    if(!el || !stageThreePriorities.length) return;
-    const n = stageThreePriorities.length;
-    const climateSummary=supportsClimateVerifiedStage3View()&&stage3View==='summary';
-    const _linkNotice = (isClimateLensActive() && climatePriorityUnlinked > 0)
-      ? `<div class="climate-partial-notice">Climate provenance could not be validated for ${climatePriorityUnlinked} of ${climatePriorityTotal} priorities. Those recommendations are shown but not tagged to a specific climate-FCV pathway.</div>`
-      : '';
-    const lead=climateSummary
-      ?`Based on the verified Climate-FCV assessment, <strong>${n} priority ${n === 1 ? 'action has' : 'actions have'} been identified</strong> for the project team to address at the appropriate preparation stage.`
-      :`Based on a three-stage assessment of the project documents, <strong>${n} priority ${n === 1 ? 'action has' : 'actions have'} been identified</strong> to strengthen FCV sensitivity and responsiveness in the design and delivery of this project.`;
-    el.innerHTML = _linkNotice + `<div class="priorities-section-hdr">Priority Actions for the Task Team</div><div class="priorities-intro ani"><p class="pi-lead">${lead}</p></div>`;
-  }
-
-  function renderPriorityStepper(){
-    const el = document.getElementById('priority-stepper');
-    if(!el) return;
-    el.innerHTML = stageThreePriorities.map((pr, i) => {
-      const fullTitle = pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i,'');
-      const riskCls = pr.risk_level==='High'?'ps-risk-h':pr.risk_level==='Medium'?'ps-risk-m':'ps-risk-l';
-      const riskLbl = pr.risk_level==='High'?'Priority: High':pr.risk_level==='Medium'?'Priority: Medium':pr.risk_level==='Low'?'Priority: Low':'';
-      return `<button type="button" class="ps-step ${i===currentPriority?'active':''}" id="ps-${i}" onclick="showPriority(${i})" title="${esc(pr.title)}" aria-pressed="${i===currentPriority?'true':'false'}" aria-label="Show priority ${i+1} of ${stageThreePriorities.length}: ${esc(fullTitle)}">
-        <div class="ps-num">${i+1}</div>
-        <div class="ps-label">${esc(fullTitle)}</div>
-        <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:center">
-          ${riskLbl?`<div class="ps-risk ${riskCls}">${riskLbl}</div>`:''}
-        </div>
-      </button>`;
-    }).join('');
-  }
-
 
   function renderPriorityTiming(value){
     const timing={
@@ -7296,29 +6939,9 @@ ${body}
     return `<details class="priority-context-disclosure"><summary>Context and strategic alignment</summary><div class="priority-context-body">${body}</div></details>`;
   }
 
-  function showPriority(idx){
-    const pr = stageThreePriorities[idx];
-    if(!pr) return;
-    if(supportsAnyStage3Summary()&&stage3View==='summary'){
-      toggleSummaryPriority(idx);
-      return;
-    }
-    currentPriority = idx;
-    const n = stageThreePriorities.length;
-
-    // Update stepper
-    stageThreePriorities.forEach((p2, i) => {
-      const el = document.getElementById(`ps-${i}`);
-      if(el) el.className = `ps-step ${i < idx ? 'done' : i === idx ? 'active' : ''}`;
-      if(el) el.setAttribute('aria-pressed', i === idx ? 'true' : 'false');
-      const numEl = el ? el.querySelector('.ps-num') : null;
-      if(numEl){ if(i < idx){ numEl.textContent = '✓'; } else { numEl.textContent = String(i+1); } }
-    });
-
-    // Determine risk chip class
-    const riskClass = pr.risk_level === 'High' ? 'pc-chip-risk-h' : pr.risk_level === 'Medium' ? 'pc-chip-risk-m' : 'pc-chip-risk-l';
-
-    // Build warning badges
+  // Per-priority quality warnings (moved out of the removed stepper card).
+  function renderPriorityWarningsHtml(pr,idx){
+    if(!pr)return '';
     const specKey = `specificity_dismissed_${idx}`;
     const citeKey = `citation_dismissed_${idx}`;
     const specDismissed = localStorage.getItem(specKey) === 'true';
@@ -7338,111 +6961,7 @@ ${body}
         <button class="warn-dismiss" onclick="localStorage.setItem('${citeKey}','true');document.getElementById('warn-cite-${idx}').remove()" title="Dismiss">✕</button>
       </div>`;
     }
-
-    // Render card
-    const cardArea = document.getElementById('priority-card-area');
-    if(!cardArea) return;
-
-    cardArea.innerHTML = `
-      <div class="priority-card ani">
-        <div class="priority-card-hdr">
-          <div class="pc-num-badge">${idx+1}</div>
-          <div>
-            <div class="pc-hdr-eyebrow">Priority ${idx+1} of ${n} · ${esc(pr.dimension||'')}${renderSRTagBadge(pr.tag||'')}</div>
-            <div class="pc-hdr-title">${md(pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i,''))}</div>
-            <div class="pc-hdr-chips">
-              <span class="pc-chip ${riskClass}">Priority: ${esc(pr.risk_level||'—')}</span>
-              ${pr.dimension ? `<span class="pc-chip">${esc(pr.dimension)}</span>` : ''}
-              ${(isClimateLensActive() || activeLenses.length>0) && pr.refresh_shift ? `<span class="shift-badge" title="${esc(shiftTooltips[pr.refresh_shift] || pr.refresh_shift)}">${esc('FCV Strategy 2026-2030 ' + pr.refresh_shift)}</span>` : ''}
-              ${renderPriorityTiming(pr.action_timing)}
-              ${pr.change_type ? `<span class="pc-chip">Change: ${esc(pr.change_type)}</span>` : ''}
-              ${pr.restructuring_level ? `<span class="pc-chip">${esc(pr.restructuring_level)}</span>` : ''}
-              ${pr.priority_scope ? `<span class="pc-chip">Scope: ${esc(pr.priority_scope)}</span>` : ''}
-              ${pr.governance_level ? `<span class="pc-chip" title="MPA governance level — where this priority should be decided">${esc(pr.governance_level)}</span>` : ''}
-              ${pr.authority_basis ? `<span class="pc-chip" title="Strength of the underlying OPCS source">Basis: ${esc(String(pr.authority_basis).replace(/_/g,' '))}</span>` : ''}
-              ${(pr.lens_ids||[]).map(id=>`<span class="lens-badge" title="${esc(pr.lens_relevance||'Sector-lens finding')}">${esc(lensDisplayName(id))}</span>`).join('')}
-            </div>
-            ${(pr.who_acts||pr.when||pr.resources) ? `<div class="pc-meta-row">
-              ${pr.who_acts ? `<span class="pc-meta-chip"><strong>Who:</strong> ${(pr.who_acts||'').split(';').map(w=>w.trim()).filter(Boolean).map(w=>'<span class="who-chip">'+esc(w)+'</span>').join(' ')}</span>` : ''}
-              ${pr.when ? `<span class="pc-meta-chip"><strong>When:</strong> ${esc(pr.when)}</span>` : ''}
-              ${(()=>{const resTooltips={'Minimal':'Existing budget — no additional allocation needed','Moderate':'Dedicated allocation — requires budget line','Significant':'Requires restructuring or additional financing'};const baseRes=(pr.resources||'').split('(')[0].trim();const tip=resTooltips[baseRes]||'';return pr.resources?`<span class="pc-meta-chip"${tip?' title="'+esc(tip)+'"':''}><strong>Resources:</strong> ${esc(pr.resources)}</span>`:'';})()}
-            </div>` : ''}
-            ${warningBadges}
-          </div>
-        </div>
-        <!-- Zone 1: The Gap -->
-        <div class="pc-zone zone-gap">
-          <div class="pc-zone-title">
-            <div class="pc-zone-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
-            The Gap
-          </div>
-          <div class="pc-zone-body">${esc(pr.the_gap||pr.body||'')}</div>
-        </div>
-        <!-- Zone 2: Why it matters -->
-        <div class="pc-zone zone-why">
-          <div class="pc-zone-title">
-            <div class="pc-zone-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/></svg></div>
-            Why it matters
-          </div>
-          <div class="pc-zone-body">${esc((pr.why_it_matters||'') + (pr.why_fcv_matters ? ' ' + pr.why_fcv_matters : ''))}</div>
-        </div>
-        <!-- Zone: CPF Alignment (conditional — only shown when cpf_alignment is non-null) -->
-        ${pr.cpf_alignment && (isClimateLensActive() || activeLenses.length>0) ? `<div class="pc-zone zone-cpf">
-          <div class="pc-zone-title">
-            <div class="pc-zone-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>
-            CPF Alignment
-          </div>
-          <div class="pc-zone-body">${esc(pr.cpf_alignment)}</div>
-        </div>` : ''}
-        <!-- Zone 3: How to act (from JSON — always available) -->
-        <div class="pc-zone zone-act" id="zone-act-${idx}">
-          <div class="pc-zone-title">
-            <div class="pc-zone-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
-            How to act
-          </div>
-          <div class="zone-act-primary">
-            <!-- Essential actions -->
-            ${(pr.actions && pr.actions.length > 0) ? `<div class="zone-act-section">
-              <div class="zone-act-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Essential action${pr.actions.length > 1 ? 's' : ''}</div>
-              <div class="zone-act-intro">${pr.actions.length > 1 ? 'Below are proposed actions to help address this priority.' : 'Below is a proposed action to help address this priority.'}</div>
-              ${pr.actions.map(act => `<div class="zone-act-action">
-                <div class="zone-act-action-title">${esc(act.document_element||'')}</div>
-                <div class="zone-act-action-guidance">${esc(act.guidance||'')}</div>
-                ${act.suggested_language ? `<div class="zone-act-action-lang"><div class="zone-act-draft-text"><span class="zone-act-lang-label">Suggested text:</span> ${esc(act.suggested_language)}</div></div>` : ''}
-              </div>`).join('')}
-            </div>` : (pr.recommendation ? `<div class="zone-act-section">
-              <div class="zone-act-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Essential action</div>
-              <div class="zone-act-essential">${esc(pr.recommendation)}</div>
-            </div>` : '')}
-            <!-- Where in the PAD (legacy only — action titles already identify document elements) -->
-            ${(!pr.actions || pr.actions.length === 0) && pr.pad_sections ? `<div class="zone-act-section">
-              <div class="zone-act-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Where in the PAD</div>
-              <div class="zone-act-pad-chips">${pr.pad_sections.split(';').map(s=>s.trim()).filter(Boolean).map(s=>`<span class="pad-chip">${esc(s)}</span>`).join('')}</div>
-            </div>` : ''}
-            <!-- Suggested language (legacy fallback — only shown if no actions array) -->
-            ${(!pr.actions || pr.actions.length === 0) && pr.suggested_language ? `<div class="zone-act-section zone-act-draft">
-              <div class="zone-act-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Suggested PAD language</div>
-              <div class="zone-act-draft-text">${esc(pr.suggested_language)}</div>
-            </div>` : ''}
-            <!-- Implementation note -->
-            ${pr.implementation_note ? `<div class="zone-act-section zone-act-impl">
-              <div class="zone-act-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Implementation consideration</div>
-              <div class="pc-zone-body">${esc(pr.implementation_note)}</div>
-            </div>` : ''}
-          </div>
-        </div>
-        ${renderPriorityProjectCycle(pr)}
-        <!-- Climate contribution context remains available when the climate lens is active -->
-        ${isClimateLensActive()?renderPriorityClimateContribution(pr):renderStandardPriorityContext(pr)}
-        ${renderPriorityCompliance(pr)}
-          ${renderGoDeeperHtml(idx)}
-        </div>
-      </div>`;
-
-    // Go Deeper is lazy-loaded — only fires when user opens the <details> section
-
-    updateSidebar();
-    cardArea.scrollIntoView({behavior:'smooth', block:'nearest'});
+    return warningBadges;
   }
 
   function renderGoDeeperHtml(idx){
@@ -8058,7 +7577,7 @@ ${body}
 
   function selectPrioritySb(title){
     const idx = stageThreePriorities.findIndex(p=>p.title===title);
-    if(idx >= 0) showPriority(idx);
+    const d=document.getElementById('fr-priority-'+(idx+1));if(d){d.open=true;d.scrollIntoView({block:'start'});}
   }
 
 

@@ -31,3 +31,14 @@ def test_climate_route_uses_readout_module():
     body = source[start:source.index("\n  }\n", start)]
     assert "frApi().renderClimate(" in body
     assert "Draft - human review required." in body
+
+
+def test_summary_tab_rail_and_stepper_removed():
+    source = html()
+    for gone in ["function stage3ViewToggleHtml(", "function renderStage3Summary(", "function renderNormalFcvSummary(",
+                 "function setStage3View(", "function renderPriorityStepper(",
+                 'id="priority-stepper"', 'id="priority-card-area"', "function renderClimateVerifiedSummary(",
+                 "function renderSummaryPriorityAccordion("]:
+        assert gone not in source, gone
+    start = source.index("function renderManagementBriefControls(")
+    assert "stage3View" not in source[start:source.index("}", start)]
