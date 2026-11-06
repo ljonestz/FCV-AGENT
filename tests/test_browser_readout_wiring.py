@@ -15,3 +15,11 @@ def test_module_and_styles_loaded():
     assert '<style id="fcv-readout-style">' in source
     assert "function frApi(" in source
     assert ".fr-scorecard{" in source and ".fr-pc-hdr{" in source and "@media(max-width:760px)" in source
+
+
+def test_normal_route_uses_readout_module():
+    source = html()
+    assert "function renderNormalReadoutHtml(" in source
+    assert "frApi().renderNormal(" in source
+    assert "function renderGoDeeperHtml(idx)" in source
+    assert "priorityExtras:" in source

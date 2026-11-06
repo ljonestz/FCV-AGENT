@@ -5412,12 +5412,7 @@
           renderClimateGroundingSources(climateGrounding)
         )+'<div id="priorities-intro"></div>'+docChecksHtml;
       }else{
-        _outBodyContent=wrapSRTerms(
-          _closedProjectNotice+_padNotice+_stageBadge+_climateNotice+
-          _preHtml+renderRiskExposure(stageRiskExposure)+md(bulletFindingSections(_rest))+
-          renderSRCards(stageSensitivitySummary,stageResponsivenessSummary)+
-          (_climateActive?renderClimateGroundingSources(climateGrounding):'')
-        )+'<div id="priorities-intro"></div>'+docChecksHtml;
+        _outBodyContent=wrapSRTerms(renderNormalReadoutHtml(result,_closedProjectNotice+_padNotice+_stageBadge+_climateNotice,(_climateActive?renderClimateGroundingSources(climateGrounding):'')+docChecksHtml));
       }
     }else{
       const cleanResult = stage===1 ? result.replace(/\n*%%%DOC_TYPE:[^%\n]*%%%\n*/g,'') : result;
@@ -6906,6 +6901,29 @@ ${body}
     return '<details class="normal-fcv-watch-disclosure"><summary>What to keep an eye on</summary><div class="normal-fcv-watch-body">'+body+'</div></details>';
   }
 
+  function renderNormalFcvWatchBody(context){
+    const groups=normalFcvWatchGroups(context);if(!groups.length)return '';
+    const showLabels=groups.length>1;
+    return groups.map(group=>{
+      const content=group.narrative?'<div class="normal-fcv-watch-narrative">'+md(stripWatchHeading(group.narrative))+'</div>':'<ul>'+group.items.map(item=>'<li>'+esc(item)+'</li>').join('')+'</ul>';
+      return (showLabels?'<h4 class="fr-lbl">'+esc(group.label)+'</h4>':'')+content;
+    }).join('');
+  }
+
+  function renderNormalPriorityExtras(pr,idx){
+    return renderStandardPriorityContext(pr)+renderPriorityCompliance(pr)+renderGoDeeperHtml(idx);
+  }
+
+  function renderNormalReadoutHtml(markdownText,noticesHtml,tailHtml){
+    return frApi().renderNormal({
+      stage3Markdown:markdownText,fcvRating,fcvResponsivenessRating,
+      sensitivitySummary:stageSensitivitySummary,responsivenessSummary:stageResponsivenessSummary,
+      riskExposure:stageRiskExposure,priorities:stageThreePriorities,
+      watchHtml:renderNormalFcvWatchBody(),noticesHtml,tailHtml,
+      priorityExtras:renderNormalPriorityExtras
+    });
+  }
+
   function renderNormalSummaryGaps(priorities=stageThreePriorities){
     const items=(Array.isArray(priorities)?priorities:[]).slice(0,5).map((priority,idx)=>{
       const concise=getConcisePriority(priority);
@@ -7531,7 +7549,18 @@ ${body}
         <!-- Climate contribution context remains available when the climate lens is active -->
         ${isClimateLensActive()?renderPriorityClimateContribution(pr):renderStandardPriorityContext(pr)}
         ${renderPriorityCompliance(pr)}
-          <!-- Go Deeper 3-tab section (lazy-loaded on expand) -->
+          ${renderGoDeeperHtml(idx)}
+        </div>
+      </div>`;
+
+    // Go Deeper is lazy-loaded — only fires when user opens the <details> section
+
+    updateSidebar();
+    cardArea.scrollIntoView({behavior:'smooth', block:'nearest'});
+  }
+
+  function renderGoDeeperHtml(idx){
+    return `<!-- Go Deeper 3-tab section (lazy-loaded on expand) -->
           <details class="go-deeper" id="deeper-details-${idx}" ontoggle="handleDeeperToggle(this,${idx})">
             <summary>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
@@ -7554,14 +7583,7 @@ ${body}
                 <div id="deeper-result-${idx}"></div>
               </div>
             </div>
-          </details>
-        </div>
-      </div>`;
-
-    // Go Deeper is lazy-loaded — only fires when user opens the <details> section
-
-    updateSidebar();
-    cardArea.scrollIntoView({behavior:'smooth', block:'nearest'});
+          </details>`;
   }
 
 
