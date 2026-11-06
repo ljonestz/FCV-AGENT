@@ -430,12 +430,6 @@
     .climate-operation-context dt{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#64748b}
     .climate-operation-context dd{font-weight:600;color:#243244;margin:1px 0 0}
     .climate-operation-context p{font-size:12px;color:#8a4b00;margin:9px 0 0}
-    .climate-summary-context{margin:0 0 20px;padding:10px 12px;background:#f8fafc;border:1px solid var(--border);border-radius:8px}
-    .climate-summary-context-line{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
-    .climate-summary-context-line span{font-size:10px;text-transform:uppercase;letter-spacing:.07em;font-weight:700;color:var(--muted)}
-    .climate-summary-context-line strong{color:var(--wbg-navy)}
-    .climate-summary-route-warning{font-size:12px;color:#8a4b00;margin:9px 0 0}
-    .climate-summary-priority-count{font-size:12px;color:var(--muted);margin:5px 0 10px}
     .climate-verified-assessment .climate-rating-question{font-size:13px;font-weight:600;color:#4b5563;margin:0 0 3px}
     .climate-verified-assessment .climate-rating-label{font-family:'Open Sans',sans-serif;font-size:22px;font-weight:700;color:var(--climate-rating-color);margin:0}
     .climate-verified-assessment .climate-rating-scale{display:flex;gap:4px;max-width:420px;margin:10px 0 13px}
@@ -498,24 +492,6 @@
     .climate-purpose-icon{display:inline-grid;place-items:center;width:22px;height:22px;flex:0 0 22px;border-radius:50%;font-weight:800;font-size:13px;border:1px solid currentColor}
     .climate-decision-preparation{background:#fff8e8;border:1px solid #f1d28b;color:#9a6500}
     .climate-further-guidance{background:#eaf8f7;border:1px solid #94d6d1;color:#08756f}
-    .climate-verified-summary .climate-summary-watch-disclosure,.climate-verified-summary .climate-summary-guidance-disclosure{border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-top:14px}
-    .climate-verified-summary .climate-summary-watch-disclosure>summary,.climate-verified-summary .climate-summary-guidance-disclosure>summary{cursor:pointer;list-style:none;padding:13px 0;font-family:'Open Sans',sans-serif;font-size:14px;font-weight:700;color:var(--wbg-navy)}
-    .climate-verified-summary .climate-summary-watch-disclosure>summary::-webkit-details-marker,.climate-verified-summary .climate-summary-guidance-disclosure>summary::-webkit-details-marker{display:none}
-    .climate-verified-summary .climate-summary-watch-disclosure>summary::before,.climate-verified-summary .climate-summary-guidance-disclosure>summary::before{content:"\25B8";display:inline-block;margin-right:8px;color:var(--wbg-blue);transition:transform .15s}
-    .climate-verified-summary .climate-summary-watch-disclosure[open]>summary::before,.climate-verified-summary .climate-summary-guidance-disclosure[open]>summary::before{transform:rotate(90deg)}
-    .climate-verified-summary .climate-summary-watch-disclosure>summary:focus-visible,.climate-verified-summary .climate-summary-guidance-disclosure>summary:focus-visible{outline:3px solid #f2a900;outline-offset:2px}
-    .climate-verified-summary .climate-summary-watch-body,.climate-verified-summary .climate-guidance-body{padding:0 0 6px}
-    .normal-fcv-summary .normal-fcv-watch-disclosure{border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-top:14px}
-    .normal-fcv-summary .normal-fcv-watch-disclosure>summary{cursor:pointer;list-style:none;padding:13px 0;font-family:'Open Sans',sans-serif;font-size:14px;font-weight:700;color:var(--wbg-navy)}
-    .normal-fcv-summary .normal-fcv-watch-disclosure>summary::-webkit-details-marker{display:none}
-    .normal-fcv-summary .normal-fcv-watch-disclosure>summary::before{content:"\25B8";display:inline-block;margin-right:8px;color:var(--wbg-blue);transition:transform .15s}
-    .normal-fcv-summary .normal-fcv-watch-disclosure[open]>summary::before{transform:rotate(90deg)}
-    .normal-fcv-summary .normal-fcv-watch-disclosure>summary:focus-visible{outline:3px solid #f2a900;outline-offset:2px}
-    .normal-fcv-summary .normal-fcv-watch-body{padding:0 0 6px}
-    .normal-fcv-summary .normal-fcv-watch-group{margin:0 0 12px}
-    .normal-fcv-summary .normal-fcv-watch-group:last-child{margin-bottom:0}
-    .normal-fcv-summary .normal-fcv-watch-group h3{margin:0 0 5px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--wbg-navy)}
-    .normal-fcv-summary .normal-fcv-watch-group ul{margin:0;padding-left:20px;color:var(--text);line-height:1.6}
     .climate-verified-assessment .climate-guidance{background:transparent;padding:0}
     .climate-verified-assessment .climate-guidance-disclosure{border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
     .climate-verified-assessment .climate-guidance-disclosure>summary{cursor:pointer;list-style:none;padding:13px 0;font-family:'Open Sans',sans-serif;font-size:15px;font-weight:700;color:var(--wbg-navy)}
@@ -958,12 +934,10 @@
     .stage3-mobile-ratings summary::after{content:'+';font-size:18px;font-weight:400;line-height:1}
     .stage3-mobile-ratings[open] summary::after{content:'−'}
     .stage3-mobile-ratings .stage3-rating-card{border:0;border-top:1px solid var(--border);border-radius:0;box-shadow:none}
-    .ps-step:focus-visible{outline:3px solid #f2a900;outline-offset:-3px;position:relative;z-index:1}
     @media(max-width:860px){
       .stage3-reading-shell{grid-template-columns:1fr;gap:12px}
       .stage3-rating-rail{display:none}
       .stage3-mobile-ratings{display:block}
-      .priority-stepper{overflow-x:auto}
     }
 
     /* Sidebar risk matrix */
@@ -978,39 +952,6 @@
     .rpill-l{background:#d1fae5;color:#065f46;}
     .rpill-na{background:#f3f4f6;color:#9ca3af;}
     .risk-matrix-legend{font-size:9px;color:var(--muted);margin-top:6px;text-align:right;}
-
-    /* Sidebar priority nav */
-    /* Priority step indicator bar */
-    .priority-stepper{
-      display:flex;background:#fff;border:1px solid var(--border);
-      border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-sm);
-      margin-bottom:16px;
-    }
-    .ps-step{
-      flex:1;padding:9px 6px;text-align:center;cursor:pointer;
-      border:0;border-right:1px solid var(--border);transition:all .15s;
-      font-family:inherit;min-width:0;
-    }
-    .ps-step:last-child{border-right:none;}
-    .ps-num{
-      width:20px;height:20px;border-radius:50%;background:var(--border);
-      display:flex;align-items:center;justify-content:center;
-      font-size:10px;font-weight:700;color:var(--muted);margin:0 auto 3px;transition:all .15s;
-    }
-    .ps-label{font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.02em;line-height:1.35;max-height:3.9em;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;word-break:break-word;white-space:normal;}
-    .ps-step.active{background:var(--wbg-navy);}
-    .ps-step.active .ps-num{background:var(--wbg-blue);color:#fff;}
-    .ps-step.active .ps-label{color:rgba(255,255,255,.8);}
-    .ps-step.done .ps-num{background:var(--s4);color:#fff;font-size:9px;}
-    .ps-step.done .ps-label{color:var(--s4);}
-    .ps-risk{font-size:8px;font-weight:700;border-radius:3px;padding:1px 4px;margin:3px auto 0;display:inline-block;letter-spacing:.03em;}
-    .ps-risk-h{background:#fee2e2;color:#b91c1c;}
-    .ps-risk-m{background:#dbeafe;color:#1d4ed8;}
-    .ps-risk-l{background:#d1fae5;color:#065f46;}
-    .ps-step.active .ps-risk{opacity:.85;}
-    .ps-step.active .ps-risk-h{background:#fca5a540;color:#fca5a5;}
-    .ps-step.active .ps-risk-m{background:#93c5fd40;color:#93c5fd;}
-    .ps-step.active .ps-risk-l{background:#6ee7b740;color:#6ee7b7;}
 
     /* Priority card */
     .priority-card{
@@ -1120,76 +1061,6 @@
     .deeper-trail,.deeper-playbook{font-size:14px;line-height:1.6;}
     .deeper-loading{font-size:13px;color:var(--muted);padding:10px 0;display:flex;align-items:center;gap:8px;}
 
-    .horizon-panel{background:#fafbfc;border:1px dashed #c0c8d0;border-radius:8px;margin:24px 0 16px 0;padding:0;}
-    .horizon-panel summary{padding:12px 16px;font-size:14px;font-weight:600;color:#5a6a7a;cursor:pointer;list-style:none;}
-    .horizon-panel summary::-webkit-details-marker{display:none;}
-    .horizon-panel summary::before{content:'\25B6';display:inline-block;margin-right:8px;font-size:10px;transition:transform 0.2s;}
-    .horizon-panel[open] summary::before{transform:rotate(90deg);}
-    .horizon-panel .horizon-body{padding:4px 16px 16px 16px;font-size:13px;color:#444;line-height:1.6;}
-    .horizon-panel .horizon-body p{margin:8px 0;}
-    .horizon-panel .horizon-disclaimer{font-size:11px;font-style:italic;color:#888;margin-bottom:8px;}
-
-    .priorities-intro{margin-bottom:14px;}
-    .stage3-viewbar{display:flex;justify-content:space-between;align-items:center;gap:14px;margin:0 0 16px;padding:10px 12px;background:#fafbfd;border:1px solid var(--border);border-radius:8px}
-    .stage3-view-tabs{display:flex;gap:3px;padding:3px;background:#e8edf1;border-radius:7px}
-    .stage3-view-tab{border:0;background:transparent;padding:7px 14px;border-radius:5px;color:var(--muted);font-weight:600;cursor:pointer}
-    .stage3-view-tab.active{background:#fff;color:var(--wbg-navy);box-shadow:0 1px 4px rgba(0,34,68,.15)}
-    .stage3-view-tab:focus-visible{outline:3px solid #f2a900;outline-offset:2px}
-    .stage3-download-note{font-size:11px;color:var(--muted)}
-    .concise-readout{font-size:14px;line-height:1.65}
-    .concise-read-time,.concise-section-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;color:var(--wbg-blue)}
-    .concise-headline{font-size:22px;line-height:1.3;color:var(--wbg-navy);margin:7px 0 9px}
-    .concise-overview{font-size:15px;line-height:1.7;color:var(--text);margin:0 0 15px}
-    .concise-interpretation{margin:0 0 18px;padding:10px 13px;background:#f6f9fb;border-left:3px solid var(--wbg-blue);color:var(--muted);font-size:13px;line-height:1.6}
-    .concise-rating-indicators{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 22px}
-    .concise-rating-indicator{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 13px;background:#f6f9fb;border:1px solid var(--border);border-radius:7px}
-    .concise-rating-indicator span{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
-    .concise-rating-indicator strong{color:var(--wbg-navy)}
-    .stage3-advisory-transition{margin:4px 0 18px;padding:12px 14px;background:#f6f9fb;border-left:3px solid var(--wbg-blue);color:var(--text);line-height:1.6}
-    .concise-transition{margin:0 0 12px;color:var(--muted);line-height:1.6}
-    .concise-closing{margin:18px 0 0;padding-top:12px;border-top:1px solid var(--border);color:var(--muted);font-size:13px;line-height:1.6}
-    #summary-priority-accordion{display:flex;flex-direction:column;gap:10px;margin-top:10px}
-    .summary-priority-item{background:#fff;border:1px solid var(--border);border-radius:9px;overflow:hidden}
-    .summary-priority-item h3{margin:0;font-size:inherit}
-    .summary-priority-toggle{width:100%;display:grid;grid-template-columns:30px 1fr auto;align-items:center;gap:11px;padding:14px 16px;border:0;background:#fff;color:var(--wbg-navy);font:inherit;font-weight:700;text-align:left;cursor:pointer}
-    .summary-priority-toggle:hover{background:#f7f9fb}
-    .summary-priority-toggle:focus-visible{outline:3px solid #f2a900;outline-offset:-3px}
-    .summary-priority-rank{width:27px;height:27px;border-radius:50%;display:grid;place-items:center;background:var(--wbg-navy);color:#fff;font-size:12px}
-    .summary-priority-chevron{font-size:18px;transition:transform .2s}
-    .summary-priority-toggle[aria-expanded="true"] .summary-priority-chevron{transform:rotate(180deg)}
-    .summary-priority-panel[hidden]{display:none}
-    .summary-priority-panel{border-top:1px solid var(--border)}
-    .summary-priority-panel>section,.summary-priority-panel>.concise-cycle{padding:14px 16px;border-bottom:1px solid var(--border)}
-    .summary-priority-panel h4{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--wbg-navy);margin:0 0 6px}
-    .concise-strengths{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:10px 0 22px}
-    .concise-strength{padding:12px;background:#edf8f2;border:1px solid #cae4d5;border-radius:7px}
-    .concise-strength strong{display:block;color:#176a42;margin-bottom:6px;white-space:normal;overflow:visible}
-    .concise-strength-text{display:block;line-height:1.55}
-    .concise-priority-card{background:#fff;border:1px solid var(--border);border-radius:9px;overflow:hidden;margin-bottom:14px}
-    .concise-priority-head{display:grid;grid-template-columns:34px 1fr auto;gap:12px;padding:16px 18px;border-bottom:1px solid var(--border)}
-    .concise-priority-num{width:29px;height:29px;border-radius:50%;display:grid;place-items:center;background:var(--wbg-navy);color:#fff;font-weight:700}
-    .concise-priority-card section,.concise-cycle{padding:15px 18px;border-bottom:1px solid var(--border)}
-    .concise-priority-card h4{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--wbg-navy);margin:0 0 6px}
-    .concise-how{background:#f6f9fb;border-left:4px solid var(--wbg-blue)}
-    .concise-wording{background:#fff8e9}
-    .concise-cycle{background:#fafbfd;display:grid;grid-template-columns:1fr 1fr;gap:14px}
-    .concise-cycle-items{grid-column:2;display:flex;flex-direction:column;gap:14px}
-    .concise-specialist summary{padding:12px 18px;color:var(--wbg-blue);font-weight:600;cursor:pointer}
-    .normal-summary-priorities{display:flex;flex-direction:column;gap:10px;margin-top:10px}
-    .normal-summary-gaps{margin:18px 0;padding:14px 16px;background:#fff4e5;border:1px solid #f0d5ad;border-left:4px solid #d98c34;border-radius:8px}
-    .normal-summary-gaps .concise-section-label{margin-top:0;color:#885315}
-    .normal-summary-gap-list{margin:0;padding-left:22px;list-style:disc}
-    .normal-summary-gap{margin:10px 0;line-height:1.6}
-    .normal-summary-gap:last-child{margin-bottom:0}
-    .concise-strength-text strong{display:inline;color:inherit;margin:0}
-    .normal-summary-priority{padding:14px 16px;background:#fff;border:1px solid var(--border);border-radius:9px}
-    .normal-summary-priority-head{display:flex;align-items:flex-start;gap:10px;margin-bottom:9px}
-    .normal-summary-priority-rank{width:27px;height:27px;border-radius:50%;display:grid;place-items:center;background:var(--wbg-navy);color:#fff;font-size:12px;font-weight:700;flex-shrink:0}
-    .normal-summary-priority h3{margin:2px 0 0;color:var(--wbg-navy);font-size:15px;line-height:1.35}
-    .normal-summary-priority p{margin:7px 0 0;line-height:1.6}
-    .normal-summary-priority-label{display:block;margin-bottom:2px;color:var(--wbg-navy);font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
-    .normal-summary-priority-action{padding-top:9px;border-top:1px solid var(--border)}
-    .normal-summary-priority-link{display:inline-flex;align-items:center;min-height:40px;margin-top:11px;color:var(--wbg-blue);font-weight:700;text-decoration:underline;text-underline-offset:2px}
     .brief-download-actions{display:inline-flex;align-items:center;gap:6px;margin-right:2px}
     .brief-download-actions .btn{white-space:nowrap}
     .priority-context-disclosure{border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-top:0}
@@ -1205,9 +1076,6 @@
     .normal-fcv-watch-narrative h1,.normal-fcv-watch-narrative h2,.normal-fcv-watch-narrative h3{margin:8px 0 5px;font-size:12px;color:var(--wbg-navy)}
     .normal-fcv-watch-narrative p{margin:0 0 8px}
     .normal-fcv-watch-narrative p:last-child{margin-bottom:0}
-    @media(max-width:760px){.stage3-viewbar{align-items:flex-start;flex-direction:column}.concise-strengths,.concise-cycle,.concise-rating-indicators{grid-template-columns:1fr}.concise-cycle-items{grid-column:1}}
-    .priorities-section-hdr{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--s4);margin:20px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--s4);}
-    .pi-lead{font-size:15px;color:var(--text);line-height:1.6;margin:0 0 10px;}
     .sr-legend{display:flex;flex-direction:column;gap:5px;margin:0 0 12px;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;}
     .sr-legend-item{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text);line-height:1.5;}
 
@@ -2153,7 +2021,7 @@
 .fr-limits{background:var(--fr-surface);border:1px solid var(--fr-border);border-left:3px solid var(--fr-grey);padding:12px 15px;color:var(--fr-grey)}
 .fr-notice{font-size:12px;color:#8A4B08;background:#FFF7E6;border-left:3px solid #F9AA2A;padding:8px 12px}
 @media(max-width:760px){.fr-scorecard{grid-template-columns:1fr}.fr-sc-tile{border-right:0;border-bottom:1px solid var(--fr-border)}.fr-pair{grid-template-columns:1fr}.fr-col+.fr-col{border-left:0;border-top:1px solid var(--fr-border)}.fr-rating-row{flex-direction:column}.fr-rating-meta{width:auto;border-right:0;padding:0 0 10px}.fr-rating-why{padding-left:0}.fr-pc-body{padding:14px}}
-@media print{.fr-pc-body,.fr-disc-body{display:block!important}.fr-pc,.fr-check,.fr-rating-row{break-inside:avoid}}
+@media print{.fr-pc,.fr-check,.fr-rating-row{break-inside:avoid}}
 </style>
 </head>
 <body>
@@ -3372,8 +3240,7 @@
       instrumentType=savedLensState.instrumentType||instrumentType;
       countryScope=savedLensState.countryScope||countryScope;
       if(supportsClimateVerifiedStage3View())stageThreePriorities=Array.isArray(climateVerifiedReader&&climateVerifiedReader.priorities)?climateVerifiedReader.priorities:[];
-      stage3View='detailed';
-      // Restore any usable Detailed result; Summary is an optional enhancement.
+            // Restore any usable Detailed result; Summary is an optional enhancement.
       if(hasSavedStage3Output&&isRestorableExpressStage3Output(outputs[3])){
         stageOutputs=outputs;
         stageHists=JSON.parse(localStorage.getItem('fcv_express_stageHists')||'{}');
@@ -3600,8 +3467,7 @@
         regionalWatch = Array.isArray(state.regionalWatch) ? state.regionalWatch : (Array.isArray(state.regional_watch) ? state.regional_watch : []);
         horizonConsiderations = typeof state.horizonConsiderations === 'string' ? state.horizonConsiderations : (typeof state.horizon_considerations === 'string' ? state.horizon_considerations : '');
         if(supportsClimateVerifiedStage3View())stageThreePriorities=Array.isArray(climateVerifiedReader&&climateVerifiedReader.priorities)?climateVerifiedReader.priorities:[];
-        stage3View='detailed';
-        const currentVersions=Object.fromEntries(lensCatalogue.map(l=>[l.id,l.version]));
+                const currentVersions=Object.fromEntries(lensCatalogue.map(l=>[l.id,l.version]));
         const staleLens=state.version>=3&&state.currentStage<3&&activeLenses.some(id=>!state.lensVersions||!state.lensVersions[id]||currentVersions[id]!==state.lensVersions[id]);
         if(staleLens){hist=[];curS=0;stageOutputs={};stageHists={};activeLenses=[];resolvedLensVersions={};lensDiagnostic={};lensContextSources=[];climateResearch={};climateGrounding={};lensSelectionLocked=false;renderLensSelector();document.getElementById('upload-panel').style.display='block';document.getElementById('analysis-panel').style.display='none';alert('A selected sector lens is unavailable or has been updated. Re-upload the project document and rerun from Stage 1 to avoid mixing module versions.');return;}
         lensSelectionLocked=curS>0;renderLensSelector();
@@ -4219,13 +4085,11 @@
               stageSensitivitySummary=p.sensitivity_summary||'';
               stageResponsivenessSummary=p.responsiveness_summary||'';
               stageConciseReadout=p.concise_readout||null;
-              openSummaryPriority=0;
-              if(p.fcv_rating)fcvRating=p.fcv_rating;
+                            if(p.fcv_rating)fcvRating=p.fcv_rating;
               if(p.fcv_responsiveness_rating)fcvResponsivenessRating=p.fcv_responsiveness_rating;
               if(p.priorities)stageThreePriorities=p.priorities;
               if(supportsClimateVerifiedStage3View())stageThreePriorities=Array.isArray(climateVerifiedReader&&climateVerifiedReader.priorities)?climateVerifiedReader.priorities:[];
-              stage3View='detailed';
-              if(p.climate_unlinked!==undefined)climatePriorityUnlinked=p.climate_unlinked;
+                            if(p.climate_unlinked!==undefined)climatePriorityUnlinked=p.climate_unlinked;
               if(p.climate_total!==undefined)climatePriorityTotal=p.climate_total;
               if(p.wider_fcv_context!==undefined)stageWiderFcvContext=p.wider_fcv_context||null;
               midCycleWatch=Array.isArray(p.mid_cycle_watch)?p.mid_cycle_watch:[];
@@ -4508,14 +4372,15 @@
                 stageSensitivitySummary=p.sensitivity_summary||'';
                 stageResponsivenessSummary=p.responsiveness_summary||'';
                 stageConciseReadout=p.concise_readout||null;
-                openSummaryPriority=0;
-                midCycleWatch=Array.isArray(p.mid_cycle_watch)?p.mid_cycle_watch:[];dpfWatch=Array.isArray(p.dpf_watch)?p.dpf_watch:[];p4rWatch=Array.isArray(p.p4r_watch)?p.p4r_watch:[];regionalWatch=Array.isArray(p.regional_watch)?p.regional_watch:[];
+                                midCycleWatch=Array.isArray(p.mid_cycle_watch)?p.mid_cycle_watch:[];dpfWatch=Array.isArray(p.dpf_watch)?p.dpf_watch:[];p4rWatch=Array.isArray(p.p4r_watch)?p.p4r_watch:[];regionalWatch=Array.isArray(p.regional_watch)?p.regional_watch:[];
                 horizonConsiderations=typeof p.horizon_considerations==='string'?p.horizon_considerations:'';
                 if(p.fcv_rating)fcvRating=p.fcv_rating;
                 if(p.fcv_responsiveness_rating)fcvResponsivenessRating=p.fcv_responsiveness_rating;
                 if(p.priorities)stageThreePriorities=p.priorities;
                 if(supportsClimateVerifiedStage3View())stageThreePriorities=Array.isArray(climateVerifiedReader&&climateVerifiedReader.priorities)?climateVerifiedReader.priorities:[];
-                stage3View='detailed';
+                if(p.climate_unlinked!==undefined)climatePriorityUnlinked=p.climate_unlinked;
+                if(p.climate_total!==undefined)climatePriorityTotal=p.climate_total;
+                if(p.wider_fcv_context!==undefined)stageWiderFcvContext=p.wider_fcv_context||null;
                 if(p.applied_snippets)stageAppliedSnippets=p.applied_snippets;
               }
               // Write timestamps BEFORE renderOut so the consistency check inside renderOut reads the current run's value
@@ -4568,9 +4433,6 @@
               // Priority cards + sidebar for Stage 3 (Recommendations)
               if(stage===3 && p.priorities && p.priorities.length){
                 stageThreePriorities=p.priorities;
-                if(p.climate_unlinked!==undefined)climatePriorityUnlinked=p.climate_unlinked;
-                if(p.climate_total!==undefined)climatePriorityTotal=p.climate_total;
-                if(p.wider_fcv_context!==undefined)stageWiderFcvContext=p.wider_fcv_context||null;
                 // Clear Go Deeper caches so stale results don't reappear for new Stage 3 run
                 currentDeeperTab = {};
                 for(var i=0;i<10;i++){
@@ -5174,7 +5036,7 @@
     const scope=root&&typeof root.querySelectorAll==='function'?root:null;
     const eventTarget=scope&&scope.defaultView?scope.defaultView:(typeof window!=='undefined'?window:null);
     if(!scope||!eventTarget||typeof eventTarget.addEventListener!=='function')return null;
-    const selector='details.climate-priority-card, details.climate-priority-detail, details.climate-fold, details.climate-guidance-disclosure, details.climate-summary-watch-disclosure, details.climate-summary-guidance-disclosure, details.stage3-rating-explanation';
+    const selector='details.climate-priority-card, details.climate-priority-detail, details.climate-fold, details.climate-guidance-disclosure, details.climate-summary-watch-disclosure, details.climate-summary-guidance-disclosure, details.stage3-rating-explanation, details.fr-pc, details.fr-disc, details.priority-context-disclosure';
     let priorStates=null;
     const beforePrint=()=>{
       if(priorStates!==null)return;
@@ -5227,12 +5089,51 @@
     if(scope==='single'||scope==='multi')countryScope=scope;
   }
 
+  // Shared by the on-screen Stage 3 readout and the Share .html export so both carry
+  // the same notices, tail sections and S/R term wrapping.
+  function stripStage3DoNoHarmHeader(text){
+    return String(text||'').replace(/^\s*---\s*\n[\s\S]*?Generated by WBG FCV Sensitivity Project Screener[\s\S]*?---\s*\n+/, '');
+  }
+
+  function stage3ClimateLensState(){
+    const active=isClimateLensActive();
+    const entry=climateLensEntry(lensDiagnostic);
+    const error=active&&(!lensDiagnostic||lensDiagnostic.error||!entry);
+    return {active,entry,error,valid:active&&!error,notice:active?renderClimateModuleNotice(entry,error,climateGrounding):''};
+  }
+
+  function stage3NoticesHtml(climate){
+    const state=climate||stage3ClimateLensState();
+    // Dual-regime: for new-model operations the appraisal document is a Project/Program Paper,
+    // not a legacy PAD, so the stage-awareness badge names the regime document rather than "PAD stage".
+    const isNewModel=regimeContext&&regimeContext.preparation_regime==='new_model';
+    const stageInner=isNewModel
+      ?`the <strong>${esc(newModelDocLabel(instrumentType))}</strong> (new-model preparation)`
+      :`<strong>${esc(docType)}</strong> stage`;
+    const stageBadge=docType&&docType!=='Unknown'?`<div class="stage-awareness-badge">Recommendations tailored for ${stageInner}</div>`:'';
+    const padNotice=isFinalizedPAD()?`<div class="finalized-pad-notice"><div class="fpn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><div class="fpn-body"><strong>Retrospective review.</strong> These recommendations assess the supplied PAD at preparation, not current implementation status.</div></div>`:'';
+    const closedProjectNotice=isClosedOrCompletedProject()?`<div class="finalized-pad-notice">
+        <div class="fpn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+        <div class="fpn-body"><strong>This document appears to describe a closed or completed project</strong>${esc(closedProjectStatusReason())}. The recommendations below are framed as design-stage guidance and may not be actionable for a closed project. Use them for retrospective review, lessons-learned, or as input to a follow-on operation rather than as live implementation guidance.</div>
+      </div>`:'';
+    return closedProjectNotice+padNotice+stageBadge+state.notice;
+  }
+
+  function stage3DocChecksHtml(){
+    return (Array.isArray(docChecks)&&docChecks.length)?`<details style="margin-top:18px;border:1px solid #E2E6EC;border-radius:8px;padding:8px 14px;background:#F7F8FA"><summary style="cursor:pointer;font-weight:700;color:#002244">Points to check in the document</summary><p style="color:#4b5563;margin:8px 0 10px">A light automated check of the uploaded document for things worth confirming - placeholders, empty fields, or values that do not match. This is not the main analysis, just a checklist.</p>${docChecks.map(dc=>`<section style="margin:0 0 11px"><p style="font-weight:700;color:#002244;margin:0 0 3px">${esc(dc.finding||'')}</p>${dc.why_it_matters?`<p style="margin:0 0 3px">${esc(dc.why_it_matters)}</p>`:''}${dc.where?`<p style="margin:0;color:#6b7280;font-size:12px">Where: ${esc(dc.where)}</p>`:''}</section>`).join('')}</details>`:'';
+  }
+
+  function buildNormalReadout(markdownText,forExport=false){
+    const climate=stage3ClimateLensState();
+    const tail=(climate.active?renderClimateGroundingSources(climateGrounding):'')+stage3DocChecksHtml();
+    return wrapSRTerms(renderNormalReadoutHtml(stripStage3DoNoHarmHeader(markdownText),stage3NoticesHtml(climate),tail,forExport));
+  }
+
   function renderOut(stage,result,isFollowOn){
     const isLast=stage===3;
     if(isLast)syncClimateCountryScope();
     const c=CALLS[stage];
     const _verifiedV2=!!(isLast&&climateVerifiedAssessment&&climateVerifiedAssessment.schema_version==='climate-verified-v2.1'&&climateVerifiedReader);
-    const _supportsClimateStage3=isLast&&supportsClimateVerifiedStage3View();
     const _recommendationsIncomplete=!!(
       _verifiedV2&&climateVerifiedReader&&
       climateVerifiedReader.recommendation_status==='incomplete'
@@ -5255,48 +5156,25 @@
       // banner, so strip the legacy in-body DO_NO_HARM_HEADER block from the displayed
       // text. stageOutputs[3] is left untouched, so downloads and the HTML/DOCX exports
       // are unaffected.
-      result = result.replace(/^\s*---\s*\n[\s\S]*?Generated by WBG FCV Sensitivity Project Screener[\s\S]*?---\s*\n+/, '');
-      const _sp=result.split(/(?=###\s*Strengths\b)/i);
-      const _pre=_sp[0]||result;
-      const _rest=_sp[1]||'';
-      // Dual-regime: for new-model operations the appraisal document is a Project/Program Paper,
-      // not a legacy PAD, so the stage-awareness badge names the regime document rather than "PAD stage".
-      const _isNewModel = regimeContext && regimeContext.preparation_regime === 'new_model';
-      const _stageInner = _isNewModel
-        ? `the <strong>${esc(newModelDocLabel(instrumentType))}</strong> (new-model preparation)`
-        : `<strong>${esc(docType)}</strong> stage`;
-      const _stageBadge = docType && docType !== 'Unknown' ? `<div class="stage-awareness-badge">Recommendations tailored for ${_stageInner}</div>` : '';
-      const _padNotice = isFinalizedPAD() ? `<div class="finalized-pad-notice"><div class="fpn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><div class="fpn-body"><strong>Retrospective review.</strong> These recommendations assess the supplied PAD at preparation, not current implementation status.</div></div>` : '';
-      const _closedProjectNotice = isClosedOrCompletedProject() ? `<div class="finalized-pad-notice">
-        <div class="fpn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
-        <div class="fpn-body"><strong>This document appears to describe a closed or completed project</strong>${esc(closedProjectStatusReason())}. The recommendations below are framed as design-stage guidance and may not be actionable for a closed project. Use them for retrospective review, lessons-learned, or as input to a follow-on operation rather than as live implementation guidance.</div>
-      </div>` : '';
-      function styleClassificationFraming(html){
-        return html.replace(/(<p>)((?:Based on|This analysis places)[^<]*<\/p>)/,'<div class="classification-framing-para">$1$2</div>');
-      }
-      const _preHtml = styleClassificationFraming(md(bulletFindingSections(_pre)));
-      const _climateActive=isClimateLensActive();
-      const _climateEntry=climateLensEntry(lensDiagnostic);
-      const _climateError=_climateActive&&(
-        !lensDiagnostic||lensDiagnostic.error||!_climateEntry
-      );
-      const _climateNotice=_climateActive
-        ?renderClimateModuleNotice(_climateEntry,_climateError,climateGrounding):'';
-      const _climateValid=_climateActive&&!_climateError;
-      const docChecksHtml=(Array.isArray(docChecks)&&docChecks.length)?`<details style="margin-top:18px;border:1px solid #E2E6EC;border-radius:8px;padding:8px 14px;background:#F7F8FA"><summary style="cursor:pointer;font-weight:700;color:#002244">Points to check in the document</summary><p style="color:#4b5563;margin:8px 0 10px">A light automated check of the uploaded document for things worth confirming - placeholders, empty fields, or values that do not match. This is not the main analysis, just a checklist.</p>${docChecks.map(dc=>`<section style="margin:0 0 11px"><p style="font-weight:700;color:#002244;margin:0 0 3px">${esc(dc.finding||'')}</p>${dc.why_it_matters?`<p style="margin:0 0 3px">${esc(dc.why_it_matters)}</p>`:''}${dc.where?`<p style="margin:0;color:#6b7280;font-size:12px">Where: ${esc(dc.where)}</p>`:''}</section>`).join('')}</details>`:'';
-      if(_climateValid){
+      result = stripStage3DoNoHarmHeader(result);
+      const _climate=stage3ClimateLensState();
+      if(_climate.valid){
         // Climate readout redesign order: notice/gauge -> model context prose ->
         // full-detail strengths & weaknesses -> core-questions (interactions + theme
         // answers). Dividends fold into cq3; wider-FCV is dropped in module mode.
+        const _sp=result.split(/(?=###\s*Strengths\b)/i);
+        const _pre=_sp[0]||result;
+        const _rest=_sp[1]||'';
+        const _preHtml=md(bulletFindingSections(_pre)).replace(/(<p>)((?:Based on|This analysis places)[^<]*<\/p>)/,'<div class="classification-framing-para">$1$2</div>');
         _outBodyContent=wrapSRTerms(
-          _closedProjectNotice+_padNotice+_stageBadge+_climateNotice+
+          stage3NoticesHtml(_climate)+
           _preHtml+md(bulletFindingSections(_rest))+
-          renderClimateStrengthsWeaknesses(_climateEntry)+
-          renderClimateCoreQuestions(_climateEntry)+
+          renderClimateStrengthsWeaknesses(_climate.entry)+
+          renderClimateCoreQuestions(_climate.entry)+
           renderClimateGroundingSources(climateGrounding)
-        )+renderLegacyClimatePrioritiesHtml()+docChecksHtml;
+        )+renderLegacyClimatePrioritiesHtml()+stage3DocChecksHtml();
       }else{
-        _outBodyContent=wrapSRTerms(renderNormalReadoutHtml(result,_closedProjectNotice+_padNotice+_stageBadge+_climateNotice,(_climateActive?renderClimateGroundingSources(climateGrounding):'')+docChecksHtml));
+        _outBodyContent=buildNormalReadout(result);
       }
     }else{
       const cleanResult = stage===1 ? result.replace(/\n*%%%DOC_TYPE:[^%\n]*%%%\n*/g,'') : result;
@@ -5522,7 +5400,7 @@
   function reportPlainText(html){
     const container=document.createElement('div');
     container.innerHTML=html;
-    container.querySelectorAll('button,script,style').forEach(el=>el.remove());
+    container.querySelectorAll('button,script,style,details.go-deeper,.warn-badge').forEach(el=>el.remove());
     container.querySelectorAll('details').forEach(el=>el.open=true);
     container.querySelectorAll('a[href]').forEach(el=>{const url=el.getAttribute('href');if(/^https?:\/\//i.test(url))el.append(' ('+url+')');});
     container.style.cssText='position:fixed;left:-10000px;width:800px';
@@ -5729,7 +5607,7 @@
     if(stageHists[stage])hist=stageHists[stage].slice();
     curS=stage;
     for(let i=stage+1;i<=3;i++){delete stageOutputs[i];delete stageHists[i];}
-    stageThreePriorities=[];stageConciseReadout=null;stageRiskExposure=null;stageSensitivitySummary='';stageResponsivenessSummary='';openSummaryPriority=0;fcvRating='';fcvResponsivenessRating='';stageWiderFcvContext=null;climatePriorityUnlinked=0;climatePriorityTotal=0;climateVerifiedAssessment=null;climateVerifiedFailure=null;climateVerifiedReader=null;stage3View='detailed';stage3DetailedHtml='';
+    stageThreePriorities=[];stageConciseReadout=null;stageRiskExposure=null;stageSensitivitySummary='';stageResponsivenessSummary='';fcvRating='';fcvResponsivenessRating='';stageWiderFcvContext=null;climatePriorityUnlinked=0;climatePriorityTotal=0;climateVerifiedAssessment=null;climateVerifiedFailure=null;climateVerifiedReader=null;stage3DetailedHtml='';
     midCycleWatch=[];dpfWatch=[];p4rWatch=[];regionalWatch=[];horizonConsiderations='';
     clearUI();renderOut(stage,stageOutputs[stage],false);
     if(stage===2&&stage2UnderHood){buildUnderHoodPanels(stage2UnderHood);updateSidebar();}
@@ -6104,20 +5982,14 @@
       <p class="exp-disc">AI-assisted analytical output. Analytical framework: WBG FCV Strategy 2026-2030, FCV Operational Manual, FCV Playbook, Good Practice Notes. Verify before operational use.</p>
     </div>`;
 
-    const notices=isFinalizedPAD()?'<div class="finalized-pad-notice"><div class="fpn-body"><strong>Retrospective review.</strong> These recommendations assess the supplied PAD at preparation, not current implementation status.</div></div>':'';
-    const _exportClimateActive=isClimateLensActive();
-    const _exportClimateEntry=climateLensEntry(lensDiagnostic);
-    const _exportClimateError=_exportClimateActive&&(
-      !lensDiagnostic||lensDiagnostic.error||!_exportClimateEntry
-    );
-    const _exportClimateNotice=_exportClimateActive?renderClimateModuleNotice(_exportClimateEntry,_exportClimateError,climateGrounding):'';
-    if(_exportClimateActive&&!_exportClimateError){
+    const _exportClimate=stage3ClimateLensState();
+    if(_exportClimate.valid){
       // Legacy climate-lens route keeps its own narrative; priorities use the readout cards.
-      body += screenerCaveatHtml()+notices+_exportClimateNotice;
+      body += screenerCaveatHtml()+wrapSRTerms(stage3NoticesHtml(_exportClimate));
       if(summarybody)body += `<div class="out-body exp-narrative">${wrapSRTerms(md(bulletFindingSections(summarybody)))}</div>`;
-      body += renderClimateStrengthsWeaknesses(_exportClimateEntry)+renderClimateCoreQuestions(_exportClimateEntry)+renderClimateGroundingSources(climateGrounding)+renderLegacyClimatePrioritiesHtml(true);
+      body += wrapSRTerms(renderClimateStrengthsWeaknesses(_exportClimate.entry)+renderClimateCoreQuestions(_exportClimate.entry)+renderClimateGroundingSources(climateGrounding))+renderLegacyClimatePrioritiesHtml(true)+stage3DocChecksHtml();
     }else{
-      body+=screenerCaveatHtml()+renderNormalReadoutHtml(stageOutputs[3]||'',notices+_exportClimateNotice,_exportClimateActive?renderClimateGroundingSources(climateGrounding):'',true);
+      body+=screenerCaveatHtml()+buildNormalReadout(stageOutputs[3]||'',true);
     }
     // ── Responses to your priority points ──
     if(focusQuestionsResult && (focusQuestionsResult.responses||[]).length){
@@ -6256,7 +6128,7 @@ ${climatePrintDisclosureScript()}
     ['ip','ipack','ic'].forEach(id=>{document.getElementById(id).value='';});
     activeLenses=[];resolvedLensVersions={};lensSuggestions=[];lensDiagnostic={};lensContextSources=[];climateResearch={};climateGrounding={};climateIntegration=null;climateVerifiedAssessment=null;climateVerifiedFailure=null;climateVerifiedReader=null;lensSelectionTouched=false;lensSelectionLocked=false;renderLensSelector();
     midCycleWatch=[];dpfWatch=[];p4rWatch=[];regionalWatch=[];horizonConsiderations='';
-    stageThreePriorities=[];stageConciseReadout=null;stageRiskExposure=null;stageSensitivitySummary='';stageResponsivenessSummary='';openSummaryPriority=0;fcvRating='';fcvResponsivenessRating='';stage3View='detailed';stage3DetailedHtml='';
+    stageThreePriorities=[];stageConciseReadout=null;stageRiskExposure=null;stageSensitivitySummary='';stageResponsivenessSummary='';fcvRating='';fcvResponsivenessRating='';stage3DetailedHtml='';
     { const _pc=document.getElementById('pq-confirm'); if(_pc){_pc.innerHTML='';_pc.style.display='none';} }
     ['stage2_timestamp','stage3_timestamp','stage3_consistency_dismissed'].forEach(k=>localStorage.removeItem(k));
     localStorage.removeItem('fcv_express_stageOutputs');
@@ -6445,7 +6317,6 @@ ${climatePrintDisclosureScript()}
   // ── Stage 3 (Recommendations) state ───────────────────────────────────────
   let stageThreePriorities = [];
   let stageConciseReadout = null;
-  let openSummaryPriority = 0;
   let climatePriorityUnlinked = 0, climatePriorityTotal = 0;
   let currentPriority = 0;  // 0-indexed
   let currentDeeperTab = {};  // {priorityIndex: 'alternatives'|'trail'|'playbook'}
@@ -6458,7 +6329,6 @@ ${climatePrintDisclosureScript()}
   let climateVerifiedFailure=null; // inspection only; never a reader or follow-on input
   let climateVerifiedAssessment=null; // climate-verified-v2.1 structured assessment
   let climateVerifiedReader=null; // server-validated canonical reader/export model
-  let stage3View='detailed';
   let stage3DetailedHtml='';
   let stageWiderFcvContext=null; // wider_fcv_context string from Stage 3 JSON (climate path)
   function integrationGaugeFraction(level){
@@ -6616,12 +6486,6 @@ ${climatePrintDisclosureScript()}
     return activeLenses.length===0&&!!readout&&text(readout.headline)&&text(readout.overview)&&text(readout.strengths_transition)&&text(readout.priorities_transition)&&text(readout.closing)&&validStrengths&&validPriorities;
   }
 
-  function supportsAnyStage3Summary(){return false;}
-
-  function renderFcvRatingIndicators(){
-    return `<div class="concise-rating-indicators" aria-label="FCV assessment indicators"><div class="concise-rating-indicator"><span>FCV sensitivity</span><strong>${esc(fcvRating||'Not available')}</strong></div><div class="concise-rating-indicator"><span>FCV responsiveness</span><strong>${esc(fcvResponsivenessRating||'Not available')}</strong></div></div>`;
-  }
-
   function normalFcvWatchGroups(context){
     const hasContext=!!(context&&typeof context==='object');
     const source=hasContext?context:{};
@@ -6703,12 +6567,12 @@ ${climatePrintDisclosureScript()}
     const watchHtml=watch?k.disclosure('Watch List for Supervision: Risks to Monitor During Implementation','<p class="fr-intro">These are FCV risks or dynamics the team cannot act on now but should monitor during implementation. They do not affect the FCV ratings above.</p>'+watch):'';
     if(!priorities.length)return watchHtml?`<div class="fr-readout fr-route-legacy-climate">${watchHtml}</div>`:'';
     const n=priorities.length;
-    const linkNotice=climatePriorityUnlinked>0?`<div class="climate-partial-notice">Climate provenance could not be validated for ${climatePriorityUnlinked} of ${climatePriorityTotal} priorities. Those recommendations are shown but not tagged to a specific climate-FCV pathway.</div>`:'';
+    const linkNotice=climatePriorityUnlinked>0?`<div class="climate-partial-notice">Climate provenance could not be validated for ${Number(climatePriorityUnlinked)} of ${Number(climatePriorityTotal)} priorities. Those recommendations are shown but not tagged to a specific climate-FCV pathway.</div>`:'';
     const cards=priorities.map((p,i)=>{
       const actions=Array.isArray(p.actions)?p.actions:[];
       const actionsHtml=actions.length?`<ol class="fr-actions">${actions.map(a=>`<li>${a.document_element?`<strong>${esc(a.document_element)}:</strong> `:''}${esc(a.guidance||'')}</li>`).join('')}</ol>`:(p.recommendation?k.prose(p.recommendation):'');
       const title=String(p.title||'Priority action').replace(/^\s*Priority\s+\d+\s*(?:[·•:.\-–]\s*)?/i,'').trim()||'Priority action';
-      const sup=[`Priority ${i+1}`,k.pill(p.risk_level),esc(p.dimension||''),esc(k.timingLabel(p.action_timing))].filter(Boolean).join(' &middot; ');
+      const sup=[`Priority ${i+1}`,k.pill(p.risk_level),esc(p.fcv_dimension||p.dimension||''),esc(k.timingLabel(p.action_timing))].filter(Boolean).join(' &middot; ');
       return k.priorityCard({
         id:`fr-priority-${i+1}`,rank:i+1,open:i===0,supHtml:sup,title,
         zones:[{label:'The gap',html:k.prose(p.the_gap||p.body||'')},{label:'Why it matters',html:k.prose(p.why_it_matters||'')},{label:'Essential actions',html:actionsHtml}],

@@ -62,7 +62,15 @@
     const leadHeading = leadBlock && leadBlock.level === 2 && !/executive summary/.test(keyOf(leadBlock)) ? leadBlock.heading : '';
     if (!sections.snapshot && lead) {
       const paragraphs = splitParagraphs(lead);
-      sections.snapshot = paragraphs.shift() || '';
+      const first = paragraphs.shift() || '';
+      // A bold opening span is the verdict; the rest of that paragraph is supporting text.
+      const boldLead = first.match(/^\*\*([^*]+?)\*\*\s*([\s\S]*\S)\s*$/);
+      if (boldLead) {
+        sections.snapshot = boldLead[1];
+        paragraphs.unshift(boldLead[2]);
+      } else {
+        sections.snapshot = first;
+      }
       if (paragraphs.length) sections.other.unshift({ heading: leadHeading, body: paragraphs.join('\n\n') });
     } else if (lead) {
       sections.other.unshift({ heading: leadHeading, body: lead });
