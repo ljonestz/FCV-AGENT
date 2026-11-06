@@ -42,3 +42,12 @@ def test_summary_tab_rail_and_stepper_removed():
         assert gone not in source, gone
     start = source.index("function renderManagementBriefControls(")
     assert "stage3View" not in source[start:source.index("}", start)]
+
+
+def test_share_html_export_reuses_readout():
+    source = html()
+    start = source.index("async function downloadHTML(")
+    body = source[start:source.index("\n  }\n", start)]
+    assert "renderNormalReadoutHtml(" in body
+    assert "screenerCaveatHtml()" in body
+    assert "_buildExportPriorityCard" not in body

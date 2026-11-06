@@ -6067,7 +6067,7 @@
         if(!response.ok) throw new Error(snapshot.error||'Report consistency check failed.');
         if(snapshotPayload!==JSON.stringify({climate_assessment:climateVerifiedAssessment,climate_reader:climateVerifiedReader})) throw new Error('The report changed during export. Please export again.');
       }catch(error){alert('Could not export HTML. '+error.message);return;}
-      const body=renderClimateVerifiedAssessment(climateVerifiedReader);
+      const body=screenerCaveatHtml()+renderClimateVerifiedAssessment(climateVerifiedReader);
       const printBehavior=climatePrintDisclosureScript();
       const documentHtml='<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Verified Climate-FCV Assessment</title><style>'+css+'</style></head><body><main style="max-width:960px;margin:32px auto;padding:0 24px">'+body+'</main>'+printBehavior+'</body></html>';
       const blob=new Blob([documentHtml],{type:'text/html;charset=utf-8'});
@@ -6104,74 +6104,20 @@
       <p class="exp-disc">AI-assisted analytical output. Analytical framework: WBG FCV Strategy 2026-2030, FCV Operational Manual, FCV Playbook, Good Practice Notes. Verify before operational use.</p>
     </div>`;
 
-    // ── Finalized PAD notice ──
-
-    if(isFinalizedPAD()){
-      body += `<div class="finalized-pad-notice"><div class="fpn-body"><strong>Retrospective review.</strong> These recommendations assess the supplied PAD at preparation, not current implementation status.</div></div>`;
-    }
-
-    // ── Narrative (exec summary, operational context, strengths, gaps) ──
-    // The LLM narrative opens with "This analysis places [country]..." — no duplicate block needed.
+    const notices=isFinalizedPAD()?'<div class="finalized-pad-notice"><div class="fpn-body"><strong>Retrospective review.</strong> These recommendations assess the supplied PAD at preparation, not current implementation status.</div></div>':'';
     const _exportClimateActive=isClimateLensActive();
     const _exportClimateEntry=climateLensEntry(lensDiagnostic);
     const _exportClimateError=_exportClimateActive&&(
       !lensDiagnostic||lensDiagnostic.error||!_exportClimateEntry
     );
-    const _exportClimateValid=_exportClimateActive&&!_exportClimateError;
-    if(_exportClimateActive){
-      body+=renderClimateModuleNotice(_exportClimateEntry,_exportClimateError,climateGrounding);
-    }
-
-    if(summarybody){
-      body += `<div class="out-body exp-narrative">${wrapSRTerms(md(bulletFindingSections(summarybody)))}</div>`;
-      body += `<p style="font-size:11px;color:#666;font-style:italic;margin-top:0;margin-bottom:16px;padding:0 4px">This is a subjective judgement on the part of this AI tool and does not constitute an official WBG classification.</p>`;
-    }
-
-    // ── Risk Exposure ──
-    if(_exportClimateValid){
-      // Shared-HTML export parity with the live redesign order: strengths & weaknesses,
-      // then the core-questions section (interactions + theme answers). Dividends fold
-      // into cq3; wider-FCV is dropped in module mode.
-      body+=renderClimateStrengthsWeaknesses(_exportClimateEntry);
-      body+=renderClimateCoreQuestions(_exportClimateEntry);
+    const _exportClimateNotice=_exportClimateActive?renderClimateModuleNotice(_exportClimateEntry,_exportClimateError,climateGrounding):'';
+    if(_exportClimateActive&&!_exportClimateError){
+      // Legacy climate-lens route keeps its own narrative; priorities use the readout cards.
+      body += screenerCaveatHtml()+notices+_exportClimateNotice;
+      if(summarybody)body += `<div class="out-body exp-narrative">${wrapSRTerms(md(bulletFindingSections(summarybody)))}</div>`;
+      body += renderClimateStrengthsWeaknesses(_exportClimateEntry)+renderClimateCoreQuestions(_exportClimateEntry)+renderClimateGroundingSources(climateGrounding)+renderLegacyClimatePrioritiesHtml(true);
     }else{
-      body += renderRiskExposure(stageRiskExposure);
-
-    // ── S/R Cards ──
-      body += renderSRCards(stageSensitivitySummary, stageResponsivenessSummary);
-
-    // ── Ratings (text labels) ──
-      if(fcvRating || fcvResponsivenessRating){
-        body += `<div class="exp-ratings-row">
-          ${fcvRating ? `<div class="exp-rating-pill exp-rating-s"><strong>Sensitivity:</strong> ${esc(fcvRating)}</div>` : ''}
-          ${fcvResponsivenessRating ? `<div class="exp-rating-pill exp-rating-r"><strong>Responsiveness:</strong> ${esc(fcvResponsivenessRating)}</div>` : ''}
-        </div>`;
-      }
-    }
-
-    // ── Priority Summary Table ──
-    if(_exportClimateActive){
-      body += renderClimateGroundingSources(climateGrounding);
-    }
-
-    if(stageThreePriorities.length){
-      const timingMap=TIMING_LABELS;
-      const tagLabels={'[S]':'Sensitivity','[R]':'Responsiveness','[S+R]':'Sensitivity + Responsiveness'};
-      const pRows=stageThreePriorities.map((pr,i)=>{
-        const title=(pr.title||'').replace(/^Priority\s+\d+\s*[·•]\s*/i,'');
-        return `<tr><td style="text-align:center;font-weight:700">${i+1}</td><td>${esc(title)}</td><td>${esc(pr.risk_level||'')}</td><td>${esc(tagLabels[pr.tag||'']||pr.tag||'')}</td><td>${esc(timingMap[pr.action_timing||'']||pr.action_timing||'')}</td></tr>`;
-      }).join('');
-      body += `<h2 class="exp-section-hdr">Priority Actions for the Task Team</h2>
-        <p style="font-size:13px;color:#444;margin-bottom:12px">Based on a three-stage assessment, ${stageThreePriorities.length} priority action${stageThreePriorities.length!==1?'s have':' has'} been identified.</p>
-        <table class="exp-table"><thead><tr><th style="width:32px">#</th><th>Priority Action</th><th style="width:90px">Priority</th><th style="width:110px">FCV Focus</th><th style="width:160px">Timing</th></tr></thead><tbody>${pRows}</tbody></table>`;
-    }
-
-    // ── All priority cards (all shown, no carousel) ──
-    if(stageThreePriorities.length){
-      body += `<h2 class="exp-section-hdr">Strategic Priorities</h2>`;
-      stageThreePriorities.forEach((pr,i)=>{
-        body += _buildExportPriorityCard(pr, i, stageThreePriorities.length);
-      });
+      body+=screenerCaveatHtml()+renderNormalReadoutHtml(stageOutputs[3]||'',notices+_exportClimateNotice,_exportClimateActive?renderClimateGroundingSources(climateGrounding):'',true);
     }
     // ── Responses to your priority points ──
     if(focusQuestionsResult && (focusQuestionsResult.responses||[]).length){
@@ -6193,35 +6139,7 @@
       body += `</div>`;
     }
 
-    // ── Mid-Cycle FCV Watch (AF / Restructuring) ──
-    if(Array.isArray(midCycleWatch) && midCycleWatch.length){
-      body += `<h2 class="exp-section-hdr">Mid-Cycle FCV Watch</h2>
-        <ul class="horizon-body">${midCycleWatch.map(w=>`<li>${esc(w)}</li>`).join('')}</ul>`;
-    }
-
-    // DPF FCV Watch (Development Policy Financing)
-    if(Array.isArray(dpfWatch) && dpfWatch.length){
-      body += `<h2 class="exp-section-hdr">DPF FCV Watch</h2>
-        <ul class="horizon-body">${dpfWatch.map(w=>`<li>${esc(w)}</li>`).join('')}</ul>`;
-    }
-
-    // P4R FCV Watch (Program-for-Results)
-    if(Array.isArray(p4rWatch) && p4rWatch.length){
-      body += `<h2 class="exp-section-hdr">P4R FCV Watch</h2>
-        <ul class="horizon-body">${p4rWatch.map(w=>`<li>${esc(w)}</li>`).join('')}</ul>`;
-    }
-
-    // Regional FCV Watch (multi-country / regional)
-    if(Array.isArray(regionalWatch) && regionalWatch.length){
-      body += `<h2 class="exp-section-hdr">Regional FCV Watch</h2>
-        <ul class="horizon-body">${regionalWatch.map(w=>`<li>${esc(w)}</li>`).join('')}</ul>`;
-    }
-
-    // ── Watch List ──
-    if(typeof horizonConsiderations==='string' && horizonConsiderations.trim()){
-      body += `<h2 class="exp-section-hdr">Watch List for Supervision</h2>
-        <div class="horizon-body">${wrapSRTerms(md(stripWatchHeading(horizonConsiderations)))}</div>`;
-    }
+    // Watch lists (mid-cycle, DPF, PforR, regional, longer-term) are rendered inside the readout.
 
     if(researchBrief)body += '<h2 class="exp-section-hdr">Research briefing</h2><div class="out-body">'+md(researchBrief)+'</div>';
 
@@ -6273,6 +6191,7 @@ ${body}
   FCV Project Screener | WBG FCV Analytics Unit · Generated ${esc(dateStr)} · AI-assisted output for expert review only
 </div>
 </div>
+${climatePrintDisclosureScript()}
 </body>
 </html>`;
 
@@ -6777,7 +6696,7 @@ ${body}
 
   // Legacy climate-lens route (no verified v2 reader): the stepper is gone, so its
   // priorities render as readout cards appended after the legacy climate prose.
-  function renderLegacyClimatePrioritiesHtml(){
+  function renderLegacyClimatePrioritiesHtml(forExport=false){
     const priorities=(Array.isArray(stageThreePriorities)?stageThreePriorities:[]).slice(0,5);
     const k=frApi();
     const watch=renderNormalFcvWatchBody();
@@ -6795,7 +6714,7 @@ ${body}
         zones:[{label:'The gap',html:k.prose(p.the_gap||p.body||'')},{label:'Why it matters',html:k.prose(p.why_it_matters||'')},{label:'Essential actions',html:actionsHtml}],
         drafts:actions.map(a=>({label:'Suggested text',forText:a.document_element||'',text:a.suggested_language||''})),
         cycle:{label:'When to address',text:p.implementation_note||''},
-        extraHtml:renderPriorityWarningsHtml(p,i)+renderPriorityClimateContribution(p)+renderPriorityCompliance(p)+renderGoDeeperHtml(i)
+        extraHtml:forExport?renderPriorityClimateContribution(p)+renderPriorityCompliance(p):renderPriorityWarningsHtml(p,i)+renderPriorityClimateContribution(p)+renderPriorityCompliance(p)+renderGoDeeperHtml(i)
       });
     }).join('');
     return `<div class="fr-readout fr-route-legacy-climate">${linkNotice}<section class="fr-section fr-cards-sec"><header class="fr-h1"><h2 class="fr-h1-txt">Priority Actions for the Task Team</h2></header>${k.infoBox('',`<strong>Based on a three-stage assessment of the project documents, ${n} priority ${n===1?'action has':'actions have'} been identified</strong> to strengthen FCV sensitivity and responsiveness in the design and delivery of this project.`)}<div class="fr-cards">${cards}</div></section>${watchHtml}</div>`;
