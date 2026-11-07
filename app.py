@@ -42,6 +42,7 @@ from sector_lenses.climate_verified_runtime import (
     run_verified_from_doc_parts,
 )
 from sector_lenses.climate_verified_render import (
+    LEGACY_FALLBACK_SUMMARY_OVERVIEWS,
     attach_provenance,
     build_reader_model,
     validate_reader_model,
@@ -12826,7 +12827,15 @@ def _climate_export_snapshot(data):
     attach_provenance(reader, verified)
     # Compare JSON values: Python tuples become arrays in the browser.
     canonical_reader = json.loads(json.dumps(reader, ensure_ascii=False, allow_nan=False))
-    if 'climate_reader' in data and data['climate_reader'] != canonical_reader:
+    shown_reader = data.get('climate_reader')
+    # Only the server-written fallback boilerplate may differ (wording updated after
+    # the session was saved); every assessment-derived field must still match exactly.
+    if (isinstance(shown_reader, dict)
+            and canonical_reader.get('summary_overview_status') == 'fallback'
+            and shown_reader.get('summary_overview_status') == 'fallback'
+            and shown_reader.get('summary_overview') in LEGACY_FALLBACK_SUMMARY_OVERVIEWS):
+        shown_reader = {**shown_reader, 'summary_overview': canonical_reader['summary_overview']}
+    if 'climate_reader' in data and shown_reader != canonical_reader:
         return None, (jsonify(
             error='The displayed report differs from its assessment. Reload the matching '
                   'assessment and reader before exporting; no content was substituted.',
