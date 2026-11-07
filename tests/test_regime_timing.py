@@ -99,6 +99,7 @@ def test_docx_renders_canonical_project_cycle_after_actions():
             "secondary_text": "Track whether the agreed sequence is being followed.",
         },
         "cpf_alignment": "Align with the CPF outcome on resilient delivery.",
+        "rra_driver_alignment": "Responds to RRA Driver 2 on land competition.",
         "concise": {
             "project_cycle": {
                 "primary_label": "Legacy concise label",
@@ -112,15 +113,18 @@ def test_docx_renders_canonical_project_cycle_after_actions():
     for expected in (
         "Before appraisal", "Confirm the decision sequence in the current document.",
         "During implementation", "Track whether the agreed sequence is being followed.",
-        "CPF Alignment", "Align with the CPF outcome on resilient delivery.",
     ):
         assert expected in text
+    # CPF / RRA alignment stays in the JSON but is not rendered in Word.
+    assert "CPF Alignment" not in text
+    assert "Align with the CPF outcome on resilient delivery." not in text
+    assert "RRA Driver Alignment" not in text and "RRA Driver 2" not in text
     assert text.index("Set out the decision sequence.") < text.index("PRACTICAL CONSIDERATIONS")
     practical = text[text.index("PRACTICAL CONSIDERATIONS"):]
-    assert practical.index("Before appraisal") < practical.index("During implementation") < practical.index("CPF Alignment")
+    assert practical.index("Before appraisal") < practical.index("During implementation")
     assert "Legacy concise label" not in text
     assert "This must not be used by Detailed exports." not in text
-    for label in ("Before appraisal", "During implementation", "CPF Alignment"):
+    for label in ("Before appraisal", "During implementation"):
         paragraph = next(p for p in paragraphs if p.text.startswith(label + " "))
         assert paragraph.runs[0].text.strip() == label
         assert paragraph.runs[0].bold is True

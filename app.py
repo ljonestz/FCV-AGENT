@@ -13937,12 +13937,8 @@ def download_report():
                         str(priority['implementation_note']),
                     ))
                 practical_notes.extend(add_priority_project_cycle(priority))
-                if priority.get('cpf_alignment'):
-                    practical_notes.append(('CPF Alignment', str(priority['cpf_alignment'])))
-                if priority.get('rra_driver_alignment'):
-                    practical_notes.append((
-                        'RRA Driver Alignment', str(priority['rra_driver_alignment'])
-                    ))
+                # cpf_alignment / rra_driver_alignment stay in the Stage 3 JSON (parity
+                # surface) but are no longer shown in Word (user request 2026-11-07).
                 for label, key in (
                     ('FCV Strategy 2026-2030', 'refresh_shift'),
                     ('Change', 'change_type'),
