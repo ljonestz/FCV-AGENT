@@ -12849,9 +12849,15 @@ def _climate_export_snapshot(data):
 
 @app.route('/api/climate-report-snapshot', methods=['POST'])
 def climate_report_snapshot():
-    """No-model consistency check for the browser's standalone HTML export."""
+    """No-model consistency check for the browser's standalone HTML export.
+
+    With ``climate_reader`` the displayed reader must match the canonical one.
+    Without the key, the canonical reader is returned so a restored session can
+    replace a reader saved under older admission rules; nothing is approved.
+    """
     data = request.get_json(force=True)
-    if not isinstance(data, dict) or not isinstance(data.get('climate_reader'), dict):
+    if not isinstance(data, dict) or (
+            'climate_reader' in data and not isinstance(data.get('climate_reader'), dict)):
         return jsonify(error='A complete displayed Climate reader is required.'), 422
     snapshot, error = _climate_export_snapshot(data)
     return error if error is not None else jsonify(snapshot)

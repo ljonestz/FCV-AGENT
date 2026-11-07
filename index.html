@@ -3293,6 +3293,7 @@
         document.getElementById('landing-hero').style.display='none';
         document.getElementById('stepper-wrap').style.display='';
         setStepper(4,'done');renderOut(3,outputs[3],false);if(stageThreePriorities.length)initStage3UI();enableClickableStepper();
+        refreshRestoredClimateReader();
         return;
       }
       if(hasSavedStage3Output){localStorage.removeItem('fcv_express_stageOutputs');localStorage.removeItem('fcv_express_stageHists');localStorage.removeItem('fcv_express_lensState');return;}
@@ -3536,6 +3537,7 @@
           enableClickableStepper();
           navigateToStage(3);
           input.value='';
+          refreshRestoredClimateReader();
           return;
         }
         setStepper(curS+1, 'active');
@@ -6691,6 +6693,34 @@ ${climatePrintDisclosureScript()}
 
   function supportsClimateVerifiedStage3View(){
     return reviewMode==='design' && !!(climateVerifiedAssessment && climateVerifiedAssessment.schema_version==='climate-verified-v2.1' && climateVerifiedReader);
+  }
+
+  // A restored session carries the reader saved at run time. Ask the server for the
+  // canonical reader built from the saved assessment so later admission rules and
+  // exports agree. Any failure keeps the stored reader silently; loading never waits.
+  async function refreshRestoredClimateReader(){
+    const assessment=climateVerifiedAssessment;
+    const stored=climateVerifiedReader;
+    if(!assessment||typeof assessment!=='object'||assessment.schema_version!=='climate-verified-v2.1')return false;
+    try{
+      const response=await fetch('/api/climate-report-snapshot',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({climate_assessment:assessment})});
+      if(!response||!response.ok)return false;
+      const data=await response.json();
+      const reader=data&&data.reader;
+      if(!reader||typeof reader!=='object'||Array.isArray(reader))return false;
+      // Another load, reset or run replaced the state while the check was in flight.
+      if(climateVerifiedAssessment!==assessment||climateVerifiedReader!==stored)return false;
+      // Identical reader: keep the current render instead of redrawing it.
+      if(stored&&JSON.stringify(reader)===JSON.stringify(stored))return false;
+      climateVerifiedReader=reader;
+      if(supportsClimateVerifiedStage3View())stageThreePriorities=Array.isArray(reader.priorities)?reader.priorities:[];
+      if(curS===3&&stageOutputs&&stageOutputs[3]&&!busy){
+        const scrollY=window.scrollY;
+        navigateToStage(3);
+        window.scrollTo(0,scrollY);
+      }
+      return true;
+    }catch(e){return false;}
   }
 
   function initStage3UI(){

@@ -864,6 +864,10 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
     summary_overview_status = _text(assessment.get("summary_overview_status"))
     if not summary_overview_generated:
         summary_overview_status = "fallback"
+    elif assessment.get('reader_contract') == 'final-reader-v1':
+        # Admission is recomputed from the saved reader and review, so a session
+        # saved under older admission rules shows the Summary those rules withheld.
+        summary_overview_status = "generated"
     elif summary_overview_status not in {"generated", "fallback"}:
         summary_overview_status = "generated" if summary_overview else "fallback"
     climate_sensitivity_rating = {
