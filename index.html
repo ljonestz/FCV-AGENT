@@ -2051,7 +2051,13 @@
 .fr-readout .fr-guide-rel{font-size:12px;line-height:1.5;color:#5F6B7A;margin:4px 0 0}
 .fr-readout .fr-see{font-size:12px;margin:0 0 9px}
 .fr-readout .fr-limits{background:var(--fr-surface);border:1px solid var(--fr-border);border-left:3px solid var(--fr-grey);padding:12px 15px;color:var(--fr-grey)}
-@media(max-width:760px){.fr-readout .fr-pc-meta .fr-meta-dim,.fr-readout .fr-pc-meta .fr-meta-time{display:none}.fr-readout .fr-scorecard{grid-template-columns:minmax(0,1fr)}.fr-readout .fr-sc-tile{border-right:0;border-bottom:1px solid var(--fr-border)}.fr-readout .fr-pair{grid-template-columns:minmax(0,1fr)}.fr-readout .fr-col+.fr-col{border-left:0;border-top:1px solid var(--fr-border)}.fr-readout .fr-rating-row{flex-direction:column}.fr-readout .fr-rating-meta{width:auto;border-right:0;padding:0 0 10px}.fr-readout .fr-rating-why{padding-left:0}.fr-readout .fr-pc-body{padding:14px}.fr-readout .fr-draft{margin-left:0}.fr-readout .fr-h1,.fr-readout .fr-pc{scroll-margin-top:200px}}
+.fr-readout .fr-verify{margin-top:10px;padding-top:10px;border-top:1px solid var(--fr-border)}
+.fr-readout .fr-verify-lbl{font-size:11px!important;font-weight:700!important;text-transform:uppercase!important;letter-spacing:.08em!important;color:var(--fr-navy)!important;margin:0 0 6px!important;border:0!important;padding:0!important}
+.fr-readout .fr-verify-list{margin:0;padding-left:18px;font-size:13px;line-height:1.6}.fr-readout .fr-verify-list li{margin-bottom:4px}
+.fr-readout .fr-research-intro{font-style:italic;color:var(--fr-grey)}
+.fr-readout .fr-research-list{margin:0;padding-left:18px}.fr-readout .fr-research-list li{margin-bottom:8px;line-height:1.5}
+.fr-readout .fr-research-ex{display:block;font-size:12px;color:var(--fr-grey)}
+@media(max-width:760px){.fr-readout .fr-pc-meta .fr-meta-dim{display:none}.fr-readout .fr-scorecard{grid-template-columns:minmax(0,1fr)}.fr-readout .fr-sc-tile{border-right:0;border-bottom:1px solid var(--fr-border)}.fr-readout .fr-pair{grid-template-columns:minmax(0,1fr)}.fr-readout .fr-col+.fr-col{border-left:0;border-top:1px solid var(--fr-border)}.fr-readout .fr-rating-row{flex-direction:column}.fr-readout .fr-rating-meta{width:auto;border-right:0;padding:0 0 10px}.fr-readout .fr-rating-why{padding-left:0}.fr-readout .fr-pc-body{padding:14px}.fr-readout .fr-draft{margin-left:0}.fr-readout .fr-h1,.fr-readout .fr-pc{scroll-margin-top:200px}}
 @media print{.fr-readout *{-webkit-print-color-adjust:exact;print-color-adjust:exact}.fr-readout .fr-pc-hdr,.fr-readout .fr-zone,.fr-readout .fr-check,.fr-readout .fr-rating-row{break-inside:avoid}.fr-readout details.fr-pc::details-content,.fr-readout details.fr-disc::details-content{content-visibility:visible;display:block}.fr-readout details.fr-pc:not([open]) > :not(summary),.fr-readout details.fr-disc:not([open]) > :not(summary){display:block}.fr-readout .fr-toc,.fr-readout .fr-cards-tools,.fr-readout .fr-copy,.fr-readout .fr-expand{display:none!important}}
 </style>
 </head>
@@ -6042,24 +6048,10 @@
 
   // ── HTML Export ─────────────────────────────────────────────────────────────
 
-  // Export-only clean-up of the stored briefing: unescape markdown punctuation, drop empty
-  // or repeated quote excerpts and a leading model preamble. The stored text is unchanged.
+  // Export-only briefing: intro line plus provider-cited source links with a one-line excerpt.
+  // Headings, empty quotes, "N days ago" fragments and duplicate URLs are dropped; the stored text is unchanged.
   function exportResearchBriefHtml(brief){
-    let text=String(brief||'').replace(/\r\n?/g,'\n').replace(/\\([\\`*_{}\[\]()#+\-.!>|~])/g,'$1');
-    const seen=new Set();
-    let paras=text.split(/\n\s*\n+/).map(p=>p.trim()).filter(Boolean).filter(p=>{
-      if(/^>/.test(p)){
-        const quote=p.replace(/^>\s?/gm,'').replace(/\\/g,'').trim();
-        if(!quote)return false;
-        const key=quote.toLowerCase().replace(/\s+/g,' ');
-        if(seen.has(key))return false;
-        seen.add(key);
-      }
-      return true;
-    });
-    if(paras.length&&/^(?:I'll|I will|Let me)\b/i.test(paras[0]))paras=paras.slice(1);
-    text=paras.join('\n\n').trim();
-    return text?md(text):'';
+    return frApi().researchBriefing(brief);
   }
 
   async function downloadHTML(){

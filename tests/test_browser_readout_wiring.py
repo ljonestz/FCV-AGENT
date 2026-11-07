@@ -195,24 +195,15 @@ def test_stage3_has_no_duplicate_status_callout():
     assert "${isLast?'':`<div class=\"callout ${_calloutTone} ani\">" in body
 
 
-def test_export_research_briefing_is_cleaned_and_collapsed():
+def test_export_research_briefing_uses_renderer_source_list():
     source = html()
     helper = function_body(source, "function exportResearchBriefHtml(")
     export = function_body(source, "async function downloadHTML(")
     assert "exportResearchBriefHtml(researchBrief)" in export
     assert "Research briefing</h2>" not in export
     assert '<details class="fr-disc fr-research"><summary class="fr-disc-sum">Background research and sources</summary>' in export
-    brief = ("I'll run a small set of searches first.\n\n\\#\\#\\# Security\n\nViolence rose \\[uncited link removed\\].\n\n"
-             "> \\\n\n> Quoted excerpt.\n\n> Quoted excerpt.")
-    script = "const md=t=>'<md>'+t+'</md>';\n" + helper + "\n}\nprocess.stdout.write(exportResearchBriefHtml(" + json.dumps(brief) + "));"
-    result = subprocess.run(["node", "-e", script], capture_output=True, text=True, encoding="utf-8")
-    assert result.returncode == 0, result.stderr
-    out = result.stdout
-    assert "I'll run" not in out and "\\" not in out
-    assert "### Security" in out and "[uncited link removed]" in out
-    assert out.count("Quoted excerpt.") == 1
-
-
+    # Raw markdown is never passed through md(); the renderer builds the intro line and link list.
+    assert "frApi().researchBriefing(brief)" in helper and "md(" not in helper
 
 
 def test_tab_title_and_icon_track_run_status():
@@ -271,7 +262,9 @@ def test_readout_width_disclosure_chevrons_and_mobile_meta():
     style = style[:style.index("</style>")]
     assert "74ch" not in style and ".fr-readout{max-width:1040px}" in style
     assert ".fr-readout .fr-h1-num{font-size:12px;font-weight:700;color:var(--fr-blue-text);flex:none;white-space:nowrap}" in style
-    assert ".fr-readout .fr-pc-meta .fr-meta-dim,.fr-readout .fr-pc-meta .fr-meta-time{display:none}" in style
+    # Timing stays visible on phones; only the dimension segment is hidden.
+    assert "@media(max-width:760px){.fr-readout .fr-pc-meta .fr-meta-dim{display:none}" in style
+    assert "fr-meta-time{display:none}" not in style
     assert '<span class="beyond-arrow" aria-hidden="true">${window.FcvReadout.CHEVRON_SVG}</span>' in function_body(source, "function renderGoDeeperHtml(")
     assert '<span class="pcd-chev" aria-hidden="true">${window.FcvReadout.CHEVRON_SVG}</span>' in function_body(source, "function renderStandardPriorityContext(")
     assert ".priority-context-disclosure[open]>summary .pcd-chev{transform:rotate(180deg)}" in source

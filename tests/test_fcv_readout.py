@@ -213,7 +213,7 @@ def climate(reader: dict, opts: dict | None = None) -> str:
 def test_climate_readout_structure():
     html = climate(CLIMATE_READER)
     order = ["id=cn", "fr-scorecard", 'fr-h1-txt">Overview<', "Snapshot sentence from overview.", "What is already working",
-             "Key gaps at this stage", 'fr-h1-txt">Assessment Findings<', 'fr-h1-txt">Climate-FCV Sensitivity and Responsiveness<',
+             'fr-h1-txt">Assessment Findings<', 'fr-h1-txt">Climate-FCV Sensitivity and Responsiveness<',
              'fr-h1-txt">Priority Actions for the Task Team<', 'id="fr-priority-1"', 'fr-h1-txt">Smaller Points to Check During Preparation<',
              'fr-h1-txt">Relevant WBG Guidance<', 'fr-h1-txt">Limitations<']
     positions = [html.index(marker) for marker in order]
@@ -389,7 +389,7 @@ def test_ratings_section_has_no_advisory_note_and_ops_note_is_labelled():
 
 
 def test_closing_line_is_last_element_on_both_routes():
-    closing = '<p class="fr-note fr-closing">This automated screening supports task-team judgment. It is not a compliance, eligibility, adequacy or clearance decision.</p>'
+    closing = '<p class="fr-note fr-closing">This automated screening supports task-team judgment. It is not a compliance, eligibility or clearance decision.</p>'
     assert normal({}).endswith(closing + "</article>")
     assert climate(CLIMATE_READER).endswith(closing + "</article>")
     already = climate(dict(CLIMATE_READER, advisory_notice="This note does not constitute a clearance."))
@@ -402,9 +402,11 @@ def test_climate_fallback_overview_moves_to_limitations():
     html = climate(reader)
     overview = html[html.index('fr-h1-txt">Overview<'):html.index('fr-h1-txt">Assessment Findings<')]
     assert "A short summary" not in overview and "Assessment snapshot" not in overview
-    assert overview.index("What is already working") < overview.index("Key gaps at this stage")
+    assert "What is already working" in overview and "Key gaps at this stage" not in overview
     limits = html[html.index('class="fr-limits"'):]
     assert limits.index("A short summary is not shown for this run.</strong> Use the priorities.") < limits.index("Concept stage only.")
+    # Single-sentence Limitations paragraphs are not bold.
+    assert '<p dir="auto" class="fr-p">Concept stage only.</p>' in limits
     assert html.count("A short summary is not shown") == 1
 
 
@@ -508,7 +510,7 @@ def test_normal_limitations_lines_and_closing_after():
     html = normal({"fileNames": ["PAD v3.docx", "RRA.docx"], "researchBrief": "x\nResearch run timestamp: 2026-11-07T08:20:40+00:00 (retrieval time).",
                    "partial": True})
     lim = html[html.index('fr-h1-txt">Limitations<'):]
-    assert "This screening draws only on the documents uploaded for this run: PAD v3.docx, RRA.docx." in lim
+    assert "Documents uploaded for this run: PAD v3, RRA." in lim and "draws only on" not in lim
     assert "Background research was retrieved on 7 November 2026; events after that date are not reflected." in lim
     assert "This run is partial; some sections may be missing." in lim
     assert "Findings are based on the text of the project documents and may miss arrangements described elsewhere." in lim
@@ -581,12 +583,13 @@ def test_card_meta_segments_mark_dimension_and_timing_for_mobile():
     assert '<span class="fr-meta-seg fr-meta-time"> &middot; Address before Decision Review (DM/ROC)</span>' in card
 
 
-def test_climate_key_gaps_shorten_and_link_to_findings():
+def test_climate_key_gaps_only_as_fallback_without_findings():
     html = climate(CLIMATE_READER)
     overview = html[html.index('fr-h1-txt">Overview<'):html.index('fr-h1-txt">Assessment Findings<')]
-    assert "<strong>Gap one.</strong></p>" in overview and "Gap one. Detail" not in overview and "Gap one.</strong> Detail" not in overview
-    assert '<a href="#fr-s02">See section 02</a>' in overview and 'id="fr-s02"><span class="fr-h1-num">02</span><h2 class="fr-h1-txt">Assessment Findings<' in html
+    assert "Key gaps at this stage" not in overview and "Gap one" not in html and "See section 02" not in html
+    assert 'id="fr-s02"><span class="fr-h1-num">02</span><h2 class="fr-h1-txt">Assessment Findings<' in html
     plain = climate(dict(CLIMATE_READER, assessment_themes=[]))
+    assert "Key gaps at this stage" in plain and "Assessment Findings" not in plain
     assert "Gap one. Detail." in plain.replace("<strong>", "").replace("</strong>", "") and "See section 02" not in plain
 
 
@@ -646,3 +649,99 @@ def test_climate_guidance_matched_question_line_and_unmatched_items():
     assert "Relevant to this project" not in framework[:framework.index("</div>")]
     no_themes = guidance_block(climate(dict(reader, assessment_themes=[])))
     assert "Relevant to this project" not in no_themes
+
+
+VERIFY_A = "[Verify before sharing: Check PF-012 (block 46ab9ca6aba6) and PF-021: the displacement statement is general. Confirm the wording.]"
+VERIFY_B = ("[Verify before sharing: Check PF-020 and PF-012 and source blocks 28ef88b92d85 and 46ab9ca6aba6: drainage is expected. "
+            "Confirm the link.]")
+
+
+def test_verify_notes_leave_prose_and_list_once_in_limitations():
+    reader = dict(CLIMATE_READER, summary_overview=[f"Snapshot sentence. {VERIFY_A}", "Second overview paragraph."],
+                  assessment_themes=[{"title": "Climate risks, design and delivery", "paragraphs": [f"Theme para. {VERIFY_B}", f"More. {VERIFY_A}"],
+                                      "priority_ranks": [1]}])
+    html = climate(reader)
+    assert "Verify before sharing:" not in html and "PF-0" not in html and "46ab9ca6aba6" not in html and "28ef88b92d85" not in html
+    info = html[html.index("Assessment snapshot"):html.index("</div></div>", html.index("Assessment snapshot"))]
+    assert "<strong>Snapshot sentence.</strong>" in info
+    limits = html[html.index('class="fr-limits"'):]
+    assert ">Points to verify before sharing<" in limits
+    items = limits[limits.index("<ul"):limits.index("</ul>")]
+    assert items.count("<li") == 2
+    assert '<li dir="auto">The displacement statement is general. Confirm the wording.</li>' in items
+    assert '<li dir="auto">Drainage is expected. Confirm the link.</li>' in items
+    assert "Points to verify" not in climate(CLIMATE_READER)
+    # The stored reader is not modified.
+    assert VERIFY_A in json.dumps(reader)
+
+
+def test_verify_notes_are_scrubbed_on_the_normal_route():
+    html = normal({"sensitivitySummary": f"Sensitivity is Adequate. {VERIFY_A}"})
+    assert "Verify before sharing:" not in html and "PF-012" not in html
+    assert "Points to verify before sharing" in html[html.index('class="fr-limits"'):]
+
+
+def test_clean_verify_note_keeps_meaningful_lead_clause():
+    out = json.loads(run_js("process.stdout.write(JSON.stringify([FR.cleanVerifyNote('Check the PAD annex (source block 0123456789ab): dates differ.'),"
+                            "FR.cleanVerifyNote('Check PF-1: x.')]));"))
+    assert out == ["Check the PAD annex: dates differ.", "X."]
+
+
+def test_legacy_climate_fallback_sentences_are_replaced():
+    legacy = ["The automated Summary could not be independently verified. The operational context and assessment findings provide the available analysis.",
+              "Use the ranked operational priorities and points to check as the basis for review. Confirm the stated evidence limitations before relying on the brief."]
+    html = climate(dict(CLIMATE_READER, reader_contract="final-reader-v1", summary_overview_status="fallback", summary_overview=legacy))
+    assert "could not be independently verified" not in html and "Use the ranked operational priorities" not in html
+    assert html.count("A short summary is not shown for this run because it could not be checked against the project documents.") == 1
+
+
+def test_climate_drafts_follow_what_the_team_could_do():
+    pri = dict(CLIMATE_READER["priorities"][1], caution="A separate caution.", enhanced_action="Extra step.")
+    html = climate(dict(CLIMATE_READER, priorities=[pri]))
+    card = html[html.index('id="fr-priority-1"'):]
+    assert card.index(">What the team could do<") < card.index('class="fr-draft"') < card.index(">Practical considerations<") < card.index(">Optional further work<")
+
+
+def test_research_briefing_lists_sources_from_paid_session():
+    session = json.loads((ROOT / "output" / "20261106_readout-paid-runs" / "20261107_normal-afghanistan-hcj-pad-session.json").read_text(encoding="utf-8"))
+
+    def find(o):
+        if isinstance(o, dict):
+            for k, v in o.items():
+                if k == "researchBrief":
+                    return v
+                r = find(v)
+                if r:
+                    return r
+        return None
+
+    brief = find(session)
+    if brief is None:
+        brief = ("Research run timestamp: 2026-11-07T08:20:40+00:00 (retrieval time).\n\n#### Provider-cited source-backed excerpts\n"
+                 "- [Report one](https://news.un.org/a) - 0 days ago\n  > Excerpt one.\n- [Report one](https://news.un.org/a) - 0 days ago\n  > Other.\n")
+    out = run_js(f"process.stdout.write(api.researchBriefing({json.dumps(brief)}));")
+    assert out.startswith('<p class="fr-p fr-research-intro">Public sources retrieved on 7 November 2026 to supplement the project documents.</p><ul class="fr-research-list">')
+    for bad in ["####", "](", "&gt;", "days ago", "\\", "**"]:
+        assert bad not in out, bad
+    hrefs = [part.split('"')[0] for part in out.split('href="')[1:]]
+    assert hrefs and len(hrefs) == len(set(hrefs)) and all(h.startswith("https://") for h in hrefs)
+
+
+def test_research_briefing_rejects_unsafe_urls_and_handles_unstructured_text():
+    brief = ("#### Provider-cited source-backed excerpts\n- [Bad](javascript:alert(1)) - 3 days ago\n  > Evil.\n"
+             "- [Good](https://example.org/x) - 1 day ago\n  >\n  > Kept **excerpt**.\n")
+    out = run_js(f"process.stdout.write(api.researchBriefing({json.dumps(brief)}));")
+    assert "javascript:" not in out and "Evil." not in out
+    assert '<a href="https://example.org/x" target="_blank" rel="noopener noreferrer">Good</a><span class="fr-research-ex" dir="auto">Kept excerpt.</span>' in out
+    assert "Public sources retrieved to supplement the project documents." in out
+    plain_brief = "I'll search first.\n\n\\#\\# Security\n\nViolence rose.\n\n> Quote."
+    plain = run_js(f"process.stdout.write(api.researchBriefing({json.dumps(plain_brief)}));")
+    assert plain == '<p dir="auto" class="fr-p">Violence rose.</p><p dir="auto" class="fr-p">Quote.</p>'
+
+
+def test_parenthetical_internal_ids_are_dropped_from_prose():
+    out = json.loads(run_js("process.stdout.write(JSON.stringify(FR.extractVerifyNotes('Standards apply (PF-008, PF-010). Not found (RG-001). Keep (PAD, 2024).', [])));"))
+    assert out == "Standards apply. Not found. Keep (PAD, 2024)."
+    reader = dict(CLIMATE_READER, existing_responses=[{"description": "Airstrips were screened (PF-011)."}])
+    html = climate(reader)
+    assert "PF-011" not in html and "Airstrips were screened." in html

@@ -14,7 +14,7 @@
     climateResponsiveness: 'Does the project use relevant opportunities to generate wider peace and social dividends? Not expected for every project.',
   };
 
-  const CLOSING_LINE = 'This automated screening supports task-team judgment. It is not a compliance, eligibility, adequacy or clearance decision.';
+  const CLOSING_LINE = 'This automated screening supports task-team judgment. It is not a compliance, eligibility or clearance decision.';
 
   // Self-contained handlers (no model text) so they also work in the Share .html export.
   const COPY_DRAFT_HANDLER = "navigator.clipboard&&navigator.clipboard.writeText(this.closest('.fr-draft').querySelector('.fr-draft-text').innerText);this.textContent='Copied'";
@@ -110,6 +110,57 @@
     return String(text || '').replace(TAG_JUSTIFICATION_RE, '').trim();
   }
 
+  // Reviewer notes ("[Verify before sharing: ...]") are pulled out of displayed prose and listed once
+  // in Limitations, without internal block hashes or PF-nnn fact ids.
+  const VERIFY_NOTE_RE = /[ \t]*\[Verify before sharing:\s*([^\]]*)\]/gi;
+
+  function cleanVerifyNote(note) {
+    let t = String(note || '');
+    t = t.replace(/\s*\((?:source )?blocks?\s+[0-9a-f]{8,}[^)]*\)/gi, '');
+    t = t.replace(/(?:\band\s+)?(?:\bsource\s+)?\bblocks?\s+[0-9a-f]{8,}(?:\s*(?:,|and)\s*[0-9a-f]{8,})*/gi, '');
+    t = t.replace(/(?:\band\s+|,\s*)?\bPF-\d+\b/g, '');
+    // A lead clause left with no object ("Check  and :") is dropped.
+    t = t.replace(/^\s*(?:Check|See|Compare)(?:\s|,|and)*:\s*/i, '');
+    t = t.replace(/\(\s*\)/g, '').replace(/\s{2,}/g, ' ').replace(/\s+([,.;:])/g, '$1').trim();
+    return t ? t.charAt(0).toUpperCase() + t.slice(1) : '';
+  }
+
+  // Parenthetical internal evidence ids in prose ("(PF-008, PF-010)", "(RG-001)") are dropped from display.
+  const INTERNAL_IDS_RE = /[ \t]*\((?:PF|RG|CE|ER|EV)-\d+(?:\s*(?:,|;|and)\s*(?:PF|RG|CE|ER|EV)-\d+)*\)/g;
+
+  // Removes reviewer notes from one string; cleaned notes go to sink (deduplicated, first-seen order).
+  function extractVerifyNotes(text, sink) {
+    let value = String(text || '');
+    if (/\((?:PF|RG|CE|ER|EV)-\d/.test(value)) value = value.replace(INTERNAL_IDS_RE, '');
+    if (value.indexOf('[') < 0) return value;
+    let found = false;
+    const out = value.replace(VERIFY_NOTE_RE, (m, note) => {
+      found = true;
+      const clean = cleanVerifyNote(note);
+      const key = clean.toLowerCase();
+      if (clean && sink && !sink.some(x => x.toLowerCase() === key)) sink.push(clean);
+      return '';
+    });
+    return found ? out.replace(/[ \t]+$/gm, '') : value;
+  }
+
+  // Copy of plain data with every string scrubbed; HTML fields (keys ending in "Html") and functions are kept.
+  function scrubDeep(value, sink) {
+    if (typeof value === 'string') return extractVerifyNotes(value, sink);
+    if (Array.isArray(value)) return value.map(v => scrubDeep(v, sink));
+    if (value && typeof value === 'object' && Object.getPrototypeOf(value) === Object.prototype) {
+      const out = {};
+      Object.keys(value).forEach(key => { out[key] = /Html$/.test(key) ? value[key] : scrubDeep(value[key], sink); });
+      return out;
+    }
+    return value;
+  }
+
+  // "Project Appraisal Document (PAD)_v3.docx" -> "Project Appraisal Document (PAD) v3".
+  function displayFileName(name) {
+    return String(name || '').replace(/^.*[\/]/, '').replace(/\.[A-Za-z0-9]{1,5}$/, '').replace(/_+/g, ' ').replace(/\s{2,}/g, ' ').trim();
+  }
+
   // Display order for normal priorities: High, Medium, Low, then anything else; stable within a level.
   const LEVEL_ORDER = { high: 0, medium: 1, low: 2 };
   function orderByLevel(priorities) {
@@ -150,6 +201,50 @@
     return month ? `${Number(m[3])} ${month} ${m[1]}` : '';
   }
 
+  // Markdown fragment -> one line of plain text (escapes, emphasis and link syntax removed).
+  function plainText(text) {
+    return String(text || '').replace(/\\(.)/g, '$1').replace(/\[([^\]]*)\]\([^)\s]*\)/g, '$1')
+      .replace(/\*\*|__|`/g, '').replace(/\s*-?\s*\b\d+\s+days?\s+ago\b/gi, '').replace(/\s+/g, ' ').trim();
+  }
+
+  // Stored research brief -> provider-cited sources: [{title, url, excerpt}], http(s) only, one entry per URL.
+  // Collection stops at the model-interpretation part of the brief.
+  function researchSources(brief) {
+    const out = [];
+    const seen = new Set();
+    let current = null;
+    const lines = String(brief || '').replace(/\r\n?/g, '\n').split('\n');
+    for (const line of lines) {
+      if (/^\s*#{1,6}\s/.test(line) && /model interpretation/i.test(line)) break;
+      const link = line.match(/^\s*[-*+]\s+\[([^\]]+)\]\((\S+)\)(?:\s|$)/);
+      if (link) {
+        current = null;
+        const url = safeUrl(link[2]);
+        if (!url || seen.has(url)) continue;
+        seen.add(url);
+        current = { title: plainText(link[1]) || url, url, excerpt: '' };
+        out.push(current);
+        continue;
+      }
+      const quote = line.match(/^\s*>\s?(.*)$/);
+      if (quote) {
+        if (current && !current.excerpt) current.excerpt = plainText(quote[1]);
+        continue;
+      }
+      if (line.trim() && !/^\s/.test(line)) current = null;
+    }
+    return out;
+  }
+
+  // Plain-text paragraphs for a brief without a source list: headings, quote markers and preambles dropped.
+  function researchParagraphs(brief) {
+    const paras = String(brief || '').replace(/\r\n?/g, '\n').split(/\n\s*\n+/)
+      .map(p => p.split('\n').filter(l => !/^\s*(?:\\?#)+\s/.test(l)).map(l => l.replace(/^\s*>\s?/, '')).join(' '))
+      .map(plainText).filter(p => p && !/^Research run timestamp:/i.test(p));
+    if (paras.length && /^(?:I'll|I will|Let me)\b/i.test(paras[0])) paras.shift();
+    return paras;
+  }
+
   function create(deps) {
     const esc = deps.esc;
     const md = deps.md;
@@ -181,6 +276,34 @@
     function paragraphs(list) {
       return (list || []).map(t => String(t || '').trim()).filter(Boolean)
         .map(t => `<p dir="auto" class="fr-p">${boldFirst(t)}</p>`).join('');
+    }
+
+    // Limitations: only the first sentence of a multi-sentence paragraph is bold.
+    function limitParagraphs(list) {
+      return (list || []).map(t => String(t || '').trim()).filter(Boolean)
+        .map(t => takeSentences(t, 1).rest ? `<p dir="auto" class="fr-p">${boldFirst(t)}</p>` : `<p dir="auto" class="fr-p">${esc(t)}</p>`).join('');
+    }
+
+    function verifyList(notes) {
+      const list = (notes || []).filter(Boolean);
+      return list.length ? `<div class="fr-verify"><h3 class="fr-verify-lbl">Points to verify before sharing</h3><ul class="fr-verify-list">${list.map(n => `<li dir="auto">${esc(n)}</li>`).join('')}</ul></div>` : '';
+    }
+
+    function limitsBox(paras, notes) {
+      return `<div class="fr-limits">${limitParagraphs(paras)}${verifyList(notes)}</div>`;
+    }
+
+    // Share .html research briefing: intro line plus a list of source links with a one-line excerpt.
+    function researchBriefing(brief) {
+      const sources = researchSources(brief);
+      if (!sources.length) {
+        const paras = researchParagraphs(brief);
+        return paras.length ? paras.map(t => `<p dir="auto" class="fr-p">${esc(t)}</p>`).join('') : '';
+      }
+      const date = researchDate(brief);
+      const lead = `Public sources retrieved ${date ? `on ${date} ` : ''}to supplement the project documents.`;
+      const items = sources.map(src => `<li><a href="${esc(src.url)}" target="_blank" rel="noopener noreferrer">${esc(src.title)}</a>${src.excerpt ? `<span class="fr-research-ex" dir="auto">${esc(src.excerpt)}</span>` : ''}</li>`).join('');
+      return `<p class="fr-p fr-research-intro">${esc(lead)}</p><ul class="fr-research-list">${items}</ul>`;
     }
 
     // Numbered section headers; the recorded list feeds the section jump nav.
@@ -244,12 +367,15 @@
     }
 
     function priorityCard(p) {
-      const zones = (p.zones || []).filter(z => z.html).map(z => `<section class="fr-zone"><h4 class="fr-lbl">${esc(z.label)}</h4>${z.html}</section>`).join('');
+      // Drafts follow the first draftsAt zones (default: after every zone).
+      const zoneHtml = list => list.filter(z => z.html).map(z => `<section class="fr-zone"><h4 class="fr-lbl">${esc(z.label)}</h4>${z.html}</section>`).join('');
+      const allZones = p.zones || [];
+      const at = Number.isInteger(p.draftsAt) ? p.draftsAt : allZones.length;
       const drafts = (p.drafts || []).filter(d => d.text).map(d => `<section class="fr-draft"><div class="fr-draft-hd"><div class="fr-draft-lbl">${esc(d.label)}</div><button type="button" class="fr-copy" data-copy-skip onclick="${COPY_DRAFT_HANDLER}">Copy</button></div>${d.forText ? `<div class="fr-draft-for">For: ${esc(d.forText)}</div>` : ''}<p dir="auto" class="fr-draft-text">${esc(d.text)}</p></section>`).join('');
       const cycle = p.cycle && p.cycle.text ? `<p class="fr-cycle"><strong>${esc(p.cycle.label || 'When to address')}:</strong> ${esc(p.cycle.text)}</p>` : '';
       const meta = p.supHtml ? `<span class="fr-pc-meta">${p.supHtml}</span>` : '';
       const src = Number.isInteger(p.srcIndex) ? ` data-fr-src-index="${p.srcIndex}"` : '';
-      return `<details class="fr-pc" id="${p.id}"${src}${p.open ? ' open' : ''}><summary class="fr-pc-hdr"><span class="fr-pc-rank">${p.rank}</span><span class="fr-pc-title">${meta}<span dir="auto" class="fr-pc-title-txt">${esc(p.title)}</span></span><span class="fr-pc-chev" aria-hidden="true">${CHEVRON_SVG}</span></summary><div class="fr-pc-body">${zones}${drafts}${cycle}${p.extraHtml || ''}</div></details>`;
+      return `<details class="fr-pc" id="${p.id}"${src}${p.open ? ' open' : ''}><summary class="fr-pc-hdr"><span class="fr-pc-rank">${p.rank}</span><span class="fr-pc-title">${meta}<span dir="auto" class="fr-pc-title-txt">${esc(p.title)}</span></span><span class="fr-pc-chev" aria-hidden="true">${CHEVRON_SVG}</span></summary><div class="fr-pc-body">${zoneHtml(allZones.slice(0, at))}${drafts}${zoneHtml(allZones.slice(at))}${cycle}${p.extraHtml || ''}</div></details>`;
     }
 
     function cards(cardsHtml, count) {
@@ -270,8 +396,8 @@
       return text ? `<span class="fr-pill ${cls ? esc(cls) : 'fr-pill-' + esc(key)}"${title ? ` title="${esc(title)}"` : ''}>${esc(text)}</span>` : '';
     }
 
-    // Card header meta: segments joined by a middot; dimension and timing segments carry classes the
-    // mobile CSS hides. They always come last, so a hidden segment never leaves a dangling separator.
+    // Card header meta: segments joined by a middot; the dimension segment carries a class the mobile CSS
+    // hides (timing stays visible). Each separator sits inside its own segment, so none is left dangling.
     function metaSegments(list) {
       return (list || []).filter(x => x && x[0]).map((x, i) => `<span class="fr-meta-seg${x[1] ? ' ' + x[1] : ''}">${i ? ' &middot; ' : ''}${x[0]}</span>`).join('');
     }
@@ -282,7 +408,7 @@
       return key ? pill(`${String(level).trim()} priority`, 'fr-pill-' + key) : '';
     }
 
-    const kit = { esc, md, boldFirst, timingLabel, takeSentences, prose, paragraphs, numbering, toc, sub, intro, advisory, infoBox, section, closing, meter, scorecard, ratingRows, priorityCard, cards, disclosure, checkItems, pill, levelPill, metaSegments, stripTagNotes };
+    const kit = { esc, md, boldFirst, timingLabel, takeSentences, prose, paragraphs, limitParagraphs, verifyList, limitsBox, researchBriefing, numbering, toc, sub, intro, advisory, infoBox, section, closing, meter, scorecard, ratingRows, priorityCard, cards, disclosure, checkItems, pill, levelPill, metaSegments, stripTagNotes };
     return Object.assign(kit, {
       renderNormal: data => renderNormal(kit, data),
       renderClimate: (reader, opts) => renderClimate(kit, reader, opts),
@@ -338,7 +464,9 @@
     return labels.filter(l => counts[l.key]).map(l => ({ text: `${prefix || ''}${counts[l.key]} ${l.text}`, cls: l.cls }));
   }
 
-  function renderNormal(k, d) {
+  function renderNormal(k, data) {
+    const verifyNotes = [];
+    const d = scrubDeep(data || {}, verifyNotes);
     const h = k.numbering();
     const s = parseStage3Sections(d.stage3Markdown);
     const priorities = Array.isArray(d.priorities) ? d.priorities.slice(0, 5) : [];
@@ -419,15 +547,15 @@
     const guides = NORMAL_GUIDANCE.map(g => guideItem(k, g, '')).join('');
     if (guides) html += k.section('fr-guidance', h('Relevant WBG Guidance') + k.disclosure('Selected WBG resources for the team', guides));
 
-    const files = (Array.isArray(d.fileNames) ? d.fileNames : []).map(f => String(f || '').trim()).filter(Boolean);
+    const files = (Array.isArray(d.fileNames) ? d.fileNames : []).map(displayFileName).filter(Boolean);
     const retrieved = researchDate(d.researchBrief);
     const limits = [
-      files.length ? `This screening draws only on the documents uploaded for this run: ${files.join(', ')}.` : '',
+      files.length ? `Documents uploaded for this run: ${files.join(', ')}.` : '',
       retrieved ? `Background research was retrieved on ${retrieved}; events after that date are not reflected.` : '',
       d.partial ? 'This run is partial; some sections may be missing.' : '',
       NORMAL_LIMITATION,
     ];
-    html += k.section('fr-limits-sec', h('Limitations') + `<div class="fr-limits">${k.paragraphs(limits)}</div>`);
+    html += k.section('fr-limits-sec', h('Limitations') + k.limitsBox(limits, verifyNotes));
     if (d.researchHtml) html += `<details class="fr-disc fr-research"><summary class="fr-disc-sum">Background research and sources</summary><div class="fr-disc-body out-body">${d.researchHtml}</div></details>`;
     return `<article class="fr-readout fr-route-fcv">${head}${k.toc(h.list)}${html}${k.closing()}</article>`;
   }
@@ -492,8 +620,17 @@
     return /^https?:\/\//i.test(String(url || '')) ? String(url) : '';
   }
 
+  // Fallback overview text saved before the wording change; shown with the current sentence instead.
+  const FALLBACK_OVERVIEW = 'A short summary is not shown for this run because it could not be checked against the project documents. The findings and priorities below remain available; read them alongside the limitations at the end of this note.';
+  const LEGACY_FALLBACK_OVERVIEW = [
+    'The automated Summary could not be independently verified. The operational context and assessment findings provide the available analysis.',
+    'Use the ranked operational priorities and points to check as the basis for review. Confirm the stated evidence limitations before relying on the brief.',
+  ];
+
   function renderClimate(k, reader, opts) {
-    const r = reader && typeof reader === 'object' ? reader : {};
+    const verifyNotes = [];
+    // Scrubbed copy for display only; the stored reader is never changed.
+    const r = reader && typeof reader === 'object' ? scrubDeep(reader, verifyNotes) : {};
     const o = opts || {};
     const h = k.numbering();
     const judgments = Array.isArray(r.judgments) ? r.judgments : [];
@@ -513,7 +650,8 @@
     ], { label: 'Priority actions', number: priorities.length, def: countDef(priorities.length, 'priority action', 'priority actions'), pills: countPills(priorities, p => String(p.confidence || '').toLowerCase(), [
       { key: 'high', text: 'high', cls: 'fr-pill-conf fr-pill-conf-high' }, { key: 'medium', text: 'medium', cls: 'fr-pill-conf fr-pill-conf-medium' }, { key: 'low', text: 'low', cls: 'fr-pill-conf fr-pill-conf-low' }], 'Confidence: ') });
 
-    const overview = (Array.isArray(r.summary_overview) ? r.summary_overview : [r.summary_overview]).map(t => String(t || '').trim()).filter(Boolean);
+    const overview = (Array.isArray(r.summary_overview) ? r.summary_overview : [r.summary_overview]).map(t => String(t || '').trim()).filter(Boolean)
+      .map(t => LEGACY_FALLBACK_OVERVIEW.includes(t) ? FALLBACK_OVERVIEW : t).filter((t, i, list) => list.indexOf(t) === i);
     let snapshot = '';
     let contextHtml = '';
     let fallbackNote = '';
@@ -534,15 +672,13 @@
     const themeList = Array.isArray(r.assessment_themes) ? r.assessment_themes : [];
     // Overview is always section 01, so Assessment Findings (when it renders) is section 02.
     const findingsId = 'fr-s02';
-    const gapsHtml = !gaps.length ? '' : themeList.length
-      ? gaps.map(g => `<p dir="auto" class="fr-p"><strong>${k.esc(k.takeSentences(g, 1).head)}</strong></p>`).join('')
-        + `<p class="fr-see"><a href="#${findingsId}">See section 02</a></p>`
-      : k.paragraphs(gaps);
+    // Findings and priorities carry the gaps; the Overview lists them only when no findings render.
+    const showGaps = gaps.length && !themeList.length;
     let html = k.section('fr-exec', h('Overview')
       + (snapshot ? k.infoBox('Assessment snapshot', `<strong>${k.esc(snapshot)}</strong>`) : '')
       + contextHtml
       + (working.length ? k.sub('What is already working') + k.paragraphs(working) : '')
-      + (gaps.length ? k.sub('Key gaps at this stage') + gapsHtml : ''));
+      + (showGaps ? k.sub('Key gaps at this stage') + k.paragraphs(gaps) : ''));
 
     const rankIndex = new Map();
     priorities.forEach((p, i) => { const n = Number(p.rank); if (Number.isInteger(n) && !rankIndex.has(n)) rankIndex.set(n, i + 1); });
@@ -596,7 +732,7 @@
         const optionalText = [p.enhanced_action, p.enhanced_activation].map(t => String(t || '').trim()).filter(Boolean).join(' ');
         const optional = optionalText && fresh(optionalText) ? [optionalText] : [];
         return k.priorityCard({
-          id: `fr-priority-${rank}`, rank, open: i === 0, title: priorityTitle(p.title),
+          id: `fr-priority-${rank}`, rank, open: i === 0, title: priorityTitle(p.title), draftsAt: 2,
           supHtml: [confidencePill(k, p.confidence, ' confidence'), lead ? `Lead: ${k.esc(lead)}` : '', k.esc(target)].filter(Boolean).join(' &middot; '),
           zones: [{ label: 'Why this matters', html: k.paragraphs(why) }, { label: 'What the team could do', html: k.paragraphs(act) },
             { label: 'Practical considerations', html: k.paragraphs([practical.join(' ')]) },
@@ -645,12 +781,12 @@
     const trail = r.evidence_trail || {};
     const limits = Array.isArray(trail.limitations) ? trail.limitations.filter(Boolean).join(' ') : String(trail.limitations || '').trim();
     const limitsText = limits || 'This automated screening is advisory and is limited by the coverage and detail of the uploaded documents. The team should confirm material findings through project and country expertise.';
-    html += k.section('fr-limits-sec', h('Limitations') + `<div class="fr-limits">${k.paragraphs([fallbackNote, limitsText, r.advisory_notice])}</div>`);
+    html += k.section('fr-limits-sec', h('Limitations') + k.limitsBox([fallbackNote, limitsText, r.advisory_notice], verifyNotes));
     const saysAlready = /does not constitute/i.test(`${limitsText} ${r.advisory_notice || ''}`);
     return `<article class="fr-readout fr-route-climate">${head}${k.toc(h.list)}${html}${saysAlready ? '' : k.closing()}</article>`;
   }
 
-  const api = { FCV_SCALE, CLIMATE_SCALE, FOCUS_LABELS, DEFINITIONS, CLOSING_LINE, CHEVRON_SVG, PINNED_CLIMATE_GUIDANCE, NORMAL_GUIDANCE, parseStage3Sections, parseSupplementaryPoints, researchDate, orderByLevel, stripTagNotes, create };
+  const api = { FCV_SCALE, CLIMATE_SCALE, FOCUS_LABELS, DEFINITIONS, CLOSING_LINE, CHEVRON_SVG, PINNED_CLIMATE_GUIDANCE, NORMAL_GUIDANCE, parseStage3Sections, parseSupplementaryPoints, researchDate, researchSources, orderByLevel, stripTagNotes, extractVerifyNotes, cleanVerifyNote, displayFileName, create };
   root.FcvReadout = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);
