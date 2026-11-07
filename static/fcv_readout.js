@@ -725,8 +725,7 @@
       + (snapshot ? k.infoBox('Assessment snapshot', `<strong>${k.esc(snapshot)}</strong>`) : '')
       + contextHtml
       + (working.length ? k.sub('What is already working') + k.paragraphs(working) : '')
-      + (showGaps ? k.sub('Key gaps at this stage') + k.paragraphs(gaps) : '')
-      + (!snapshot && themeList.length ? `<p class="fr-intro">No verified summary is available for this run. The gaps are set out under <a href="#${findingsId}">Assessment Findings</a> and in the priority actions.</p>` : ''));
+      + (showGaps ? k.sub('Key gaps at this stage') + k.paragraphs(gaps) : ''));
 
     const rankIndex = new Map();
     priorities.forEach((p, i) => { const n = Number(p.rank); if (Number.isInteger(n) && !rankIndex.has(n)) rankIndex.set(n, i + 1); });

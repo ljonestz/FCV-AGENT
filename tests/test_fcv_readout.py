@@ -779,12 +779,14 @@ def test_parenthetical_internal_ids_are_dropped_from_prose():
     assert "PF-011" not in html and "Airstrips were screened." in html
 
 
-def test_partial_climate_overview_points_to_findings_and_counts_themes():
+def test_withheld_climate_summary_leaves_overview_without_a_substitute():
+    # User decision 2026-11-07: no summary is better than a weak one, so nothing stands in for it.
     reader = dict(CLIMATE_READER, reader_contract="final-reader-v1", summary_overview_status="fallback",
                   summary_overview=["x"])
     html = climate(reader)
     overview = html[html.index('fr-h1-txt">Overview<'):html.index('fr-h1-txt">Assessment Findings<')]
-    assert "No verified summary is available for this run" in overview and 'href="#fr-s02"' in overview
+    assert "Assessment snapshot" not in overview and "No verified summary" not in overview
+    assert "No short summary is shown for this run" in html[html.index('class="fr-limits"'):]
     n = html.count('class="fr-theme"')
     word = {1: "One cross-cutting question", 2: "Two cross-cutting questions", 3: "Three cross-cutting questions"}[n]
     assert word in html and "Where relevant, each links" in html
