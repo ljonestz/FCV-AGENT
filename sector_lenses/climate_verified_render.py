@@ -840,8 +840,7 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
     summary_overview_generated = bool(summary_overview)
     if not summary_overview and assessment.get('reader_contract') == 'final-reader-v1':
         summary_overview = [
-            'The automated Summary could not be independently verified. The operational context and assessment findings provide the available analysis.',
-            'Use the ranked operational priorities and points to check as the basis for review. Confirm the stated evidence limitations before relying on the brief.',
+            'A short summary is not shown for this run because it could not be checked against the project documents. The findings and priorities below remain available; read them alongside the limitations at the end of this note.',
         ]
     elif not summary_overview:
         summary_overview = _legacy_summary_overview(

@@ -2501,8 +2501,8 @@ def test_verified_climate_ui_contract_is_ranked_and_multidimensional():
     assert "climate_sensitivity_rating" in module
     assert "judgments" in module
     assert "Does the project address interacting climate and FCV risks" in module
-    assert "Ranked Operational Priorities" in module
-    assert "Points to Check Before the Applicable Review" in module
+    assert "Priority Actions for the Task Team" in module
+    assert "Smaller Points to Check During Preparation" in module
     assert "No operational priorities were identified in this assessment. Review the assessment findings and points to check below." in module
     assert "priority_summary" in module and "Number(a.rank)" in module
     assert "High priority" not in module

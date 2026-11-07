@@ -115,7 +115,7 @@ def test_readout_gap_section_uses_reader_findings_without_candidate_diagnostics(
     assert "r.summary_gaps" in body
     assert "diagnostic_trace" not in body and "recommendation_candidates" not in body
     assert body.index("What is already working") < body.index("Key gaps at this stage")
-    assert body.index("Key gaps at this stage") < body.index("Ranked Operational Priorities")
+    assert body.index("Key gaps at this stage") < body.index("Priority Actions for the Task Team")
 
 
 def test_shared_caveat_respects_project_scope():
@@ -130,7 +130,7 @@ def test_readout_uses_the_canonical_rating_question_and_preserves_the_saved_scor
     script = _readout_harness() + """
 for (const question of ['How sensitive is this project to climate and FCV considerations?', 'An authoritative server question?', '']) {
   const html = renderClimateVerifiedAssessment({climate_sensitivity_rating:{question, value:'strong', label:'Strong', level:4}});
-  if (!html.includes('How well does the project recognize and address interacting climate and FCV risks?')) throw new Error('canonical rating question missing');
+  if (!html.includes('How well does the design recognize and manage interacting climate and FCV risks, and avoid doing harm?')) throw new Error('canonical rating question missing');
   if (html.includes('How sensitive is this project to climate and FCV considerations?')) throw new Error('legacy wording leaked');
   if (!html.includes('>Strong<')) throw new Error('saved score changed');
 }

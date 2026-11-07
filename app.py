@@ -13083,12 +13083,12 @@ def download_report():
     AMBER = RGBColor(0x92, 0x40, 0x00)
 
     timing_map = {
-        'flag-for-preparation': 'Flag for preparation',
-        'required-before-appraisal': 'Required before Decision Review (DM/ROC)',
-        'required-before-board': 'Required before Board',
-        'next-series': 'Feed into next series',
-        'supervision': 'Supervision / monitoring only',
-        'pre-appraisal': 'Required before Decision Review (DM/ROC)',
+        'flag-for-preparation': 'Consider during preparation',
+        'required-before-appraisal': 'Address before Decision Review (DM/ROC)',
+        'required-before-board': 'Address before Board',
+        'next-series': 'Consider for next series',
+        'supervision': 'Consider during supervision',
+        'pre-appraisal': 'Address before Decision Review (DM/ROC)',
         # New-model (OPS5.03-PROC.281/282) preparation-gate timings
         'shortly-after-OIS': 'Shortly after OIS decision',
         'before-TD-review': 'Before Technical Design review',
@@ -13904,7 +13904,7 @@ def download_report():
                 actions = priority.get('actions', [])
                 if actions:
                     report.label(
-                        f'Essential Action{"s" if len(actions) != 1 else ""}'
+                        f'Suggested Action{"s" if len(actions) != 1 else ""}'
                     )
                     for action_index, action in enumerate(actions, start=1):
                         document_element = str(action.get('document_element') or '').strip()

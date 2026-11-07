@@ -121,6 +121,34 @@ def test_peer_review_chip_does_not_interpolate_doc_type_into_handler():
     assert "(docType||'project')" in function_body(source, "function followonPeerReviewText(")
 
 
+def test_timing_labels_are_advisory_and_match_word_export():
+    source = html()
+    start = source.index("const TIMING_LABELS={")
+    labels = source[start:source.index("};", start)]
+    assert "Required" not in labels
+    assert "'required-before-appraisal':'Address before Decision Review (DM/ROC)'" in labels
+    assert "'required-before-board':'Address before Board'" in labels
+    assert "'flag-for-preparation':'Consider during preparation'" in labels
+    app = (INDEX.parent / "app.py").read_text(encoding="utf-8")
+    timing = app[app.index("timing_map = {"):app.index("}", app.index("timing_map = {"))]
+    assert "Required" not in timing and "'required-before-board': 'Address before Board'" in timing
+    assert "Essential Action" not in app
+
+
+def test_climate_partial_notices_merge_into_one_box():
+    body = function_body(html(), "function renderClimateVerifiedAssessment(")
+    assert "<strong>This run is partial.</strong>" in body
+    assert "Fewer items does not mean fewer risks or gaps. Check the limitations at the end of this note before sharing." in body
+    assert "if(_evidencePartial&&_recsPartial)" in body and "(_recsPartial&&!_evidencePartial)" in body
+
+
+def test_export_help_text_sits_in_download_menu():
+    source = html()
+    assert "Full report includes all priority actions" not in source
+    assert '<p class="report-download-help">Word (.docx): priorities and suggested text for the PAD team.</p>' in source
+    assert '<p class="report-download-help">HTML: adds the research briefing and Stage 2 annex, for FCV review.</p>' in source
+
+
 def test_stage3_result_resets_previous_stage3_state():
     source = html()
     reset = function_body(source, "function resetStage3State(")

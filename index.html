@@ -568,6 +568,7 @@
     .report-download-menu>summary::-webkit-details-marker{display:none}
     .report-download-options{position:absolute;top:calc(100% + 4px);right:0;z-index:50;min-width:160px;display:grid;gap:4px;padding:6px;background:var(--white);border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:var(--shadow-md)}
     .report-download-options button{text-align:left;width:100%}
+    .report-download-help{margin:4px 6px 0;font-size:11px;line-height:1.4;color:var(--muted);max-width:240px}
     .btn-danger{background:#fff;color:#b91c1c;border:1.5px solid #fca5a5;padding:10px 18px}
     .btn-danger:hover:not(:disabled){background:#fef2f2}
     .btn-sm{padding:7px 14px!important;font-size:13px!important}
@@ -5086,8 +5087,11 @@
     const r=reader&&typeof reader==='object'?reader:{};
     const route=climateDraftingRouteGate(r);
     const notices=[];
-    if(r.analysis_status==='partial'&&r.analysis_message)notices.push(`<div class="finalized-pad-notice"><div class="fpn-body"><strong>Assessment evidence is incomplete.</strong><p>${esc(r.analysis_message)}</p></div></div>`);
-    if(r.recommendation_status==='incomplete'||r.recommendation_status==='partial')notices.push(`<div class="finalized-pad-notice"><div class="fpn-body"><strong>${r.recommendation_status==='incomplete'?'Recommendations stage incomplete':'Recommendations need review'}:</strong> ${esc(r.recommendation_message||'Do not rely on this note as a completed assessment.')}</div></div>`);
+    const _evidencePartial=r.analysis_status==='partial'&&!!r.analysis_message;
+    const _recsPartial=r.recommendation_status==='partial';
+    if(_evidencePartial&&_recsPartial)notices.push('<div class="finalized-pad-notice"><div class="fpn-body"><strong>This run is partial.</strong><p>Some findings and proposed actions were withheld because their evidence could not be validated. Fewer items does not mean fewer risks or gaps. Check the limitations at the end of this note before sharing.</p></div></div>');
+    else if(_evidencePartial)notices.push(`<div class="finalized-pad-notice"><div class="fpn-body"><strong>Assessment evidence is incomplete.</strong><p>${esc(r.analysis_message)}</p></div></div>`);
+    if(r.recommendation_status==='incomplete'||(_recsPartial&&!_evidencePartial))notices.push(`<div class="finalized-pad-notice"><div class="fpn-body"><strong>${r.recommendation_status==='incomplete'?'Recommendations stage incomplete':'Recommendations need review'}:</strong> ${esc(r.recommendation_message||'Do not rely on this note as a completed assessment.')}</div></div>`);
     if(String(r.runtime_mode||'').toLowerCase()==='smoke')notices.push('<div class="finalized-pad-notice"><div class="fpn-body"><strong>Smoke test: validates workflow completion only; not a quality benchmark.</strong></div></div>');
     if(String(r.evidence_status||'').toLowerCase()==='preview; not approved')notices.push('<div class="finalized-pad-notice"><div class="fpn-body"><strong>Candidate country evidence: preview; not approved.</strong></div></div>');
     if(!route.confirmed)notices.push('<p class="climate-route-warning">Suggested document wording is not shown because the document type or financing route could not be confirmed reliably.</p>');
@@ -5237,11 +5241,10 @@
             <div class="out-hdr">
               <div class="out-hdr-l"><span class="dot done"></span>${NAMES[stage]}</div>
               <div class="out-hdr-actions" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
-                ${isLast?`<details class="report-download-menu"><summary class="btn btn-ghost btn-sm" aria-label="Download full report as Word or HTML">Download report</summary><div class="report-download-options" role="group" aria-label="Full Detailed report formats"><button type="button" class="btn btn-ghost btn-sm" onclick="downloadReport(this)" title="Download the full Detailed report as Word">Word (.docx)</button><button type="button" class="btn btn-ghost btn-sm" onclick="downloadHTML()" title="Download the full Detailed report as HTML">HTML (.html)</button></div></details>`:''}
+                ${isLast?`<details class="report-download-menu"><summary class="btn btn-ghost btn-sm" aria-label="Download full report as Word or HTML">Download report</summary><div class="report-download-options" role="group" aria-label="Full Detailed report formats"><button type="button" class="btn btn-ghost btn-sm" onclick="downloadReport(this)" title="Download the full Detailed report as Word">Word (.docx)</button><button type="button" class="btn btn-ghost btn-sm" onclick="downloadHTML()" title="Download the full Detailed report as HTML">HTML (.html)</button><p class="report-download-help">Word (.docx): priorities and suggested text for the PAD team.</p><p class="report-download-help">HTML: adds the research briefing and Stage 2 annex, for FCV review.</p></div></details>`:''}
                 ${isLast?`<button type="button" class="copy-btn" id="copy-active-view" onclick="copyActiveView()" aria-label="Copy the report" title="Copy the report as plain text">Copy</button>`:`<button class="copy-btn" id="copy-btn" onclick="copyOut()">Copy all</button>`}
               </div>
             </div>
-            ${isLast?`<p style="font-size:12px;color:var(--muted);padding:0 20px">Full report includes all priority actions and drafting. HTML also includes the research briefing and Stage 2 Annex; Word export omits these supplements. Optional Playbook exploration is separate.</p>`:''}
             <div class="out-body" id="out-txt">${_outBodyContent}</div>
           </div>
       </div>${_showDetailedRail?'</div>':''}
@@ -6650,7 +6653,7 @@ ${climatePrintDisclosureScript()}
       const sup=[`Priority ${i+1}`,k.pill(p.risk_level),esc(p.fcv_dimension||p.dimension||''),esc(k.timingLabel(p.action_timing))].filter(Boolean).join(' &middot; ');
       return k.priorityCard({
         id:`fr-priority-${i+1}`,rank:i+1,open:i===0,supHtml:sup,title,
-        zones:[{label:'The gap',html:k.prose(p.the_gap||p.body||'')},{label:'Why it matters',html:k.prose(p.why_it_matters||'')},{label:'Essential actions',html:actionsHtml}],
+        zones:[{label:'The gap',html:k.prose(p.the_gap||p.body||'')},{label:'Why it matters',html:k.prose(p.why_it_matters||'')},{label:'Suggested actions',html:actionsHtml}],
         drafts:actions.map(a=>({label:'Suggested Text',forText:a.document_element||'',text:a.suggested_language||''})),
         cycle:{label:'When to address',text:p.implementation_note||''},
         extraHtml:forExport?renderPriorityClimateContribution(p)+renderPriorityCompliance(p):renderPriorityWarningsHtml(p,i)+renderPriorityClimateContribution(p)+renderPriorityCompliance(p)+renderGoDeeperHtml(i)
@@ -6761,12 +6764,12 @@ ${climatePrintDisclosureScript()}
 
   function renderPriorityTiming(value){
     const timing={
-      'flag-for-preparation':{standard:'Consider in preparation',climate:'Flag for preparation',cls:'timing-flag-for-preparation'},
-      'required-before-appraisal':{standard:'Consider before appraisal',climate:'Required before Decision Review (DM/ROC)',cls:'timing-required-before-appraisal'},
-      'required-before-board':{standard:'Consider before Board',climate:'Required before Board',cls:'timing-required-before-board'},
-      'next-series':{standard:'Consider for next series',climate:'Next in series',cls:'timing-next-series'},
-      'supervision':{standard:'Consider during supervision',climate:'Supervision / monitoring',cls:'timing-supervision'},
-      'pre-appraisal':{standard:'Consider before appraisal',climate:'Required before Decision Review (DM/ROC)',cls:'timing-required-before-appraisal'},
+      'flag-for-preparation':{standard:'Consider in preparation',climate:'Consider during preparation',cls:'timing-flag-for-preparation'},
+      'required-before-appraisal':{standard:'Consider before appraisal',climate:'Address before Decision Review (DM/ROC)',cls:'timing-required-before-appraisal'},
+      'required-before-board':{standard:'Consider before Board',climate:'Address before Board',cls:'timing-required-before-board'},
+      'next-series':{standard:'Consider for next series',climate:'Consider for next series',cls:'timing-next-series'},
+      'supervision':{standard:'Consider during supervision',climate:'Consider during supervision',cls:'timing-supervision'},
+      'pre-appraisal':{standard:'Consider before appraisal',climate:'Address before Decision Review (DM/ROC)',cls:'timing-required-before-appraisal'},
       'shortly-after-OIS':{standard:'Consider after OIS decision',climate:'Shortly after OIS decision',cls:'timing-flag-for-preparation'},
       'before-TD-review':{standard:'Consider before Technical Design review',climate:'Before Technical Design review',cls:'timing-required-before-appraisal'},
       'at-TD-review':{standard:'Consider at Technical Design review',climate:'At Technical Design review',cls:'timing-required-before-appraisal'},
@@ -7449,7 +7452,7 @@ ${climatePrintDisclosureScript()}
     const value=typeof normalizeVisibleText==='function'?normalizeVisibleText(s):String(s);
     return value.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
-  const TIMING_LABELS={'flag-for-preparation':'Flag for preparation','required-before-appraisal':'Required before Decision Review (DM/ROC)','required-before-board':'Required before Board','next-series':'Next in series','supervision':'Supervision / monitoring','pre-appraisal':'Required before Decision Review (DM/ROC)','shortly-after-OIS':'Shortly after OIS decision','before-TD-review':'Before Technical Design review','at-TD-review':'At Technical Design review','between-TD-and-IR':'Between TD and IR review','before-IR':'Before Implementation Readiness review','at-IR':'At Implementation Readiness review','before-One-Review':'Before One Review','at-One-Review':'At One Review','before-negotiations':'Before negotiations','before-Board':'Before Board','during-implementation-support':'During implementation support'};
+  const TIMING_LABELS={'flag-for-preparation':'Consider during preparation','required-before-appraisal':'Address before Decision Review (DM/ROC)','required-before-board':'Address before Board','next-series':'Consider for next series','supervision':'Consider during supervision','pre-appraisal':'Address before Decision Review (DM/ROC)','shortly-after-OIS':'Shortly after OIS decision','before-TD-review':'Before Technical Design review','at-TD-review':'At Technical Design review','between-TD-and-IR':'Between TD and IR review','before-IR':'Before Implementation Readiness review','at-IR':'At Implementation Readiness review','before-One-Review':'Before One Review','at-One-Review':'At One Review','before-negotiations':'Before negotiations','before-Board':'Before Board','during-implementation-support':'During implementation support'};
   function frApi(){
     return window.FcvReadout.create({esc,md,boldFirst:boldVisibleFirstSentence,sentenceEnd:findVisibleSentenceEnd,timingLabel:value=>TIMING_LABELS[value||'']||value||''});
   }

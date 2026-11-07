@@ -256,7 +256,7 @@ def test_climate_readout_follow_up_sections_and_plain_route_warning_are_explicit
     assert "Suggested document wording is not shown because the document type or financing route could not be confirmed reliably." in wrapper
     assert "UNRESOLVED" not in wrapper
     module = READOUT_MODULE.read_text(encoding="utf-8")
-    assert "Points to Check Before the Applicable Review" in module
+    assert "Smaller Points to Check During Preparation" in module
     assert "Relevant WBG Guidance" in module
     assert "Selected WBG resources for the team" in module
 def test_climate_readout_weaves_overview_priority_statement_and_limitations_in_order():
@@ -288,7 +288,7 @@ const withGaps=renderClimateVerifiedAssessment({
   priorities:[priorities[0]],
   priority_summary:{statement:bridge}
 });
-if (!(withGaps.indexOf('What is already working') < withGaps.indexOf('Key gaps at this stage') && withGaps.indexOf('Key gaps at this stage') < withGaps.indexOf('Ranked Operational Priorities'))) throw new Error('gap section order is incorrect');
+if (!(withGaps.indexOf('What is already working') < withGaps.indexOf('Key gaps at this stage') && withGaps.indexOf('Key gaps at this stage') < withGaps.indexOf('Priority Actions for the Task Team'))) throw new Error('gap section order is incorrect');
 if (!withGaps.replace(/<[^>]+>/g,'').includes(gap)) throw new Error('gap finding missing');
 """
     result = _run_node(script)
@@ -359,7 +359,7 @@ if (cardTitles.join('|') !== 'First|Second|Third|Fourth|Fifth') {
   throw new Error('priority cards are not capped at five in rank order: ' + cardTitles.join('|'));
 }
 if (html.includes('fr-ptable')) throw new Error('summary priority table should be gone | ' + html);
-if (!html.includes('5 operational priorities are identified by the FCV Screener.')) throw new Error('count tile line missing | ' + html);
+if (!html.includes('5 priority actions are identified by the FCV Screener.')) throw new Error('count tile line missing | ' + html);
 """
     result = _run_node(script)
     assert result.returncode == 0, result.stderr
@@ -402,7 +402,7 @@ const html = renderClimateVerifiedAssessment({
   technical_annex:{recommendation_admitted_count:3,semantic_reviewer_verdict:'block'},
   evidence_trail:{limitations:'Plain limitations text.'}
 });
-const order = ['Climate &amp; FCV Sensitivity &amp; Responsiveness','Ranked Operational Priorities','Limitations'].map(t => html.indexOf(t));
+const order = ['Climate-FCV Sensitivity and Responsiveness','Priority Actions for the Task Team','Limitations'].map(t => html.indexOf(t));
 if (order.some(i => i < 0) || order[0] > order[1] || order[1] > order[2]) throw new Error('section order is wrong | ' + order);
 if (!html.includes('Plain limitations text.')) throw new Error('limitations text missing');
 for (const leaked of ['3 recommendation','semantic','block']) if (html.includes(leaked)) throw new Error('technical annex leaked: ' + leaked);
@@ -1515,9 +1515,9 @@ for (const removed of ['How this analysis was produced', 'The analysis used proj
 const headings = Array.from(html.matchAll(/<span class="fr-h1-num">([0-9]{2})<\/span><h2 class="fr-h1-txt">([^<]+)<\/h2>/g), m => [m[1], m[2]]);
 const expectedHeadings = [
   ['01', 'Overview'],
-  ['02', 'Climate &amp; FCV Sensitivity &amp; Responsiveness'],
-  ['03', 'Ranked Operational Priorities'],
-  ['04', 'Points to Check Before the Applicable Review'],
+  ['02', 'Climate-FCV Sensitivity and Responsiveness'],
+  ['03', 'Priority Actions for the Task Team'],
+  ['04', 'Smaller Points to Check During Preparation'],
   ['05', 'Limitations']
 ];
 if (JSON.stringify(headings) !== JSON.stringify(expectedHeadings)) {
@@ -1543,14 +1543,14 @@ for (const expected of ['The project needs a bounded climate-FCV review.', 'Limi
 for (const unsafe of ['undefined', '[object Object]']) {
   if (html.includes(unsafe)) throw new Error('unsafe rendered value: ' + unsafe + ' | ' + html);
 }
-if (html.includes('Points to Check Before the Applicable Review')) {
+if (html.includes('Smaller Points to Check During Preparation')) {
   throw new Error('empty points section should be suppressed | ' + html);
 }
 const headings = Array.from(html.matchAll(/<span class="fr-h1-num">([0-9]{2})<\/span><h2 class="fr-h1-txt">([^<]+)<\/h2>/g), m => [m[1], m[2]]);
 const expectedHeadings = [
   ['01', 'Overview'],
-  ['02', 'Climate &amp; FCV Sensitivity &amp; Responsiveness'],
-  ['03', 'Ranked Operational Priorities'],
+  ['02', 'Climate-FCV Sensitivity and Responsiveness'],
+  ['03', 'Priority Actions for the Task Team'],
   ['04', 'Limitations']
 ];
 if (JSON.stringify(headings) !== JSON.stringify(expectedHeadings)) {

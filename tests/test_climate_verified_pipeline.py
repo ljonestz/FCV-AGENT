@@ -1795,7 +1795,7 @@ def test_new_reader_export_rechecks_support_and_never_revives_rating_recap():
     model = build_reader_model(result)
     assert model["summary_overview_status"] == "fallback"
     text = " ".join(model["summary_overview"])
-    assert "could not be independently verified" in text
+    assert "could not be checked against the project documents" in text
     assert "Sensitivity is" not in text and "Operationalization" not in text
     result.pop("final_reader")
     assert build_reader_model(result)["summary_overview_status"] == "fallback"
