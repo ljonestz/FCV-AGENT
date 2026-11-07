@@ -639,8 +639,8 @@ def test_climate_guidance_matched_question_line_and_unmatched_items():
     block = guidance_block(climate(reader))
     item = block[block.index(">Defueling Conflict</a>"):]
     item = item[:item.index("</div>")]
-    assert ('<p class="fr-guide-rel">Relevant to this project: <a href="#fr-s02">Does the project address interacting climate and FCV risks in design and delivery?</a>'
-            ' and <a href="#fr-s02">Shown inclusion question?</a></p>') in item
+    assert ('<p class="fr-guide-rel">Relevant to this project: informs the findings on <a href="#fr-s02">climate risks, design and delivery</a>'
+            ' and on <a href="#fr-s02">access, inclusion and potential harm</a> (section 02).</p>') in item
     assert block.count("Relevant to this project") == 1
     framework = block[block.index(">FCV-Sensitive Climate Action Framework</a>"):]
     assert "Relevant to this project" not in framework[:framework.index("</div>")]

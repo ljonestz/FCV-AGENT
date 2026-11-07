@@ -624,9 +624,10 @@
       .concat(server.filter(g => !isPinned(g)));
     // A core question whose source is this item points to the Assessment Findings question it feeds.
     const coreQuestions = Array.isArray(r.core_questions) ? r.core_questions : [];
+    // Short theme names read cleanly in a sentence; the full questions are in section 02.
     const shownQuestion = title => {
       const t = themeList.find(x => x && x.title === title);
-      return t ? (t.question || THEME_QUESTIONS[t.title] || t.title || '') : '';
+      return t ? (t.title || '') : '';
     };
     const guides = guideList.map(g => {
       const labels = [];
@@ -636,7 +637,7 @@
           if (label && !labels.includes(label)) labels.push(label);
         });
       }
-      const rel = labels.slice(0, 2).map(l => `<a href="#${findingsId}">${k.esc(l)}</a>`).join(' and ');
+      const rel = labels.length ? `informs the findings on ${labels.slice(0, 2).map(l => `<a href="#${findingsId}">${k.esc(l.charAt(0).toLowerCase() + l.slice(1))}</a>`).join(' and on ')} (section 02).` : '';
       return guideItem(k, g, rel);
     }).join('');
     if (guides) html += k.section('fr-guidance', h('Relevant WBG Guidance') + k.disclosure('Selected WBG resources for the team', guides));
