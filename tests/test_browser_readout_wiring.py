@@ -101,7 +101,7 @@ def test_copy_text_strips_navigation_and_decoration():
 
 def test_glossary_skips_headings_labels_and_summaries():
     source = html()
-    assert "const GLOSSARY_SKIP_SELECTOR='summary, h1, h2, h3, h4, .fr-sc-label, .fr-lbl, .fr-rating-dim, .fr-pc-meta, .fr-h1';" in source
+    assert "const GLOSSARY_SKIP_SELECTOR='summary, h1, h2, h3, h4, .fr-sc-label, .fr-lbl, .fr-rating-dim, .fr-pc-meta, .fr-h1, .fr-h1-txt, .fr-toc a';" in source
     body = function_body(source, "function annotateGlossaryTerms(")
     assert "parent.closest(GLOSSARY_SKIP_SELECTOR)" in body and "span.tabIndex = 0;" in body
     assert ".glossary-term:focus-within .glossary-tooltip" in source and "max-width: min(320px, 90vw);" in source
@@ -263,3 +263,16 @@ def test_normal_readout_wires_smaller_points_limitations_and_partial():
     assert "!stageOutputs[1]||!stageOutputs[2]" in partial and "climateReadoutComplete(state.entry)" in partial
     files = function_body(source, "function readoutFileNames(")
     assert "restoredFileNames.project" in files and "restoredFileNames.context" in files
+
+
+def test_readout_width_disclosure_chevrons_and_mobile_meta():
+    source = html()
+    style = source[source.index('<style id="fcv-readout-style">'):]
+    style = style[:style.index("</style>")]
+    assert "74ch" not in style and ".fr-readout{max-width:1040px}" in style
+    assert ".fr-readout .fr-h1-num{font-size:12px;font-weight:700;color:var(--fr-blue-text);flex:none;white-space:nowrap}" in style
+    assert ".fr-readout .fr-pc-meta .fr-meta-dim,.fr-readout .fr-pc-meta .fr-meta-time{display:none}" in style
+    assert '<span class="beyond-arrow" aria-hidden="true">${window.FcvReadout.CHEVRON_SVG}</span>' in function_body(source, "function renderGoDeeperHtml(")
+    assert '<span class="pcd-chev" aria-hidden="true">${window.FcvReadout.CHEVRON_SVG}</span>' in function_body(source, "function renderStandardPriorityContext(")
+    assert ".priority-context-disclosure[open]>summary .pcd-chev{transform:rotate(180deg)}" in source
+    assert 'details.fr-pc[data-fr-src-index="' in function_body(source, "function selectPrioritySb(")

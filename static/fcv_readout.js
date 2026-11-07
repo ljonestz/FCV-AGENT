@@ -102,6 +102,24 @@
   }
 
   const STAGE_TAG_RE = /\s*\[(?:S|R|S\+R)\]/g;
+  // Spec pattern, but only spaces or tabs before "Tagged" so a paragraph break before the sentence survives.
+  const TAG_JUSTIFICATION_RE = /[ \t]*Tagged \[(?:S|R|S\+R)\][^.]*\./g;
+
+  // Card prose only: drop model sentences that justify the S/R tag.
+  function stripTagNotes(text) {
+    return String(text || '').replace(TAG_JUSTIFICATION_RE, '').trim();
+  }
+
+  // Display order for normal priorities: High, Medium, Low, then anything else; stable within a level.
+  const LEVEL_ORDER = { high: 0, medium: 1, low: 2 };
+  function orderByLevel(priorities) {
+    return (Array.isArray(priorities) ? priorities : []).map((p, index) => ({ p, index }))
+      .sort((a, b) => {
+        const la = LEVEL_ORDER[String((a.p && a.p.risk_level) || '').trim().toLowerCase()];
+        const lb = LEVEL_ORDER[String((b.p && b.p.risk_level) || '').trim().toLowerCase()];
+        return ((la === undefined ? 3 : la) - (lb === undefined ? 3 : lb)) || (a.index - b.index);
+      });
+  }
   const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
   // Stage 2 "## Supplementary FCV Dimensions" bullets ("- **Label:** text") as smaller checks.
@@ -216,7 +234,7 @@
     }
 
     function scorecard(tiles, count) {
-      const tileHtml = tiles.map(t => `<div class="fr-sc-tile" data-fr-rating="${esc(t.key)}"><div class="fr-sc-label">${esc(t.label)}</div><div class="fr-sc-value">${esc(t.value || 'Not available')}</div>${meter(t.steps, t.level)}${t.level ? `<div class="fr-sc-scale" data-copy-skip><span>${esc(t.lo)}</span><span>${esc(t.hi)}</span></div>` : ''}<div class="fr-sc-def">${esc(t.def)}</div></div>`).join('');
+      const tileHtml = tiles.map(t => `<div class="fr-sc-tile" data-fr-rating="${esc(t.key)}"><div class="fr-sc-label">${esc(t.label)}</div><div class="fr-sc-value">${esc(t.value || 'Not available')}</div>${meter(t.steps, t.level)}${t.level ? `<div class="fr-sc-scale" data-copy-skip><span>${esc(t.lo)}</span><span class="fr-sc-of">${t.level} of ${t.steps}</span><span>${esc(t.hi)}</span></div>` : ''}<div class="fr-sc-def">${esc(t.def)}</div></div>`).join('');
       const pills = (count.pills || []).map(p => `<span class="fr-pill ${p.cls}">${esc(p.text)}</span>`).join('');
       return `<p class="fr-sc-lead">${esc(SCORECARD_LEAD)}</p><section class="fr-scorecard" aria-label="Assessment ratings">${tileHtml}<div class="fr-sc-count"><div class="fr-sc-count-lbl">${esc(count.label)}</div><div class="fr-sc-count-num">${Number(count.number) || 0}</div>${pills ? `<div class="fr-sc-pills">${pills}</div>` : ''}${count.def ? `<div class="fr-sc-count-def">${esc(count.def)}</div>` : ''}</div></section>`;
     }
@@ -230,7 +248,8 @@
       const drafts = (p.drafts || []).filter(d => d.text).map(d => `<section class="fr-draft"><div class="fr-draft-hd"><div class="fr-draft-lbl">${esc(d.label)}</div><button type="button" class="fr-copy" data-copy-skip onclick="${COPY_DRAFT_HANDLER}">Copy</button></div>${d.forText ? `<div class="fr-draft-for">For: ${esc(d.forText)}</div>` : ''}<p dir="auto" class="fr-draft-text">${esc(d.text)}</p></section>`).join('');
       const cycle = p.cycle && p.cycle.text ? `<p class="fr-cycle"><strong>${esc(p.cycle.label || 'When to address')}:</strong> ${esc(p.cycle.text)}</p>` : '';
       const meta = p.supHtml ? `<span class="fr-pc-meta">${p.supHtml}</span>` : '';
-      return `<details class="fr-pc" id="${p.id}"${p.open ? ' open' : ''}><summary class="fr-pc-hdr"><span class="fr-pc-rank">${p.rank}</span><span class="fr-pc-title">${meta}<span dir="auto" class="fr-pc-title-txt">${esc(p.title)}</span></span><span class="fr-pc-chev" aria-hidden="true">${CHEVRON_SVG}</span></summary><div class="fr-pc-body">${zones}${drafts}${cycle}${p.extraHtml || ''}</div></details>`;
+      const src = Number.isInteger(p.srcIndex) ? ` data-fr-src-index="${p.srcIndex}"` : '';
+      return `<details class="fr-pc" id="${p.id}"${src}${p.open ? ' open' : ''}><summary class="fr-pc-hdr"><span class="fr-pc-rank">${p.rank}</span><span class="fr-pc-title">${meta}<span dir="auto" class="fr-pc-title-txt">${esc(p.title)}</span></span><span class="fr-pc-chev" aria-hidden="true">${CHEVRON_SVG}</span></summary><div class="fr-pc-body">${zones}${drafts}${cycle}${p.extraHtml || ''}</div></details>`;
     }
 
     function cards(cardsHtml, count) {
@@ -251,13 +270,19 @@
       return text ? `<span class="fr-pill ${cls ? esc(cls) : 'fr-pill-' + esc(key)}"${title ? ` title="${esc(title)}"` : ''}>${esc(text)}</span>` : '';
     }
 
+    // Card header meta: segments joined by a middot; dimension and timing segments carry classes the
+    // mobile CSS hides. They always come last, so a hidden segment never leaves a dangling separator.
+    function metaSegments(list) {
+      return (list || []).filter(x => x && x[0]).map((x, i) => `<span class="fr-meta-seg${x[1] ? ' ' + x[1] : ''}">${i ? ' &middot; ' : ''}${x[0]}</span>`).join('');
+    }
+
     // Normal-route priority level pill: level word plus "priority", level colour class.
     function levelPill(level) {
       const key = String(level || '').trim().toLowerCase();
       return key ? pill(`${String(level).trim()} priority`, 'fr-pill-' + key) : '';
     }
 
-    const kit = { esc, md, boldFirst, timingLabel, takeSentences, prose, paragraphs, numbering, toc, sub, intro, advisory, infoBox, section, closing, meter, scorecard, ratingRows, priorityCard, cards, disclosure, checkItems, pill, levelPill };
+    const kit = { esc, md, boldFirst, timingLabel, takeSentences, prose, paragraphs, numbering, toc, sub, intro, advisory, infoBox, section, closing, meter, scorecard, ratingRows, priorityCard, cards, disclosure, checkItems, pill, levelPill, metaSegments, stripTagNotes };
     return Object.assign(kit, {
       renderNormal: data => renderNormal(kit, data),
       renderClimate: (reader, opts) => renderClimate(kit, reader, opts),
@@ -278,10 +303,10 @@
     return String(title || 'Priority action').replace(/^\s*Priority\s+\d+\s*(?:[·•:.\-–]\s*)?/i, '').trim() || 'Priority action';
   }
 
-  function countPills(items, keyOf, labels) {
+  function countPills(items, keyOf, labels, prefix) {
     const counts = {};
     items.forEach(item => { const k = keyOf(item); if (k) counts[k] = (counts[k] || 0) + 1; });
-    return labels.filter(l => counts[l.key]).map(l => ({ text: `${counts[l.key]} ${l.text}`, cls: l.cls }));
+    return labels.filter(l => counts[l.key]).map(l => ({ text: `${prefix || ''}${counts[l.key]} ${l.text}`, cls: l.cls }));
   }
 
   function renderNormal(k, d) {
@@ -332,18 +357,19 @@
       const n = priorities.length;
       const intro = k.infoBox('', `<strong>Based on a three-stage assessment of the project documents, ${n} priority ${n === 1 ? 'action has' : 'actions have'} been identified</strong> to strengthen FCV sensitivity and responsiveness in the design and delivery of this project.` + k.advisory(d.advisoryText));
 
-      const cards = priorities.map((p, i) => {
+      // Display order only (High, Medium, Low); extras keep the original index for Go Deeper and warnings.
+      const cards = orderByLevel(priorities).map(({ p, index }, i) => {
         const actions = Array.isArray(p.actions) ? p.actions : [];
-        const actionsHtml = actions.length ? `<ol class="fr-actions">${actions.map(a => `<li>${a.document_element ? `<strong>${k.esc(a.document_element)}:</strong> ` : ''}${k.esc(a.guidance || '')}</li>`).join('')}</ol>` : '';
-        const cycleText = p.implementation_note || (p.project_cycle && p.project_cycle.primary_text) || '';
-        const cycleLabel = p.implementation_note ? 'When to address' : ((p.project_cycle && p.project_cycle.primary_label) || 'When to address');
-        const sup = [k.levelPill(p.risk_level), k.esc(FOCUS_LABELS[p.tag] || p.tag || ''), k.esc(p.fcv_dimension || ''), k.esc(k.timingLabel(p.action_timing))].filter(Boolean).join(' &middot; ');
+        const actionsHtml = actions.length ? `<ol class="fr-actions">${actions.map(a => `<li>${a.document_element ? `<strong>${k.esc(a.document_element)}:</strong> ` : ''}${k.esc(stripTagNotes(a.guidance))}</li>`).join('')}</ol>` : '';
+        const cycleText = stripTagNotes(p.implementation_note || (p.project_cycle && p.project_cycle.primary_text) || '');
+        const cycleLabel = p.implementation_note ? 'Implementation note' : ((p.project_cycle && p.project_cycle.primary_label) || 'When to address');
+        const sup = k.metaSegments([[k.levelPill(p.risk_level)], [k.esc(FOCUS_LABELS[p.tag] || p.tag || '')], [k.esc(p.fcv_dimension || ''), 'fr-meta-dim'], [k.esc(k.timingLabel(p.action_timing)), 'fr-meta-time']]);
         return k.priorityCard({
-          id: `fr-priority-${i + 1}`, rank: i + 1, open: i === 0, supHtml: sup, title: priorityTitle(p.title),
-          zones: [{ label: 'The gap', html: k.prose(p.the_gap) }, { label: 'Why it matters', html: k.prose(p.why_it_matters) }, { label: 'Suggested actions', html: actionsHtml }],
+          id: `fr-priority-${i + 1}`, rank: i + 1, open: i === 0, supHtml: sup, title: priorityTitle(p.title), srcIndex: index,
+          zones: [{ label: 'The gap', html: k.prose(stripTagNotes(p.the_gap)) }, { label: 'Why it matters', html: k.prose(stripTagNotes(p.why_it_matters)) }, { label: 'Suggested actions', html: actionsHtml }],
           drafts: actions.map(a => ({ label: 'Suggested Text', forText: a.document_element || '', text: a.suggested_language || '' })),
           cycle: { label: cycleLabel, text: cycleText },
-          extraHtml: typeof d.priorityExtras === 'function' ? d.priorityExtras(p, i) : '',
+          extraHtml: typeof d.priorityExtras === 'function' ? d.priorityExtras(p, index) : '',
         });
       }).join('');
       html += k.section('fr-cards-sec', h('Priority Actions for the Task Team') + intro + k.cards(cards, n));
@@ -440,17 +466,18 @@
       { key: 'climate-sensitivity', label: 'Climate-FCV sensitivity', value: climateLabel(sens.value), steps: 5, level: level(sens.value), lo: 'Very limited', hi: 'Very strong', def: DEFINITIONS.climateSensitivity },
       { key: 'climate-responsiveness', label: 'Climate-FCV responsiveness', value: climateLabel(resp.value), steps: 5, level: level(resp.value), lo: 'Very limited', hi: 'Very strong', def: DEFINITIONS.climateResponsiveness },
     ], { label: 'Priority actions', number: priorities.length, def: countDef(priorities.length, 'priority action', 'priority actions'), pills: countPills(priorities, p => String(p.confidence || '').toLowerCase(), [
-      { key: 'high', text: 'High confidence', cls: 'fr-pill-conf fr-pill-conf-high' }, { key: 'medium', text: 'Medium confidence', cls: 'fr-pill-conf fr-pill-conf-medium' }, { key: 'low', text: 'Low confidence', cls: 'fr-pill-conf fr-pill-conf-low' }]) });
+      { key: 'high', text: 'high', cls: 'fr-pill-conf fr-pill-conf-high' }, { key: 'medium', text: 'medium', cls: 'fr-pill-conf fr-pill-conf-medium' }, { key: 'low', text: 'low', cls: 'fr-pill-conf fr-pill-conf-low' }], 'Confidence: ') });
 
     const overview = (Array.isArray(r.summary_overview) ? r.summary_overview : [r.summary_overview]).map(t => String(t || '').trim()).filter(Boolean);
     let snapshot = '';
     let contextHtml = '';
+    let fallbackNote = '';
     if (r.summary_overview_status === 'generated' && overview.length) {
       snapshot = overview[0];
       contextHtml = k.paragraphs(overview.slice(1, 3));
     } else if (r.reader_contract === 'final-reader-v1') {
-      // Fallback text explains why no summary is shown; keep it muted rather than as findings.
-      contextHtml = overview.map(t => k.intro(t)).join('');
+      // Fallback text explains why no summary is shown; it opens the Limitations box, not the Overview.
+      fallbackNote = overview.join(' ');
     } else {
       const paras = splitParagraphs(r.executive_readout);
       const split = k.takeSentences(paras[0] || '', 2);
@@ -459,15 +486,22 @@
     }
     const working = (Array.isArray(r.existing_responses) ? r.existing_responses : []).map(x => x && x.description).filter(Boolean).slice(0, 4);
     const gaps = (Array.isArray(r.summary_gaps) ? r.summary_gaps : []).map(x => x && x.text).filter(Boolean).slice(0, 5);
+    const themeList = Array.isArray(r.assessment_themes) ? r.assessment_themes : [];
+    // Overview is always section 01, so Assessment Findings (when it renders) is section 02.
+    const findingsId = 'fr-s02';
+    const gapsHtml = !gaps.length ? '' : themeList.length
+      ? gaps.map(g => `<p dir="auto" class="fr-p"><strong>${k.esc(k.takeSentences(g, 1).head)}</strong></p>`).join('')
+        + `<p class="fr-see"><a href="#${findingsId}">See section 02</a></p>`
+      : k.paragraphs(gaps);
     let html = k.section('fr-exec', h('Overview')
       + (snapshot ? k.infoBox('Assessment snapshot', `<strong>${k.esc(snapshot)}</strong>`) : '')
       + contextHtml
       + (working.length ? k.sub('What is already working') + k.paragraphs(working) : '')
-      + (gaps.length ? k.sub('Key gaps at this stage') + k.paragraphs(gaps) : ''));
+      + (gaps.length ? k.sub('Key gaps at this stage') + gapsHtml : ''));
 
     const rankIndex = new Map();
     priorities.forEach((p, i) => { const n = Number(p.rank); if (Number.isInteger(n) && !rankIndex.has(n)) rankIndex.set(n, i + 1); });
-    const themes = (Array.isArray(r.assessment_themes) ? r.assessment_themes : []).map(t => {
+    const themes = themeList.map(t => {
       const question = t.question || THEME_QUESTIONS[t.title] || t.title || '';
       const findings = Array.isArray(t.findings) ? t.findings : [];
       const paras = Array.isArray(t.paragraphs) && t.paragraphs.length ? t.paragraphs : [findings.map(f => f.text || '').join(' ')];
@@ -495,7 +529,7 @@
       const intro = k.infoBox('', lead + k.advisory(o.advisoryText));
       const cards = priorities.map((p, i) => {
         const rank = i + 1;
-        const paras = splitParagraphs(p.narrative);
+        const paras = splitParagraphs(stripTagNotes(p.narrative));
         const why = paras.length ? paras.slice(0, 1) : [p.limitation];
         const act = paras.length > 1 ? paras.slice(1) : [p.minimum_action || p.decision];
         const cur = o.draftingAllowed && p.current_document_drafting ? p.current_document_drafting : null;
@@ -520,7 +554,7 @@
           id: `fr-priority-${rank}`, rank, open: i === 0, title: priorityTitle(p.title),
           supHtml: [confidencePill(k, p.confidence, ' confidence'), lead ? `Lead: ${k.esc(lead)}` : '', k.esc(target)].filter(Boolean).join(' &middot; '),
           zones: [{ label: 'Why this matters', html: k.paragraphs(why) }, { label: 'What the team could do', html: k.paragraphs(act) },
-            { label: 'Practical considerations', html: k.paragraphs(practical) },
+            { label: 'Practical considerations', html: k.paragraphs([practical.join(' ')]) },
             { label: 'Optional further work', html: k.paragraphs(optional) }],
           drafts: [cur && { label: 'Suggested Text', forText: target, text: cur.text },
             opd && { label: 'Suggested Text for an operational instrument', forText: [titleKey(opd.target_document), titleKey(opd.target_section)].filter(Boolean).join(' - '), text: opd.text }].filter(Boolean),
@@ -548,12 +582,12 @@
     const trail = r.evidence_trail || {};
     const limits = Array.isArray(trail.limitations) ? trail.limitations.filter(Boolean).join(' ') : String(trail.limitations || '').trim();
     const limitsText = limits || 'This automated screening is advisory and is limited by the coverage and detail of the uploaded documents. The team should confirm material findings through project and country expertise.';
-    html += k.section('fr-limits-sec', h('Limitations') + `<div class="fr-limits">${k.paragraphs([limitsText, r.advisory_notice])}</div>`);
+    html += k.section('fr-limits-sec', h('Limitations') + `<div class="fr-limits">${k.paragraphs([fallbackNote, limitsText, r.advisory_notice])}</div>`);
     const saysAlready = /does not constitute/i.test(`${limitsText} ${r.advisory_notice || ''}`);
     return `<article class="fr-readout fr-route-climate">${head}${k.toc(h.list)}${html}${saysAlready ? '' : k.closing()}</article>`;
   }
 
-  const api = { FCV_SCALE, CLIMATE_SCALE, FOCUS_LABELS, DEFINITIONS, CLOSING_LINE, parseStage3Sections, parseSupplementaryPoints, researchDate, create };
+  const api = { FCV_SCALE, CLIMATE_SCALE, FOCUS_LABELS, DEFINITIONS, CLOSING_LINE, CHEVRON_SVG, parseStage3Sections, parseSupplementaryPoints, researchDate, orderByLevel, stripTagNotes, create };
   root.FcvReadout = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

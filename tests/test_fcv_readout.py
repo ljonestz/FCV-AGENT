@@ -151,7 +151,7 @@ def test_normal_readout_section_order_and_content():
     assert html.count('class="fr-ms fr-c') == 4 + 3
     assert "Address before Decision Review (DM/ROC)" in html and "Required" not in html
     assert "Sensitivity + Responsiveness" in html[html.index('id="fr-priority-1"'):]
-    assert 'id="fr-priority-1" open>' in html and 'id="fr-priority-2">' in html
+    assert 'id="fr-priority-1" data-fr-src-index="0" open>' in html and 'id="fr-priority-2" data-fr-src-index="1">' in html
     assert 'class="extra-0"' in html and 'class="extra-1"' in html
     assert "Priority 1 \u00b7 Embed" not in html
     assert "1 high priority" in html and "1 medium priority" in html
@@ -395,12 +395,16 @@ def test_closing_line_is_last_element_on_both_routes():
     assert "fr-closing" not in already
 
 
-def test_climate_fallback_overview_is_muted_intro():
+def test_climate_fallback_overview_moves_to_limitations():
     reader = dict(CLIMATE_READER, reader_contract="final-reader-v1", summary_overview_status="fallback",
-                  summary_overview=["A short summary is not shown for this run."])
+                  summary_overview=["A short summary is not shown for this run.", "Use the priorities."])
     html = climate(reader)
-    assert '<p class="fr-intro">A short summary is not shown for this run.</p>' in html
-    assert "<strong>A short summary" not in html
+    overview = html[html.index('fr-h1-txt">Overview<'):html.index('fr-h1-txt">Assessment Findings<')]
+    assert "A short summary" not in overview and "Assessment snapshot" not in overview
+    assert overview.index("What is already working") < overview.index("Key gaps at this stage")
+    limits = html[html.index('class="fr-limits"'):]
+    assert limits.index("A short summary is not shown for this run.</strong> Use the priorities.") < limits.index("Concept stage only.")
+    assert html.count("A short summary is not shown") == 1
 
 
 def test_confidence_pill_title_and_climate_target_casing():
@@ -415,7 +419,7 @@ def test_priority_card_header_two_rows_with_title_and_chevron():
     html = normal({})
     card = html[html.index('id="fr-priority-1"'):html.index('id="fr-priority-2"')]
     summary = card[card.index("<summary"):card.index("</summary>")]
-    assert '<span class="fr-pc-meta"><span class="fr-pill fr-pill-high">High priority</span> &middot; Sensitivity' in summary
+    assert '<span class="fr-pc-meta"><span class="fr-meta-seg"><span class="fr-pill fr-pill-high">High priority</span></span><span class="fr-meta-seg"> &middot; Sensitivity' in summary
     assert '<span dir="auto" class="fr-pc-title-txt">Embed early warning indicators</span>' in summary
     assert "<h3" not in summary
     assert "Priority 1" not in summary and "<svg" in summary
@@ -520,3 +524,73 @@ def test_normal_research_briefing_after_limitations_collapsed():
     assert html.index('fr-h1-txt">Limitations<') < html.index("Background research and sources") < html.index("fr-closing")
     assert '<details class="fr-disc fr-research"><summary class="fr-disc-sum">Background research and sources</summary>' in html
     assert "Background research" not in normal({})
+
+
+
+def test_normal_priorities_display_high_medium_low_stably():
+    pri = [dict(NORMAL_PRIORITY, title="Low one", risk_level="Low"), dict(NORMAL_PRIORITY, title="Med one", risk_level="Medium"),
+           dict(NORMAL_PRIORITY, title="High one", risk_level="High"), dict(NORMAL_PRIORITY, title="Med two", risk_level="medium"),
+           dict(NORMAL_PRIORITY, title="High two", risk_level="High")]
+    html = normal({"priorities": pri})
+    titles = ["High one", "High two", "Med one", "Med two", "Low one"]
+    positions = [html.index(f'class="fr-pc-title-txt">{t}<') for t in titles]
+    assert positions == sorted(positions)
+    card1 = html[html.index('id="fr-priority-1"'):html.index('id="fr-priority-2"')]
+    assert ">High one<" in card1 and 'data-fr-src-index="2"' in card1 and '<span class="fr-pc-rank">1</span>' in card1
+    card5 = html[html.index('id="fr-priority-5"'):]
+    assert ">Low one<" in card5 and 'data-fr-src-index="0"' in card5
+    assert 'id="fr-priority-1" data-fr-src-index="2" open>' in html
+    # Extras keep the stored index (Go Deeper and warnings look up stageThreePriorities[idx]).
+    assert card1.index('class="extra-2"') > 0 and 'class="extra-0"' in card5
+    order = json.loads(run_js("process.stdout.write(JSON.stringify(FR.orderByLevel([{risk_level:'Low'},{risk_level:''},{risk_level:'High'}]).map(x=>x.index)));"))
+    assert order == [2, 0, 1]
+
+
+def test_normal_cycle_label_reads_implementation_note():
+    html = normal({})
+    assert "<strong>Implementation note:</strong> Before mobilisation." in html
+    html = normal({"priorities": [dict(NORMAL_PRIORITY, implementation_note="", project_cycle={"primary_label": "Before Board", "primary_text": "Agree it."})]})
+    assert "<strong>Before Board:</strong> Agree it." in html and "Implementation note" not in html
+
+
+def test_tag_justification_sentences_are_stripped_from_card_prose():
+    pri = dict(NORMAL_PRIORITY, the_gap="No indicators exist. Tagged [S] because it avoids harm. More detail.",
+               why_it_matters="Risks go undetected. Tagged [S+R] since both apply.",
+               actions=[{"document_element": "RF", "guidance": "Add one. Tagged [R] as it adapts.", "suggested_language": "Indicator."}])
+    html = normal({"priorities": [pri]})
+    assert "Tagged [" not in html
+    assert "No indicators exist." in html and "More detail." in html and "Add one." in html
+    reader = dict(CLIMATE_READER, priorities=[dict(CLIMATE_READER["priorities"][1], narrative="Why one. Tagged [S] for harm.\n\nAct one.")])
+    assert "Tagged [" not in climate(reader)
+
+
+def test_meter_caption_and_climate_confidence_pills():
+    html = normal({})
+    assert '<span class="fr-sc-of">4 of 6</span>' in html and '<span class="fr-sc-of">3 of 6</span>' in html
+    chtml = climate(CLIMATE_READER)
+    assert '<span class="fr-sc-of">3 of 5</span>' in chtml
+    count = chtml[chtml.index('class="fr-sc-count"'):chtml.index("</section>", chtml.index('class="fr-sc-count"'))]
+    assert ">Confidence: 1 medium<" in count and ">Confidence: 1 low<" in count and "confidence<" not in count
+
+
+def test_card_meta_segments_mark_dimension_and_timing_for_mobile():
+    html = normal({})
+    card = html[html.index('id="fr-priority-1"'):html.index('id="fr-priority-2"')]
+    assert '<span class="fr-meta-seg fr-meta-dim"> &middot; Security</span>' in card
+    assert '<span class="fr-meta-seg fr-meta-time"> &middot; Address before Decision Review (DM/ROC)</span>' in card
+
+
+def test_climate_key_gaps_shorten_and_link_to_findings():
+    html = climate(CLIMATE_READER)
+    overview = html[html.index('fr-h1-txt">Overview<'):html.index('fr-h1-txt">Assessment Findings<')]
+    assert "<strong>Gap one.</strong></p>" in overview and "Gap one. Detail" not in overview and "Gap one.</strong> Detail" not in overview
+    assert '<a href="#fr-s02">See section 02</a>' in overview and 'id="fr-s02"><span class="fr-h1-num">02</span><h2 class="fr-h1-txt">Assessment Findings<' in html
+    plain = climate(dict(CLIMATE_READER, assessment_themes=[]))
+    assert "Gap one. Detail." in plain.replace("<strong>", "").replace("</strong>", "") and "See section 02" not in plain
+
+
+def test_climate_practical_considerations_bold_first_sentence_only():
+    pri = dict(CLIMATE_READER["priorities"][1], limitation="Rules are not shown.", caution="Test with partners.")
+    html = climate(dict(CLIMATE_READER, priorities=[pri]))
+    zone = html[html.index(">Practical considerations<"):]
+    assert "<strong>Rules are not shown.</strong> Test with partners." in zone
