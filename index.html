@@ -5794,7 +5794,7 @@
 
   async function downloadManagementBrief(format,btn){
     if(!['html','docx'].includes(format)||!supportsConciseStage3View()){
-      alert('The management brief is available only when a complete standard FCV Summary is shown.');
+      alert('The management brief is available only when a complete standard FCV summary was generated for this run.');
       return;
     }
     const original=btn?btn.innerHTML:'';

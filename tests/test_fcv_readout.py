@@ -222,6 +222,7 @@ def test_climate_readout_structure():
 def test_climate_snapshot_uses_executive_readout_when_overview_is_fallback():
     reader = dict(CLIMATE_READER, summary_overview_status="fallback",
                   summary_overview=["The automated Summary could not be independently verified."])
+    reader.pop("reader_contract", None)
     html = climate(reader)
     assert "Exec first sentence. Exec second sentence." in html
     assert "could not be independently verified" not in html
@@ -276,3 +277,22 @@ def test_climate_missing_confidence_shows_no_pill():
     reader = dict(CLIMATE_READER, priorities=[{"rank": 1, "title": "A", "narrative": "W.\n\nA."}])
     html = climate(reader)
     assert "Unclear" not in html
+
+
+def test_climate_final_reader_contract_never_uses_executive_readout():
+    reader = dict(CLIMATE_READER, reader_contract="final-reader-v1", summary_overview_status="fallback",
+                  summary_overview=["The automated Summary could not be independently verified."])
+    html = climate(reader)
+    assert "could not be independently verified" in html
+    assert "Exec first sentence" not in html
+    assert "Assessment snapshot" not in html
+
+
+def test_climate_card_practical_considerations_dedup():
+    reader = dict(CLIMATE_READER, priorities=[{
+        "rank": 1, "title": "A", "narrative": "Why. Reason.\n\nDo this.", "limitation": "Do this.",
+        "caution": "Beware <x>.", "enhanced_action": "Extra.", "enhanced_activation": "When ready."}])
+    html = climate(reader)
+    assert "Practical considerations" in html and "Beware &lt;x&gt;." in html
+    assert html.count("Do this.") == 1
+    assert "<strong>Extra.</strong> When ready." in html

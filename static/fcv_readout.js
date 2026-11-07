@@ -329,6 +329,8 @@
     if (r.summary_overview_status === 'generated' && overview.length) {
       snapshot = overview[0];
       context = overview.slice(1, 3);
+    } else if (r.reader_contract === 'final-reader-v1') {
+      context = overview;
     } else {
       const paras = splitParagraphs(r.executive_readout);
       const split = k.takeSentences(paras[0] || '', 2);
@@ -385,11 +387,25 @@
         const opd = o.draftingAllowed && p.operational_instrument_drafting ? p.operational_instrument_drafting : null;
         const target = cur ? [cur.target_document, cur.target_section].filter(Boolean).join(' - ') : '';
         const cycle = p.project_cycle || {};
+        const norm = t => String(t || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+        const visible = paras.map(norm).filter(Boolean);
+        const visibleText = visible.join(' ');
+        const shown = [];
+        const fresh = text => {
+          const n = norm(text);
+          if (!n || visible.includes(n) || visibleText.includes(n) || shown.includes(n)) return false;
+          shown.push(n);
+          return true;
+        };
+        const practical = [p.limitation, p.caution].map(t => String(t || '').trim()).filter(fresh);
+        const optionalText = [p.enhanced_action, p.enhanced_activation].map(t => String(t || '').trim()).filter(Boolean).join(' ');
+        const optional = optionalText && fresh(optionalText) ? [optionalText] : [];
         return k.priorityCard({
           id: `fr-priority-${rank}`, rank, open: i === 0, title: priorityTitle(p.title),
           supHtml: [`Priority ${rank}`, confidencePill(k, p.confidence, ' confidence'), k.esc(target)].filter(Boolean).join(' &middot; '),
           zones: [{ label: 'Why this matters', html: k.paragraphs(why) }, { label: 'What the team could do', html: k.paragraphs(act) },
-            { label: 'Optional further work', html: p.enhanced_action ? k.paragraphs([p.enhanced_action]) : '' }],
+            { label: 'Practical considerations', html: k.paragraphs(practical) },
+            { label: 'Optional further work', html: k.paragraphs(optional) }],
           drafts: [cur && { label: 'Suggested drafting', forText: target, text: cur.text },
             opd && { label: 'Suggested drafting for an operational instrument', forText: [opd.target_document, opd.target_section].filter(Boolean).join(' - '), text: opd.text }].filter(Boolean),
           cycle: { label: cycle.primary_label || 'When to address', text: cycle.primary_text || '' },

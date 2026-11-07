@@ -87,9 +87,6 @@ for(const omitted of ['Minimum action:','Recommendation:','Limitation:','Caution
     assert result.returncode == 0, result.stderr
 
 
-@pytest.mark.xfail(strict=True, reason=(
-    "The unified readout card renders narrative, optional work and drafting but drops the "
-    "priority limitation, caution and activation text that the Word/HTML exports keep."))
 def test_browser_card_keeps_limitation_and_caution_qualifications_escaped():
     _, model = _model()
     model['priorities'][0]['caution'] += ' Preserve <community> access & qualifications.'

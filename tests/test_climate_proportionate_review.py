@@ -155,9 +155,6 @@ if(!html.includes('Review &lt;script&gt;unsafe&lt;/script&gt;') || html.includes
     assert result.returncode == 0, result.stderr
 
 
-@pytest.mark.xfail(strict=True, reason=(
-    "The unified readout falls back to executive_readout whenever summary_overview_status is not "
-    "'generated', so an unreviewed precursor is shown for the final-reader-v1 contract."))
 def test_browser_does_not_show_unreviewed_native_precursor():
     from tests.test_climate_lens_frontend import _readout_harness, _run_node
     script = _readout_harness() + """
