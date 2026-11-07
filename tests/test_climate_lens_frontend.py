@@ -3,6 +3,7 @@
 import json
 import re
 import subprocess
+from html.parser import HTMLParser
 from pathlib import Path
 
 
@@ -13,6 +14,45 @@ SOUTH_SUDAN_FIXTURE = (
     / "climate"
     / "south_sudan_dual_use.json"
 )
+
+
+class _InlineStyleExtractor(HTMLParser):
+    """Collect real inline styles while leaving script strings untouched."""
+
+    def __init__(self):
+        super().__init__()
+        self._in_style = False
+        self._styles = []
+
+    def handle_starttag(self, tag, attrs):
+        if tag.lower() == "style":
+            self._in_style = True
+            self._styles.append([])
+
+    def handle_endtag(self, tag):
+        if tag.lower() == "style":
+            self._in_style = False
+
+    def handle_data(self, data):
+        if self._in_style:
+            self._styles[-1].append(data)
+
+
+def _extract_inline_styles(source: str) -> str:
+    parser = _InlineStyleExtractor()
+    parser.feed(source)
+    parser.close()
+    return "\n".join("".join(style) for style in parser._styles)
+
+
+def test_inline_style_extractor_ignores_exporter_markup_inside_scripts():
+    source = (
+        "<style>.first{color:red}</style>"
+        "<script>const exported='<style>not-css{}</style>';</script>"
+        "<style>.second{display:grid}</style>"
+    )
+
+    assert _extract_inline_styles(source) == ".first{color:red}\n.second{display:grid}"
 
 
 def _extract_js_function(source: str, name: str) -> str:
@@ -58,6 +98,7 @@ def _readout_harness() -> str:
             "climateAccessibleRouteValue",
             "climateDraftingRouteGate",
             "frApi",
+            "stage3AdvisoryText",
             "renderClimateVerifiedAssessment",
         )
     )
@@ -275,6 +316,7 @@ def test_incomplete_recommendations_are_fail_loud_in_the_climate_readout():
     source = INDEX.read_text(encoding="utf-8")
     reader = {
         "recommendation_status": "incomplete",
+        "reader_review_notice": "Verification notes identify unresolved claims in opening, climate risks and delivery, peace and social dividends; human source review is required before sharing.",
         "recommendation_message": (
             "The recommendation stage could not be completed. "
             "Do not treat this Recommendations Note as complete."
@@ -288,7 +330,9 @@ def test_incomplete_recommendations_are_fail_loud_in_the_climate_readout():
     }
     script = _readout_harness() + f"""
 const reader = {json.dumps(reader)};
+const openingNotice='Verification notes identify unresolved claims in opening, climate risks and delivery, peace and social dividends; human source review is required before sharing.';
 const html = renderClimateVerifiedAssessment(reader);
+if (html.includes(openingNotice)) throw new Error('readout shows a generic verification preamble before the assessment');
 if (!html.toLowerCase().includes('could not be completed')) {{
   throw new Error('readout hides incomplete recommendation state | '+html);
 }}
@@ -314,8 +358,8 @@ const cardTitles = Array.from(html.matchAll(/class="fr-pc-title-txt">([^<]+)</g)
 if (cardTitles.join('|') !== 'First|Second|Third|Fourth|Fifth') {
   throw new Error('priority cards are not capped at five in rank order: ' + cardTitles.join('|'));
 }
-const rows = Array.from(html.matchAll(/class="fr-pt-link"[^>]*>([^<]+)</g), m => m[1]);
-if (rows.join('|') !== cardTitles.join('|')) throw new Error('priority table does not match cards: ' + rows.join('|'));
+if (html.includes('fr-ptable')) throw new Error('summary priority table should be gone | ' + html);
+if (!html.includes('5 operational priorities are identified by the FCV Screener.')) throw new Error('count tile line missing | ' + html);
 """
     result = _run_node(script)
     assert result.returncode == 0, result.stderr
@@ -1473,9 +1517,8 @@ const expectedHeadings = [
   ['01', 'Overview'],
   ['02', 'Climate &amp; FCV Sensitivity &amp; Responsiveness'],
   ['03', 'Ranked Operational Priorities'],
-  ['04', 'Strategic Priorities'],
-  ['05', 'Points to Check Before the Applicable Review'],
-  ['06', 'Limitations']
+  ['04', 'Points to Check Before the Applicable Review'],
+  ['05', 'Limitations']
 ];
 if (JSON.stringify(headings) !== JSON.stringify(expectedHeadings)) {
   throw new Error('numbered section sequence is not gap-free: ' + JSON.stringify(headings) + ' | ' + html);
@@ -1940,7 +1983,7 @@ console.log(renderClimateVerifiedAssessment({
     assert script_result.returncode == 0, script_result.stderr
     handler_script = script_result.stdout
 
-    css = "\n".join(re.findall(r"<style[^>]*>([\s\S]*?)</style>", source))
+    css = _extract_inline_styles(source)
     exported_html = (
         '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>'
         + css
@@ -2233,7 +2276,11 @@ def test_express_recovery_keeps_valid_detailed_output_when_summary_is_unavailabl
     restorable = _extract_js_function(source, "isRestorableExpressStage3Output")
     script = f"""
 {restorable}
+let stageThreePriorities=[{{title:'Valid detailed priority'}}];
+function supportsClimateVerifiedStage3View(){{return false;}}
 if (!isRestorableExpressStage3Output('Completed detailed output')) throw new Error('valid output rejected');
+stageThreePriorities=[];
+if (isRestorableExpressStage3Output('Incomplete JSON output')) throw new Error('unparsed output restored');
 for (const invalid of ['', '   ', null, 42, {{result:'detailed'}}]) {{
   if (isRestorableExpressStage3Output(invalid)) throw new Error('invalid output accepted');
 }}
@@ -2281,7 +2328,7 @@ def test_result_stage_tabs_do_not_overflow_phone_viewport():
     from playwright.sync_api import sync_playwright
 
     source = INDEX.read_text(encoding="utf-8")
-    css = "\n".join(re.findall(r"<style[^>]*>([\s\S]*?)</style>", source))
+    css = _extract_inline_styles(source)
     result_tabs = """
 <div class="stepper-wrap" style="display:block">
   <nav class="stepper" aria-label="Analysis stages">
@@ -2318,7 +2365,7 @@ def test_result_download_header_wraps_inside_phone_card():
     from playwright.sync_api import sync_playwright
 
     source = INDEX.read_text(encoding="utf-8")
-    css = "\n".join(re.findall(r"<style[^>]*>([\s\S]*?)</style>", source))
+    css = _extract_inline_styles(source)
     result_header = """
 <main class="main">
   <div class="out-card">
@@ -2366,7 +2413,7 @@ def test_result_session_bar_wraps_inside_phone_viewport():
     from playwright.sync_api import sync_playwright
 
     source = INDEX.read_text(encoding="utf-8")
-    css = "\n".join(re.findall(r"<style[^>]*>([\s\S]*?)</style>", source))
+    css = _extract_inline_styles(source)
     session_bar = """
 <div class="session-bar" id="session-bar">
   <svg width="13" height="13"></svg>

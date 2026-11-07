@@ -110,10 +110,25 @@ Selection is deterministic and project-specific. It targets 8 and caps 12 bank
 items, with a 6,000-character bank boundary and 12,000-character combined
 bank-plus-live boundary. The provenance states are `bank+research`, `bank-only`,
 `research-only`, and `thematic-only`; live enrichment is non-fatal. The pinned
-South Sudan pilot remains the approved production release with a review due date
-of 2027-07-31; the 24-country release is a reviewable preview only. The bank
-stores structured summaries and citations only: it does not redistribute raw
-PDFs or cite its own generated text.
+routine-use release is `2026.10.27.approved-global-country-bank`, covering 146
+countries. Its approval permits use with the disclosed source-verification limits;
+it does not certify every claim. Country review dates follow existing structural
+evidence deadlines between July and October 2027. Individual current-context records retain
+their earlier deadlines, starting 10 November 2026. Expired records and pathways
+that depend on them are withheld independently. Coverage and known gaps travel
+with selected evidence into the model prompt. The previous approved 24-country
+runtime is preserved under `releases/archive/2026.10.26.approved-country-bank/`.
+The bank stores structured summaries and citations only: it does not redistribute
+raw PDFs or cite its own generated text.
+
+Web research remains enabled by default when the Climate-FCV lens is selected.
+It uses bank coverage, known gaps and source dates to seek updates and supplementary
+local information within the existing search budget. Results are source-gated and
+used for the assessment; they do not automatically update the bank. Search failure
+falls back to available bank evidence with a visible limitation. Explicit
+`CLIMATE_RESEARCH_MODE=bank_only` disables web research. The hosted service reported
+that offline setting on 27 October 2026; this branch does not change hosted
+configuration or deploy the new release.
 
 Summary gaps and detailed strengths/gaps use bullets for each existing finding, including in HTML and Word downloads. Wording and summary strength cards are preserved.
 

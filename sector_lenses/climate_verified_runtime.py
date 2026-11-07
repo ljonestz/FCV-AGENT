@@ -98,7 +98,8 @@ def extract_beneficiary_countries(text: str) -> tuple[str, ...]:
         return ()
     # Preserve commas in inverted official names, e.g. Congo, Democratic Republic of.
     names = re.split(
-        r";|,(?!\s*(?:Democratic Republic of|Republic of|Dem\.|Rep\.|Fed\.|RB\b))",
+        r";|,(?!\s*(?:Democratic Republic of|Republic of|Dem\.|Rep\.|Fed\.|RB\b|"
+        r"(?:Arab|Islamic) (?:Rep\.|Republic of)|The(?=\s*(?:[,;]|$))))",
         value, flags=re.I,
     )
     return tuple(dict.fromkeys(name.strip() for name in names if name.strip()))

@@ -32,6 +32,27 @@ _ABBREVIATIONS = {
 }
 
 
+def priority_advisory_text(
+    route: str = "normal", *, implementation: bool = False
+) -> str:
+    """Return the reader advisory for proposed priorities in the selected route."""
+    context = "climate and FCV" if route == "climate" else "FCV"
+    subject = (
+        f"the project's design and implementation arrangements in its {context} context"
+        if implementation
+        else f"the project's design in its {context} context"
+    )
+    return (
+        f"The following priorities are suggestions to strengthen {subject}. "
+        "They are not mandatory requirements, nor may they all be relevant. "
+        "The task team may wish to focus on those they believe to be more pertinent "
+        "based on their own sectoral expertise and knowledge of the context within "
+        "which the project will be applied. For more complex or difficult issues "
+        "raised, the team are encouraged to reach out and discuss them with the FCV "
+        "Country Coordinator or relevant Global Practice experts as needed."
+    )
+
+
 def normalize_display_text(value: Any) -> str:
     """Replace visible em dashes while preserving URLs and code spans."""
     text = str(value)

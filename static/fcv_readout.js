@@ -130,6 +130,10 @@
       return `<p class="fr-intro">${esc(text)}</p>`;
     }
 
+    function advisory(text) {
+      return text ? `<p class="fr-advisory">${esc(text)}</p>` : '';
+    }
+
     function infoBox(label, innerHtml) {
       return `<div class="fr-info">${label ? `<div class="fr-info-lbl">${esc(label)}</div>` : ''}<div class="fr-info-body">${innerHtml}</div></div>`;
     }
@@ -148,17 +152,11 @@
     function scorecard(tiles, count) {
       const tileHtml = tiles.map(t => `<div class="fr-sc-tile" data-fr-rating="${esc(t.key)}"><div class="fr-sc-label">${esc(t.label)}</div><div class="fr-sc-value">${esc(t.value || 'Not available')}</div>${meter(t.steps, t.level)}${t.level ? `<div class="fr-sc-scale"><span>${esc(t.lo)}</span><span>${esc(t.hi)}</span></div>` : ''}<div class="fr-sc-def">${esc(t.def)}</div></div>`).join('');
       const pills = (count.pills || []).map(p => `<span class="fr-pill ${p.cls}">${esc(p.text)}</span>`).join('');
-      return `<section class="fr-scorecard" aria-label="Assessment ratings">${tileHtml}<div class="fr-sc-count"><div class="fr-sc-count-lbl">${esc(count.label)}</div><div class="fr-sc-count-num">${Number(count.number) || 0}</div>${pills}</div></section><p class="fr-note">Advisory judgments, not official WBG ratings.</p>`;
+      return `<p class="fr-sc-lead">${esc(SCORECARD_LEAD)}</p><section class="fr-scorecard" aria-label="Assessment ratings">${tileHtml}<div class="fr-sc-count"><div class="fr-sc-count-lbl">${esc(count.label)}</div><div class="fr-sc-count-num">${Number(count.number) || 0}</div>${pills}${count.def ? `<div class="fr-sc-count-def">${esc(count.def)}</div>` : ''}</div></section>`;
     }
 
     function ratingRows(rows) {
       return `<div class="fr-ratings">${rows.map(r => `<div class="fr-rating-row"><div class="fr-rating-meta"><div class="fr-rating-dim">${esc(r.dim)}</div><span class="fr-rating-val ${r.cls}">${esc(r.value || 'Not available')}</span><div class="fr-rating-def">${esc(r.def)}</div></div><div class="fr-rating-why">${r.whyHtml || '<p class="fr-p">No rationale was returned for this rating.</p>'}</div></div>`).join('')}</div>`;
-    }
-
-    function priorityTable(headers, rows) {
-      const head = headers.map(h => `<th scope="col">${esc(h)}</th>`).join('');
-      const body = rows.map(r => `<tr><td class="fr-pt-num">${r.rank}</td><td><a class="fr-pt-link" href="#${r.id}" onclick="var d=document.getElementById('${r.id}');if(d)d.open=true;">${esc(r.title)}</a></td>${r.cells.map(c => `<td>${c}</td>`).join('')}</tr>`).join('');
-      return `<table class="fr-ptable"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
     }
 
     function priorityCard(p) {
@@ -181,11 +179,19 @@
       return level ? `<span class="fr-pill ${cls ? esc(cls) : 'fr-pill-' + esc(key)}">${esc(level)}</span>` : '';
     }
 
-    const kit = { esc, md, boldFirst, timingLabel, takeSentences, prose, paragraphs, numbering, sub, intro, infoBox, section, meter, scorecard, ratingRows, priorityTable, priorityCard, disclosure, checkItems, pill };
+    const kit = { esc, md, boldFirst, timingLabel, takeSentences, prose, paragraphs, numbering, sub, intro, advisory, infoBox, section, meter, scorecard, ratingRows, priorityCard, disclosure, checkItems, pill };
     return Object.assign(kit, {
       renderNormal: data => renderNormal(kit, data),
       renderClimate: (reader, opts) => renderClimate(kit, reader, opts),
     });
+  }
+
+  const SCORECARD_LEAD = 'The ratings below are a high-level AI assessment based on insights from the project package. They do not reflect a formal WBG or FCV Group designation. Read them as a general guide, alongside the more detailed overview and assessment that follows.';
+
+  // Zero gets no line: an empty list can mean a withheld or incomplete stage, not "none needed".
+  function countDef(n, one, many) {
+    if (!n) return '';
+    return n === 1 ? `1 ${one} is identified by the FCV Screener.` : `${n} ${many} are identified by the FCV Screener.`;
   }
 
   function priorityTitle(title) {
@@ -207,7 +213,7 @@
     html += k.scorecard([
       { key: 'sensitivity', label: 'FCV Sensitivity', value: d.fcvRating, steps: 6, level: levelOf(d.fcvRating), lo: FCV_SCALE[0], hi: FCV_SCALE[5], def: 'Does the design fit its FCV context and avoid doing harm?' },
       { key: 'responsiveness', label: 'FCV Responsiveness', value: d.fcvResponsivenessRating, steps: 6, level: levelOf(d.fcvResponsivenessRating), lo: FCV_SCALE[0], hi: FCV_SCALE[5], def: 'Does the project actively address FCV drivers? Not expected for every project.' },
-    ], { label: 'Priority actions', number: priorities.length, pills: countPills(priorities, p => p.risk_level, [
+    ], { label: 'Priority actions', number: priorities.length, def: countDef(priorities.length, 'priority action', 'priority actions'), pills: countPills(priorities, p => p.risk_level, [
       { key: 'High', text: 'High', cls: 'fr-pill-high' }, { key: 'Medium', text: 'Medium', cls: 'fr-pill-medium' }, { key: 'Low', text: 'Low', cls: 'fr-pill-low' }]) });
 
     if (s.found) {
@@ -242,29 +248,23 @@
 
     if (priorities.length) {
       const n = priorities.length;
-      const rows = priorities.map((p, i) => ({
-        id: `fr-priority-${i + 1}`, rank: i + 1, title: priorityTitle(p.title),
-        cells: [k.pill(p.risk_level), k.esc(FOCUS_LABELS[p.tag] || p.tag || ''), k.esc(k.timingLabel(p.action_timing))],
-      }));
-      html += k.section('fr-ptable-sec', h('Priority Actions for the Task Team')
-        + k.infoBox('', `<strong>Based on a three-stage assessment of the project documents, ${n} priority ${n === 1 ? 'action has' : 'actions have'} been identified</strong> to strengthen FCV sensitivity and responsiveness in the design and delivery of this project.`)
-        + k.priorityTable(['#', 'Priority action', 'Level', 'FCV focus', 'Timing'], rows));
+      const intro = k.infoBox('', `<strong>Based on a three-stage assessment of the project documents, ${n} priority ${n === 1 ? 'action has' : 'actions have'} been identified</strong> to strengthen FCV sensitivity and responsiveness in the design and delivery of this project.` + k.advisory(d.advisoryText));
 
       const cards = priorities.map((p, i) => {
         const actions = Array.isArray(p.actions) ? p.actions : [];
         const actionsHtml = actions.length ? `<ol class="fr-actions">${actions.map(a => `<li>${a.document_element ? `<strong>${k.esc(a.document_element)}:</strong> ` : ''}${k.esc(a.guidance || '')}</li>`).join('')}</ol>` : '';
         const cycleText = p.implementation_note || (p.project_cycle && p.project_cycle.primary_text) || '';
         const cycleLabel = p.implementation_note ? 'When to address' : ((p.project_cycle && p.project_cycle.primary_label) || 'When to address');
-        const sup = [`Priority ${i + 1}`, k.pill(p.risk_level), k.esc(p.fcv_dimension || ''), k.esc(k.timingLabel(p.action_timing))].filter(Boolean).join(' &middot; ');
+        const sup = [`Priority ${i + 1}`, k.pill(p.risk_level), k.esc(FOCUS_LABELS[p.tag] || p.tag || ''), k.esc(p.fcv_dimension || ''), k.esc(k.timingLabel(p.action_timing))].filter(Boolean).join(' &middot; ');
         return k.priorityCard({
           id: `fr-priority-${i + 1}`, rank: i + 1, open: i === 0, supHtml: sup, title: priorityTitle(p.title),
           zones: [{ label: 'The gap', html: k.prose(p.the_gap) }, { label: 'Why it matters', html: k.prose(p.why_it_matters) }, { label: 'Essential actions', html: actionsHtml }],
-          drafts: actions.map(a => ({ label: 'Suggested text', forText: a.document_element || '', text: a.suggested_language || '' })),
+          drafts: actions.map(a => ({ label: 'Suggested Text', forText: a.document_element || '', text: a.suggested_language || '' })),
           cycle: { label: cycleLabel, text: cycleText },
           extraHtml: typeof d.priorityExtras === 'function' ? d.priorityExtras(p, i) : '',
         });
       }).join('');
-      html += k.section('fr-cards-sec', h('Strategic Priorities') + `<div class="fr-cards">${cards}</div>`);
+      html += k.section('fr-cards-sec', h('Priority Actions for the Task Team') + intro + `<div class="fr-cards">${cards}</div>`);
     }
 
     if (d.watchHtml) {
@@ -320,7 +320,7 @@
     html += k.scorecard([
       { key: 'climate-sensitivity', label: 'Climate sensitivity', value: climateLabel(sens.value), steps: 5, level: level(sens.value), lo: 'Very limited', hi: 'Very strong', def: 'How well does the design address interacting climate and FCV risks?' },
       { key: 'climate-responsiveness', label: 'Climate responsiveness', value: climateLabel(resp.value), steps: 5, level: level(resp.value), lo: 'Very limited', hi: 'Very strong', def: 'Does the project generate wider climate, peace and social dividends?' },
-    ], { label: 'Priorities', number: priorities.length, pills: countPills(priorities, p => String(p.confidence || '').toLowerCase(), [
+    ], { label: 'Priorities', number: priorities.length, def: countDef(priorities.length, 'operational priority', 'operational priorities'), pills: countPills(priorities, p => String(p.confidence || '').toLowerCase(), [
       { key: 'high', text: 'High confidence', cls: 'fr-pill-conf-high' }, { key: 'medium', text: 'Medium confidence', cls: 'fr-pill-medium' }, { key: 'low', text: 'Low confidence', cls: 'fr-pill-conf-low' }]) });
 
     const overview = (Array.isArray(r.summary_overview) ? r.summary_overview : [r.summary_overview]).map(t => String(t || '').trim()).filter(Boolean);
@@ -340,7 +340,6 @@
     const working = (Array.isArray(r.existing_responses) ? r.existing_responses : []).map(x => x && x.description).filter(Boolean).slice(0, 4);
     const gaps = (Array.isArray(r.summary_gaps) ? r.summary_gaps : []).map(x => x && x.text).filter(Boolean).slice(0, 5);
     html += k.section('fr-exec', h('Overview')
-      + (r.reader_review_notice ? `<p class="fr-notice">${k.esc(r.reader_review_notice)}</p>` : '')
       + (snapshot ? k.infoBox('Assessment snapshot', `<strong>${k.esc(snapshot)}</strong>`) : '')
       + k.paragraphs(context)
       + (working.length ? k.sub('What is already working') + k.paragraphs(working) : '')
@@ -371,13 +370,9 @@
 
     const statement = (r.priority_summary && r.priority_summary.statement) || '';
     if (priorities.length) {
-      const rows = priorities.map((p, i) => ({
-        id: `fr-priority-${i + 1}`, rank: i + 1, title: priorityTitle(p.title),
-        cells: [confidencePill(k, p.confidence), k.esc(p.responsible_function || '')],
-      }));
-      html += k.section('fr-ptable-sec', h('Ranked Operational Priorities')
-        + (statement ? k.infoBox('', k.boldFirst(statement)) : '')
-        + k.priorityTable(['#', 'Operational priority', 'Confidence', 'Suggested lead'], rows));
+      const n = priorities.length;
+      const lead = statement ? k.boldFirst(statement) : `<strong>${n} operational ${n === 1 ? 'priority is' : 'priorities are'} identified for the task team.</strong>`;
+      const intro = k.infoBox('', lead + k.advisory(o.advisoryText));
       const cards = priorities.map((p, i) => {
         const rank = i + 1;
         const paras = splitParagraphs(p.narrative);
@@ -402,19 +397,19 @@
         const optional = optionalText && fresh(optionalText) ? [optionalText] : [];
         return k.priorityCard({
           id: `fr-priority-${rank}`, rank, open: i === 0, title: priorityTitle(p.title),
-          supHtml: [`Priority ${rank}`, confidencePill(k, p.confidence, ' confidence'), k.esc(target)].filter(Boolean).join(' &middot; '),
+          supHtml: [`Priority ${rank}`, confidencePill(k, p.confidence, ' confidence'), p.responsible_function ? `Suggested lead: ${k.esc(p.responsible_function)}` : '', k.esc(target)].filter(Boolean).join(' &middot; '),
           zones: [{ label: 'Why this matters', html: k.paragraphs(why) }, { label: 'What the team could do', html: k.paragraphs(act) },
             { label: 'Practical considerations', html: k.paragraphs(practical) },
             { label: 'Optional further work', html: k.paragraphs(optional) }],
-          drafts: [cur && { label: 'Suggested drafting', forText: target, text: cur.text },
-            opd && { label: 'Suggested drafting for an operational instrument', forText: [opd.target_document, opd.target_section].filter(Boolean).join(' - '), text: opd.text }].filter(Boolean),
+          drafts: [cur && { label: 'Suggested Text', forText: target, text: cur.text },
+            opd && { label: 'Suggested Text for an operational instrument', forText: [opd.target_document, opd.target_section].filter(Boolean).join(' - '), text: opd.text }].filter(Boolean),
           cycle: { label: cycle.primary_label || 'When to address', text: cycle.primary_text || '' },
           extraHtml: typeof o.priorityExtras === 'function' ? o.priorityExtras(p, i) : '',
         });
       }).join('');
-      html += k.section('fr-cards-sec', h('Strategic Priorities') + `<div class="fr-cards">${cards}</div>`);
+      html += k.section('fr-cards-sec', h('Ranked Operational Priorities') + intro + `<div class="fr-cards">${cards}</div>`);
     } else {
-      html += k.section('fr-ptable-sec', h('Ranked Operational Priorities') + `<p class="fr-p">${k.esc(r.recommendation_message || 'No operational priorities were identified in this assessment. Review the assessment findings and points to check below.')}</p>`);
+      html += k.section('fr-cards-sec', h('Ranked Operational Priorities') + `<p class="fr-p">${k.esc(r.recommendation_message || 'No operational priorities were identified in this assessment. Review the assessment findings and points to check below.')}</p>`);
     }
 
     const checks = [].concat(

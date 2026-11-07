@@ -5,6 +5,8 @@ import app as app_module
 import io
 
 from docx import Document
+from docx.oxml.ns import qn
+from docx.text.paragraph import Paragraph
 
 def _block(timing):
     return (
@@ -104,22 +106,25 @@ def test_docx_renders_canonical_project_cycle_after_actions():
             }
         },
     })
-    paragraphs = [paragraph.text for paragraph in document.paragraphs]
-    text = "\n".join(paragraphs)
-    assert "Where this fits in the project cycle" in text
-    assert "Before appraisal" in text
-    assert "Confirm the decision sequence in the current document." in text
-    assert "During implementation" in text
-    assert "Track whether the agreed sequence is being followed." in text
-    assert "CPF Alignment:" in text
-    assert text.index("Where this fits in the project cycle") > text.index("Set out the decision sequence.")
-    assert text.index("Where this fits in the project cycle") < text.index("CPF Alignment:")
+    paragraphs = [Paragraph(node, document) for node in document.element.body.iter(qn("w:p"))]
+    text = "\n".join(paragraph.text for paragraph in paragraphs)
+    assert "PRACTICAL CONSIDERATIONS" in text
+    for expected in (
+        "Before appraisal", "Confirm the decision sequence in the current document.",
+        "During implementation", "Track whether the agreed sequence is being followed.",
+        "CPF Alignment", "Align with the CPF outcome on resilient delivery.",
+    ):
+        assert expected in text
+    assert text.index("Set out the decision sequence.") < text.index("PRACTICAL CONSIDERATIONS")
+    practical = text[text.index("PRACTICAL CONSIDERATIONS"):]
+    assert practical.index("Before appraisal") < practical.index("During implementation") < practical.index("CPF Alignment")
+    assert "Legacy concise label" not in text
+    assert "This must not be used by Detailed exports." not in text
+    for label in ("Before appraisal", "During implementation", "CPF Alignment"):
+        paragraph = next(p for p in paragraphs if p.text.startswith(label + " "))
+        assert paragraph.runs[0].text.strip() == label
+        assert paragraph.runs[0].bold is True
 
-    cycle_index = paragraphs.index("Where this fits in the project cycle")
-    assert document.paragraphs[cycle_index + 1].runs[0].bold is True
-    assert document.paragraphs[cycle_index + 2].runs[0].bold is True
-    assert document.paragraphs[cycle_index + 3].runs[0].bold is True
-    assert document.paragraphs[cycle_index + 4].runs[0].bold is True
 
 
 def test_docx_omits_project_cycle_when_only_legacy_concise_data_exists():
@@ -133,7 +138,7 @@ def test_docx_omits_project_cycle_when_only_legacy_concise_data_exists():
             }
         },
     })
-    text = "\n".join(paragraph.text for paragraph in document.paragraphs)
+    text = "\n".join(Paragraph(node, document).text for node in document.element.body.iter(qn("w:p")))
     assert "Where this fits in the project cycle" not in text
     assert "Legacy concise label" not in text
     assert "Legacy concise timing must not leak into exports." not in text

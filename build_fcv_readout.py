@@ -1,6 +1,7 @@
 """FCV-route readout -> .docx.  render(data, meta, path) takes the dict produced by parse_fcv_docx.py."""
 import json, sys
 from fcv_docx_style import Report, CONTENT_W, BE_AWARE
+from fcv_presentation import priority_advisory_text
 
 SCALE6 = ["Extremely Low", "Very Low", "Low", "Adequate", "Well Embedded", "Very Well Embedded"]
 
@@ -8,16 +9,14 @@ SCALE6 = ["Extremely Low", "Very Low", "Low", "Adequate", "Well Embedded", "Very
 def render(d, meta, path):
     R = Report("fcv", meta)
     R.banner()
-    if meta.get("disclaimer"):
-        R.status_line(meta["disclaimer"])
     R.be_aware(BE_AWARE)
 
     sens, resp = d["ratings"]["FCV Sensitivity"], d["ratings"]["FCV Responsiveness"]
     levels = [r[2] for r in d["priority_table"]]
     lines = [(f"{levels.count(k)} {k}", k) for k in ("High", "Medium", "Low") if levels.count(k)]
-    R.scorecard([dict(label="FCV Sensitivity", value=sens["value"], n=6, idx=SCALE6.index(sens["value"]) + 1,
+    R.scorecard([dict(label="FCV Sensitivity", value=sens["value"], n=6, idx=(SCALE6.index(sens["value"]) + 1 if sens["value"] in SCALE6 else 0),
                       lo=SCALE6[0], hi=SCALE6[-1]),
-                 dict(label="FCV Responsiveness", value=resp["value"], n=6, idx=SCALE6.index(resp["value"]) + 1,
+                 dict(label="FCV Responsiveness", value=resp["value"], n=6, idx=(SCALE6.index(resp["value"]) + 1 if resp["value"] in SCALE6 else 0),
                       lo=SCALE6[0], hi=SCALE6[-1])],
                 {"label": "Priority actions", "number": len(d["priority_table"]), "lines": lines},
                 note=d["rating_note"])
@@ -43,7 +42,14 @@ def render(d, meta, path):
     R.small(d["rating_note"])
 
     R.h1("Priority Actions for the Task Team")
-    R.body(d["priority_intro"], keep=True)
+    priority_intro = str(d["priority_intro"] or "")
+    R.body(priority_intro, keep=True)
+    advisory = priority_advisory_text(
+        implementation=str(meta.get("review_mode") or "design").strip().casefold()
+        == "implementation"
+    )
+    if d["priority_table"] and advisory not in priority_intro:
+        R.body(advisory, keep=True)
     rows = [[r[0], (r[1], f"priority_{r[0]}"), r[2], r[3], r[4]] for r in d["priority_table"]]
     R.data_table(["#", "Priority Action", "Priority", "FCV Focus", "Timing"],
                  [0.35, 3.05, 0.8, 1.2, CONTENT_W - 5.4], rows, pill_cols=(2,), link_col=1)
@@ -86,7 +92,6 @@ if __name__ == "__main__":
         running_label="STAR (Syria)",
         classification="Official Use Only",
         generator=data.get("generator_line", ""),
-        disclaimer="Draft - human review required. Named approval of this version must be recorded separately before sharing. This app does not record human approval.",
         its_url="https://fcvriskdashboardqa.worldbank.org/project-screener",
     )
     print(render(data, meta, sys.argv[2]))

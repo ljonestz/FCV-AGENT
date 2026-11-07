@@ -287,9 +287,9 @@ class Report:
     """lens: 'fcv' or 'climate'.  meta keys: title, project_line, running_label, date, classification,
     generator, disclaimer."""
 
-    def __init__(self, lens, meta):
+    def __init__(self, lens, meta, document=None):
         self.lens, self.meta = lens, meta
-        self.doc = Document()
+        self.doc = document if document is not None else Document()
         z = self.doc.settings.element.find(qn("w:zoom"))
         if z is not None:
             z.set(qn("w:percent"), "100")
@@ -304,7 +304,8 @@ class Report:
         s.page_width, s.page_height = Inches(PAGE_W), Inches(PAGE_H)
         s.left_margin = s.right_margin = Inches(MARGIN)
         s.top_margin, s.bottom_margin = Inches(0.85), Inches(0.8)
-        s.header_distance, s.footer_distance = Inches(0.4), Inches(0.35)
+        # Word offsets floating header tables by the header distance even with a page anchor.
+        s.header_distance, s.footer_distance = Inches(0), Inches(0.35)
         s.different_first_page_header_footer = True
         self._running_header(s.header)
         self._footer(s.footer)
@@ -317,8 +318,12 @@ class Report:
 
     def _running_header(self, header):
         p = header.paragraphs[0]; self._tabbed(p)
+        p.paragraph_format.space_before = Pt(28.8)
         add_run(p, "FCV SCREENER", 7.5, True, color=BLUE, spacing=1)
-        add_run(p, f"   {self.meta['title']}  ·  {self.meta['running_label']}", 7.5, color=GREY_TXT)
+        label = self.meta["title"]
+        if self.meta["running_label"]:
+            label += "  \u00b7  " + self.meta["running_label"]
+        add_run(p, "   " + label, 7.5, color=GREY_TXT)
         if self.lens == "climate":
             add_run(p, "   ")
             add_run(p, " CLIMATE LENS ", 7, True, color="FFFFFF", spacing=0.8, shade=BLUE)
@@ -361,7 +366,7 @@ class Report:
         """Full-bleed navy banner on page 1 (floating table in the first-page header)."""
         hdr = self.doc.sections[0].first_page_header
         p0 = hdr.paragraphs[0]
-        pfmt(p0, before=112, after=6, line=1.0, align=WD_ALIGN_PARAGRAPH.RIGHT)   # reserves banner height
+        pfmt(p0, before=112, after=14, line=1.0, align=WD_ALIGN_PARAGRAPH.RIGHT)   # reserves banner height
         add_run(p0, self.meta["classification"].upper(), 7.5, True, color=GREY_TXT, spacing=0.5)
         tbl = hdr.add_table(rows=1, cols=2, width=Inches(PAGE_W))
         table_setup(tbl, [1.35, PAGE_W - 1.35], cell_pad=(0, 0, 0, 0))
@@ -524,7 +529,7 @@ class Report:
         elif note:
             add_run(p, "   " + note, 7, italic=True, color=GREY_TXT)
         p = c.add_paragraph(); pfmt(p)
-        add_run(p, text, BODY_SIZE - 0.5, italic=True, color="2B3A48")
+        self._runs_with_verify(p, text, size=BODY_SIZE - 0.5, italic=True, color="2B3A48")
         row_no_split(t.rows[0])
         self.spacer(6)
 
@@ -537,9 +542,9 @@ class Report:
             p = c.add_paragraph(); pfmt(p, after=3)
             if isinstance(x, tuple):
                 add_run(p, x[0] + " ", BODY_SIZE - 0.5, True, color=NAVY)
-                add_run(p, x[1], BODY_SIZE - 0.5)
+                self._runs_with_verify(p, x[1], size=BODY_SIZE - 0.5)
             else:
-                add_run(p, x, BODY_SIZE - 0.5)
+                self._runs_with_verify(p, x, size=BODY_SIZE - 0.5)
         self.spacer(6)
 
     # ================================================================ ratings

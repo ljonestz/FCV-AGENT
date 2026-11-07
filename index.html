@@ -446,6 +446,7 @@
     .climate-verified-assessment .climate-question-source{font-size:12px;color:var(--wbg-blue);margin:0 0 9px}
     .climate-verified-assessment .climate-core-question>p:not(.climate-question-source){margin:0 0 9px}
     .climate-verified-assessment .climate-priority-summary{background:#eef7fb;border:1px solid #cfe9f4;border-left:4px solid var(--wbg-blue);border-radius:var(--radius-sm);padding:12px 15px;margin:0 0 14px;font-size:13px;color:#0b4a63;line-height:1.58}
+    .climate-verified-assessment .climate-priority-summary .stage3-advisory-transition{margin:10px 0 0;padding:0;background:transparent;border:0;color:inherit}
     .climate-verified-assessment .climate-priority-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);margin:0 0 10px;overflow:hidden}
     .climate-verified-assessment .climate-priority-card>summary{display:flex;align-items:flex-start;gap:12px;padding:15px 18px;cursor:pointer;list-style:none}
     .climate-verified-assessment .climate-priority-card>summary::-webkit-details-marker{display:none}
@@ -562,6 +563,11 @@
     .btn-ghost{background:transparent!important;color:var(--color-text-muted)!important;border:none!important;padding:6px 12px!important;font-size:13px!important;font-weight:500!important;border-radius:4px!important;box-shadow:none!important}
     .btn-ghost:hover:not(:disabled){color:var(--color-text)!important;background:var(--color-bg)!important}
     .btn-ghost.btn-sm{padding:6px 12px!important;font-size:13px!important}
+    .report-download-menu{position:relative}
+    .report-download-menu>summary{list-style:none;cursor:pointer}
+    .report-download-menu>summary::-webkit-details-marker{display:none}
+    .report-download-options{position:absolute;top:calc(100% + 4px);right:0;z-index:50;min-width:160px;display:grid;gap:4px;padding:6px;background:var(--white);border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:var(--shadow-md)}
+    .report-download-options button{text-align:left;width:100%}
     .btn-danger{background:#fff;color:#b91c1c;border:1.5px solid #fca5a5;padding:10px 18px}
     .btn-danger:hover:not(:disabled){background:#fef2f2}
     .btn-sm{padding:7px 14px!important;font-size:13px!important}
@@ -1954,6 +1960,8 @@
 .fr-sc-count{background:var(--fr-navy);padding:14px 16px;display:flex;flex-direction:column;justify-content:center;gap:3px}
 .fr-sc-count-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:rgba(255,255,255,.75)}
 .fr-sc-count-num{font-size:30px;font-weight:700;color:#fff;line-height:1.1}
+.fr-sc-count-def{font-size:10px;font-style:italic;line-height:1.4;color:rgba(255,255,255,.85);margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.25)}
+.fr-sc-lead{font-size:12px;line-height:1.5;color:var(--fr-grey,#555);font-style:italic;margin:4px 0 8px}
 .fr-note{font-size:9px;font-style:italic;color:var(--fr-grey);margin:4px 0 20px}
 .fr-pill{display:inline-block;padding:2px 7px;font-size:10px;font-weight:700;width:fit-content}
 .fr-pill-high{background:#FDE4E1;color:#B42318}.fr-pill-medium{background:#FEF0C7;color:#8A4B08}.fr-pill-low{background:#E3F4E8;color:#1E6B3A}
@@ -1964,6 +1972,7 @@
 .fr-h2c{font-size:10px!important;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--fr-blue)!important;margin:18px 0 8px!important;border:0!important;padding:0!important}
 .fr-intro{font-size:13px;line-height:1.6;color:var(--fr-grey);font-style:italic;margin:0 0 14px}
 .fr-info{background:var(--fr-tint);border-left:4px solid var(--fr-blue);padding:12px 15px;margin:0 0 14px;font-size:13px;line-height:1.6;color:var(--fr-navy)}
+.fr-info .fr-advisory{margin:10px 0 0;font-size:13px;line-height:1.6;color:var(--fr-navy)}
 .fr-info-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--fr-blue);margin-bottom:6px}
 .fr-pair{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--fr-border);border-bottom:1px solid var(--fr-border)}
 .fr-col{padding:14px 16px}.fr-col+.fr-col{border-left:1px solid var(--fr-border)}.fr-col .fr-h2c{margin-top:0!important}
@@ -1981,12 +1990,7 @@
 .fr-theme{padding:16px 0}.fr-theme+.fr-theme{border-top:1px solid var(--fr-border)}
 .fr-theme-q{font-size:13px!important;font-weight:700;color:var(--fr-navy)!important;margin:0 0 10px!important;padding:0 0 0 12px!important;border:0!important;border-left:3px solid var(--fr-blue)!important;text-transform:none!important}
 .fr-theme-links{font-size:11px;color:var(--fr-grey)}.fr-theme-links a{color:var(--fr-blue)}
-.fr-ptable{width:100%;border-collapse:collapse;margin:0 0 16px;border-bottom:2px solid var(--fr-navy)}
-.fr-ptable th{background:var(--fr-navy);color:#fff;padding:8px 10px;font-size:10px;font-weight:700;text-align:left;border-bottom:2px solid var(--fr-blue)}
-.fr-ptable td{padding:8px 10px;font-size:12px;border-bottom:1px solid var(--fr-border);vertical-align:middle}
-.fr-ptable tbody tr:nth-child(even) td{background:var(--fr-tint2)}
 .fr-pt-num{font-size:14px;font-weight:700;color:var(--fr-blue);text-align:center;width:30px}
-.fr-pt-link{color:var(--fr-blue);text-decoration:none}.fr-pt-link:hover{text-decoration:underline}
 .fr-cards{border-top:1px solid var(--fr-border)}
 .fr-pc{border:1px solid var(--fr-border);border-top:0}
 .fr-pc-hdr{display:grid;grid-template-columns:46px 1fr 28px;align-items:stretch;cursor:pointer;list-style:none;background:var(--fr-tint)}
@@ -2647,6 +2651,7 @@
 <script>
   // ── State ──────────────────────────────────────────────────────────────────
   let pF=[],pkF=[],cF=[],hist=[],curS=0,busy=false;
+  let restoredFileNames={project:[],context:[]};
   const MAX_PRIMARY = 1;
   const MAX_PACK = 10;
   const MAX_CTX = 3;
@@ -3201,7 +3206,8 @@
   localStorage.removeItem('fcv_review_mode');
 
   function isRestorableExpressStage3Output(value){
-    return typeof value==='string' && value.trim().length>0;
+    return typeof value==='string' && value.trim().length>0 &&
+      (stageThreePriorities.length>0 || supportsClimateVerifiedStage3View());
   }
 
   // Express recovery: checkpoints cannot restore browser File objects after a reload.
@@ -3318,7 +3324,7 @@
       savedAt: new Date().toISOString(),
       currentStage: curS,
       history: hist,
-      fileNames: { project: pF.map(f=>f.name), context: cF.map(f=>f.name) },
+      fileNames: { project: pF.length?pF.map(f=>f.name):restoredFileNames.project, context: cF.length?cF.map(f=>f.name):restoredFileNames.context },
       docType: docType,
       analysisMode: analysisMode,
       instrumentType: instrumentType,
@@ -3433,6 +3439,14 @@
             return;
           }
         }
+        // A loaded session has names only; do not export names from a previous upload.
+        pF=[];pkF=[];cF=[];
+        ['ip','ipack','ic'].forEach(id=>{document.getElementById(id).value='';});
+        const savedFiles=Array.isArray(state.fileNames)?{project:state.fileNames}:state.fileNames||{};
+        restoredFileNames={
+          project:Array.isArray(savedFiles.project)?savedFiles.project.filter(n=>typeof n==='string'):[],
+          context:Array.isArray(savedFiles.context)?savedFiles.context.filter(n=>typeof n==='string'):[]
+        };
         hist = state.history;
         curS = state.currentStage || 0;
         if(state.instrumentType) instrumentType = state.instrumentType;
@@ -3494,7 +3508,7 @@
           <div class="callout info ani">
             <div class="callout-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
             <div class="callout-body"><strong>Session resumed</strong>Analysis through Stage ${curS} has been loaded.
-            ${state.fileNames.project.length ? '<br>Original files: ' + [...state.fileNames.project,...state.fileNames.context].join(', ') : ''}
+            ${restoredFileNames.project.length ? '<br>Original files: ' + [...restoredFileNames.project,...restoredFileNames.context].map(esc).join(', ') : ''}
             <br>Note: you will need to re-upload your documents if you want to run Stage 1 again.</div>
           </div>`;
         document.getElementById('act-area').innerHTML = curS < 3 ? `
@@ -3959,6 +3973,7 @@
     let buf='';
     let currentStage=1;
     let _expressDone=false;
+    let stage3ParseError='';
 
     try{
       while(true){
@@ -4080,6 +4095,7 @@
             else if(sn===3){
               stageOutputs[3]=p.result;
               hist=p.history||hist;stageHists[3]=hist.slice();
+              if(p.parse_error)stage3ParseError=p.parse_error_message||'Stage 3 output could not be parsed. The Recommendations Note is incomplete.';
               stageGapTable=p.gap_table||null;
               stageRiskExposure=p.risk_exposure||null;
               stageSensitivitySummary=p.sensitivity_summary||'';
@@ -4099,7 +4115,8 @@
               horizonConsiderations=typeof p.horizon_considerations==='string'?p.horizon_considerations:'';
               if(p.applied_snippets)stageAppliedSnippets=p.applied_snippets;
               fcvSafeLocalStorageSet('stage3_timestamp',Date.now());
-              updateExpressStage(3,'done','Complete');
+              if(stage3ParseError)showExpressError(3,stage3ParseError);
+              else updateExpressStage(3,'done','Complete');
               epSafeStore(stageOutputs,stageHists,'3');
             }
           }
@@ -4115,6 +4132,9 @@
           // ── Express complete ──
           else if(p.express_done){
             clearTimeout(expressTimeout);
+            if(stage3ParseError){
+              busy=false;_expressDone=true;reader.cancel();break;
+            }
             hideExpressProgress();
             document.getElementById('stepper-wrap').style.display='';
             document.getElementById('main').style.display='';
@@ -5063,14 +5083,13 @@
     const r=reader&&typeof reader==='object'?reader:{};
     const route=climateDraftingRouteGate(r);
     const notices=[];
-    notices.push('<p class="climate-review-status" role="note">Draft - human review required. Named approval of this version must be recorded separately before sharing. This app does not record human approval.</p>');
     if(r.analysis_status==='partial'&&r.analysis_message)notices.push(`<div class="finalized-pad-notice"><div class="fpn-body"><strong>Assessment evidence is incomplete.</strong><p>${esc(r.analysis_message)}</p></div></div>`);
     if(r.recommendation_status==='incomplete'||r.recommendation_status==='partial')notices.push(`<div class="finalized-pad-notice"><div class="fpn-body"><strong>${r.recommendation_status==='incomplete'?'Recommendations stage incomplete':'Recommendations need review'}:</strong> ${esc(r.recommendation_message||'Do not rely on this note as a completed assessment.')}</div></div>`);
     if(String(r.runtime_mode||'').toLowerCase()==='smoke')notices.push('<div class="finalized-pad-notice"><div class="fpn-body"><strong>Smoke test: validates workflow completion only; not a quality benchmark.</strong></div></div>');
     if(String(r.evidence_status||'').toLowerCase()==='preview; not approved')notices.push('<div class="finalized-pad-notice"><div class="fpn-body"><strong>Candidate country evidence: preview; not approved.</strong></div></div>');
     if(!route.confirmed)notices.push('<p class="climate-route-warning">Suggested document wording is not shown because the document type or financing route could not be confirmed reliably.</p>');
-    if(r.operation_context&&r.operation_context.preparation_regime==='unresolved_policy_source')notices.push('<p class="climate-route-warning">Preparation route: confirm the OIS date and applicable review; the upload does not establish them.</p>');
-    return frApi().renderClimate(r,{noticesHtml:notices.join(''),draftingAllowed:route.confirmed});
+    const hasPriorities=Array.isArray(r.priorities)&&r.priorities.length>0;
+    return frApi().renderClimate(r,{noticesHtml:notices.join(''),draftingAllowed:route.confirmed,advisoryText:hasPriorities?stage3AdvisoryText('climate'):''});
   }
 
   // Blunt, upfront caveat shown above the Stage 3 readout. Sits in the #stage-disp
@@ -5120,7 +5139,7 @@
   }
 
   function stage3DocChecksHtml(){
-    return (Array.isArray(docChecks)&&docChecks.length)?`<details style="margin-top:18px;border:1px solid #E2E6EC;border-radius:8px;padding:8px 14px;background:#F7F8FA"><summary style="cursor:pointer;font-weight:700;color:#002244">Points to check in the document</summary><p style="color:#4b5563;margin:8px 0 10px">A light automated check of the uploaded document for things worth confirming - placeholders, empty fields, or values that do not match. This is not the main analysis, just a checklist.</p>${docChecks.map(dc=>`<section style="margin:0 0 11px"><p style="font-weight:700;color:#002244;margin:0 0 3px">${esc(dc.finding||'')}</p>${dc.why_it_matters?`<p style="margin:0 0 3px">${esc(dc.why_it_matters)}</p>`:''}${dc.where?`<p style="margin:0;color:#6b7280;font-size:12px">Where: ${esc(dc.where)}</p>`:''}</section>`).join('')}</details>`:'';
+    return (Array.isArray(docChecks)&&docChecks.length)?`<details id="document-checks" style="margin-top:18px;border:1px solid #E2E6EC;border-radius:8px;padding:8px 14px;background:#F7F8FA"><summary style="cursor:pointer;font-weight:700;color:#002244">Points to check in the document</summary><p style="color:#4b5563;margin:8px 0 10px">A light automated check of the uploaded document for things worth confirming - placeholders, empty fields, or values that do not match. This is not the main analysis, just a checklist.</p>${docChecks.map(dc=>`<section style="margin:0 0 11px"><p style="font-weight:700;color:#002244;margin:0 0 3px">${esc(dc.finding||'')}</p>${dc.why_it_matters?`<p style="margin:0 0 3px">${esc(dc.why_it_matters)}</p>`:''}${dc.where?`<p style="margin:0;color:#6b7280;font-size:12px">Where: ${esc(dc.where)}</p>`:''}</section>`).join('')}</details>`:'';
   }
 
   function buildNormalReadout(markdownText,forExport=false){
@@ -5215,16 +5234,8 @@
             <div class="out-hdr">
               <div class="out-hdr-l"><span class="dot done"></span>${NAMES[stage]}</div>
               <div class="out-hdr-actions" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
-                ${isLast?`<span id="management-brief-controls">${renderManagementBriefControls()}</span>`:''}${isLast?`<button class="btn btn-ghost btn-sm" onclick="downloadReport(this)" title="Download full report as a Word document (.docx)">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                  Download .docx
-                </button>
-                <button class="btn btn-ghost btn-sm" onclick="downloadHTML()" title="Export full analysis as a self-contained HTML file — sharable without any other files">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-                  Share .html
-                </button>`:''}
-                ${isLast&&climateVerifiedAssessment&&climateVerifiedAssessment.schema_version==='climate-verified-v2.1'?`<button class="btn btn-ghost btn-sm" onclick="downloadClimateReviewPacket(this)">Download review packet</button>`:''}
-                ${isLast?`<button class="copy-btn" onclick="copySummary()">Copy summary</button><button class="copy-btn" onclick="copyFullReport()">Copy full report</button>`:`<button class="copy-btn" id="copy-btn" onclick="copyOut()">Copy all</button>`}
+                ${isLast?`<details class="report-download-menu"><summary class="btn btn-ghost btn-sm" aria-label="Download full report as Word or HTML">Download report</summary><div class="report-download-options" role="group" aria-label="Full Detailed report formats"><button type="button" class="btn btn-ghost btn-sm" onclick="downloadReport(this)" title="Download the full Detailed report as Word">Word (.docx)</button><button type="button" class="btn btn-ghost btn-sm" onclick="downloadHTML()" title="Download the full Detailed report as HTML">HTML (.html)</button></div></details>`:''}
+                ${isLast?`<button type="button" class="copy-btn" id="copy-active-view" onclick="copyActiveView()" aria-label="Copy the report" title="Copy the report as plain text">Copy</button>`:`<button class="copy-btn" id="copy-btn" onclick="copyOut()">Copy all</button>`}
               </div>
             </div>
             ${isLast?`<p style="font-size:12px;color:var(--muted);padding:0 20px">Full report includes all priority actions and drafting. HTML also includes the research briefing and Stage 2 Annex; Word export omits these supplements. Optional Playbook exploration is separate.</p>`:''}
@@ -5410,34 +5421,47 @@
     return text;
   }
 
-  function buildFullReportText(){
-    if(supportsClimateVerifiedStage3View())return reportPlainText(renderClimateVerifiedAssessment(climateVerifiedReader));
-    let html=md(stageOutputs[3]||'');
-    html+=renderRiskExposure(stageRiskExposure)+renderSRCards(stageSensitivitySummary,stageResponsivenessSummary);
-    html+='<h2>Ratings</h2><p>Sensitivity: '+esc(fcvRating||'Unavailable')+'</p><p>Responsiveness: '+esc(fcvResponsivenessRating||'Unavailable')+'</p>';
-    stageThreePriorities.forEach((priority,index)=>{html+=_buildExportPriorityCard(priority,index,stageThreePriorities.length);});
-    if(focusQuestionsResult){
+  async function copyReportText(text,button){
+    const originalText=button?button.textContent:'';
+    const originalLabel=button?button.getAttribute('aria-label'):'';
+    let copied=false;
+    try{await navigator.clipboard.writeText(text);copied=true;}
+    catch(error){}
+    if(!copied){
+      let input=null;
+      try{
+        input=document.createElement('textarea');input.value=text;
+        input.setAttribute('aria-hidden','true');input.tabIndex=-1;
+        input.style.position='fixed';input.style.left='-9999px';
+        document.body.appendChild(input);input.select();
+        copied=document.execCommand('copy')===true;
+      }catch(error){copied=false;}
+      finally{if(input)input.remove();}
+    }
+    if(button){
+      button.textContent=copied?'Copied ✓':'Copy failed';
+      button.setAttribute('aria-label',copied?'Copied':'Copy failed. Clipboard permission was denied.');
+      button.classList.toggle('ok',copied);button.classList.toggle('error',!copied);
+      setTimeout(()=>{
+        button.textContent=originalText;
+        button.setAttribute('aria-label',originalLabel||'Copy');
+        button.classList.remove('ok','error');
+      },2500);
+    }
+    return copied;
+  }
+  // One Copy control: copies the unified readout as plain text (same content as the on-screen report).
+  function copyActiveView(){
+    const button=document.getElementById('copy-active-view');
+    let html;
+    if(supportsClimateVerifiedStage3View())html=renderClimateVerifiedAssessment(climateVerifiedReader);
+    else if(stageOutputs[3]&&!stage3ClimateLensState().valid)html=buildNormalReadout(stageOutputs[3]||'',true);
+    else html=stage3DetailedHtml||md(stageOutputs[3]||'');
+    if(focusQuestionsResult&&(focusQuestionsResult.responses||[]).length){
       html+='<h2>Responses to your priority points</h2>'+md(focusQuestionsResult.overview||'');
       (focusQuestionsResult.responses||[]).forEach(r=>{html+='<h3>'+esc(r.question||'')+'</h3>'+md(r.direct_answer||'')+md(r.confidence_gap_note||'');});
     }
-    [[midCycleWatch,'Mid-Cycle FCV Watch'],[dpfWatch,'DPF FCV Watch'],[p4rWatch,'P4R FCV Watch'],[regionalWatch,'Regional FCV Watch']].forEach(([items,title])=>{
-      if(items&&items.length)html+='<h2>'+title+'</h2><ul>'+items.map(item=>'<li>'+esc(item)+'</li>').join('')+'</ul>';
-    });
-    if(horizonConsiderations)html+='<h2>Watch List for Supervision</h2>'+md(stripWatchHeading(horizonConsiderations));
-    return reportPlainText(html);
-  }
-
-  async function copyReportText(text){
-    try{await navigator.clipboard.writeText(text);}
-    catch(error){
-      const input=document.createElement('textarea');input.value=text;
-      document.body.appendChild(input);input.select();document.execCommand('copy');input.remove();
-    }
-  }
-  function copyFullReport(){return copyReportText(buildFullReportText());}
-  function copySummary(){
-    const notice=supportsClimateVerifiedStage3View()&&climateVerifiedReader.recommendation_status==='partial'?climateVerifiedReader.recommendation_message+'\n\n':'';
-    return copyReportText(notice+reportPlainText(stage3DetailedHtml||md(stageOutputs[3]||'')));
+    return copyReportText(reportPlainText(html),button);
   }
 
   function copyOut(){
@@ -5775,7 +5799,7 @@
     const sum=document.getElementById('ep-summary-'+stage);
     sum.innerHTML='<div style="color:#DC2626;font-size:13px;margin-top:6px">'+esc(errorMsg)+'</div>'+
       '<div class="ep-error-actions">'+
-      '<button class="btn" onclick="retryExpressStage('+stage+')" style="background:var(--wbg-navy);color:#fff;border:none;border-radius:5px;font-size:12px;padding:6px 14px;cursor:pointer">Retry this stage</button>'+
+      '<button class="btn" onclick="retryExpressStage('+stage+')" style="background:var(--wbg-navy);color:#fff;border:none;border-radius:5px;font-size:12px;padding:6px 14px;cursor:pointer">Restart full analysis</button>'+
       '<button class="btn" onclick="switchToStepByStep('+stage+')" style="background:#fff;color:var(--wbg-navy);border:1px solid #D1D5DB;border-radius:5px;font-size:12px;padding:6px 14px;cursor:pointer">Switch to step-by-step</button>'+
       '</div>';
     sum.style.color='';
@@ -5879,6 +5903,11 @@
       climate_reader: climateVerifiedReader,
       metadata: {
         date_str: dateStr,
+        country: researchCountry || '',
+        document_type: docType || '',
+        instrument: instrumentType || '',
+        project_file_names: pF.length?pF.map(f=>f.name):restoredFileNames.project,
+        review_mode: reviewMode || 'design',
         classification_category: cat,
         classification_reasoning: catReasoning,
         finalized_pad: finPAD,
@@ -6124,6 +6153,7 @@ ${climatePrintDisclosureScript()}
   }
 
   function reset(){
+    restoredFileNames={project:[],context:[]};
     pF=[];pkF=[];cF=[];fileMetadata={};hist=[];curS=0;sessionName='';busy=false;stageOutputs={};stageHists={};researchBrief='';researchCountry='';priorityQuestions=[];focusQuestionsResult=null;pqPanelEnabled=true;
     ['ip','ipack','ic'].forEach(id=>{document.getElementById(id).value='';});
     activeLenses=[];resolvedLensVersions={};lensSuggestions=[];lensDiagnostic={};lensContextSources=[];climateResearch={};climateGrounding={};climateIntegration=null;climateVerifiedAssessment=null;climateVerifiedFailure=null;climateVerifiedReader=null;lensSelectionTouched=false;lensSelectionLocked=false;renderLensSelector();
@@ -6548,8 +6578,17 @@ ${climatePrintDisclosureScript()}
     return renderStandardPriorityContext(pr)+renderPriorityCompliance(pr);
   }
 
+  // Advisory sentence shown with the priorities (normal readout, verified climate and legacy climate-lens routes).
+  function stage3AdvisoryText(route){
+    const subject=typeof reviewMode!=='undefined'&&reviewMode==='implementation'?"project's design and implementation arrangements":"project's design";
+    const context=route==='climate'?'climate and FCV':'FCV';
+    return `The following priorities are suggestions to strengthen the ${subject} in its ${context} context. They are not mandatory requirements, nor may they all be relevant. The task team may wish to focus on those they believe to be more pertinent based on their own sectoral expertise and knowledge of the context within which the project will be applied. For more complex or difficult issues raised, the team are encouraged to reach out and discuss them with the FCV Country Coordinator or relevant Global Practice experts as needed.`;
+  }
+
   function renderNormalReadoutHtml(markdownText,noticesHtml,tailHtml,forExport=false){
+    const hasPriorities=Array.isArray(stageThreePriorities)&&stageThreePriorities.length>0;
     return frApi().renderNormal({
+      advisoryText:hasPriorities?stage3AdvisoryText('normal'):'',
       stage3Markdown:markdownText,fcvRating,fcvResponsivenessRating,
       sensitivitySummary:stageSensitivitySummary,responsivenessSummary:stageResponsivenessSummary,
       riskExposure:stageRiskExposure,priorities:stageThreePriorities,
@@ -6576,12 +6615,12 @@ ${climatePrintDisclosureScript()}
       return k.priorityCard({
         id:`fr-priority-${i+1}`,rank:i+1,open:i===0,supHtml:sup,title,
         zones:[{label:'The gap',html:k.prose(p.the_gap||p.body||'')},{label:'Why it matters',html:k.prose(p.why_it_matters||'')},{label:'Essential actions',html:actionsHtml}],
-        drafts:actions.map(a=>({label:'Suggested text',forText:a.document_element||'',text:a.suggested_language||''})),
+        drafts:actions.map(a=>({label:'Suggested Text',forText:a.document_element||'',text:a.suggested_language||''})),
         cycle:{label:'When to address',text:p.implementation_note||''},
         extraHtml:forExport?renderPriorityClimateContribution(p)+renderPriorityCompliance(p):renderPriorityWarningsHtml(p,i)+renderPriorityClimateContribution(p)+renderPriorityCompliance(p)+renderGoDeeperHtml(i)
       });
     }).join('');
-    return `<div class="fr-readout fr-route-legacy-climate">${linkNotice}<section class="fr-section fr-cards-sec"><header class="fr-h1"><h2 class="fr-h1-txt">Priority Actions for the Task Team</h2></header>${k.infoBox('',`<strong>Based on a three-stage assessment of the project documents, ${n} priority ${n===1?'action has':'actions have'} been identified</strong> to strengthen FCV sensitivity and responsiveness in the design and delivery of this project.`)}<div class="fr-cards">${cards}</div></section>${watchHtml}</div>`;
+    return `<div class="fr-readout fr-route-legacy-climate">${linkNotice}<section class="fr-section fr-cards-sec"><header class="fr-h1"><h2 class="fr-h1-txt">Priority Actions for the Task Team</h2></header>${k.infoBox('',`<strong>Based on a three-stage assessment of the project documents, ${n} priority ${n===1?'action has':'actions have'} been identified</strong> to strengthen FCV sensitivity and responsiveness in the design and delivery of this project.`+k.advisory(stage3AdvisoryText('climate')))}<div class="fr-cards">${cards}</div></section>${watchHtml}</div>`;
   }
 
   function supportsClimateVerifiedStage3View(){

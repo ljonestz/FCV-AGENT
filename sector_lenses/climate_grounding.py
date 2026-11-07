@@ -121,12 +121,11 @@ def _has_conflict(value: Any) -> bool:
 
 
 def _bounded_bank_projection(bank: dict[str, Any]) -> tuple[dict[str, Any], str]:
-    """Use the canonical compact projection and drop whole items to fit."""
+    """Keep whole evidence/source bundles and only fully supported pathways."""
 
     if bank.get("bank_status") != "ok":
         return {}, ""
-    compact_input = deepcopy(bank)
-    projection = compact_bank_packet(compact_input)
+    projection = compact_bank_packet(deepcopy(bank))
     if not projection:
         return {}, ""
 
@@ -137,14 +136,80 @@ def _bounded_bank_projection(bank: dict[str, Any]) -> tuple[dict[str, Any], str]
         "sources": [],
         "evidence_records": [],
         "pathways": [],
+        "coverage_metadata_available": projection.get(
+            "coverage_metadata_available", False
+        ),
+        "coverage_note": projection.get("coverage_note", ""),
+        "pathway_coverage_note": projection.get("pathway_coverage_note", ""),
     }
-    for field in ("sources", "evidence_records", "pathways"):
-        items = projection.get(field)
-        for item in items if isinstance(items, list) else []:
-            candidate = deepcopy(bounded)
-            candidate[field].append(item)
-            if len(_compact_json(candidate)) > CLIMATE_BANK_MAX_CHARS:
-                continue
+    if projection.get("country_profile"):
+        bounded["country_profile"] = deepcopy(projection["country_profile"])
+
+    omitted_limitations = False
+    limitation_size = 0
+    for limitation in projection.get("limitations", []):
+        if not isinstance(limitation, str):
+            omitted_limitations = True
+            continue
+        candidate = deepcopy(bounded)
+        candidate.setdefault("limitations", []).append(limitation)
+        next_size = len(_compact_json(candidate))
+        if next_size <= CLIMATE_BANK_MAX_CHARS and limitation_size + len(
+            limitation
+        ) <= 1_000:
+            bounded = candidate
+            limitation_size += len(limitation)
+        else:
+            omitted_limitations = True
+    if omitted_limitations:
+        bounded["limitations_omitted"] = True
+        bounded["limitations_note"] = (
+            "Some bank limitations were omitted to fit the prompt budget."
+        )
+
+    source_index = {
+        item.get("source_id"): item
+        for item in projection.get("sources", [])
+        if isinstance(item, dict) and isinstance(item.get("source_id"), str)
+    }
+    for item in projection.get("evidence_records", []):
+        referenced_ids = list(dict.fromkeys(
+            ref.get("source_id")
+            for ref in item.get("source_refs", [])
+            if isinstance(ref, dict) and isinstance(ref.get("source_id"), str)
+        ))
+        if any(source_id not in source_index for source_id in referenced_ids):
+            continue
+        candidate = deepcopy(bounded)
+        included_source_ids = {
+            source.get("source_id")
+            for source in candidate["sources"]
+            if isinstance(source.get("source_id"), str)
+        }
+        for source_id in referenced_ids:
+            if source_id not in included_source_ids:
+                candidate["sources"].append(source_index[source_id])
+                included_source_ids.add(source_id)
+        candidate["evidence_records"].append(item)
+        if len(_compact_json(candidate)) <= CLIMATE_BANK_MAX_CHARS:
+            bounded = candidate
+
+    included_evidence_ids = {
+        item.get("evidence_id")
+        for item in bounded["evidence_records"]
+        if isinstance(item.get("evidence_id"), str)
+    }
+    for item in projection.get("pathways", []):
+        support_ids = item.get("supporting_evidence_ids")
+        if (
+            not isinstance(support_ids, list)
+            or not support_ids
+            or not set(support_ids).issubset(included_evidence_ids)
+        ):
+            continue
+        candidate = deepcopy(bounded)
+        candidate["pathways"].append(item)
+        if len(_compact_json(candidate)) <= CLIMATE_BANK_MAX_CHARS:
             bounded = candidate
     serialized = _compact_json(bounded)
     if not bounded["evidence_records"] and not bounded["pathways"]:
@@ -265,6 +330,8 @@ def merge_climate_grounding(
         "sources": sources,
         "bank_evidence_records": bank_evidence,
         "bank_pathways": bank_pathways,
+        **({"bank_limitations": deepcopy(bank["limitations"])}
+           if bank.get("limitations") else {}),
         "live_claims": live_claims,
         "prompt_context": prompt_context,
         "bank_character_count": len(bank_context),

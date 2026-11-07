@@ -89,12 +89,15 @@ def test_scorecard_meter_and_unknown_rating():
     html = run_js("process.stdout.write(api.scorecard(["
                   "{key:'sensitivity',label:'FCV Sensitivity',value:'Adequate',steps:6,level:4,lo:'Extremely Low',hi:'Very Well Embedded',def:'Fit?'},"
                   "{key:'responsiveness',label:'FCV Responsiveness',value:'Odd value',steps:6,level:0,lo:'a',hi:'b',def:'Drivers?'}],"
-                  "{label:'Priority actions',number:3,pills:[{text:'2 High',cls:'fr-pill-high'}]}));")
+                  "{label:'Priority actions',number:3,def:'3 priority actions are identified by the FCV Screener.',pills:[{text:'2 High',cls:'fr-pill-high'}]}));")
     assert html.count('class="fr-ms fr-c') == 4
     assert html.count('class="fr-meter"') == 1
     assert "Odd value" in html and "Drivers?" in html
     assert 'class="fr-sc-count-num">3<' in html
-    assert "Advisory judgments, not official WBG ratings." in html
+    assert "Advisory judgments, not official WBG ratings." not in html
+    assert html.index('class="fr-sc-lead"') < html.index('class="fr-scorecard"')
+    assert "does not reflect" not in html and "do not reflect a formal WBG or FCV Group designation" in html
+    assert 'class="fr-sc-count-def">3 priority actions are identified by the FCV Screener.<' in html
 
 
 def test_priority_card_open_state_extras_and_escaping():
@@ -138,13 +141,15 @@ def test_normal_readout_section_order_and_content():
     html = normal({})
     order = ["id='n'", "fr-scorecard", ">Executive Summary<", "Assessment snapshot", ">FCV Risk Exposure<",
              ">FCV Sensitivity &amp; Responsiveness<", ">Priority Actions for the Task Team<",
-             ">Strategic Priorities<", ">Watch List for Supervision<", "id='tail'"]
+             "priority actions have been identified", 'id="fr-priority-1"', ">Watch List for Supervision<", "id='tail'"]
     positions = [html.index(marker) for marker in order]
     assert positions == sorted(positions)
-    assert ">01<" in html and ">06<" in html
+    assert ">01<" in html and ">05<" in html and ">06<" not in html
+    assert "fr-ptable" not in html and "Strategic Priorities" not in html
+    assert "2 priority actions are identified by the FCV Screener." in html
     assert html.count('class="fr-ms fr-c') == 4 + 3
     assert "Required before Decision Review (DM/ROC)" in html
-    assert "<td>Sensitivity + Responsiveness</td>" in html
+    assert "Sensitivity + Responsiveness" in html[html.index('id="fr-priority-1"'):]
     assert 'id="fr-priority-1" open>' in html and 'id="fr-priority-2">' in html
     assert 'class="extra-0"' in html and 'class="extra-1"' in html
     assert "Priority 1 \u00b7 Embed" not in html
@@ -205,7 +210,7 @@ def test_climate_readout_structure():
     html = climate(CLIMATE_READER)
     order = ["id=cn", "fr-scorecard", ">Overview<", "Snapshot sentence from overview.", "What is already working",
              "Key gaps at this stage", ">Assessment Findings<", ">Climate &amp; FCV Sensitivity &amp; Responsiveness<",
-             ">Ranked Operational Priorities<", ">Strategic Priorities<", ">Points to Check Before the Applicable Review<",
+             ">Ranked Operational Priorities<", 'id="fr-priority-1"', ">Points to Check Before the Applicable Review<",
              ">Relevant WBG Guidance<", ">Limitations<"]
     positions = [html.index(marker) for marker in order]
     assert positions == sorted(positions)
@@ -217,6 +222,8 @@ def test_climate_readout_structure():
     assert "Operationalization: Early." in html and "Climate relevance: High." in html
     assert 'href="https://example.org/a"' in html and "javascript:" not in html
     assert "Concept stage only." in html and "Supports judgment." in html
+    assert "Suggested lead: Team" in html and "fr-ptable" not in html
+    assert "2 operational priorities are identified by the FCV Screener." in html
 
 
 def test_climate_snapshot_uses_executive_readout_when_overview_is_fallback():
@@ -233,7 +240,7 @@ def test_climate_zero_priorities_and_withheld_drafting():
     html = climate(reader, {"draftingAllowed": False})
     assert "Recommendations were withheld." in html
     assert 'class="fr-sc-count-num">0<' in html
-    assert "Strategic Priorities" not in html
+    assert "fr-sc-count-def" not in html and "fr-pc" not in html
     html = climate(CLIMATE_READER, {"draftingAllowed": False})
     assert "Draft one." not in html
 
@@ -296,3 +303,49 @@ def test_climate_card_practical_considerations_dedup():
     assert "Practical considerations" in html and "Beware &lt;x&gt;." in html
     assert html.count("Do this.") == 1
     assert "<strong>Extra.</strong> When ready." in html
+
+
+ADVISORY = "The following priorities are suggestions <to> strengthen the project's design."
+
+
+def test_normal_advisory_renders_inside_priority_intro_box_and_is_escaped():
+    html = normal({"advisoryText": ADVISORY})
+    section = html[html.index(">Priority Actions for the Task Team<"):html.index('class="fr-cards"')]
+    assert '<p class="fr-advisory">The following priorities are suggestions &lt;to&gt; strengthen' in section
+    assert section.index("priority actions have been identified") < section.index("fr-advisory")
+    assert "<to>" not in html
+
+
+def test_normal_advisory_is_optional_and_absent_without_priorities():
+    assert "fr-advisory" not in normal({})
+    assert "fr-advisory" not in normal({"advisoryText": ADVISORY, "priorities": []})
+
+
+def test_normal_and_climate_drafting_labels_use_suggested_text():
+    html = normal({})
+    assert '<div class="fr-draft-lbl">Suggested Text</div>' in html
+    reader = dict(CLIMATE_READER)
+    reader["priorities"] = [dict(CLIMATE_READER["priorities"][1], operational_instrument_drafting={
+        "target_document": "POM", "target_section": "Annex", "text": "Operational draft."})]
+    chtml = climate(reader)
+    assert '<div class="fr-draft-lbl">Suggested Text</div>' in chtml
+    assert '<div class="fr-draft-lbl">Suggested Text for an operational instrument</div>' in chtml
+    assert "Suggested drafting" not in chtml
+    assert "Practical considerations" in climate(dict(CLIMATE_READER, priorities=[dict(
+        CLIMATE_READER["priorities"][1], caution="A separate practical caution.")]))
+
+
+def test_climate_advisory_follows_priority_statement_and_is_optional():
+    html = climate(CLIMATE_READER, {"draftingAllowed": True, "advisoryText": ADVISORY})
+    section = html[html.index(">Ranked Operational Priorities<"):html.index('class="fr-cards"')]
+    assert section.index("Two priorities follow.") < section.index('<p class="fr-advisory">')
+    assert "&lt;to&gt;" in section
+    no_statement = climate(dict(CLIMATE_READER, priority_summary={}), {"draftingAllowed": True, "advisoryText": ADVISORY})
+    assert '<p class="fr-advisory">' in no_statement
+    assert "fr-advisory" not in climate(CLIMATE_READER)
+    assert "fr-advisory" not in climate(dict(CLIMATE_READER, priorities=[]), {"draftingAllowed": True, "advisoryText": ADVISORY})
+
+
+def test_climate_readout_omits_reader_review_notice():
+    html = climate(dict(CLIMATE_READER, reader_review_notice="Verification notes identify unresolved claims."))
+    assert "Verification notes identify unresolved claims." not in html

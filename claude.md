@@ -23,8 +23,10 @@ Project-level instructions for this repo. Supplements the global
 Flask web app that guides World Bank TTLs through a 3-stage FCV assessment of
 project documents (PCN, PID, PAD, DPF, PforR, MPA). Stage 1 extracts context,
 Stage 2 assesses FCV dimensions with Do No Harm traffic-lights, Stage 3 generates
-a structured recommendations note. Outputs include concise Summary, full
-Detailed, and separate Brief HTML/Word management readouts (~1.5–2 A4 pages).
+a structured recommendations note. Stage 3 renders one Word-aligned browser readout
+(`static/fcv_readout.js`) that the Copy control and Share .html export reuse; the
+toolbar offers a single Download report menu (Word / HTML). Management-brief and
+review-packet helpers remain in code but have no toolbar buttons (approved 2026-10-28).
 
 ## Commands
 
@@ -75,12 +77,24 @@ teal border). Default header only — do not create a separate even-page header.
   deterministic fixes landed on PR84 (main `6f3d5e6`).
 - **Datasheet checkbox parsing.** Unchecked `[  ] MPA` template labels used to
   flag `is_mpa=true`; deboxed in `resolve_verified_operation_context`.
+- **Readout wording (approved 2026-10-28).** No generic "Draft - human review
+  required", reader-review or "Preparation route" preambles in browser or Word;
+  specific notices (incomplete/partial, smoke, preview evidence, unresolved-route
+  drafting gate) stay. Drafting labels are "Suggested Text" / "Suggested Text for an
+  operational instrument"; the optional-priorities advisory sentence accompanies
+  the priorities on every route.
+- **Climate country bank.** The app pins the qualified 146-country bank (pin
+  recorded in the latest journal entry). Approval is permission to use, not
+  certification; search results never update the bank.
+  `CLIMATE_RESEARCH_MODE=bank_only` suppresses both live research providers.
+- **Test-service spending is blocked by default** (web flag 0, budget 1 microUSD).
+  A paid run needs fresh explicit authorization; see the journal for the ledger.
 - **Large PADs + USD6 ceiling.** Final `reader_review` can be budget-blocked on
   large documents; distinguish budget withhold from genuine reviewer withhold
   before diagnosing output quality.
 
 ## Historical context
 
-For the running incident and decision journal (54 dated entries from 2026-10
+For the running incident and decision journal (61 dated entries from 2026-10
 onward), see `docs/claude-journal.md`. Treat it as reference, not a load-every-
 session document.

@@ -1,14 +1,17 @@
 from __future__ import annotations
 
+from html import unescape
 from io import BytesIO
 
 import pytest
 from docx import Document
+from docx.opc.constants import RELATIONSHIP_TYPE as RT
+from docx.oxml.ns import qn
+from docx.text.paragraph import Paragraph
 
 from climate_question_bank import CLIMATE_LITERATURE_REFERENCES
 from sector_lenses.climate_verified_render import (
     HEADINGS,
-    DRAFT_REVIEW_NOTICE,
     SENSITIVITY_RATING_QUESTION,
     attach_provenance,
     build_climate_guidance_items,
@@ -17,6 +20,18 @@ from sector_lenses.climate_verified_render import (
     validate_reader_model,
     write_reader_docx,
 )
+
+
+def _docx_paragraphs(document):
+    """Read body paragraphs in document order, including table callouts."""
+    return [
+        Paragraph(element, document)
+        for element in document.element.body.iter(qn("w:p"))
+    ]
+
+
+def _docx_text(document):
+    return "\n".join(paragraph.text for paragraph in _docx_paragraphs(document))
 
 
 def test_pid_display_casing_preserves_internal_assessment_and_exports():
@@ -38,7 +53,7 @@ def test_pid_display_casing_preserves_internal_assessment_and_exports():
     output = BytesIO()
     write_reader_docx(model, output)
     output.seek(0)
-    text = '\n'.join(p.text for p in Document(output).paragraphs)
+    text = '\n'.join(p.text for p in _docx_paragraphs(Document(output)))
     assert 'In the PID concept description' in text
     assert 'The PID could clarify' in text
 
@@ -292,7 +307,7 @@ def test_reader_retains_internal_routing_without_reader_metadata():
     stream = BytesIO()
     write_reader_docx(model, stream)
     stream.seek(0)
-    docx_text = "\n".join(paragraph.text for paragraph in Document(stream).paragraphs)
+    docx_text = "\n".join(paragraph.text for paragraph in _docx_paragraphs(Document(stream)))
     assert "How this operation was routed" not in docx_text
     assert "Document: Program Paper" not in docx_text
     assert "Instrument: PforR" not in docx_text
@@ -343,7 +358,7 @@ def test_drafting_route_gate_requires_document_and_instrument_but_ignores_es_rou
     stream = BytesIO()
     write_reader_docx(available, stream)
     stream.seek(0)
-    docx_text = "\n".join(paragraph.text for paragraph in Document(stream).paragraphs)
+    docx_text = "\n".join(paragraph.text for paragraph in _docx_paragraphs(Document(stream)))
     assert "Suggested targeted text" in docx_text
     assert warning not in docx_text
 
@@ -362,7 +377,7 @@ def test_drafting_route_gate_requires_document_and_instrument_but_ignores_es_rou
         stream = BytesIO()
         write_reader_docx(withheld, stream)
         stream.seek(0)
-        text = "\n".join(paragraph.text for paragraph in Document(stream).paragraphs)
+        text = "\n".join(paragraph.text for paragraph in _docx_paragraphs(Document(stream)))
         assert warning in text
         assert "Suggested targeted text" not in text
 
@@ -381,7 +396,11 @@ def test_unconfirmed_route_withholds_current_and_operational_drafting_everywhere
         "guidance_ids": ["GUIDE-FCV-CONTINUITY"],
     }
     for context in (
-        {"document_type": "Unknown", "instrument_type": "IPF"},
+        {
+            "document_type": "Unknown",
+            "instrument_type": "IPF",
+            "preparation_regime": "unresolved_policy_source",
+        },
         {"document_type": "PCN", "instrument_type": "Unknown"},
         None,
     ):
@@ -397,12 +416,16 @@ def test_unconfirmed_route_withholds_current_and_operational_drafting_everywhere
         rendered = render_reader_html(model)
         assert "Current document drafting" not in rendered
         assert "Operational instrument drafting" not in rendered
+        assert "Draft - human review required" not in rendered
+        assert "Preparation route:" not in rendered
         stream = BytesIO()
         write_reader_docx(model, stream)
         stream.seek(0)
-        document_text = "\n".join(paragraph.text for paragraph in Document(stream).paragraphs)
+        document_text = "\n".join(paragraph.text for paragraph in _docx_paragraphs(Document(stream)))
         assert "Current document drafting" not in document_text
         assert "Operational instrument drafting" not in document_text
+        assert "Draft - human review required" not in document_text
+        assert "Preparation route:" not in document_text
         if context is not None:
             assert rendered.count(warning) == 1
             assert document_text.count(warning) == 1
@@ -526,15 +549,14 @@ def test_overview_summary_renders_in_docx_before_executive_readout():
     stream = BytesIO()
     write_reader_docx(build_reader_model(assessment), stream)
     stream.seek(0)
-    texts = [p.text for p in Document(stream).paragraphs]
-    stream.seek(0)
-    document = Document(stream)
-    assert SENSITIVITY_RATING_QUESTION in document.tables[0].cell(0, 0).text
-    assert "Climate & FCV responsiveness" in document.tables[0].cell(0, 1).text
+    texts = [p.text for p in _docx_paragraphs(Document(stream))]
+    assert any(SENSITIVITY_RATING_QUESTION in text for text in texts)
+    assert any("Climate & FCV responsiveness".casefold() in text.casefold() for text in texts)
     summary_idx = next(i for i, t in enumerate(texts) if "OVERVIEW_MARKER" in t)
-    exec_idx = next(i for i, t in enumerate(texts) if t == HEADINGS[0])
-    # Graphic (rating question line) first, then the summary text, then the
-    # fuller Executive readout heading below.
+    exec_idx = next(
+        i for i, text in enumerate(texts) if HEADINGS[0].casefold() in text.casefold()
+    )
+    # Legacy saved readers retain their fuller readout after the overview.
     assert summary_idx < exec_idx
 
 
@@ -918,7 +940,7 @@ def test_priority_narrative_renders_in_reader_html_and_docx():
     buffer = BytesIO()
     write_reader_docx(model, buffer)
     buffer.seek(0)
-    text = "\n".join(p.text for p in Document(buffer).paragraphs)
+    text = "\n".join(p.text for p in _docx_paragraphs(Document(buffer)))
     assert "First paragraph tells the story of the gap" in text
     assert "Second paragraph covers who leads it" in text
 
@@ -1000,7 +1022,7 @@ def test_html_and_docx_share_headings_and_priority_order():
     output.seek(0)
     document = Document(output)
     document_text = "\n".join(
-        paragraph.text for paragraph in document.paragraphs
+        paragraph.text for paragraph in _docx_paragraphs(document)
     )
 
     # HTML and DOCX render the same present headings in the same visual order
@@ -1019,24 +1041,26 @@ def test_html_and_docx_share_headings_and_priority_order():
     # Drafting blocks stay; model-internal routing metadata and raw evidence
     # codes are no longer rendered in the visible priority card.
     for expected in (
-        "Suggested drafting for the current document",
-        "Suggested drafting for an operational instrument",
+        "Suggested Text",
+        "Suggested Text for an operational instrument",
         "Suggested targeted text for the current project document.",
         "Distinct operational instrument text for continuity.",
     ):
         assert expected in html
-        assert expected in document_text
+        assert expected.casefold() in document_text.casefold()
     for removed in ("standard_document_advisory", "none_verified", "project_evidence", "GUIDE-PCN-DESIGN", "GUIDE-FCV-CONTINUITY"):
         assert removed not in html
         assert removed not in document_text
     assert not any(
         paragraph.text.rstrip().endswith(("[", "{", "..."))
-        for paragraph in document.paragraphs
+        for paragraph in _docx_paragraphs(document)
     )
-    assert html.count("Suggested drafting for an operational instrument") == 1
-    assert document_text.count("Suggested drafting for an operational instrument") == 1
-    assert html.index("Suggested drafting for the current document") < html.index(
-        "Suggested drafting for an operational instrument"
+    assert html.count("Suggested Text for an operational instrument") == 1
+    assert document_text.casefold().count("Suggested Text for an operational instrument".casefold()) == 1
+    assert "Suggested drafting for the current document" not in html
+    assert "Suggested drafting for an operational instrument" not in document_text
+    assert html.index("Suggested Text") < html.index(
+        "Suggested Text for an operational instrument"
     )
 
 
@@ -1052,7 +1076,7 @@ def test_html_and_docx_keep_cycle_data_without_repeating_actions():
     write_reader_docx(model, output)
     output.seek(0)
     document_text = "\n".join(
-        paragraph.text for paragraph in Document(output).paragraphs
+        paragraph.text for paragraph in _docx_paragraphs(Document(output))
     )
 
     for rendered in (html, document_text):
@@ -1173,18 +1197,20 @@ def test_docx_matches_balanced_reader_content_and_keeps_all_priorities():
     stream = BytesIO()
     write_reader_docx(model, stream)
     stream.seek(0)
-    text = "\n".join(paragraph.text for paragraph in Document(stream).paragraphs)
+    document = Document(stream)
+    text = "\n".join(paragraph.text for paragraph in _docx_paragraphs(document))
 
     for index in range(1, 5):
         assert f"Priority {index}" in text
     assert "Suggested targeted text for the current project document." in text
     assert "Distinct operational instrument text for continuity." in text
     assert "Complete drafting paragraph for priority four." in text
-    assert text.index("Smaller climate & fragility points") < text.index(
-        "Document points to confirm"
+    normalized_text = text.casefold()
+    assert normalized_text.index("Smaller climate & fragility points".casefold()) < normalized_text.index(
+        "Document points to confirm".casefold()
     )
-    assert "01 Confirm heat safeguards for field teams." in text
-    assert "01 Two sections state different financing totals." in text
+    assert "Confirm heat safeguards for field teams." in text
+    assert "Two sections state different financing totals." in text
     assert "01 Can shared institutions reduce resource tensions?" not in text
     assert "02 Will delivery remain workable during floods?" not in text
     assert text.index("Relevant WBG guidance for this project") < text.index(
@@ -1192,7 +1218,11 @@ def test_docx_matches_balanced_reader_content_and_keeps_all_priorities():
     )
     assert "Use this source to identify positive peace outcomes." in text
     assert "Use this source to identify positive peace outcomes." in text
-    assert "https://www.worldbank.org/peace-dividends" in text
+    assert any(
+        relationship.reltype == RT.HYPERLINK
+        and relationship.target_ref == "https://www.worldbank.org/peace-dividends"
+        for relationship in document.part.rels.values()
+    )
     assert "The analysis depends on the uploaded document's detail." in text
     assert "Sources & further reading" not in text
     assert "Candidate country evidence: preview; not approved." in text
@@ -1212,7 +1242,7 @@ def test_zero_priority_message_is_shared_by_html_and_docx():
     write_reader_docx(model, stream)
     stream.seek(0)
     document_text = "\n".join(
-        paragraph.text for paragraph in Document(stream).paragraphs
+        paragraph.text for paragraph in _docx_paragraphs(Document(stream))
     )
 
     message = "No operational priorities were identified in this assessment. Review the assessment findings and points to check below."
@@ -1252,7 +1282,7 @@ def test_all_suppressed_priorities_render_as_incomplete_in_html_and_docx():
     write_reader_docx(model, stream)
     stream.seek(0)
     document_text = "\n".join(
-        paragraph.text for paragraph in Document(stream).paragraphs
+        paragraph.text for paragraph in _docx_paragraphs(Document(stream))
     )
 
     assert model["recommendation_status"] == "incomplete"
@@ -1274,7 +1304,7 @@ def test_some_withheld_priorities_have_a_short_review_notice_in_exports():
     stream = BytesIO()
     write_reader_docx(model, stream)
     stream.seek(0)
-    text = "\n".join(p.text for p in Document(stream).paragraphs)
+    text = "\n".join(p.text for p in _docx_paragraphs(Document(stream)))
     for content in [text, render_reader_html(model)]:
         assert "Recommendations need review" in content
         assert model["recommendation_message"] in content
@@ -1305,7 +1335,7 @@ def test_inconclusive_review_keeps_priorities_with_warning_in_exports(priority_c
     stream = BytesIO()
     write_reader_docx(model, stream)
     stream.seek(0)
-    word = "\n".join(paragraph.text for paragraph in Document(stream).paragraphs)
+    word = "\n".join(paragraph.text for paragraph in _docx_paragraphs(Document(stream)))
     for content in (word, render_reader_html(model)):
         assert "Recommendations need review" in content
         assert model["recommendation_message"] in content
@@ -1353,7 +1383,7 @@ def test_zero_priority_output_hides_admission_and_review_diagnostics():
     write_reader_docx(model, stream)
     stream.seek(0)
     document_text = "\n".join(
-        paragraph.text for paragraph in Document(stream).paragraphs
+        paragraph.text for paragraph in _docx_paragraphs(Document(stream))
     )
 
     message = "No operational priorities were identified in this assessment. Review the assessment findings and points to check below."
@@ -1376,6 +1406,8 @@ def test_html_escapes_model_authored_content():
 
 
 def test_docx_writer_accepts_an_in_memory_stream():
+    from fcv_docx_style import BE_AWARE
+
     model = build_reader_model(_assessment())
     stream = BytesIO()
 
@@ -1383,12 +1415,13 @@ def test_docx_writer_accepts_an_in_memory_stream():
 
     assert returned is stream
     stream.seek(0)
-    texts = [p.text for p in Document(stream).paragraphs]
-    # Draft status leads; candidate evidence and the overview remain visible.
-    assert texts[0] == DRAFT_REVIEW_NOTICE
-    assert texts[1] == "Candidate country evidence: preview; not approved."
-    assert texts[2].startswith("Scale: Very limited")
-    assert HEADINGS[0] in texts
+    document_text = _docx_text(Document(stream))
+    # Concrete evidence status and overview remain visible without a generic draft banner.
+    assert BE_AWARE[0] in document_text
+    assert document_text.index(BE_AWARE[0]) < document_text.index("Overview")
+    assert document_text.index(BE_AWARE[0]) < document_text.index("Candidate country evidence: preview; not approved.") < document_text.index("Overview")
+    assert "Scale: Very limited / Limited / Moderate / Strong / Very strong." in document_text
+    assert HEADINGS[0] in document_text
 
 
 def test_smoke_runtime_is_watermarked_in_html_and_docx():
@@ -1401,7 +1434,7 @@ def test_smoke_runtime_is_watermarked_in_html_and_docx():
     write_reader_docx(model, stream)
     stream.seek(0)
     document_text = "\n".join(
-        paragraph.text for paragraph in Document(stream).paragraphs
+        paragraph.text for paragraph in _docx_paragraphs(Document(stream))
     )
 
     warning = (
@@ -1501,9 +1534,9 @@ def test_guidance_html_is_one_closed_disclosure_and_docx_stays_expanded():
     stream = BytesIO()
     write_reader_docx(model, stream)
     stream.seek(0)
-    text = "\n".join(paragraph.text for paragraph in Document(stream).paragraphs)
+    text = "\n".join(paragraph.text for paragraph in _docx_paragraphs(Document(stream)))
     assert "Relevant WBG guidance for this project" in text
-    assert "Where the team can go for more detailed follow-up" in text
+    assert "Where the team can go for more detailed follow-up".casefold() in text.casefold()
     assert "Use this source to identify positive peace outcomes." in text
     assert "Use this source to identify positive peace outcomes." in text
 
@@ -1777,7 +1810,7 @@ def test_static_html_and_docx_prefer_canonical_summary_overview():
     output = BytesIO()
     write_reader_docx(model, output)
     output.seek(0)
-    docx_text = "\n".join(paragraph.text for paragraph in Document(output).paragraphs)
+    docx_text = "\n".join(paragraph.text for paragraph in _docx_paragraphs(Document(output)))
     assert "CANONICAL_SUMMARY_MARKER" in docx_text
     assert "LEGACY_RATING_SUMMARY_MARKER" not in docx_text
 
@@ -1838,3 +1871,86 @@ def test_native_reader_only_allows_absent_optional_draft_not_malformed(missing):
         assert len(reader["priorities"]) == 4
     else:
         assert "CURRENT_DRAFTING_INCOMPLETE" in validate_reader_model(reader)
+
+
+def test_climate_detailed_exports_place_advisory_and_keep_review_signals():
+    assessment = _assessment()
+    assessment["operation_context"] = {
+        "document_type": "PCN",
+        "instrument_type": "IPF",
+        "preparation_regime": "unresolved_policy_source",
+    }
+    model = build_reader_model(assessment)
+    model["priorities"][0]["project_cycle"].update(
+        primary_text="Confirm the OIS date before the concept review.",
+        secondary_text="Verify route details during preparation.",
+    )
+    model["runtime_mode"] = "smoke"
+    model["analysis_status"] = "partial"
+    model["analysis_message"] = "Confirm coverage for the remaining project locations."
+    model["recommendation_status"] = "partial"
+    model["recommendation_message"] = "One proposed action needs confirmation."
+    model["reader_review_notice"] = (
+        "Verify the project-specific denominators against the signed project annex."
+    )
+
+    advisory = (
+        "The following priorities are suggestions to strengthen the project's design "
+        "in its climate and FCV context. They are not mandatory requirements, nor may "
+        "they all be relevant. The task team may wish to focus on those they believe "
+        "to be more pertinent based on their own sectoral expertise and knowledge of "
+        "the context within which the project will be applied. For more complex or "
+        "difficult issues raised, the team are encouraged to reach out and discuss "
+        "them with the FCV Country Coordinator or relevant Global Practice experts "
+        "as needed."
+    )
+    html = render_reader_html(model)
+    stream = BytesIO()
+    write_reader_docx(model, stream)
+    stream.seek(0)
+    docx_paragraphs = [paragraph.text for paragraph in _docx_paragraphs(Document(stream))]
+    document_text = "\n".join(docx_paragraphs)
+
+    decoded_html = unescape(html)
+    for output in (decoded_html, document_text):
+        assert output.count(advisory) == 1
+        assert "Draft - human review required" not in output
+        assert "Preparation route:" not in output
+        assert "Assessment evidence is incomplete" in output
+        assert "Recommendations need review" in output
+        assert "Smoke test: validates workflow completion only" in output
+        assert "Candidate country evidence: preview; not approved." in output
+        assert model["reader_review_notice"] not in output
+        assert "At concept stage" in output
+        assert "During preparation" in output
+        assert "Confirm the OIS date before the concept review." in output
+        assert "Verify route details during preparation." in output
+        assert "Practical considerations and Suggested Text".casefold() in output.casefold()
+        assert "Practical considerations</summary>" not in output
+        assert "Suggested Text for an operational instrument".casefold() in output.casefold()
+        assert "Suggested drafting for the current document" not in output
+        assert "Suggested drafting for an operational instrument" not in output
+
+    statement = model["priority_summary"]["statement"]
+    summary_start = decoded_html.index('<div class="climate-priority-summary">')
+    summary_end = decoded_html.index("</div>", summary_start)
+    summary_box = decoded_html[summary_start:summary_end]
+    assert statement in summary_box
+    assert advisory in summary_box
+    assert decoded_html.index(statement) < decoded_html.index(advisory)
+    assert decoded_html.index(advisory) < decoded_html.index('id="climate-priority-1"')
+    assert document_text.index(statement) < document_text.index(advisory)
+    timing_block = (
+        '<div class="climate-priority-detail-timing">'
+        "<p><strong>At concept stage:</strong> Confirm the OIS date before the "
+        "concept review.</p><p><strong>During preparation:</strong> Verify "
+        "route details during preparation.</p></div>"
+    )
+    assert timing_block in decoded_html
+    at_concept = "At concept stage: Confirm the OIS date before the concept review.".casefold()
+    during_preparation = "During preparation: Verify route details during preparation.".casefold()
+    assert any(at_concept in text.casefold() for text in docx_paragraphs)
+    assert any(during_preparation in text.casefold() for text in docx_paragraphs)
+    assert next(i for i, text in enumerate(docx_paragraphs) if at_concept in text.casefold()) < next(
+        i for i, text in enumerate(docx_paragraphs) if during_preparation in text.casefold()
+    )

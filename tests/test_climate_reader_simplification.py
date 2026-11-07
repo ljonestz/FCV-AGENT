@@ -1,9 +1,16 @@
 """Simplified report keeps its evidence internally and shows action-led prose."""
 from docx import Document
+from docx.oxml.ns import qn
+from docx.text.paragraph import Paragraph
 
 from sector_lenses.climate_verified_prompts import _judgment_prompt, _recommendation_prompt
 from sector_lenses.climate_verified_render import _priority_sections, build_reader_model, render_reader_html, write_reader_docx
 from tests.test_climate_verified_render import _assessment
+
+
+def _docx_body_paragraphs(document: Document) -> list[str]:
+    """Return body paragraphs in OOXML order, including paragraphs in tables."""
+    return [Paragraph(element, document).text for element in document.element.body.iter(qn("w:p"))]
 
 
 def test_simplified_exports_keep_evidence_internal(tmp_path):
@@ -11,12 +18,13 @@ def test_simplified_exports_keep_evidence_internal(tmp_path):
     model['core_questions'] = [{'question': 'Internal evidence question', 'summary': 'Detailed internal finding.'}]
     html = render_reader_html(model)
     path = write_reader_docx(model, tmp_path / 'report.docx')
-    word = '\n'.join(p.text for p in Document(path).paragraphs)
+    word = '\n'.join(_docx_body_paragraphs(Document(path)))
     for output in (html, word):
-        assert 'Supporting question analysis' not in output
-        assert 'Project details behind this assessment' not in output
-        assert 'Why this matters' in output
-        assert 'What the team could do' in output
+        normalized = output.casefold()
+        assert 'supporting question analysis' not in normalized
+        assert 'project details behind this assessment' not in normalized
+        assert 'why this matters' in normalized
+        assert 'what the team could do' in normalized
     assert 'Practical considerations' in html
     assert model['core_questions'][0]['summary'] == 'Detailed internal finding.'
 

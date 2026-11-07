@@ -196,7 +196,7 @@ if(html.includes('<script>'))throw new Error('raw script reached watch markup');
     assert result.returncode == 0, result.stderr
 
 
-def test_brief_download_controls_are_gated_only_on_a_valid_concise_readout():
+def test_stage3_full_report_download_menu_replaces_brief_controls_in_toolbar():
     source = INDEX.read_text(encoding="utf-8")
     controls = _extract_js_function(source, "renderManagementBriefControls")
     assert "stage3View" not in controls
@@ -205,21 +205,27 @@ let valid=true;
 const supportsConciseStage3View=()=>valid;
 {controls}
 const shown=renderManagementBriefControls();
-if(!shown.includes('Brief Word')||!shown.includes('Brief HTML'))throw new Error('brief downloads not shown for a valid readout');
+if(!shown.includes('Brief Word')||!shown.includes('Brief HTML'))throw new Error('brief helper broken for a valid readout');
 valid=false;
 if(renderManagementBriefControls()!=='')throw new Error('unusable brief controls remain');
 """
     result = subprocess.run(["node", "-e", script], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
     render_out = _extract_js_function(source, "renderOut")
-    assert 'id="management-brief-controls">${renderManagementBriefControls()}' in render_out
+    # Upstream (approved 2026-10-28): the toolbar offers one Download report menu; the
+    # management brief and review packet buttons are removed but their helpers remain.
+    assert "renderManagementBriefControls()" not in render_out
+    assert "downloadClimateReviewPacket(this)" not in render_out
+    assert render_out.count('class="report-download-menu"') == 1
+    assert "Full Detailed report formats" in render_out
+    assert "Word (.docx)" in render_out and "HTML (.html)" in render_out
 
 
 def test_manual_session_load_restores_completed_stage3_without_rerun_and_keeps_partial_resume():
     source = INDEX.read_text(encoding="utf-8")
     helpers = "\n".join(
         _extract_js_function(source, name)
-        for name in ("isRestorableExpressStage3Output", "restoreSavedStage3Sections", "captureClimateFailureDiagnostic", "loadSession")
+        for name in ("isRestorableExpressStage3Output", "restoreSavedStage3Sections", "captureClimateFailureDiagnostic", "esc", "loadSession")
     )
     script = f"""
 let hist=[],curS=0,instrumentType='',countryScope='',docType='',analysisMode='stepbystep',stage3View='detailed';
@@ -230,6 +236,7 @@ let stageConciseReadout=null,stageThreePriorities=[],fcvRating='',fcvResponsiven
 let stageRiskExposure=null,stageSensitivitySummary='',stageResponsivenessSummary='';
 let midCycleWatch=[],dpfWatch=[],p4rWatch=[],regionalWatch=[],horizonConsiderations='';
 let lensSelectionLocked=false,sessionName='',researchBrief='',researchCountry='';
+let restoredFileNames={{project:[],context:[]}},pF=[{{name:'unrelated.docx'}}],pkF=[],cF=[];
 let calls=[];
 const lensCatalogueReady=Promise.resolve();
 const lensCatalogue=[];
@@ -249,19 +256,23 @@ const document={{getElementById(id){{
 }}}};
 class FileReader{{readAsText(file){{this.onload({{target:{{result:file.contents}}}})}}}}
 {helpers}
-const completed={{version:3,savedAt:'2026-09-20T00:00:00Z',currentStage:3,history:[],stageOutputs:{{3:'completed recommendations'}},stageHists:{{}},fileNames:{{project:[],context:[]}}}};
-const partial={{version:3,savedAt:'2026-09-20T00:00:00Z',currentStage:2,history:[],stageOutputs:{{2:'assessment'}},stageHists:{{}},fileNames:{{project:[],context:[]}}}};
+const completed={{version:3,savedAt:'2026-09-20T00:00:00Z',currentStage:3,history:[],stageOutputs:{{3:'completed recommendations'}},stageThreePriorities:[{{title:'Priority 1'}}],stageHists:{{}},fileNames:{{project:['project.docx'],context:['reference.pdf']}}}};
+const partial={{version:3,savedAt:'2026-09-20T00:00:00Z',currentStage:2,history:[],stageOutputs:{{2:'assessment'}},stageHists:{{}},fileNames:['<legacy>.docx',null,42]}};
 const input={{files:[{{name:'completed.json',contents:JSON.stringify(completed)}}],value:'selected'}};
 loadSession(input);
 await Promise.resolve();
 await Promise.resolve();
 if(calls.join('|')!=='enableClickableStepper|navigateToStage:3')throw new Error('completed session did not enter saved Stage 3: '+calls);
 if(input.value!=='')throw new Error('completed session did not clear the file input');
+if(pF.length)throw new Error('previous upload leaked into restored session');
+if(restoredFileNames.project[0]!=='project.docx'||restoredFileNames.context[0]!=='reference.pdf')throw new Error('project metadata lost');
 input.files=[{{name:'partial.json',contents:JSON.stringify(partial)}}];
 loadSession(input);
 await Promise.resolve();
 await Promise.resolve();
 if(calls.length!==2)throw new Error('partial session enabled completed navigation');
+if(JSON.stringify(restoredFileNames)!==JSON.stringify({{project:['<legacy>.docx'],context:[]}}))throw new Error('legacy file metadata lost');
+if(!elements['stage-disp'].innerHTML.includes('&lt;legacy&gt;.docx'))throw new Error('file name was not escaped');
 if(!elements['act-area'].innerHTML.includes('Continue from Stage 3'))throw new Error('partial session lost resume action');
 const failed={{...partial,currentStage:1,stageOutputs:{{1:'source inventory'}},climateVerifiedFailure:{{diagnostic_only:true,assessment:{{schema_version:'climate-verified-v2.1',executive_readout:'UNPUBLISHED_SYNTHETIC_MARKER'}},reason_codes:['SYNTHETIC_FAILURE']}}}};
 input.files=[{{name:'diagnostic.json',contents:JSON.stringify(failed)}}];

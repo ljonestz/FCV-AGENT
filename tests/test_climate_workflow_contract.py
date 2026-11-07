@@ -42,6 +42,33 @@ def _valid_research():
 
 
 
+def test_stage2_final_lens_context_keeps_whole_research_qualifications():
+    research = _valid_research()
+    claim = research["claims"][0]
+    statement = (
+        "The country model assesses infrastructure and livelihood exposure. " * 6
+        + "The result is a 2060 dry/hot scenario projection, not an observation."
+    )
+    gap = (
+        "The excerpt alone cannot establish local exposure or a current outcome. " * 4
+        + "The denominator covers Banadir movements in Q2 2026 only."
+    )
+    assert 350 < len(statement) <= 700 and 200 < len(gap) <= 500
+    claim.update(claim=statement, evidence_gap=gap, evidence_status="projected")
+    state = app_module.AnalysisState.from_payload({"active_lenses": ["climate"]})
+
+    context = app_module.build_lens_stage_context(
+        state, 2, climate_research=research,
+    )
+    marker = "Validated Climate research claims:\n"
+    tail = context["prompt"].split(marker, 1)[1].lstrip()
+    compact = json.JSONDecoder().raw_decode(tail)[0]["claims"][0]
+
+    assert compact["claim"] == statement
+    assert compact["evidence_gap"] == gap
+    assert compact["evidence_status"] == "projected"
+
+
 def _canonical_payload():
     return {
         "schema_version": CLIMATE_NATIVE_SCHEMA_VERSION,

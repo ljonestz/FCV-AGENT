@@ -33,7 +33,8 @@ def test_climate_route_uses_readout_module():
     start = source.index("function renderClimateVerifiedAssessment(")
     body = source[start:source.index("\n  }\n", start)]
     assert "frApi().renderClimate(" in body
-    assert "Draft - human review required." in body
+    assert "Draft - human review required." not in body  # generic preamble removed upstream (2026-10-28)
+    assert "stage3AdvisoryText('climate')" in body
 
 
 def test_summary_tab_rail_and_stepper_removed():

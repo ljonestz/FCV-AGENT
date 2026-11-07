@@ -48,6 +48,10 @@ def adapt_grounding_evidence(
     preview = grounding.get("candidate_preview") is True
     preview_status = PREVIEW_STATUS if preview else None
     prefix = _bank_prefix(preview)
+    limitations = grounding.get("bank_limitations")
+    bank_gap = " ".join(
+        _text(item) for item in limitations if _text(item)
+    ) if isinstance(limitations, list) else ""
     bank_sources = _dict_list(grounding.get("bank_sources"))
     bank_source_ids = {
         _text(item.get("source_id"))
@@ -93,6 +97,7 @@ def adapt_grounding_evidence(
                     _text(record.get("evidence_class")) or None
                 ),
                 preview_status=preview_status,
+                evidence_gap=bank_gap or None,
             )
         )
 
@@ -131,6 +136,7 @@ def adapt_grounding_evidence(
                     f"{direction}-pathway" if direction else "pathway"
                 ),
                 preview_status=preview_status,
+                evidence_gap=bank_gap or None,
             )
         )
 

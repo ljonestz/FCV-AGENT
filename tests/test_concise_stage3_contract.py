@@ -678,11 +678,12 @@ def test_downloads_remain_detailed_only():
     for forbidden in (
         "renderNormalFcvSummary",
         "renderClimateVerifiedSummary",
-        "renderStage3AdvisoryTransition",
         "renderSummaryPriorityAccordion",
         "stageConciseReadout",
     ):
         assert forbidden not in exports
+    assert "buildNormalReadout(stageOutputs[3]||'',true)" in exports  # readout carries the advisory
+    assert "review_mode: reviewMode || 'design'" in exports
 
 
 def test_concise_cycle_mismatch_uses_canonical_priority_fallback():
@@ -1207,7 +1208,7 @@ const html=api.renderNormal({{
   stage3Markdown:'', fcvRating:'Adequate', fcvResponsivenessRating:'Low',
   priorities:{json.dumps(_payload()["priorities"])}, watchHtml:renderNormalFcvWatchBody()
 }});
-const order=['Strategic Priorities','Watch List for Supervision'];
+const order=['Priority Actions for the Task Team','Watch List for Supervision'];
 if(html.indexOf(order[0])<0||html.indexOf(order[1])<0)throw new Error('missing order marker: '+html);
 if(!(html.indexOf(order[0])<html.indexOf(order[1])))throw new Error('watch section order changed: '+html);
 const watch=html.slice(html.indexOf(order[1]));

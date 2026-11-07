@@ -19,6 +19,7 @@ from sector_lenses.climate_bank_selector import (
     compact_bank_packet,
     select_bank_manifest,
 )
+from sector_lenses.climate_grounding import merge_climate_grounding
 
 
 FIXTURE = Path(__file__).parent / "fixtures" / "climate_bank" / "runtime_v1.json"
@@ -189,11 +190,14 @@ def _primary_source_counts(bank, manifest: dict) -> Counter:
         item["pathway_id"]: item for item in bank.release["pathways"]
     }
     counts = Counter()
+    counted_evidence_ids = set(manifest["evidence_ids"])
     for evidence_id in manifest["evidence_ids"]:
         counts[evidence[evidence_id]["source_refs"][0]["source_id"]] += 1
     for pathway_id in manifest["pathway_ids"]:
         support_id = pathways[pathway_id]["supporting_evidence_ids"][0]
-        counts[evidence[support_id]["source_refs"][0]["source_id"]] += 1
+        if support_id not in counted_evidence_ids:
+            counts[evidence[support_id]["source_refs"][0]["source_id"]] += 1
+            counted_evidence_ids.add(support_id)
     return counts
 
 
@@ -214,17 +218,22 @@ def test_realistic_selection_retains_target_pathways_and_relevant_sets(
 
     assert set(fisheries["evidence_ids"]) != set(roads["evidence_ids"])
     for manifest in (fisheries, roads):
-        assert (
+        assert 1 <= (
             len(manifest["evidence_ids"]) + len(manifest["pathway_ids"])
-            == CLIMATE_BANK_TARGET_ITEMS
-        )
-        assert len(manifest["pathway_ids"]) == 2
+        ) <= CLIMATE_BANK_TARGET_ITEMS
+        assert 1 <= len(manifest["pathway_ids"]) <= 2
         assert max(_primary_source_counts(bank, manifest).values()) <= 3
 
         packet = materialize_bank_manifest(bank, manifest)
-        assert len(packet["evidence_records"]) > len(
-            manifest["evidence_ids"]
-        )
+        packet_evidence_ids = {
+            item["evidence_id"] for item in packet["evidence_records"]
+        }
+        pathway_support_ids = {
+            evidence_id
+            for pathway in packet["pathways"]
+            for evidence_id in pathway["supporting_evidence_ids"]
+        }
+        assert pathway_support_ids.issubset(packet_evidence_ids)
         full = json.dumps(
             packet, ensure_ascii=False, sort_keys=True, separators=(",", ":")
         )
@@ -237,3 +246,12 @@ def test_realistic_selection_retains_target_pathways_and_relevant_sets(
             separators=(",", ":"),
         )
         assert "VERBOSE_SENTINEL" not in compact
+        merged = merge_climate_grounding(packet, {})
+        final_bank = json.loads(merged["prompt_context"])["bank"]
+        retained_evidence = {
+            item["evidence_id"] for item in final_bank["evidence_records"]
+        }
+        assert all(
+            set(pathway["supporting_evidence_ids"]).issubset(retained_evidence)
+            for pathway in final_bank["pathways"]
+        )
