@@ -349,3 +349,17 @@ def test_climate_advisory_follows_priority_statement_and_is_optional():
 def test_climate_readout_omits_reader_review_notice():
     html = climate(dict(CLIMATE_READER, reader_review_notice="Verification notes identify unresolved claims."))
     assert "Verification notes identify unresolved claims." not in html
+
+
+def test_limitations_section_does_not_reuse_panel_class():
+    html = climate(CLIMATE_READER)
+    assert '<section class="fr-section fr-limits-sec">' in html
+    assert html.count('class="fr-limits"') == 1
+
+
+def test_lead_rest_renders_after_snapshot_before_context():
+    md_text = ("## Executive Summary\n\n**Verdict sentence.** Supporting lead detail.\n\n"
+               "### Operational Context\n\nContext body.\n\n### Gaps\n\nGap body.")
+    html = normal({"stage3Markdown": md_text})
+    assert html.index("Assessment snapshot") < html.index("Supporting lead detail.") < html.index("Context body.")
+    assert html.index("Supporting lead detail.") < html.index("Gap body.")

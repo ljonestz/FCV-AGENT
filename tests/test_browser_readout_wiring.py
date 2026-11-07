@@ -110,4 +110,52 @@ def test_parser_splits_bold_lead_from_supporting_text():
     assert result.returncode == 0, result.stderr
     sections = json.loads(result.stdout)
     assert sections["snapshot"] == "Verdict sentence."
-    assert any("More detail here." in o["body"] for o in sections["other"])
+    assert sections["leadRest"] == "More detail here."
+    assert not any("More detail here." in o["body"] for o in sections["other"])
+
+
+def test_peer_review_chip_does_not_interpolate_doc_type_into_handler():
+    source = html()
+    assert 'onclick="prefillFollowon(followonPeerReviewText())"' in source
+    assert "prefillFollowon(&quot;Draft a peer review note for this ${docType" not in source
+    assert "(docType||'project')" in function_body(source, "function followonPeerReviewText(")
+
+
+def test_stage3_result_resets_previous_stage3_state():
+    source = html()
+    reset = function_body(source, "function resetStage3State(")
+    for part in ["stageThreePriorities=[]", "stageRiskExposure=null", "stageSensitivitySummary=''", "midCycleWatch=[]", "horizonConsiderations=''"]:
+        assert part in reset, part
+    run = function_body(source, "async function runStage(")
+    assert "if(stage===3){\n                resetStage3State();" in run
+    express = function_body(source, "async function runExpress(")
+    assert "else if(sn===3){\n              resetStage3State();" in express
+
+
+def test_sidebar_priority_lookup_uses_rank_order_on_climate_route():
+    body = function_body(html(), "function selectPrioritySb(")
+    assert "supportsClimateVerifiedStage3View()" in body and "Number(a.rank)" in body
+
+
+def test_stage3_has_no_duplicate_status_callout():
+    body = function_body(html(), "function renderOut(")
+    assert "${isLast?'':`<div class=\"callout ${_calloutTone} ani\">" in body
+
+
+def test_export_research_briefing_is_cleaned_and_collapsed():
+    source = html()
+    helper = function_body(source, "function exportResearchBriefHtml(")
+    export = function_body(source, "async function downloadHTML(")
+    assert "exportResearchBriefHtml(researchBrief)" in export
+    assert '<details class="fr-disc"><summary class="fr-disc-sum">Automated country research briefing</summary>' in export
+    brief = ("I'll run a small set of searches first.\n\n\\#\\#\\# Security\n\nViolence rose \\[uncited link removed\\].\n\n"
+             "> \\\n\n> Quoted excerpt.\n\n> Quoted excerpt.")
+    script = "const md=t=>'<md>'+t+'</md>';\n" + helper + "\n}\nprocess.stdout.write(exportResearchBriefHtml(" + json.dumps(brief) + "));"
+    result = subprocess.run(["node", "-e", script], capture_output=True, text=True, encoding="utf-8")
+    assert result.returncode == 0, result.stderr
+    out = result.stdout
+    assert "I'll run" not in out and "\\" not in out
+    assert "### Security" in out and "[uncited link removed]" in out
+    assert out.count("Quoted excerpt.") == 1
+
+

@@ -20,7 +20,7 @@
     text = text.replace(/%{2,3}[A-Z][A-Z0-9_]*(?::[^%\n]*)?%{2,3}/g, '');
     text = text.replace(/^\s*(?:-{3,}|\*{3,}|_{3,})\s*$/gm, '');
     text = text.replace(/^#\s+.*$/m, '');
-    const sections = { snapshot: '', context: '', strengths: '', gaps: '', risk: '', other: [], found: false };
+    const sections = { snapshot: '', leadRest: '', context: '', strengths: '', gaps: '', risk: '', other: [], found: false };
     const blocks = [];
     let current = { heading: '', level: 0, lines: [] };
     text.split('\n').forEach(line => {
@@ -60,6 +60,11 @@
     });
     const lead = leadBlock ? bodyOf(leadBlock) : '';
     const leadHeading = leadBlock && leadBlock.level === 2 && !/executive summary/.test(keyOf(leadBlock)) ? leadBlock.heading : '';
+    // Untitled Executive Summary lead text stays with the snapshot; a titled lead block keeps its heading.
+    const keepLead = body => {
+      if (leadHeading) sections.other.unshift({ heading: leadHeading, body });
+      else sections.leadRest = body;
+    };
     if (!sections.snapshot && lead) {
       const paragraphs = splitParagraphs(lead);
       const first = paragraphs.shift() || '';
@@ -71,9 +76,9 @@
       } else {
         sections.snapshot = first;
       }
-      if (paragraphs.length) sections.other.unshift({ heading: leadHeading, body: paragraphs.join('\n\n') });
+      if (paragraphs.length) keepLead(paragraphs.join('\n\n'));
     } else if (lead) {
-      sections.other.unshift({ heading: leadHeading, body: lead });
+      keepLead(lead);
     }
     sections.snapshot = stripBold(sections.snapshot);
     sections.found = !!(sections.context || sections.strengths || sections.gaps ||
@@ -219,6 +224,7 @@
     if (s.found) {
       html += k.section('fr-exec', h('Executive Summary')
         + (s.snapshot ? k.infoBox('Assessment snapshot', `<strong>${k.esc(s.snapshot)}</strong>`) : '')
+        + (s.leadRest ? k.prose(s.leadRest) : '')
         + (s.context ? k.sub('Operational context') + k.prose(s.context) : '')
         + (s.strengths ? k.sub('Strengths') + k.prose(s.strengths) : '')
         + (s.gaps ? k.sub('Potential gaps') + k.prose(s.gaps) : '')
@@ -426,7 +432,7 @@
 
     const trail = r.evidence_trail || {};
     const limits = Array.isArray(trail.limitations) ? trail.limitations.filter(Boolean).join(' ') : String(trail.limitations || '').trim();
-    html += k.section('fr-limits', h('Limitations') + `<div class="fr-limits">${k.paragraphs([limits || 'This automated screening is advisory and is limited by the coverage and detail of the uploaded documents. The team should confirm material findings through project and country expertise.', r.advisory_notice])}</div>`);
+    html += k.section('fr-limits-sec', h('Limitations') + `<div class="fr-limits">${k.paragraphs([limits || 'This automated screening is advisory and is limited by the coverage and detail of the uploaded documents. The team should confirm material findings through project and country expertise.', r.advisory_notice])}</div>`);
     return `<article class="fr-readout fr-route-climate">${html}</article>`;
   }
 
