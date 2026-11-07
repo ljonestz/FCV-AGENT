@@ -1516,7 +1516,8 @@ const expectedHeadings = [
   ['02', 'Climate-FCV Sensitivity and Responsiveness'],
   ['03', 'Priority Actions for the Task Team'],
   ['04', 'Smaller Points to Check During Preparation'],
-  ['05', 'Limitations']
+  ['05', 'Relevant WBG Guidance'],
+  ['06', 'Limitations']
 ];
 if (JSON.stringify(headings) !== JSON.stringify(expectedHeadings)) {
   throw new Error('numbered section sequence is not gap-free: ' + JSON.stringify(headings) + ' | ' + html);
@@ -1549,7 +1550,8 @@ const expectedHeadings = [
   ['01', 'Overview'],
   ['02', 'Climate-FCV Sensitivity and Responsiveness'],
   ['03', 'Priority Actions for the Task Team'],
-  ['04', 'Limitations']
+  ['04', 'Relevant WBG Guidance'],
+  ['05', 'Limitations']
 ];
 if (JSON.stringify(headings) !== JSON.stringify(expectedHeadings)) {
   throw new Error('fallback section sequence is not gap-free or limitations are not final: ' + JSON.stringify(headings) + ' | ' + html);

@@ -289,6 +289,35 @@
     });
   }
 
+  // Curated WBG resources (source: output/20261107_normal-guidance-list.json). The three climate reports
+  // are pinned on the climate route only; the normal route lists the FCV items in file order (max 7).
+  const PINNED_CLIMATE_GUIDANCE = [
+    { title: "Maximizing the Peace and Social Dividends of Climate Action", url: "https://www.worldbank.org/en/topic/fragilityconflictviolence/publication/maximizing-the-peace-and-social-dividends-of-climate-action", use: "Use this source to identify how climate action can strengthen peace and social outcomes, and where project design can maximize those dividends." },
+    { title: "FCV-Sensitive Climate Action Framework", url: "https://www.worldbank.org/en/topic/fragilityconflictviolence/publication/framework-for-promoting-fcv-sensitive-climate-action", use: "Use this source to stress-test whether climate action is conflict-sensitive, avoids harm and remains deliverable in fragile settings." },
+    { title: "Defueling Conflict", url: "https://www.worldbank.org/en/topic/environment/publication/defueling-conflict-environment-and-natural-resource-management-as-a-pathway-to-peace", use: "Use this source to assess how environmental and natural-resource governance can reduce conflict risks and create incentives for cooperation." },
+  ];
+  const NORMAL_GUIDANCE = [
+    { title: "World Bank Group Strategy for Fragility, Conflict, and Violence 2020-2025", url: "https://www.worldbank.org/en/topic/fragilityconflictviolence/publication/world-bank-group-strategy-for-fragility-conflict-and-violence-2020-2025", use: "The overall framework for FCV engagement, including the four pillars of preventing conflict, remaining engaged during crises, helping countries transition out of fragility, and addressing spillovers." },
+    { title: "Classification of Fragile and Conflict-Affected Situations", url: "https://www.worldbank.org/en/topic/fragilityconflictviolence/brief/classification-of-fragile-and-conflict-affected-situations", use: "Confirms whether the country is on the current FCS list, which shapes the policy flexibilities and financing that may apply." },
+    { title: "Pathways for Peace: Inclusive Approaches to Preventing Violent Conflict", url: "https://www.worldbank.org/en/topic/fragilityconflictviolence/publication/pathways-for-peace-inclusive-approaches-to-preventing-violent-conflict", use: "The joint UN and World Bank study on how exclusion drives conflict risk; useful when framing targeting, inclusion and prevention choices." },
+    { title: "Environmental and Social Framework", url: "https://www.worldbank.org/en/projects-operations/environmental-and-social-framework", use: "The standards behind risk assessment, stakeholder engagement and grievance arrangements (including ESS1 and ESS10), with links to the supporting good practice notes." },
+    { title: "Good Practice Note: Addressing SEA/SH in Human Development Operations", url: "https://thedocs.worldbank.org/en/doc/e2ff01be0f07c82d73bc0c5e7ddf394f-0290032022/original/ESF-Good-Practice-Note-on-Addressing-SEA-SH-in-HD-Operations-First-Edition-September-16-2022.pdf", use: "Advisory guidance on preventing and responding to sexual exploitation, abuse and harassment in health, education and social protection operations." },
+    { title: "Good Practice Note: Addressing SEA/SH in Investment Project Financing involving Major Civil Works", url: "https://thedocs.worldbank.org/en/doc/6f3d9ddc6010c4221315dd1282958e41-0290032022/original/SEA-SH-Civil-Works-GPN-Third-Edition-Final-October-12-2022.pdf", use: "Advisory guidance on SEA/SH risk screening, codes of conduct and survivor-centred response where projects finance civil works." },
+    { title: "Forced Displacement", url: "https://www.worldbank.org/en/topic/forced-displacement", use: "Bank resources on refugees, internally displaced people and host communities; relevant where returnees or displaced people are among the beneficiaries." },
+  ];
+
+  function guideKey(text) {
+    return String(text || '').toLowerCase().replace(/\s+/g, ' ').trim();
+  }
+
+  // One guidance entry: title link, curated blurb and an optional "Relevant to this project" line.
+  function guideItem(k, g, relHtml) {
+    const url = safeUrl(g.url);
+    const title = url ? `<a class="fr-guide-title" href="${k.esc(url)}" target="_blank" rel="noopener noreferrer">${k.esc(g.title)}</a>` : `<span class="fr-guide-title">${k.esc(g.title)}</span>`;
+    const blurb = String(g.practical_value || g.project_use || g.use || '').trim();
+    return `<div class="fr-guide">${title}${blurb ? `<p dir="auto" class="fr-p">${k.esc(blurb)}</p>` : ''}${relHtml ? `<p class="fr-guide-rel">Relevant to this project: ${relHtml}</p>` : ''}</div>`;
+  }
+
   const NORMAL_LIMITATION = 'Findings are based on the text of the project documents and may miss arrangements described elsewhere. Ratings and priorities are advisory and should be confirmed through project and country expertise.';
 
   const SCORECARD_LEAD = 'The ratings below are a high-level AI assessment based on insights from the project package. They do not reflect a formal WBG or FCV Group designation. Read them as a general guide, alongside the more detailed overview and assessment that follows.';
@@ -387,6 +416,9 @@
     }
     html += d.tailHtml || '';
 
+    const guides = NORMAL_GUIDANCE.map(g => guideItem(k, g, '')).join('');
+    if (guides) html += k.section('fr-guidance', h('Relevant WBG Guidance') + k.disclosure('Selected WBG resources for the team', guides));
+
     const files = (Array.isArray(d.fileNames) ? d.fileNames : []).map(f => String(f || '').trim()).filter(Boolean);
     const retrieved = researchDate(d.researchBrief);
     const limits = [
@@ -404,6 +436,19 @@
     'Wider peace and social dividends': 'Could the project generate wider peace and social benefits, and how could these be strengthened?',
     'Access, inclusion and potential harm': 'Will people benefit fairly, and could delivery create exclusion or harm?',
   };
+
+  // Mirrors _assessment_themes in sector_lenses/climate_verified_render.py (core question -> theme title).
+  const CORE_THEME_TITLES = {
+    cq1_interaction: 'Climate risks, design and delivery', cq2_maladaptation: 'Climate risks, design and delivery', cq6_adaptive: 'Climate risks, design and delivery',
+    cq4_inclusion: 'Access, inclusion and potential harm', cq5_institutions: 'Access, inclusion and potential harm', cq3_dividends: 'Wider peace and social dividends',
+    driver_tenure: 'Access, inclusion and potential harm', driver_representation: 'Access, inclusion and potential harm',
+    driver_rents: 'Access, inclusion and potential harm', driver_value_chain: 'Access, inclusion and potential harm',
+  };
+
+  function coreThemeTitle(q) {
+    if (q.question_id === 'cq2-access-path-dependence' || q.question_id === 'cq3-shared-benefit') return 'Access, inclusion and potential harm';
+    return CORE_THEME_TITLES[q.theme] || 'Climate risks, design and delivery';
+  }
 
   function climateLabel(value) {
     if (value === 'not_expected') return 'Not expected';
@@ -572,10 +617,27 @@
       (Array.isArray(r.minor_climate_points) ? r.minor_climate_points : []).map(m => ({ title: m.point || 'Point to consider', why: m.why, how: m.how_to_check })));
     if (checks.length) html += k.section('fr-checks', h('Smaller Points to Check During Preparation') + k.disclosure('Smaller checks for the project team to confirm', '<p class="fr-intro">These sit alongside the main priorities above. None is a reason to stop the project.</p>' + k.checkItems(checks)));
 
-    const guides = (Array.isArray(r.guidance_items) ? r.guidance_items : []).filter(g => g && g.title).map(g => {
-      const url = safeUrl(g.url);
-      const title = url ? `<a class="fr-guide-title" href="${k.esc(url)}" target="_blank" rel="noopener noreferrer">${k.esc(g.title)}</a>` : `<span class="fr-guide-title">${k.esc(g.title)}</span>`;
-      return `<div class="fr-guide">${title}${g.use ? `<p dir="auto" class="fr-p">${k.esc(g.use)}</p>` : ''}</div>`;
+    // Pinned reports always show; the stored reader is never changed (the export snapshot compares it exactly).
+    const server = (Array.isArray(r.guidance_items) ? r.guidance_items : []).filter(g => g && g.title).slice(0, 4);
+    const isPinned = g => PINNED_CLIMATE_GUIDANCE.some(c => guideKey(c.title) === guideKey(g.title));
+    const guideList = PINNED_CLIMATE_GUIDANCE.map(c => server.find(g => guideKey(g.title) === guideKey(c.title)) || c)
+      .concat(server.filter(g => !isPinned(g)));
+    // A core question whose source is this item points to the Assessment Findings question it feeds.
+    const coreQuestions = Array.isArray(r.core_questions) ? r.core_questions : [];
+    const shownQuestion = title => {
+      const t = themeList.find(x => x && x.title === title);
+      return t ? (t.question || THEME_QUESTIONS[t.title] || t.title || '') : '';
+    };
+    const guides = guideList.map(g => {
+      const labels = [];
+      if (themes) {
+        coreQuestions.filter(q => q && guideKey(q.source) === guideKey(g.title)).forEach(q => {
+          const label = shownQuestion(coreThemeTitle(q));
+          if (label && !labels.includes(label)) labels.push(label);
+        });
+      }
+      const rel = labels.slice(0, 2).map(l => `<a href="#${findingsId}">${k.esc(l)}</a>`).join(' and ');
+      return guideItem(k, g, rel);
     }).join('');
     if (guides) html += k.section('fr-guidance', h('Relevant WBG Guidance') + k.disclosure('Selected WBG resources for the team', guides));
 
@@ -587,7 +649,7 @@
     return `<article class="fr-readout fr-route-climate">${head}${k.toc(h.list)}${html}${saysAlready ? '' : k.closing()}</article>`;
   }
 
-  const api = { FCV_SCALE, CLIMATE_SCALE, FOCUS_LABELS, DEFINITIONS, CLOSING_LINE, CHEVRON_SVG, parseStage3Sections, parseSupplementaryPoints, researchDate, orderByLevel, stripTagNotes, create };
+  const api = { FCV_SCALE, CLIMATE_SCALE, FOCUS_LABELS, DEFINITIONS, CLOSING_LINE, CHEVRON_SVG, PINNED_CLIMATE_GUIDANCE, NORMAL_GUIDANCE, parseStage3Sections, parseSupplementaryPoints, researchDate, orderByLevel, stripTagNotes, create };
   root.FcvReadout = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

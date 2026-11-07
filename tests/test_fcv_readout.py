@@ -144,7 +144,8 @@ def test_normal_readout_section_order_and_content():
              "priority actions have been identified", 'id="fr-priority-1"', 'fr-h1-txt">Watch List for Supervision<', "id='tail'"]
     positions = [html.index(marker) for marker in order]
     assert positions == sorted(positions)
-    assert ">01<" in html and ">06<" in html and ">07<" not in html
+    assert ">01<" in html and ">07<" in html and ">08<" not in html
+    assert html.index('fr-h1-txt">Watch List for Supervision<') < html.index('fr-h1-txt">Relevant WBG Guidance<') < html.index('fr-h1-txt">Limitations<')
     assert html.index("id='tail'") < html.index('fr-h1-txt">Limitations<')
     assert "fr-ptable" not in html and "Strategic Priorities" not in html
     assert "2 priority actions are identified by the FCV Screener." in html
@@ -594,3 +595,54 @@ def test_climate_practical_considerations_bold_first_sentence_only():
     html = climate(dict(CLIMATE_READER, priorities=[pri]))
     zone = html[html.index(">Practical considerations<"):]
     assert "<strong>Rules are not shown.</strong> Test with partners." in zone
+
+
+PINNED = ["Maximizing the Peace and Social Dividends of Climate Action", "FCV-Sensitive Climate Action Framework", "Defueling Conflict"]
+
+
+def guidance_block(html: str) -> str:
+    start = html.index('fr-h1-txt">Relevant WBG Guidance<')
+    return html[start:html.index('fr-h1-txt">Limitations<')]
+
+
+def test_pinned_climate_reports_on_climate_route_only_in_order():
+    block = guidance_block(climate(CLIMATE_READER))
+    positions = [block.index(f">{t}</a>") for t in PINNED]
+    assert positions == sorted(positions)
+    assert positions[-1] < block.index(">Good</a>")
+    assert 'Selected WBG resources for the team' in block
+    normal_block = guidance_block(normal({}))
+    assert all(t not in normal_block for t in PINNED)
+    assert normal_block.count('class="fr-guide"') == 7
+    assert "Relevant to this project" not in normal_block
+    assert normal_block.index("World Bank Group Strategy for Fragility") < normal_block.index(">Forced Displacement</a>")
+
+
+def test_climate_pinned_report_from_server_is_not_duplicated_and_blurb_renders():
+    item = {"title": "fcv-sensitive  climate action framework", "url": "https://example.org/f",
+            "practical_value": "Server blurb for the framework.", "project_use": "Project use text."}
+    other = {"title": "Other", "url": "https://example.org/o", "project_use": "Only project use."}
+    block = guidance_block(climate(dict(CLIMATE_READER, guidance_items=[other, item])))
+    assert block.count("limate action framework</a>") == 1 and 'href="https://example.org/f"' in block
+    assert "Server blurb for the framework." in block and "Project use text." not in block
+    assert "Only project use." in block
+    assert block.index("Defueling Conflict") < block.index(">Other</a>")
+
+
+def test_climate_guidance_matched_question_line_and_unmatched_items():
+    reader = dict(CLIMATE_READER, core_questions=[
+        {"question_id": "cq1", "theme": "cq1_interaction", "source": "Defueling  conflict"},
+        {"question_id": "cq3-shared-benefit", "theme": "cq3_dividends", "source": "Defueling Conflict"},
+        {"question_id": "cq9", "theme": "cq3_dividends", "source": "Unknown Source"}],
+        assessment_themes=[{"title": "Climate risks, design and delivery", "paragraphs": ["P."], "priority_ranks": []},
+                           {"title": "Access, inclusion and potential harm", "question": "Shown inclusion question?", "paragraphs": ["Q."], "priority_ranks": []}])
+    block = guidance_block(climate(reader))
+    item = block[block.index(">Defueling Conflict</a>"):]
+    item = item[:item.index("</div>")]
+    assert ('<p class="fr-guide-rel">Relevant to this project: <a href="#fr-s02">Does the project address interacting climate and FCV risks in design and delivery?</a>'
+            ' and <a href="#fr-s02">Shown inclusion question?</a></p>') in item
+    assert block.count("Relevant to this project") == 1
+    framework = block[block.index(">FCV-Sensitive Climate Action Framework</a>"):]
+    assert "Relevant to this project" not in framework[:framework.index("</div>")]
+    no_themes = guidance_block(climate(dict(reader, assessment_themes=[])))
+    assert "Relevant to this project" not in no_themes
