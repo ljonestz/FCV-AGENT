@@ -114,7 +114,7 @@ def test_readout_gap_section_uses_reader_findings_without_candidate_diagnostics(
     body = module[start:]
     assert "r.summary_gaps" in body
     assert "diagnostic_trace" not in body and "recommendation_candidates" not in body
-    assert body.index("What is already working") < body.index("Key gaps at this stage")
+    assert body.index("What the design already provides") < body.index("Key gaps at this stage")
     assert body.index("Key gaps at this stage") < body.index("Priority Actions for the Task Team")
 
 

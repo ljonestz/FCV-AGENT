@@ -163,7 +163,7 @@ def test_timing_labels_are_advisory_and_match_word_export():
 def test_climate_partial_notices_merge_into_one_box():
     body = function_body(html(), "function renderClimateVerifiedAssessment(")
     assert "<strong>This run is partial.</strong>" in body
-    assert "Fewer items does not mean fewer risks or gaps. Check the limitations at the end of this note before sharing." in body
+    assert "A shorter list does not mean fewer risks or gaps. Read the Limitations before sharing." in body
     assert "if(_evidencePartial&&_recsPartial)" in body and "(_recsPartial&&!_evidencePartial)" in body
 
 

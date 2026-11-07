@@ -5163,7 +5163,7 @@
     const notices=[];
     const _evidencePartial=r.analysis_status==='partial'&&!!r.analysis_message;
     const _recsPartial=r.recommendation_status==='partial';
-    if(_evidencePartial&&_recsPartial)notices.push('<div class="finalized-pad-notice"><div class="fpn-body"><strong>This run is partial.</strong><p>Some findings and proposed actions were withheld because their evidence could not be validated. Fewer items does not mean fewer risks or gaps. Check the limitations at the end of this note before sharing.</p></div></div>');
+    if(_evidencePartial&&_recsPartial)notices.push('<div class="finalized-pad-notice"><div class="fpn-body"><strong>This run is partial.</strong><p>Some findings and proposed actions were withheld because their evidence could not be validated. A shorter list does not mean fewer risks or gaps. Read the Limitations before sharing.</p></div></div>');
     else if(_evidencePartial)notices.push(`<div class="finalized-pad-notice"><div class="fpn-body"><strong>Assessment evidence is incomplete.</strong><p>${esc(r.analysis_message)}</p></div></div>`);
     if(r.recommendation_status==='incomplete'||(_recsPartial&&!_evidencePartial))notices.push(`<div class="finalized-pad-notice"><div class="fpn-body"><strong>${r.recommendation_status==='incomplete'?'Recommendations stage incomplete':'Recommendations need review'}:</strong> ${esc(r.recommendation_message||'Do not rely on this note as a completed assessment.')}</div></div>`);
     if(String(r.runtime_mode||'').toLowerCase()==='smoke')notices.push('<div class="finalized-pad-notice"><div class="fpn-body"><strong>Smoke test: validates workflow completion only; not a quality benchmark.</strong></div></div>');
@@ -6076,7 +6076,7 @@
       }catch(error){alert('Could not export HTML. '+error.message);return;}
       const body=screenerCaveatHtml()+renderClimateVerifiedAssessment(climateVerifiedReader);
       const printBehavior=climatePrintDisclosureScript();
-      const documentHtml='<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Verified Climate-FCV Assessment</title><style>'+css+'</style></head><body><main style="max-width:960px;margin:32px auto;padding:0 24px">'+body+'</main>'+printBehavior+'</body></html>';
+      const documentHtml='<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Climate-FCV Screening Note</title><style>'+css+'</style></head><body><main style="max-width:960px;margin:32px auto;padding:0 24px">'+body+'</main>'+printBehavior+'</body></html>';
       const blob=new Blob([documentHtml],{type:'text/html;charset=utf-8'});
       const url=URL.createObjectURL(blob);
       const link=document.createElement('a');

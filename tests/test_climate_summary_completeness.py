@@ -211,7 +211,7 @@ def test_regional_search_and_structuring_share_coverage_and_untrusted_input_rule
 def test_risk_relevance_is_not_credited_as_a_project_strength():
     script = _readout_harness() + r"""
 const exposure=renderClimateVerifiedAssessment({judgments:[{dimension:'relevance',value:'high',rationale:'Climate risks are material.'}]});
-if(exposure.includes('What is already working'))throw new Error('risk exposure was credited as a project strength');
+if(exposure.includes('What the design already provides'))throw new Error('risk exposure was credited as a project strength');
 const dividend=renderClimateVerifiedAssessment({judgments:[{dimension:'responsiveness',value:'very_strong',rationale:'An evidenced design supports wider dividends.'}]});
 if(!dividend.includes('Very strong')||!dividend.includes('An evidenced design supports wider dividends.'))throw new Error('very strong contribution was lost');
 """

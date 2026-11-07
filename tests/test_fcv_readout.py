@@ -212,7 +212,7 @@ def climate(reader: dict, opts: dict | None = None) -> str:
 
 def test_climate_readout_structure():
     html = climate(CLIMATE_READER)
-    order = ["id=cn", "fr-scorecard", 'fr-h1-txt">Overview<', "Snapshot sentence from overview.", "What is already working",
+    order = ["id=cn", "fr-scorecard", 'fr-h1-txt">Overview<', "Snapshot sentence from overview.", "What the design already provides",
              'fr-h1-txt">Assessment Findings<', 'fr-h1-txt">Climate-FCV Sensitivity and Responsiveness<',
              'fr-h1-txt">Priority Actions for the Task Team<', 'id="fr-priority-1"', 'fr-h1-txt">Smaller Points to Check During Preparation<',
              'fr-h1-txt">Relevant WBG Guidance<', 'fr-h1-txt">Limitations<']
@@ -402,7 +402,7 @@ def test_climate_fallback_overview_moves_to_limitations():
     html = climate(reader)
     overview = html[html.index('fr-h1-txt">Overview<'):html.index('fr-h1-txt">Assessment Findings<')]
     assert "A short summary" not in overview and "Assessment snapshot" not in overview
-    assert "What is already working" in overview and "Key gaps at this stage" not in overview
+    assert "What the design already provides" in overview and "Key gaps at this stage" not in overview
     limits = html[html.index('class="fr-limits"'):]
     # Limitations sits at the end of the note, so the note points to what is above it.
     assert limits.index("No short summary is shown for this run because it could not be checked against the project documents.</strong> The findings and priority actions above are unaffected.") < limits.index("Concept stage only.")
@@ -497,7 +497,7 @@ def test_supplementary_points_parse_labels_and_strip_tags():
 def test_normal_smaller_points_section_order_and_skip():
     html = normal({"smallerPoints": [{"title": "SORT adequacy", "why": "Ratings look low."}]})
     order = ['fr-h1-txt">Priority Actions for the Task Team<', 'fr-h1-txt">Smaller Points to Check During Preparation<',
-             "Smaller checks for the project team to confirm", "None is a reason to stop the project.", 'class="fr-check-title">SORT adequacy<',
+             "Smaller checks for the project team to confirm", "Most can be confirmed quickly during preparation.", 'class="fr-check-title">SORT adequacy<',
              'fr-h1-txt">Watch List for Supervision<', 'fr-h1-txt">Limitations<']
     positions = [html.index(marker) for marker in order]
     assert positions == sorted(positions)
@@ -672,8 +672,8 @@ def test_climate_guidance_matched_question_line_and_unmatched_items():
     block = guidance_block(climate(reader))
     item = block[block.index(">Defueling Conflict</a>"):]
     item = item[:item.index("</div>")]
-    assert ('<p class="fr-guide-rel">Relevant to this project: informs the findings on <a href="#fr-s02">climate risks, design and delivery</a>'
-            ' and on <a href="#fr-s02">access, inclusion and potential harm</a> (section 02).</p>') in item
+    assert ('<p class="fr-guide-rel">Relevant to this project: informs the Assessment Findings on <a href="#fr-s02">climate risks, design and delivery</a>'
+            ' and on <a href="#fr-s02">access, inclusion and potential harm</a>.</p>') in item
     assert block.count("Relevant to this project") == 1
     framework = block[block.index(">FCV-Sensitive Climate Action Framework</a>"):]
     assert "Relevant to this project" not in framework[:framework.index("</div>")]
@@ -789,7 +789,7 @@ def test_withheld_climate_summary_leaves_overview_without_a_substitute():
     assert "No short summary is shown for this run" in html[html.index('class="fr-limits"'):]
     n = html.count('class="fr-theme"')
     word = {1: "One cross-cutting question", 2: "Two cross-cutting questions", 3: "Three cross-cutting questions"}[n]
-    assert word in html and "Where relevant, each links" in html
+    assert word in html and "Where relevant, each lists the priority actions" in html
 
 
 def test_climate_snapshot_is_two_sentences_rest_is_context():
@@ -894,3 +894,14 @@ def test_normal_card_shows_source_basis_from_authority_basis():
     plain = normal({"priorities": [{"title": "Priority 1 - X", "risk_level": "High", "tag": "[S]",
                                     "the_gap": "Gap.", "why_it_matters": "Why.", "actions": []}]})
     assert "Source basis" not in plain
+
+
+def test_verify_notes_drop_document_ids_and_dangling_connectors():
+    reader = dict(CLIMATE_READER, executive_readout=(
+        "Context. [Verify before sharing: Check PF-012 and the climate risk paragraph (DOC-ab8bd9d95c49cd4e-B-efa7487efb15): "
+        "relocation is 'whenever possible'.] [Verify before sharing: Check PF-003 / against Annex 3 (DOC-ab8b-B-7b58) and the MCBP "
+        "description (DOC-ab8b-B-4858): confirm the instruments match.]"))
+    html = climate(reader)
+    assert "Check the climate risk paragraph: relocation" in html
+    assert "Check against Annex 3 and the MCBP description: confirm" in html
+    assert "DOC-" not in html and "Check and" not in html and "Check /" not in html

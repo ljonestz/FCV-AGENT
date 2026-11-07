@@ -290,7 +290,7 @@ const withGaps=renderClimateVerifiedAssessment({
   priorities:[priorities[0]],
   priority_summary:{statement:bridge}
 });
-if (!(withGaps.indexOf('What is already working') < withGaps.indexOf('Key gaps at this stage') && withGaps.indexOf('Key gaps at this stage') < withGaps.indexOf('fr-h1-txt">Priority Actions for the Task Team'))) throw new Error('gap section order is incorrect');
+if (!(withGaps.indexOf('What the design already provides') < withGaps.indexOf('Key gaps at this stage') && withGaps.indexOf('Key gaps at this stage') < withGaps.indexOf('fr-h1-txt">Priority Actions for the Task Team'))) throw new Error('gap section order is incorrect');
 if (!withGaps.replace(/<[^>]+>/g,'').includes(gap)) throw new Error('gap finding missing');
 """
     result = _run_node(script)

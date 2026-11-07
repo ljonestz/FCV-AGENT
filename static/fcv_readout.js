@@ -136,6 +136,10 @@
     t = t.replace(/\s*\((?:source )?blocks?\s+[0-9a-f]{8,}[^)]*\)/gi, '');
     t = t.replace(/(?:\band\s+)?(?:\bsource\s+)?\bblocks?\s+[0-9a-f]{8,}(?:\s*(?:,|and)\s*[0-9a-f]{8,})*/gi, '');
     t = t.replace(/(?:\band\s+|,\s*)?\bPF-\d+\b/g, '');
+    // Internal document block ids ("(DOC-ab8b...-B-efa7...)") mean nothing to a task team.
+    t = t.replace(/\s*\(DOC-[A-Za-z0-9-]+(?:\s*(?:,|;|and)\s*DOC-[A-Za-z0-9-]+)*\)/g, '');
+    // A connector left behind by a removed id ("Check and the...", "Check / against...") is dropped.
+    t = t.replace(/^(\s*(?:Check|See|Compare|Confirm))\s+(?:(?:and|\/|,|;)\s+)+/i, '$1 ');
     // A lead clause left with no object ("Check  and :") is dropped.
     t = t.replace(/^\s*(?:Check|See|Compare)(?:\s|,|and)*:\s*/i, '');
     t = t.replace(/\(\s*\)/g, '').replace(/\s{2,}/g, ' ').replace(/\s+([,.;:])/g, '$1').trim();
@@ -324,7 +328,7 @@
 
     function verifyList(notes) {
       const list = (notes || []).filter(Boolean);
-      return list.length ? `<div class="fr-verify"><h3 class="fr-verify-lbl">Points to verify before sharing</h3><p class="fr-p">An automated check flagged these statements in the sections above for a human look before this note is shared.</p><ul class="fr-verify-list">${list.map(n => `<li dir="auto">${esc(n)}</li>`).join('')}</ul></div>` : '';
+      return list.length ? `<div class="fr-verify"><h3 class="fr-verify-lbl">Points to verify before sharing</h3><p class="fr-p">An automated check flagged these statements for a human look before this note is shared.</p><ul class="fr-verify-list">${list.map(n => `<li dir="auto">${esc(n)}</li>`).join('')}</ul></div>` : '';
     }
 
     function limitsBox(paras, notes) {
@@ -549,7 +553,7 @@
 
     if (d.fcvRating || d.fcvResponsivenessRating || d.sensitivitySummary || d.responsivenessSummary) {
       html += k.section('fr-ratings-sec', h('FCV Sensitivity and Responsiveness')
-        + k.intro('The ratings below explain the judgments behind the scorecard above.')
+        + k.intro('Each rating rests on the judgment summarized here.')
         + k.ratingRows([
           { dim: 'FCV Sensitivity', value: d.fcvRating, cls: 'fr-rv-sens', def: DEFINITIONS.sensitivity, whyHtml: k.prose(d.sensitivitySummary) },
           { dim: 'FCV Responsiveness', value: d.fcvResponsivenessRating, cls: 'fr-rv-resp', def: DEFINITIONS.responsiveness, whyHtml: k.prose(d.responsivenessSummary) },
@@ -583,7 +587,7 @@
     const smaller = (Array.isArray(d.smallerPoints) ? d.smallerPoints : []).filter(x => x && x.title);
     if (smaller.length) {
       html += k.section('fr-checks', h('Smaller Points to Check During Preparation')
-        + k.disclosure('Smaller checks for the project team to confirm', '<p class="fr-intro">These sit alongside the main priorities above. None is a reason to stop the project.</p>' + k.checkItems(smaller), smaller.length));
+        + k.disclosure('Smaller checks for the project team to confirm', '<p class="fr-intro">These smaller checks are separate from the priority actions. Most can be confirmed quickly during preparation.</p>' + k.checkItems(smaller), smaller.length));
     }
 
     if (d.watchHtml) {
@@ -734,7 +738,7 @@
     let html = k.section('fr-exec', h('Overview')
       + (snapshot ? k.infoBox('Assessment snapshot', `<strong>${k.esc(snapshot)}</strong>`) : '')
       + contextHtml
-      + (working.length ? k.sub('What is already working') + k.paragraphs(working) : '')
+      + (working.length ? k.sub('What the design already provides') + k.paragraphs(working) : '')
       + (showGaps ? k.sub('Key gaps at this stage') + k.paragraphs(gaps) : ''));
 
     const rankIndex = new Map();
@@ -749,14 +753,14 @@
       themeCount += 1;
       return `<div class="fr-theme"><h3 class="fr-theme-q">${k.esc(question)}</h3>${k.paragraphs(paras)}${links ? `<p class="fr-theme-links">Related priority actions: ${links}</p>` : ''}</div>`;
     }).join('');
-    if (themes) html += k.section('fr-themes', h('Assessment Findings') + k.intro(`${themeCount === 1 ? 'One cross-cutting question' : `${['', '', 'Two', 'Three', 'Four', 'Five'][themeCount] || themeCount} cross-cutting questions`} about how the project interacts with climate and FCV dynamics. Where relevant, each links to the priority actions below.`) + `<div class="fr-themes-stack">${themes}</div>`);
+    if (themes) html += k.section('fr-themes', h('Assessment Findings') + k.intro(`${themeCount === 1 ? 'One cross-cutting question' : `${['', '', 'Two', 'Three', 'Four', 'Five'][themeCount] || themeCount} cross-cutting questions`} on how the project interacts with climate and FCV dynamics. Where relevant, each lists the priority actions that respond to it.`) + `<div class="fr-themes-stack">${themes}</div>`);
 
     const ops = judgment('operationalization');
     const rel = judgment('relevance');
     const notes = [rel.value ? `<p><strong>Climate relevance: ${k.esc(climateLabel(rel.value))}.</strong> ${k.esc(rel.rationale || '')}</p>` : '',
       ops.value ? `<p><strong>Operationalization: ${k.esc(climateLabel(ops.value))}.</strong> ${k.esc(ops.rationale || '')}</p>` : ''].join('');
     html += k.section('fr-ratings-sec', h('Climate-FCV Sensitivity and Responsiveness')
-      + k.intro('The ratings below explain the judgments behind the scorecard above.')
+      + k.intro('Each rating rests on the judgment summarized here.')
       + k.ratingRows([
         { dim: 'Climate-FCV sensitivity', value: climateLabel(sens.value), cls: climatePillClass(sens.value), def: DEFINITIONS.climateSensitivity, whyHtml: k.paragraphs([sens.rationale || sens.description]) },
         { dim: 'Climate-FCV responsiveness', value: climateLabel(resp.value), cls: climatePillClass(resp.value), def: DEFINITIONS.climateResponsiveness, whyHtml: k.paragraphs([resp.rationale || resp.description]) },
@@ -811,7 +815,7 @@
     const checks = [].concat(
       (Array.isArray(r.review_readiness_flags) ? r.review_readiness_flags : []).map(f => ({ title: f.flag || 'Point to verify', why: f.why_it_matters, how: f.suggested_verification })),
       (Array.isArray(r.minor_climate_points) ? r.minor_climate_points : []).map(m => ({ title: m.point || 'Point to consider', why: m.why, how: m.how_to_check })));
-    if (checks.length) html += k.section('fr-checks', h('Smaller Points to Check During Preparation') + k.disclosure('Smaller checks for the project team to confirm', '<p class="fr-intro">These sit alongside the main priorities above. None is a reason to stop the project.</p>' + k.checkItems(checks), checks.length));
+    if (checks.length) html += k.section('fr-checks', h('Smaller Points to Check During Preparation') + k.disclosure('Smaller checks for the project team to confirm', '<p class="fr-intro">These smaller checks are separate from the priority actions. Most can be confirmed quickly during preparation.</p>' + k.checkItems(checks), checks.length));
 
     // Pinned reports always show; the stored reader is never changed (the export snapshot compares it exactly).
     const server = (Array.isArray(r.guidance_items) ? r.guidance_items : []).filter(g => g && g.title).slice(0, 4);
@@ -833,7 +837,7 @@
           if (label && !labels.includes(label)) labels.push(label);
         });
       }
-      const rel = labels.length ? `informs the findings on ${labels.slice(0, 2).map(l => `<a href="#${findingsId}">${k.esc(l.charAt(0).toLowerCase() + l.slice(1))}</a>`).join(' and on ')} (section 02).` : '';
+      const rel = labels.length ? `informs the Assessment Findings on ${labels.slice(0, 2).map(l => `<a href="#${findingsId}">${k.esc(l.charAt(0).toLowerCase() + l.slice(1))}</a>`).join(' and on ')}.` : '';
       return guideItem(k, g, rel);
     }).join('');
     if (guides) html += k.section('fr-guidance', h('Relevant WBG Guidance') + k.disclosure('Selected WBG resources for the team', guides, guideList.length));
@@ -845,8 +849,10 @@
     ].filter(Boolean);
     const trail = r.evidence_trail || {};
     const limits = Array.isArray(trail.limitations) ? trail.limitations.filter(Boolean).join(' ') : String(trail.limitations || '').trim();
+    // A run that states it used no live web evidence must not also show a research retrieval date.
+    const noLiveWeb = /no live web evidence/i.test(limits);
     const limitsText = limits || 'This automated screening is advisory and is limited by the coverage and detail of the uploaded documents. The team should confirm material findings through project and country expertise.';
-    html += k.section('fr-limits-sec', h('Limitations') + k.disclosure(LIMITS_SUMMARY, k.limitsBox([...provenanceLimits(o.fileNames, o.researchBrief, 'Where a document could not be read'), fallbackNote, ...withheldNotes, limitsText, r.advisory_notice], verifyNotes)));
+    html += k.section('fr-limits-sec', h('Limitations') + k.disclosure(LIMITS_SUMMARY, k.limitsBox([...provenanceLimits(o.fileNames, noLiveWeb ? '' : o.researchBrief, 'Where a document could not be read'), fallbackNote, ...withheldNotes, limitsText, r.advisory_notice], verifyNotes)));
     const saysAlready = /does not constitute/i.test(`${limitsText} ${r.advisory_notice || ''}`);
     return linkPriorities(`<article class="fr-readout fr-route-climate">${head}${k.toc(h.list)}${html}${saysAlready ? '' : k.closing()}</article>`, h.list);
   }
