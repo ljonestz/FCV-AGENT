@@ -663,6 +663,28 @@
     'Use the ranked operational priorities and points to check as the basis for review. Confirm the stated evidence limitations before relying on the brief.',
   ];
 
+  // Final-reader-v1 snapshot when the generated summary fell back: built only from the scorecard rating labels,
+  // the displayed priority count and the top-ranked displayed priority title. Returns escaped HTML.
+  function fallbackSnapshot(k, sensValue, respValue, priorities, findingsId) {
+    const sens = sensValue ? climateLabel(sensValue) : '';
+    const resp = respValue ? climateLabel(respValue) : '';
+    const parts = [];
+    if (sens && resp) parts.push(`Climate-FCV sensitivity is rated ${sens} and responsiveness ${resp}.`);
+    else if (sens) parts.push(`Climate-FCV sensitivity is rated ${sens}.`);
+    else if (resp) parts.push(`Climate-FCV responsiveness is rated ${resp}.`);
+    let html = parts.map(k.esc).join('');
+    const n = priorities.length;
+    if (n) {
+      const top = priorityTitle(priorities[0].title).replace(/[.\s]+$/, '');
+      const text = n === 1 ? `The screening identifies 1 priority action: ${top}.` : `The screening identifies ${n} priority actions, led by: ${top}.`;
+      html += (html ? ' ' : '') + k.esc(text);
+    } else {
+      // Without a findings section there is nothing to point to, so the pointer is dropped.
+      html += (html ? ' ' : '') + (findingsId ? `No priority actions were validated for this run; see <a href="#${findingsId}">Assessment Findings</a>.` : 'No priority actions were validated for this run.');
+    }
+    return html;
+  }
+
   function renderClimate(k, reader, opts) {
     const verifyNotes = [];
     // Scrubbed copy for display only; the stored reader is never changed.
@@ -697,8 +719,12 @@
     const overview = (Array.isArray(r.summary_overview) ? r.summary_overview : [r.summary_overview]).map(t => String(t || '').trim()).filter(Boolean)
       .map(t => LEGACY_FALLBACK_OVERVIEW.includes(t) ? FALLBACK_OVERVIEW : t).filter((t, i, list) => list.indexOf(t) === i);
     let snapshot = '';
+    let snapshotHtml = '';
     let contextHtml = '';
     let fallbackNote = '';
+    const themeList = Array.isArray(r.assessment_themes) ? r.assessment_themes : [];
+    // Overview is always section 01, so Assessment Findings (when it renders) is section 02.
+    const findingsId = 'fr-s02';
     if (r.summary_overview_status === 'generated' && overview.length) {
       // Keep the snapshot to two sentences; the rest reads as normal context, as on the normal route.
       const split = k.takeSentences(overview[0], 2);
@@ -708,6 +734,9 @@
       // Fallback text explains why no summary is shown; it opens the Limitations box, not the Overview.
       // Placed inside Limitations at the end of the note, so it must not point "below".
       if (overview.length) fallbackNote = LIMITS_FALLBACK_NOTE;
+      // Deterministic snapshot from verified fields only (scorecard ratings, priority count and top title);
+      // never executive_readout or any other unverified narrative.
+      snapshotHtml = fallbackSnapshot(k, sens.value, resp.value, priorities, themeList.length ? findingsId : '');
     } else {
       const paras = splitParagraphs(r.executive_readout);
       const split = k.takeSentences(paras[0] || '', 2);
@@ -716,17 +745,14 @@
     }
     const working = (Array.isArray(r.existing_responses) ? r.existing_responses : []).map(x => x && x.description).filter(Boolean).slice(0, 4);
     const gaps = (Array.isArray(r.summary_gaps) ? r.summary_gaps : []).map(x => x && x.text).filter(Boolean).slice(0, 5);
-    const themeList = Array.isArray(r.assessment_themes) ? r.assessment_themes : [];
-    // Overview is always section 01, so Assessment Findings (when it renders) is section 02.
-    const findingsId = 'fr-s02';
     // Findings and priorities carry the gaps; the Overview lists them only when no findings render.
     const showGaps = gaps.length && !themeList.length;
     let html = k.section('fr-exec', h('Overview')
       + (snapshot ? k.infoBox('Assessment snapshot', `<strong>${k.esc(snapshot)}</strong>`) : '')
+      + (snapshotHtml ? k.infoBox('Assessment snapshot', `<strong>${snapshotHtml}</strong>`) : '')
       + contextHtml
       + (working.length ? k.sub('What is already working') + k.paragraphs(working) : '')
-      + (showGaps ? k.sub('Key gaps at this stage') + k.paragraphs(gaps) : '')
-      + (!snapshot && themeList.length ? `<p class="fr-intro">No verified summary is available for this run. The gaps are set out under <a href="#${findingsId}">Assessment Findings</a> and in the priority actions.</p>` : ''));
+      + (showGaps ? k.sub('Key gaps at this stage') + k.paragraphs(gaps) : ''));
 
     const rankIndex = new Map();
     priorities.forEach((p, i) => { const n = Number(p.rank); if (Number.isInteger(n) && !rankIndex.has(n)) rankIndex.set(n, i + 1); });
