@@ -358,7 +358,7 @@
 
     function scorecard(tiles, count) {
       const tileHtml = tiles.map(t => `<div class="fr-sc-tile" data-fr-rating="${esc(t.key)}"><div class="fr-sc-label">${esc(t.label)}</div><div class="fr-sc-value">${esc(t.value || 'Not available')}</div>${meter(t.steps, t.level)}${t.level ? `<div class="fr-sc-scale" data-copy-skip><span>${esc(t.lo)}</span><span class="fr-sc-of">${t.level} of ${t.steps}</span><span>${esc(t.hi)}</span></div>` : ''}<div class="fr-sc-def">${esc(t.def)}</div></div>`).join('');
-      const pills = (count.pills || []).map(p => `<span class="fr-pill ${p.cls}">${esc(p.text)}</span>`).join('');
+      const pills = (count.pills || []).map(p => `<span class="fr-pill ${p.cls}">${esc(p.text)}</span>`).join('<span class="fr-pill-sep" aria-hidden="true">&middot;</span>');
       return `<p class="fr-sc-lead">${esc(SCORECARD_LEAD)}</p><section class="fr-scorecard" aria-label="Assessment ratings">${tileHtml}<div class="fr-sc-count"><div class="fr-sc-count-lbl">${esc(count.label)}</div><div class="fr-sc-count-num">${Number(count.number) || 0}</div>${pills ? `<div class="fr-sc-pills">${pills}</div>` : ''}${count.def ? `<div class="fr-sc-count-def">${esc(count.def)}</div>` : ''}</div></section>`;
     }
 
@@ -643,12 +643,20 @@
     const priorities = (Array.isArray(r.priorities) ? r.priorities : []).slice()
       .sort((a, b) => (Number(a.rank) || 999) - (Number(b.rank) || 999)).slice(0, 5);
 
+    // Count tile: "3 actions · medium confidence", or one pill per confidence level when mixed.
+    const confOrder = ['high', 'medium', 'low'];
+    const confCounts = {};
+    priorities.forEach(p => { const c = String(p.confidence || '').toLowerCase(); if (confOrder.includes(c)) confCounts[c] = (confCounts[c] || 0) + 1; });
+    const confKeys = confOrder.filter(c => confCounts[c]);
+    const confPills = confKeys.length === 1 && confCounts[confKeys[0]] === priorities.length
+      ? [{ text: `${priorities.length} ${priorities.length === 1 ? 'action' : 'actions'} \u00b7 ${confKeys[0]} confidence`, cls: 'fr-pill-conf ' + CONFIDENCE_CLASS[confKeys[0]] }]
+      : confKeys.map(c => ({ text: `${confCounts[c]} ${c} confidence`, cls: 'fr-pill-conf ' + CONFIDENCE_CLASS[c] }));
+
     let head = o.noticesHtml || '';
     head += k.scorecard([
       { key: 'climate-sensitivity', label: 'Climate-FCV sensitivity', value: climateLabel(sens.value), steps: 5, level: level(sens.value), lo: 'Very limited', hi: 'Very strong', def: DEFINITIONS.climateSensitivity },
       { key: 'climate-responsiveness', label: 'Climate-FCV responsiveness', value: climateLabel(resp.value), steps: 5, level: level(resp.value), lo: 'Very limited', hi: 'Very strong', def: DEFINITIONS.climateResponsiveness },
-    ], { label: 'Priority actions', number: priorities.length, def: countDef(priorities.length, 'priority action', 'priority actions'), pills: countPills(priorities, p => String(p.confidence || '').toLowerCase(), [
-      { key: 'high', text: 'high', cls: 'fr-pill-conf fr-pill-conf-high' }, { key: 'medium', text: 'medium', cls: 'fr-pill-conf fr-pill-conf-medium' }, { key: 'low', text: 'low', cls: 'fr-pill-conf fr-pill-conf-low' }], 'Confidence: ') });
+    ], { label: 'Priority actions', number: priorities.length, def: countDef(priorities.length, 'priority action', 'priority actions'), pills: confPills });
 
     const overview = (Array.isArray(r.summary_overview) ? r.summary_overview : [r.summary_overview]).map(t => String(t || '').trim()).filter(Boolean)
       .map(t => LEGACY_FALLBACK_OVERVIEW.includes(t) ? FALLBACK_OVERVIEW : t).filter((t, i, list) => list.indexOf(t) === i);

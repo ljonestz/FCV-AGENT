@@ -269,3 +269,31 @@ def test_readout_width_disclosure_chevrons_and_mobile_meta():
     assert '<span class="pcd-chev" aria-hidden="true">${window.FcvReadout.CHEVRON_SVG}</span>' in function_body(source, "function renderStandardPriorityContext(")
     assert ".priority-context-disclosure[open]>summary .pcd-chev{transform:rotate(180deg)}" in source
     assert 'details.fr-pc[data-fr-src-index="' in function_body(source, "function selectPrioritySb(")
+
+
+def test_readout_pills_text_size_limits_and_mobile_scroll_margin():
+    source = html()
+    style = source[source.index('<style id="fcv-readout-style">'):]
+    style = style[:style.index("</style>")]
+    # One pill box on both routes; confidence pills only switch to an outline.
+    assert ".fr-readout .fr-pill{display:inline-block;padding:1px 7px;font-size:11px;font-weight:700;line-height:1.4;border:1px solid transparent;border-radius:3px;" in style
+    assert ".fr-readout .fr-pill-conf{background:transparent;border-color:currentColor}" in style
+    assert "@media(min-width:1024px){.fr-readout,.fr-readout .fr-p,.fr-readout .fr-md,.fr-readout .fr-info,.fr-readout .fr-actions{font-size:15px;line-height:1.6}}" in style
+    assert ".fr-readout .fr-toc{display:flex;flex-wrap:wrap;column-gap:20px;row-gap:6px;" in style
+    assert "border-left:3px solid #009FDA;padding:12px 15px;color:var(--fr-grey);font-weight:400}" in style
+    assert "@media(max-width:640px){.fr-readout .fr-h1,.fr-readout .fr-pc{scroll-margin-top:72px}}" in style
+    assert "scroll-margin-top:200px" not in style
+
+
+def test_session_bar_buttons_are_icon_only_with_labels_on_phones():
+    source = html()
+    bar = source[source.index('<div class="session-bar" id="session-bar">'):source.index("<!-- ══ LANDING HERO ══ -->")]
+    for label in ["View and edit analysis prompts", "Save session", "Load session"]:
+        assert f'aria-label="{label}"' in bar and f'title="{label}"' in bar
+    assert bar.count('<span class="sb-lbl">') == 3
+    assert ".session-bar-btns .sb-lbl{display:none}" in source
+    mobile = source[source.index("/* Phones: one row of icon-only buttons"):]
+    assert "position:static" in mobile[:mobile.index(".session-bar #session-status")]
+    prompt_btn = function_body(source, "function updateTopbarPromptBtn(")
+    assert prompt_btn.count('<span class="sb-lbl">') == 2 and prompt_btn.count("setAttribute('aria-label'") == 2
+

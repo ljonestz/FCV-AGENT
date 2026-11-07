@@ -2323,9 +2323,9 @@ def test_result_session_bar_wraps_inside_phone_viewport():
     <span class="util-doc-type-badge">PCN</span>
   </div>
   <div class="session-bar-btns">
-    <button class="btn btn-ghost btn-sm">View / Edit Prompts</button>
-    <button class="btn btn-ghost btn-sm">Save session</button>
-    <button class="btn btn-ghost btn-sm">Load session</button>
+    <button class="btn btn-ghost btn-sm" aria-label="View and edit analysis prompts"><svg width="13" height="13"></svg> <span class="sb-lbl">View / Edit Prompts</span></button>
+    <button class="btn btn-ghost btn-sm" aria-label="Save session"><svg width="13" height="13"></svg> <span class="sb-lbl">Save session</span></button>
+    <button class="btn btn-ghost btn-sm" aria-label="Load session"><svg width="13" height="13"></svg> <span class="sb-lbl">Load session</span></button>
   </div>
 </div>
 """
@@ -2348,7 +2348,18 @@ def test_result_session_bar_wraps_inside_phone_viewport():
         button_right_edges = page.locator(".session-bar-btns button").evaluate_all(
             "buttons => buttons.map(button => Math.round(button.getBoundingClientRect().right))"
         )
+        button_tops = page.locator(".session-bar-btns button, .util-doc-type-badge").evaluate_all(
+            "els => els.map(el => Math.round(el.getBoundingClientRect().top + el.getBoundingClientRect().height / 2))"
+        )
+        position = page.locator("#session-bar").evaluate("element => getComputedStyle(element).position")
+        labels_hidden = page.locator(".session-bar-btns .sb-lbl").evaluate_all(
+            "els => els.every(el => getComputedStyle(el).display === 'none')"
+        )
         browser.close()
+
+    # One row of icon-only buttons that scrolls away with the page.
+    assert max(button_tops) - min(button_tops) <= 4
+    assert position == "static" and labels_hidden
 
     assert document["scrollWidth"] == document["clientWidth"]
     assert bar["scrollWidth"] <= bar["clientWidth"]

@@ -573,7 +573,23 @@ def test_meter_caption_and_climate_confidence_pills():
     chtml = climate(CLIMATE_READER)
     assert '<span class="fr-sc-of">3 of 5</span>' in chtml
     count = chtml[chtml.index('class="fr-sc-count"'):chtml.index("</section>", chtml.index('class="fr-sc-count"'))]
-    assert ">Confidence: 1 medium<" in count and ">Confidence: 1 low<" in count and "confidence<" not in count
+    assert ">1 medium confidence<" in count and ">1 low confidence<" in count and "Confidence:" not in count
+    assert count.index(">1 medium confidence<") < count.index('class="fr-pill-sep" aria-hidden="true">&middot;<') < count.index(">1 low confidence<")
+
+
+def test_climate_count_tile_reads_actions_and_confidence_when_uniform():
+    reader = dict(CLIMATE_READER, priorities=[dict(p, confidence="medium") for p in CLIMATE_READER["priorities"]]
+                  + [dict(CLIMATE_READER["priorities"][0], rank=3, confidence="medium")])
+    html = climate(reader)
+    count = html[html.index('class="fr-sc-count"'):html.index("</section>", html.index('class="fr-sc-count"'))]
+    assert '<span class="fr-pill fr-pill-conf fr-pill-conf-medium">3 actions · medium confidence</span>' in count
+    assert "fr-pill-sep" not in count
+    one = climate(dict(CLIMATE_READER, priorities=[dict(CLIMATE_READER["priorities"][1], confidence="high")]))
+    assert ">1 action · high confidence<" in one
+    mixed = climate(dict(CLIMATE_READER, priorities=[dict(CLIMATE_READER["priorities"][0], confidence="medium"),
+                                                     dict(CLIMATE_READER["priorities"][1], confidence="high"),
+                                                     dict(CLIMATE_READER["priorities"][0], rank=3, confidence="medium")]))
+    assert ">1 high confidence<" in mixed and ">2 medium confidence<" in mixed
 
 
 def test_card_meta_segments_mark_dimension_and_timing_for_mobile():

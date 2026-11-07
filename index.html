@@ -792,9 +792,13 @@
     .session-bar{display:flex;align-items:center;gap:8px;padding:0 32px;height:40px;background:#fff;border-bottom:1px solid var(--color-border);font-size:12px;color:var(--color-text-muted);position:sticky;top:56px;z-index:99}
     .session-bar svg{flex-shrink:0}
     .session-bar-btns{margin-left:auto;display:flex;gap:4px}
+    /* Phones: one row of icon-only buttons (labels stay as aria-label/title); the bar scrolls away. */
     @media(max-width:640px){
-      .session-bar{height:auto;min-height:40px;padding:6px 16px;align-items:flex-start;flex-wrap:wrap}
-      .session-bar-btns{flex:1 1 100%;min-width:0;margin-left:0;flex-wrap:wrap;justify-content:flex-end}
+      .session-bar{height:auto;min-height:40px;padding:4px 16px;align-items:center;flex-wrap:wrap;position:static}
+      .session-bar #session-status{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      .session-bar-btns{flex:none;margin-left:auto;flex-wrap:nowrap}
+      .session-bar-btns .btn{padding:6px 9px}
+      .session-bar-btns .sb-lbl{display:none}
     }
     /* Utility bar doc-type badge */
     .util-doc-type-badge{display:inline-flex;align-items:center;gap:6px;background:var(--color-blue-soft);color:var(--color-blue);border:1px solid #BFDBFE;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:600}
@@ -1974,17 +1978,18 @@
 .fr-readout .fr-sc-count{background:var(--fr-navy);padding:14px 16px;display:flex;flex-direction:column;justify-content:center;gap:4px}
 .fr-readout .fr-sc-count-lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.8)}
 .fr-readout .fr-sc-count-num{font-size:28px;font-weight:700;color:#fff;line-height:1.1}
-.fr-readout .fr-sc-pills{display:flex;flex-wrap:wrap;gap:6px}
+.fr-readout .fr-sc-pills{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
 .fr-readout .fr-sc-count-def{font-size:11px;font-style:italic;line-height:1.45;color:rgba(255,255,255,.88);margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.25)}
 .fr-readout .fr-sc-lead{font-size:12px;line-height:1.5;color:var(--fr-grey,#555);font-style:italic;margin:4px 0 8px}
 .fr-readout .fr-note{font-size:11px;color:var(--fr-grey);margin:4px 0 20px}
 .fr-readout .fr-closing{margin:24px 0 4px;padding-top:10px;border-top:1px solid var(--fr-border)}
-.fr-readout .fr-toc{display:flex;flex-wrap:wrap;gap:6px 16px;margin:14px 0 4px;font-size:12px}
+.fr-readout .fr-toc{display:flex;flex-wrap:wrap;column-gap:20px;row-gap:6px;margin:14px 0 4px;font-size:12px}
 .fr-readout .fr-toc a{color:var(--fr-blue-text);text-decoration:none}.fr-readout .fr-toc a:hover{text-decoration:underline}
 .fr-readout .fr-h1,.fr-readout .fr-pc{scroll-margin-top:110px}
-.fr-readout .fr-pill{display:inline-block;padding:2px 7px;font-size:11px;font-weight:700;line-height:1.4;width:fit-content}
+.fr-readout .fr-pill{display:inline-block;padding:1px 7px;font-size:11px;font-weight:700;line-height:1.4;border:1px solid transparent;border-radius:3px;width:fit-content}
 .fr-readout .fr-pill-high{background:#FDE4E1;color:#B42318}.fr-readout .fr-pill-medium{background:#FEF0C7;color:#8A4B08}.fr-readout .fr-pill-low{background:#E3F4E8;color:#1E6B3A}
-.fr-readout .fr-pill-conf{background:transparent;border:1px solid currentColor;font-weight:600}
+.fr-readout .fr-pill-conf{background:transparent;border-color:currentColor}
+.fr-readout .fr-pill-sep{color:rgba(255,255,255,.7);font-size:11px;line-height:1.4;padding:1px 0}
 .fr-readout .fr-pill-conf-high{color:#1E6B3A}.fr-readout .fr-pill-conf-medium{color:#8A4B08}.fr-readout .fr-pill-conf-low{color:#4B5563}
 .fr-readout .fr-sc-count .fr-pill-conf{color:#fff}
 .fr-readout .fr-h1{display:flex;align-items:baseline;gap:14px;border-bottom:2px solid var(--fr-blue);margin:26px 0 14px;padding-bottom:8px}
@@ -2050,14 +2055,19 @@
 .fr-readout .fr-guide-title{font-weight:700;color:var(--fr-blue-text)}
 .fr-readout .fr-guide-rel{font-size:12px;line-height:1.5;color:#5F6B7A;margin:4px 0 0}
 .fr-readout .fr-see{font-size:12px;margin:0 0 9px}
-.fr-readout .fr-limits{background:var(--fr-surface);border:1px solid var(--fr-border);border-left:3px solid var(--fr-grey);padding:12px 15px;color:var(--fr-grey)}
+.fr-readout .fr-limits{background:var(--fr-surface);border:1px solid var(--fr-border);border-left:3px solid #009FDA;padding:12px 15px;color:var(--fr-grey);font-weight:400}
+.fr-readout .fr-limits .fr-p,.fr-readout .fr-limits li{font-weight:400}.fr-readout .fr-limits .fr-p strong{font-weight:700}
 .fr-readout .fr-verify{margin-top:10px;padding-top:10px;border-top:1px solid var(--fr-border)}
 .fr-readout .fr-verify-lbl{font-size:11px!important;font-weight:700!important;text-transform:uppercase!important;letter-spacing:.08em!important;color:var(--fr-navy)!important;margin:0 0 6px!important;border:0!important;padding:0!important}
 .fr-readout .fr-verify-list{margin:0;padding-left:18px;font-size:13px;line-height:1.6}.fr-readout .fr-verify-list li{margin-bottom:4px}
 .fr-readout .fr-research-intro{font-style:italic;color:var(--fr-grey)}
 .fr-readout .fr-research-list{margin:0;padding-left:18px}.fr-readout .fr-research-list li{margin-bottom:8px;line-height:1.5}
 .fr-readout .fr-research-ex{display:block;font-size:12px;color:var(--fr-grey)}
-@media(max-width:760px){.fr-readout .fr-pc-meta .fr-meta-dim{display:none}.fr-readout .fr-scorecard{grid-template-columns:minmax(0,1fr)}.fr-readout .fr-sc-tile{border-right:0;border-bottom:1px solid var(--fr-border)}.fr-readout .fr-pair{grid-template-columns:minmax(0,1fr)}.fr-readout .fr-col+.fr-col{border-left:0;border-top:1px solid var(--fr-border)}.fr-readout .fr-rating-row{flex-direction:column}.fr-readout .fr-rating-meta{width:auto;border-right:0;padding:0 0 10px}.fr-readout .fr-rating-why{padding-left:0}.fr-readout .fr-pc-body{padding:14px}.fr-readout .fr-draft{margin-left:0}.fr-readout .fr-h1,.fr-readout .fr-pc{scroll-margin-top:200px}}
+@media(max-width:760px){.fr-readout .fr-pc-meta .fr-meta-dim{display:none}.fr-readout .fr-scorecard{grid-template-columns:minmax(0,1fr)}.fr-readout .fr-sc-tile{border-right:0;border-bottom:1px solid var(--fr-border)}.fr-readout .fr-pair{grid-template-columns:minmax(0,1fr)}.fr-readout .fr-col+.fr-col{border-left:0;border-top:1px solid var(--fr-border)}.fr-readout .fr-rating-row{flex-direction:column}.fr-readout .fr-rating-meta{width:auto;border-right:0;padding:0 0 10px}.fr-readout .fr-rating-why{padding-left:0}.fr-readout .fr-pc-body{padding:14px}.fr-readout .fr-draft{margin-left:0}}
+/* Phones: the session bar is static, so only the 56px top bar is sticky. */
+@media(max-width:640px){.fr-readout .fr-h1,.fr-readout .fr-pc{scroll-margin-top:72px}}
+/* Full width: 15px body text. */
+@media(min-width:1024px){.fr-readout,.fr-readout .fr-p,.fr-readout .fr-md,.fr-readout .fr-info,.fr-readout .fr-actions{font-size:15px;line-height:1.6}}
 @media print{.fr-readout *{-webkit-print-color-adjust:exact;print-color-adjust:exact}.fr-readout .fr-pc-hdr,.fr-readout .fr-zone,.fr-readout .fr-check,.fr-readout .fr-rating-row{break-inside:avoid}.fr-readout details.fr-pc::details-content,.fr-readout details.fr-disc::details-content{content-visibility:visible;display:block}.fr-readout details.fr-pc:not([open]) > :not(summary),.fr-readout details.fr-disc:not([open]) > :not(summary){display:block}.fr-readout .fr-toc,.fr-readout .fr-cards-tools,.fr-readout .fr-copy,.fr-readout .fr-expand{display:none!important}}
 </style>
 </head>
@@ -2376,17 +2386,17 @@
     <span id="util-doc-type-badge" class="util-doc-type-badge">—</span>
   </div>
   <div class="session-bar-btns">
-    <button class="btn btn-ghost btn-sm" id="prompt-bar-btn" onclick="openPromptModal()" title="View and edit analysis prompts">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
-      View / Edit Prompts
+    <button class="btn btn-ghost btn-sm" id="prompt-bar-btn" onclick="openPromptModal()" title="View and edit analysis prompts" aria-label="View and edit analysis prompts">
+      <svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+      <span class="sb-lbl">View / Edit Prompts</span>
     </button>
-    <button class="btn btn-ghost btn-sm" onclick="saveSession()" id="save-session-btn" style="display:none">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-      Save session
+    <button class="btn btn-ghost btn-sm" onclick="saveSession()" id="save-session-btn" style="display:none" title="Save session" aria-label="Save session">
+      <svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <span class="sb-lbl">Save session</span>
     </button>
-    <button class="btn btn-ghost btn-sm" onclick="document.getElementById('load-session-inp').click()">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      Load session
+    <button class="btn btn-ghost btn-sm" onclick="document.getElementById('load-session-inp').click()" title="Load session" aria-label="Load session">
+      <svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <span class="sb-lbl">Load session</span>
     </button>
     <input type="file" id="load-session-inp" accept=".json" style="display:none" onchange="loadSession(this)">
   </div>
@@ -6355,11 +6365,15 @@ ${climatePrintDisclosureScript()}
     if(hasAny){
       btn.style.borderColor = '#f59e0b';
       btn.style.color = '#d97706';
-      btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg> ⚑ Prompts (modified)`;
+      btn.setAttribute('aria-label','View and edit analysis prompts (modified)');
+      btn.title='View and edit analysis prompts (modified)';
+      btn.innerHTML = `<svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg> <span class="sb-lbl">⚑ Prompts (modified)</span>`;
     } else {
       btn.style.borderColor = '';
       btn.style.color = '';
-      btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg> View / Edit Prompts`;
+      btn.setAttribute('aria-label','View and edit analysis prompts');
+      btn.title='View and edit analysis prompts';
+      btn.innerHTML = `<svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg> <span class="sb-lbl">View / Edit Prompts</span>`;
     }
   }
 
