@@ -1739,7 +1739,7 @@ const html = renderClimateVerifiedAssessment({
 });
 for (const expected of [
   '<details class="fr-pc" id="fr-priority-2"><summary',
-  '<details class="fr-disc"><summary class="fr-disc-sum"><span>Smaller checks for the project team to confirm</span><span class="fr-disc-chev" aria-hidden="true"><svg',
+  '<details class="fr-disc"><summary class="fr-disc-sum"><span>Smaller checks for the project team to confirm (1)</span><span class="fr-disc-chev" aria-hidden="true"><svg',
   'Limitations',
   'Closed priority narrative.', 'Closed priority action.',
   'Closed check reason.',

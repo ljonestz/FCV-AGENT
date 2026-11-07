@@ -425,8 +425,10 @@
       return `${tools}<div class="fr-cards">${cardsHtml}</div>`;
     }
 
-    function disclosure(summary, bodyHtml) {
-      return `<details class="fr-disc"><summary class="fr-disc-sum"><span>${esc(summary)}</span><span class="fr-disc-chev" aria-hidden="true">${CHEVRON_SVG}</span></summary><div class="fr-disc-body">${bodyHtml}</div></details>`;
+    // Collapsed disclosure; a positive item count is shown after the summary, e.g. "... to confirm (6)".
+    function disclosure(summary, bodyHtml, count) {
+      const label = Number.isInteger(count) && count > 0 ? `${summary} (${count})` : summary;
+      return `<details class="fr-disc"><summary class="fr-disc-sum"><span>${esc(label)}</span><span class="fr-disc-chev" aria-hidden="true">${CHEVRON_SVG}</span></summary><div class="fr-disc-body">${bodyHtml}</div></details>`;
     }
 
     function checkItems(items) {
@@ -578,7 +580,7 @@
     const smaller = (Array.isArray(d.smallerPoints) ? d.smallerPoints : []).filter(x => x && x.title);
     if (smaller.length) {
       html += k.section('fr-checks', h('Smaller Points to Check During Preparation')
-        + k.disclosure('Smaller checks for the project team to confirm', '<p class="fr-intro">These sit alongside the main priorities above. None is a reason to stop the project.</p>' + k.checkItems(smaller)));
+        + k.disclosure('Smaller checks for the project team to confirm', '<p class="fr-intro">These sit alongside the main priorities above. None is a reason to stop the project.</p>' + k.checkItems(smaller), smaller.length));
     }
 
     if (d.watchHtml) {
@@ -588,7 +590,7 @@
     html += d.tailHtml || '';
 
     const guides = NORMAL_GUIDANCE.map(g => guideItem(k, g, '')).join('');
-    if (guides) html += k.section('fr-guidance', h('Relevant WBG Guidance') + k.disclosure('Selected WBG resources for the team', guides));
+    if (guides) html += k.section('fr-guidance', h('Relevant WBG Guidance') + k.disclosure('Selected WBG resources for the team', guides, NORMAL_GUIDANCE.length));
 
     const limits = [
       ...provenanceLimits(d.fileNames, d.researchBrief),
@@ -806,7 +808,7 @@
     const checks = [].concat(
       (Array.isArray(r.review_readiness_flags) ? r.review_readiness_flags : []).map(f => ({ title: f.flag || 'Point to verify', why: f.why_it_matters, how: f.suggested_verification })),
       (Array.isArray(r.minor_climate_points) ? r.minor_climate_points : []).map(m => ({ title: m.point || 'Point to consider', why: m.why, how: m.how_to_check })));
-    if (checks.length) html += k.section('fr-checks', h('Smaller Points to Check During Preparation') + k.disclosure('Smaller checks for the project team to confirm', '<p class="fr-intro">These sit alongside the main priorities above. None is a reason to stop the project.</p>' + k.checkItems(checks)));
+    if (checks.length) html += k.section('fr-checks', h('Smaller Points to Check During Preparation') + k.disclosure('Smaller checks for the project team to confirm', '<p class="fr-intro">These sit alongside the main priorities above. None is a reason to stop the project.</p>' + k.checkItems(checks), checks.length));
 
     // Pinned reports always show; the stored reader is never changed (the export snapshot compares it exactly).
     const server = (Array.isArray(r.guidance_items) ? r.guidance_items : []).filter(g => g && g.title).slice(0, 4);
@@ -831,7 +833,7 @@
       const rel = labels.length ? `informs the findings on ${labels.slice(0, 2).map(l => `<a href="#${findingsId}">${k.esc(l.charAt(0).toLowerCase() + l.slice(1))}</a>`).join(' and on ')} (section 02).` : '';
       return guideItem(k, g, rel);
     }).join('');
-    if (guides) html += k.section('fr-guidance', h('Relevant WBG Guidance') + k.disclosure('Selected WBG resources for the team', guides));
+    if (guides) html += k.section('fr-guidance', h('Relevant WBG Guidance') + k.disclosure('Selected WBG resources for the team', guides, guideList.length));
 
     // The partial-run banner points here, so say what was withheld in the run's own words.
     const withheldNotes = [

@@ -854,3 +854,16 @@ def test_climate_limitations_start_with_shared_provenance_lines():
     assert "uploaded for this run" not in bare and "retrieved on" not in bare
     shared = json.loads(run_js("process.stdout.write(JSON.stringify(FR.provenanceLimits(['a/PAD.pdf'], '', '')));"))
     assert shared == ["Documents uploaded for this run: PAD. Where the Executive Summary notes that a document could not be read, its content was not used in this screening."]
+
+
+def test_collapsed_disclosures_show_item_counts_on_both_routes():
+    html = normal({"smallerPoints": [{"title": "A", "why": "x."}, {"title": "B", "why": "y."}]})
+    assert "<span>Smaller checks for the project team to confirm (2)</span>" in html
+    n_guides = json.loads(run_js("process.stdout.write(String(FR.NORMAL_GUIDANCE.length));"))
+    assert f"<span>Selected WBG resources for the team ({n_guides})</span>" in html
+    html = climate(CLIMATE_READER)
+    # One readiness flag plus one minor climate point; pinned reports plus the server items not already pinned.
+    assert "<span>Smaller checks for the project team to confirm (2)</span>" in html
+    guides = html[html.index('fr-h1-txt">Relevant WBG Guidance<'):html.index('fr-h1-txt">Limitations<')]
+    assert f"<span>Selected WBG resources for the team ({guides.count('class=\"fr-guide\"')})</span>" in guides
+    assert "(0)" not in run_js("process.stdout.write(api.disclosure('Empty', '<p></p>', 0));")
