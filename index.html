@@ -2045,8 +2045,9 @@
 .fr-readout .fr-cycle{font-size:12px;color:var(--fr-grey);margin:12px 0 0;padding-top:10px;border-top:1px solid var(--fr-border);line-height:1.5}.fr-readout .fr-cycle strong{color:var(--fr-navy)}
 .fr-readout .fr-disc{margin-top:4px}
 .fr-readout .fr-disc-sum{display:flex;align-items:center;gap:9px;padding:11px 14px;cursor:pointer;border:1px solid var(--fr-border);background:var(--fr-surface);font-size:14px;font-weight:700;color:var(--fr-navy);list-style:none}
-.fr-readout .fr-disc-sum::-webkit-details-marker{display:none}.fr-readout .fr-disc-sum::before{content:"\25B8";color:var(--fr-blue)}
-.fr-readout .fr-disc[open] .fr-disc-sum::before{content:"\25BE"}
+.fr-readout .fr-disc-sum::-webkit-details-marker{display:none}.fr-readout .fr-disc-sum::before{content:none}
+.fr-readout .fr-disc-chev{margin-left:auto;display:flex;color:var(--fr-navy);transition:transform .15s}.fr-readout .fr-disc[open] .fr-disc-chev{transform:rotate(180deg)}
+.fr-readout a.fr-sc-count-link{text-decoration:none;color:inherit;cursor:pointer}.fr-readout a.fr-sc-count-link:hover{background:#0B2F57}.fr-readout a.fr-sc-count-link:focus-visible{outline:2px solid #009FDA;outline-offset:2px}
 .fr-readout .fr-disc-body{border:1px solid var(--fr-border);border-top:0;padding:16px}
 .fr-readout .fr-check{display:grid;grid-template-columns:30px minmax(0,1fr);gap:10px;padding:12px 0;border-bottom:1px solid var(--fr-border)}.fr-readout .fr-check:last-child{border-bottom:0}
 .fr-readout .fr-check-num{font-size:13px;font-weight:700;color:var(--fr-blue-text)}
@@ -6125,7 +6126,7 @@
       if(summarybody)body += `<div class="out-body exp-narrative">${wrapSRTerms(md(bulletFindingSections(summarybody)))}</div>`;
       body += wrapSRTerms(renderClimateStrengthsWeaknesses(_exportClimate.entry)+renderClimateCoreQuestions(_exportClimate.entry)+renderClimateGroundingSources(climateGrounding))+renderLegacyClimatePrioritiesHtml(true)+stage3DocChecksHtml();
       // Legacy climate-lens route has no Limitations section; the briefing closes the readout body.
-      if(_briefHtml)body += '<div class="fr-readout"><details class="fr-disc fr-research"><summary class="fr-disc-sum">Background research and sources</summary><div class="fr-disc-body out-body">'+_briefHtml+'</div></details></div>';
+      if(_briefHtml)body += '<div class="fr-readout"><details class="fr-disc fr-research"><summary class="fr-disc-sum"><span>Background research and sources</span><span class="fr-disc-chev" aria-hidden="true">'+frApi().CHEVRON_SVG+'</span></summary><div class="fr-disc-body out-body">'+_briefHtml+'</div></details></div>';
     }else{
       // The research briefing renders inside the readout, after Limitations.
       body+=screenerCaveatHtml()+buildNormalReadout(stageOutputs[3]||'',true,_briefHtml);

@@ -19,6 +19,12 @@
   // Self-contained handlers (no model text) so they also work in the Share .html export.
   const COPY_DRAFT_HANDLER = "navigator.clipboard&&navigator.clipboard.writeText(this.closest('.fr-draft').querySelector('.fr-draft-text').innerText);this.textContent='Copied'";
   const EXPAND_ALL_HANDLER = "var d=Array.prototype.slice.call(this.closest('.fr-section').querySelectorAll('details.fr-pc')),o=d.some(function(x){return !x.open});d.forEach(function(x){x.open=o});this.textContent=o?'Collapse all':'Expand all'";
+  const PRIORITIES_HREF = '__fr_priorities__';
+  // Points the count tile at the rendered priorities section (numbers vary when sections are skipped).
+  function linkPriorities(html, list) {
+    const hit = list.find(x => x.title === 'Priority Actions for the Task Team');
+    return html.split('#' + PRIORITIES_HREF).join('#' + (hit ? hit.id : 'fr-s01'));
+  }
   const CHEVRON_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" focusable="false"><polyline points="6 9 12 15 18 9"/></svg>';
 
   function stripBold(text) {
@@ -286,7 +292,7 @@
 
     function verifyList(notes) {
       const list = (notes || []).filter(Boolean);
-      return list.length ? `<div class="fr-verify"><h3 class="fr-verify-lbl">Points to verify before sharing</h3><ul class="fr-verify-list">${list.map(n => `<li dir="auto">${esc(n)}</li>`).join('')}</ul></div>` : '';
+      return list.length ? `<div class="fr-verify"><h3 class="fr-verify-lbl">Points to verify before sharing</h3><p class="fr-p">An automated check flagged these statements in the sections above for a human look before this note is shared.</p><ul class="fr-verify-list">${list.map(n => `<li dir="auto">${esc(n)}</li>`).join('')}</ul></div>` : '';
     }
 
     function limitsBox(paras, notes) {
@@ -359,7 +365,11 @@
     function scorecard(tiles, count) {
       const tileHtml = tiles.map(t => `<div class="fr-sc-tile" data-fr-rating="${esc(t.key)}"><div class="fr-sc-label">${esc(t.label)}</div><div class="fr-sc-value">${esc(t.value || 'Not available')}</div>${meter(t.steps, t.level)}${t.level ? `<div class="fr-sc-scale" data-copy-skip><span>${esc(t.lo)}</span><span class="fr-sc-of">${t.level} of ${t.steps}</span><span>${esc(t.hi)}</span></div>` : ''}<div class="fr-sc-def">${esc(t.def)}</div></div>`).join('');
       const pills = (count.pills || []).map(p => `<span class="fr-pill ${p.cls}">${esc(p.text)}</span>`).join('');
-      return `<p class="fr-sc-lead">${esc(SCORECARD_LEAD)}</p><section class="fr-scorecard" aria-label="Assessment ratings">${tileHtml}<div class="fr-sc-count"><div class="fr-sc-count-lbl">${esc(count.label)}</div><div class="fr-sc-count-num">${Number(count.number) || 0}</div>${pills ? `<div class="fr-sc-pills">${pills}</div>` : ''}${count.def ? `<div class="fr-sc-count-def">${esc(count.def)}</div>` : ''}</div></section>`;
+      // With priorities, the tile is a jump link to them; the route fills in the section id at the end.
+      const linked = Number(count.number) > 0;
+      const countTag = linked ? `<a class="fr-sc-count fr-sc-count-link" href="#${PRIORITIES_HREF}" aria-label="Go to the priority actions">` : '<div class="fr-sc-count">';
+      const countEnd = linked ? '</a>' : '</div>';
+      return `<p class="fr-sc-lead">${esc(SCORECARD_LEAD)}</p><section class="fr-scorecard" aria-label="Assessment ratings">${tileHtml}${countTag}<div class="fr-sc-count-lbl">${esc(count.label)}</div><div class="fr-sc-count-num">${Number(count.number) || 0}</div>${pills ? `<div class="fr-sc-pills">${pills}</div>` : ''}${count.def ? `<div class="fr-sc-count-def">${esc(count.def)}</div>` : ''}${countEnd}</section>`;
     }
 
     function ratingRows(rows) {
@@ -384,7 +394,7 @@
     }
 
     function disclosure(summary, bodyHtml) {
-      return `<details class="fr-disc"><summary class="fr-disc-sum">${esc(summary)}</summary><div class="fr-disc-body">${bodyHtml}</div></details>`;
+      return `<details class="fr-disc"><summary class="fr-disc-sum"><span>${esc(summary)}</span><span class="fr-disc-chev" aria-hidden="true">${CHEVRON_SVG}</span></summary><div class="fr-disc-body">${bodyHtml}</div></details>`;
     }
 
     function checkItems(items) {
@@ -550,14 +560,14 @@
     const files = (Array.isArray(d.fileNames) ? d.fileNames : []).map(displayFileName).filter(Boolean);
     const retrieved = researchDate(d.researchBrief);
     const limits = [
-      files.length ? `Documents uploaded for this run: ${files.join(', ')}.` : '',
+      files.length ? `Documents uploaded for this run: ${files.join(', ')}. Where the Executive Summary notes that a document could not be read, its content was not used in this screening.` : '',
       retrieved ? `Background research was retrieved on ${retrieved}; events after that date are not reflected.` : '',
       d.partial ? 'This run is partial; some sections may be missing.' : '',
       NORMAL_LIMITATION,
     ];
     html += k.section('fr-limits-sec', h('Limitations') + k.limitsBox(limits, verifyNotes));
-    if (d.researchHtml) html += `<details class="fr-disc fr-research"><summary class="fr-disc-sum">Background research and sources</summary><div class="fr-disc-body out-body">${d.researchHtml}</div></details>`;
-    return `<article class="fr-readout fr-route-fcv">${head}${k.toc(h.list)}${html}${k.closing()}</article>`;
+    if (d.researchHtml) html += `<details class="fr-disc fr-research"><summary class="fr-disc-sum"><span>Background research and sources</span><span class="fr-disc-chev" aria-hidden="true">${CHEVRON_SVG}</span></summary><div class="fr-disc-body out-body">${d.researchHtml}</div></details>`;
+    return linkPriorities(`<article class="fr-readout fr-route-fcv">${head}${k.toc(h.list)}${html}${k.closing()}</article>`, h.list);
   }
   const THEME_QUESTIONS = {
     'Climate risks, design and delivery': 'Does the project address interacting climate and FCV risks in design and delivery?',
@@ -793,12 +803,17 @@
     }).join('');
     if (guides) html += k.section('fr-guidance', h('Relevant WBG Guidance') + k.disclosure('Selected WBG resources for the team', guides));
 
+    // The partial-run banner points here, so say what was withheld in the run's own words.
+    const withheldNotes = [
+      r.analysis_status === 'partial' && r.analysis_message ? `Withheld findings: ${String(r.analysis_message).trim()}` : '',
+      ['partial', 'incomplete'].includes(r.recommendation_status) ? `Withheld actions: ${String(r.recommendation_message || 'Some proposed actions were withheld because their evidence could not be validated; the number is not recorded for this run.').trim()}` : '',
+    ].filter(Boolean);
     const trail = r.evidence_trail || {};
     const limits = Array.isArray(trail.limitations) ? trail.limitations.filter(Boolean).join(' ') : String(trail.limitations || '').trim();
     const limitsText = limits || 'This automated screening is advisory and is limited by the coverage and detail of the uploaded documents. The team should confirm material findings through project and country expertise.';
-    html += k.section('fr-limits-sec', h('Limitations') + k.limitsBox([fallbackNote, limitsText, r.advisory_notice], verifyNotes));
+    html += k.section('fr-limits-sec', h('Limitations') + k.limitsBox([fallbackNote, ...withheldNotes, limitsText, r.advisory_notice], verifyNotes));
     const saysAlready = /does not constitute/i.test(`${limitsText} ${r.advisory_notice || ''}`);
-    return `<article class="fr-readout fr-route-climate">${head}${k.toc(h.list)}${html}${saysAlready ? '' : k.closing()}</article>`;
+    return linkPriorities(`<article class="fr-readout fr-route-climate">${head}${k.toc(h.list)}${html}${saysAlready ? '' : k.closing()}</article>`, h.list);
   }
 
   const api = { FCV_SCALE, CLIMATE_SCALE, FOCUS_LABELS, DEFINITIONS, CLOSING_LINE, CHEVRON_SVG, PINNED_CLIMATE_GUIDANCE, NORMAL_GUIDANCE, parseStage3Sections, parseSupplementaryPoints, researchDate, researchSources, orderByLevel, stripTagNotes, extractVerifyNotes, cleanVerifyNote, displayFileName, create };

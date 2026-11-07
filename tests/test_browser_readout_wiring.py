@@ -201,7 +201,7 @@ def test_export_research_briefing_uses_renderer_source_list():
     export = function_body(source, "async function downloadHTML(")
     assert "exportResearchBriefHtml(researchBrief)" in export
     assert "Research briefing</h2>" not in export
-    assert '<details class="fr-disc fr-research"><summary class="fr-disc-sum">Background research and sources</summary>' in export
+    assert "<summary class=\"fr-disc-sum\"><span>Background research and sources</span><span class=\"fr-disc-chev\" aria-hidden=\"true\">'+frApi().CHEVRON_SVG+'</span></summary>" in export
     # Raw markdown is never passed through md(); the renderer builds the intro line and link list.
     assert "frApi().researchBriefing(brief)" in helper and "md(" not in helper
 

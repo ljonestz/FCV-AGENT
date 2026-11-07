@@ -526,7 +526,7 @@ def test_normal_limitations_lines_and_closing_after():
 def test_normal_research_briefing_after_limitations_collapsed():
     html = normal({"researchHtml": "<p>Brief body</p>"})
     assert html.index('fr-h1-txt">Limitations<') < html.index("Background research and sources") < html.index("fr-closing")
-    assert '<details class="fr-disc fr-research"><summary class="fr-disc-sum">Background research and sources</summary>' in html
+    assert '<details class="fr-disc fr-research"><summary class="fr-disc-sum"><span>Background research and sources</span><span class="fr-disc-chev" aria-hidden="true"><svg' in html
     assert "Background research" not in normal({})
 
 
@@ -573,7 +573,7 @@ def test_meter_caption_and_climate_confidence_pills():
     assert '<span class="fr-sc-of">4 of 6</span>' in html and '<span class="fr-sc-of">3 of 6</span>' in html
     chtml = climate(CLIMATE_READER)
     assert '<span class="fr-sc-of">3 of 5</span>' in chtml
-    count = chtml[chtml.index('class="fr-sc-count"'):chtml.index("</section>", chtml.index('class="fr-sc-count"'))]
+    count = chtml[chtml.index('class="fr-sc-count fr-sc-count-link"'):chtml.index("</section>", chtml.index('class="fr-sc-count fr-sc-count-link"'))]
     assert ">1 medium confidence<" in count and ">1 low confidence<" in count and "Confidence:" not in count
     assert count.index(">1 medium confidence<") < count.index(">1 low confidence<")
     assert "fr-pill-sep" not in count
@@ -583,7 +583,7 @@ def test_climate_count_tile_reads_actions_and_confidence_when_uniform():
     reader = dict(CLIMATE_READER, priorities=[dict(p, confidence="medium") for p in CLIMATE_READER["priorities"]]
                   + [dict(CLIMATE_READER["priorities"][0], rank=3, confidence="medium")])
     html = climate(reader)
-    count = html[html.index('class="fr-sc-count"'):html.index("</section>", html.index('class="fr-sc-count"'))]
+    count = html[html.index('class="fr-sc-count fr-sc-count-link"'):html.index("</section>", html.index('class="fr-sc-count fr-sc-count-link"'))]
     assert '<span class="fr-pill fr-pill-conf fr-pill-conf-medium">3 actions · medium confidence</span>' in count
     assert "fr-pill-sep" not in count
     one = climate(dict(CLIMATE_READER, priorities=[dict(CLIMATE_READER["priorities"][1], confidence="high")]))
@@ -784,3 +784,21 @@ def test_climate_snapshot_is_two_sentences_rest_is_context():
     snap = snap[:snap.index("</strong>")]
     assert "First point. Second point." in snap and "Third point" not in snap
     assert "Third point." in html and "Fourth point." in html
+
+
+def test_count_tile_links_to_rendered_priorities_section():
+    html = climate(CLIMATE_READER)
+    tile = html[html.index('class="fr-sc-count fr-sc-count-link"'):]
+    href = tile[tile.index('href="#') + 7:tile.index('"', tile.index('href="#') + 7)]
+    assert href.startswith("fr-s") and f'id="{href}"' in html
+    assert html[html.index(f'id="{href}"'):].split("</h2>")[0].endswith("Priority Actions for the Task Team")
+    assert "__fr_priorities__" not in html
+
+
+def test_partial_climate_limitations_explain_withheld_items():
+    reader = dict(CLIMATE_READER, analysis_status="partial", analysis_message="Two findings lacked validated evidence.",
+                  recommendation_status="partial", recommendation_message="One action was withheld.")
+    limits = climate(reader)
+    limits = limits[limits.index('class="fr-limits"'):]
+    assert "Withheld findings: Two findings lacked validated evidence." in limits
+    assert "Withheld actions: One action was withheld." in limits
