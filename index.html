@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>FCV Project Screener · WBG FCV Analytics Unit</title>
+  <title>FCV Screener</title>
+  <link rel="icon" id="tab-icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20fill%3D%22%23002244%22%2F%3E%3Ctext%20x%3D%2216%22%20y%3D%2223%22%20font-family%3D%22Arial%2Csans-serif%22%20font-size%3D%2220%22%20font-weight%3D%22700%22%20fill%3D%22%23fff%22%20text-anchor%3D%22middle%22%3EF%3C%2Ftext%3E%3C%2Fsvg%3E"/>
   <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -3518,6 +3519,7 @@
         const _ss2 = document.getElementById('session-status');
         _ss2.textContent = 'Resumed: ' + file.name + ' (saved ' + savedAt + ') — Stage ' + curS + ' complete';
         _ss2.style.display = 'inline';
+        if(typeof setTabStatus==='function')setTabStatus(stageOutputs&&stageOutputs[3]?'loaded':'idle');
         if(isRestorableExpressStage3Output(stageOutputs[3])){
           enableClickableStepper();
           navigateToStage(3);
@@ -3918,7 +3920,7 @@
     document.getElementById('analysis-panel').style.display='block';
     document.getElementById('stepper-wrap').style.display='none';
     document.getElementById('main').style.display='none';
-    showExpressProgress();updateExpressStage(1,'active',null);
+    showExpressProgress();updateExpressStage(1,'active',null);setTabStatus('running',1);
 
     // Read files for upload payload
     const readF=(file,isCtx,role)=>new Promise((res,rej)=>{
@@ -4016,7 +4018,7 @@
           }
           if(p.stage_start){
             currentStage=p.stage_start;
-            updateExpressStage(currentStage,'active',null);
+            updateExpressStage(currentStage,'active',null);setTabStatus('running',currentStage);
             // Re-arm the abort timer at the start of every stage so each stage gets its
             // own budget, regardless of how long earlier stages took.
             armExpressTimeout(currentStage);
@@ -4165,6 +4167,7 @@
             curS=3;setStepper(3,'done');
             updateSessionBar();
             renderOut(3,stageOutputs[3],false);
+            setTabStatus('complete',3);
             if(supportsClimateVerifiedStage3View()&&stageThreePriorities&&stageThreePriorities.length)initStage3UI();
             else if(!climateVerifiedAssessment&&stageThreePriorities&&stageThreePriorities.length)initStage3UI();
             // stage2_under_hood already written by the stage_done handler for stage 2 — no redundant write needed here
@@ -4257,10 +4260,42 @@
     sbsStartTime=null;
   }
 
+  // Browser tab title mirrors run status so users can watch it from other tabs.
+  const TAB_TITLE_BASE='FCV Screener';
+  const TAB_STAGE_VERBS={1:'Reading',2:'Assessing',3:'Drafting'};
+  let tabTitleDot=false;
+  // Inline SVG favicons (no external assets); 'done' and 'loaded' reuse the tick.
+  const TAB_ICONS={
+    idle:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" fill="#002244"/><text x="16" y="23" font-family="Arial,sans-serif" font-size="20" font-weight="700" fill="#fff" text-anchor="middle">F</text></svg>',
+    running:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="15" fill="#002244"/><path d="M16 6a10 10 0 0 1 10 10" fill="none" stroke="#009FDA" stroke-width="4" stroke-linecap="round"/></svg>',
+    complete:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="15" fill="#002244"/><path d="M9 16.5l5 5 9-10" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    error:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="15" fill="#F2A900"/><rect x="14" y="7" width="4" height="12" rx="2" fill="#002244"/><circle cx="16" cy="24" r="2.5" fill="#002244"/></svg>'
+  };
+  function setTabIcon(state){
+    const key=state==='running'?'running':(state==='complete'||state==='done'||state==='loaded')?'complete':state==='error'?'error':'idle';
+    const link=document.getElementById('tab-icon');
+    if(link)link.setAttribute('href','data:image/svg+xml,'+encodeURIComponent(TAB_ICONS[key]));
+    return key;
+  }
+  function setTabStatus(state,stage){
+    let label='';
+    if(state==='running')label='[Stage '+stage+' of 3 \u00B7 '+(TAB_STAGE_VERBS[stage]||'Analysing')+'] ';
+    else if(state==='done')label='[Stage '+stage+' of 3 \u00B7 Done] ';
+    else if(state==='complete'||state==='loaded')label='[Complete] ';
+    else if(state==='error')label='[Needs attention] ';
+    tabTitleDot=(state==='complete'||state==='done'||state==='error')&&!!document.hidden;
+    document.title=(tabTitleDot?'\u25CF ':'')+label+TAB_TITLE_BASE;
+    setTabIcon(state);
+  }
+  document.addEventListener('visibilitychange',()=>{
+    if(!document.hidden&&tabTitleDot){tabTitleDot=false;document.title=document.title.replace(/^\u25CF /,'');}
+  });
+
   async function runStage(stage,followOn=null){
     if(busy)return;
     if(stage===1&&!followOn){researchBrief='';researchCountry='';}
     busy=true;curS=stage;
+    setTabStatus('running',stage);
     setStepper(stage,'active');clearUI();
 
     document.getElementById('stage-disp').innerHTML=`
@@ -4451,6 +4486,7 @@
                 if(Array.isArray(p.doc_checks))docChecks=p.doc_checks;
               }
               renderOut(stage,renderResult,followOn);setStepper(stage,'done');
+              setTabStatus(stage===3?(p.parse_error?'error':'complete'):'done',stage);
               enableClickableStepper();
               // Research brief panel (step-by-step only — express skips rendering)
               if(stage===1&&researchBrief) injectResearchBriefPanel(researchBrief,researchCountry);
@@ -5381,6 +5417,7 @@
 
 
   function showErr(msg,stage){
+    setTabStatus('error',stage);
     setStepper(stage,'err');
     document.getElementById('err-area').innerHTML=`
       <div class="err-card ani" role="alert">
@@ -5837,6 +5874,7 @@
   }
 
   function showExpressError(stage,errorMsg){
+    setTabStatus('error',stage);
     updateExpressStage(stage,'error',null);
     const sum=document.getElementById('ep-summary-'+stage);
     sum.innerHTML='<div style="color:#DC2626;font-size:13px;margin-top:6px">'+esc(errorMsg)+'</div>'+
@@ -6162,6 +6200,7 @@ ${climatePrintDisclosureScript()}
   }
 
   function reset(){
+    if(typeof setTabStatus==='function')setTabStatus('idle');
     restoredFileNames={project:[],context:[]};
     pF=[];pkF=[];cF=[];fileMetadata={};hist=[];curS=0;sessionName='';busy=false;stageOutputs={};stageHists={};researchBrief='';researchCountry='';priorityQuestions=[];focusQuestionsResult=null;pqPanelEnabled=true;
     ['ip','ipack','ic'].forEach(id=>{document.getElementById(id).value='';});

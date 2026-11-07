@@ -212,3 +212,41 @@ def test_export_research_briefing_is_cleaned_and_collapsed():
     assert out.count("Quoted excerpt.") == 1
 
 
+
+
+def test_tab_title_and_icon_track_run_status():
+    source = html()
+    assert "<title>FCV Screener</title>" in source
+    assert '<link rel="icon" id="tab-icon" type="image/svg+xml" href="data:image/svg+xml,' in source
+    helper = function_body(source, "function setTabStatus(")
+    for part in ["TAB_STAGE_VERBS[stage]", "[Complete] ", "[Needs attention] ", "document.hidden", "TAB_TITLE_BASE", "setTabIcon(state);"]:
+        assert part in helper, part
+    assert "document.addEventListener('visibilitychange'" in source
+    run = function_body(source, "async function runStage(")
+    assert "setTabStatus('running',stage);" in run
+    assert "setTabStatus(stage===3?(p.parse_error?'error':'complete'):'done',stage);" in run
+    express = function_body(source, "async function runExpress(")
+    assert "setTabStatus('running',1);" in express and "setTabStatus('running',currentStage);" in express
+    assert "setTabStatus('complete',3);" in express
+    assert "setTabStatus('error',stage);" in function_body(source, "function showErr(")
+    assert "setTabStatus('error',stage);" in function_body(source, "function showExpressError(")
+    assert "setTabStatus('idle');" in function_body(source, "function reset(")
+    assert "setTabStatus(stageOutputs&&stageOutputs[3]?'loaded':'idle');" in function_body(source, "function loadSession(")
+    icons_start = source.index("const TAB_ICONS={")
+    icons = source[icons_start:source.index("};", icons_start) + 2]
+    script = ("let tabTitleDot=false;const TAB_TITLE_BASE='FCV Screener';const TAB_STAGE_VERBS={1:'Reading',2:'Assessing',3:'Drafting'};"
+              "const link={href:'',setAttribute(k,v){this[k]=v;}};const document={hidden:true,title:'',getElementById:()=>link};\n"
+              + icons + "\n" + function_body(source, "function setTabIcon(") + "\n}\n" + helper + "\n}\n"
+              "const out=[];const icon=()=>decodeURIComponent(link.href);"
+              "setTabStatus('running',2);out.push(document.title,icon());"
+              "setTabStatus('complete',3);out.push(document.title,icon());"
+              "document.hidden=false;setTabStatus('error',1);out.push(document.title,icon());"
+              "setTabStatus('idle');out.push(document.title,icon());"
+              "process.stdout.write(JSON.stringify(out));")
+    result = subprocess.run(["node", "-e", script], capture_output=True, text=True, encoding="utf-8")
+    assert result.returncode == 0, result.stderr
+    out = json.loads(result.stdout)
+    assert out[0] == "[Stage 2 of 3 \u00b7 Assessing] FCV Screener" and 'stroke="#009FDA"' in out[1]
+    assert out[2] == "\u25cf [Complete] FCV Screener" and 'M9 16.5l5 5 9-10' in out[3]
+    assert out[4] == "[Needs attention] FCV Screener" and 'fill="#F2A900"' in out[5]
+    assert out[6] == "FCV Screener" and '<rect width="32" height="32" fill="#002244"/>' in out[7] and ">F</text>" in out[7]
