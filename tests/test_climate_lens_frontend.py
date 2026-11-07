@@ -275,7 +275,7 @@ const html=renderClimateVerifiedAssessment({
 });
 if (!html.includes('>Action 5<')) throw new Error('all five priorities must be visible');
 if (!html.includes(bridge)) throw new Error('missing priority statement | '+html);
-const order=['A complete overview.',bridge,'fr-pc-title-txt">Action 5','Limitations'].map(t=>html.indexOf(t));
+const order=['A complete overview.',bridge,'fr-pc-title-txt">Action 5','fr-h1-txt">Limitations'].map(t=>html.indexOf(t));
 if (order.some(i=>i<0) || order.slice(1).some((v,i)=>v<order[i])) throw new Error('readout order is incoherent | '+order);
 if (html.includes('Priority 1 - Strengthen adaptive delivery')) throw new Error('duplicate priority prefix remains');
 if (!html.includes('>Strengthen adaptive delivery<')) throw new Error('normalized priority title missing');
@@ -288,7 +288,7 @@ const withGaps=renderClimateVerifiedAssessment({
   priorities:[priorities[0]],
   priority_summary:{statement:bridge}
 });
-if (!(withGaps.indexOf('What is already working') < withGaps.indexOf('Key gaps at this stage') && withGaps.indexOf('Key gaps at this stage') < withGaps.indexOf('Priority Actions for the Task Team'))) throw new Error('gap section order is incorrect');
+if (!(withGaps.indexOf('What is already working') < withGaps.indexOf('Key gaps at this stage') && withGaps.indexOf('Key gaps at this stage') < withGaps.indexOf('fr-h1-txt">Priority Actions for the Task Team'))) throw new Error('gap section order is incorrect');
 if (!withGaps.replace(/<[^>]+>/g,'').includes(gap)) throw new Error('gap finding missing');
 """
     result = _run_node(script)
@@ -757,13 +757,11 @@ def test_download_html_uses_same_climate_sections_and_order():
 
 def test_live_and_shared_priority_extras_switch_climate_panel_only_when_active():
     source = INDEX.read_text(encoding="utf-8")
-    export_helper = _extract_js_function(source, "_buildExportPriorityCard")
     live_helper = _extract_js_function(source, "renderStandardPriorityContext")
     legacy = _extract_js_function(source, "renderLegacyClimatePrioritiesHtml")
 
-    assert "renderPriorityClimateContribution(pr)" in export_helper
-    assert "renderStandardPriorityContext(pr)" in export_helper
-    assert "isClimateLensActive()" in export_helper
+    assert "_buildExportPriorityCard" not in source
+    assert "renderStandardPriorityContext(pr)" in _extract_js_function(source, "renderNormalExportPriorityExtras")
     assert "renderStandardPriorityContext(pr)" in _extract_js_function(source, "renderNormalPriorityExtras")
     assert "isClimateLensActive" in live_helper or "climate" in live_helper.lower()
     assert "renderPriorityClimateContribution(p)" in legacy
@@ -1762,7 +1760,7 @@ const html = renderClimateVerifiedAssessment({
 });
 const summary = html.match(/<summary class="fr-pc-hdr">[\s\S]*?<\/summary>/);
 if (!summary) throw new Error('priority summary missing | '+html);
-if (!summary[0].includes('<span class="fr-pc-rank">1</span>') || !summary[0].includes('<span class="fr-pc-title-txt">Accessible priority</span>')) {
+if (!summary[0].includes('<span class="fr-pc-rank">1</span>') || !summary[0].includes('<span dir="auto" class="fr-pc-title-txt">Accessible priority</span>')) {
   throw new Error('priority summary does not carry rank and title | '+summary[0]);
 }
 if ((summary[0].match(/<h[1-6]/g)||[]).length !== 0) throw new Error('summary must not nest a heading element | '+summary[0]);
@@ -2128,10 +2126,6 @@ def test_print_handler_includes_guidance_disclosure_state():
 def test_detailed_priority_project_cycle_uses_one_escaped_canonical_renderer():
     source = INDEX.read_text(encoding="utf-8")
     renderer = _extract_js_function(source, "renderPriorityProjectCycle")
-    export_helper = _extract_js_function(source, "_buildExportPriorityCard")
-
-    assert "renderPriorityProjectCycle(pr)" in export_helper
-    assert "priority.concise" not in export_helper
 
     script = f"""
 const esc = value => String(value ?? '')
@@ -2171,100 +2165,6 @@ if (renderPriorityProjectCycle({{ project_cycle: {{ primary_label:'Only label', 
         ["node", "-"], input=script, capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
-
-def test_export_priority_card_project_cycle_aligns_order_and_scope():
-    source = INDEX.read_text(encoding="utf-8")
-    helpers = "\n".join(
-        _extract_js_function(source, name)
-        for name in (
-            "md",
-            "renderPriorityProjectCycle",
-            "renderPriorityTiming",
-            "renderStandardPriorityContext",
-            "_buildExportPriorityCard",
-        )
-    )
-    priority = {
-        "title": "Strengthen delivery sequencing",
-        "dimension": "Contextual",
-        "fcv_dimension": "Contextual",
-        "risk_level": "High",
-        "actions": [{
-            "document_element": "Implementation arrangements",
-            "guidance": "Action body",
-            "suggested_language": "Draft action text",
-        }],
-        "implementation_note": "Implementation body",
-        "project_cycle": {
-            "primary_label": "Before appraisal",
-            "primary_text": "Confirm the decision sequence.",
-            "secondary_label": "During implementation",
-            "secondary_text": "Track the agreed sequence.",
-        },
-        "concise": {
-            "project_cycle": {
-                "primary_label": "Legacy concise milestone",
-                "primary_text": "Legacy concise text must not leak.",
-            }
-        },
-    }
-    script = f"""
-const esc = value => String(value ?? '')
-  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-  .replace(/\"/g,'&quot;').replace(/'/g,'&#039;');
-const renderSRTagBadge = () => '';
-const renderPriorityClimateContribution = () => '';
-const renderPriorityCompliance = () => '<div class="pc-compliance"><span>Compliance text</span></div>';
-const isClimateLensActive = () => false;
-const activeLenses = [];
-const lensDisplayName = value => value;
-const shiftTooltips = {{}};
-let stageThreePriorities = [{json.dumps(priority)}];
-let stage3View = 'detailed';
-let currentPriority = 0;
-const supportsAnyStage3Summary = () => false;
-const toggleSummaryPriority = () => {{}};
-const updateSidebar = () => {{}};
-const localStorage = {{getItem: () => null, setItem: () => {{}}}};
-const cardArea = {{innerHTML:'', scrollIntoView:() => {{}}}};
-const document = {{getElementById: id => id === 'priority-card-area' ? cardArea : null}};
-{helpers}
-function parentClasses(html, className) {{
-  const stack=[];
-  const parents=[];
-  const tags=/<\\/?([A-Za-z0-9]+)([^>]*)>/g;
-  let match;
-  while ((match=tags.exec(html))) {{
-    const raw=match[0], name=match[1], attrs=match[2]||'';
-    if (raw.startsWith('</')) {{
-      for (let i=stack.length-1;i>=0;i--) {{
-        if (stack[i].name===name) {{ stack.splice(i,1); break; }}
-      }}
-      continue;
-    }}
-    if (attrs.includes('class="'+className+'"')) parents.push(stack.map(item=>item.attrs));
-    if (/\\/\\s*>$/.test(raw) || ['meta','img','br','input','path','circle','line','polyline','polygon'].includes(name)) continue;
-    stack.push({{name,attrs}});
-  }}
-  return parents;
-}}
-function checkOutput(name, html) {{
-  if ((html.match(/class="priority-project-cycle"/g)||[]).length !== 1) throw new Error(name+' lifecycle count');
-  const order=['Action body','Where this fits in the project cycle','Compliance text'];
-  const positions=order.map(value=>html.indexOf(value));
-  if (positions.some(value=>value<0) || positions.some((value,index)=>index>0&&value<=positions[index-1])) throw new Error(name+' lifecycle order '+positions);
-  if (html.includes('Legacy concise')) throw new Error(name+' leaked legacy concise cycle');
-  const parents=parentClasses(html,'priority-project-cycle');
-  if (parents.length!==1 || parents[0].some(attrs=>attrs.includes('pc-zone zone-act'))) throw new Error(name+' lifecycle nested in action zone');
-}}
-const exported = _buildExportPriorityCard(stageThreePriorities[0],0,1);
-checkOutput('export',exported);
-"""
-    result = subprocess.run(
-        ["node", "-"], input=script, capture_output=True, text=True, check=False
-    )
-    assert result.returncode == 0, result.stderr
-
 
 def test_express_recovery_keeps_valid_detailed_output_when_summary_is_unavailable():
     source = INDEX.read_text(encoding="utf-8")

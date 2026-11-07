@@ -79,7 +79,7 @@ def test_dividend_gap_list_keeps_scope_relative_optional_message():
     assert result.returncode==0,result.stderr
     start=result.stdout.index("Key gaps at this stage")
     block=result.stdout[start:result.stdout.index("</section>",start)]
-    assert block.count('<p class="fr-p">')==5
+    assert block.count('<p dir="auto" class="fr-p">')==5
     text=block.replace("<strong>","").replace("</strong>","")
     assert "A wider livelihoods dividend remains an optional opportunity." in text
     assert "any additional action depends on the project's objectives and delivery capacity." in text

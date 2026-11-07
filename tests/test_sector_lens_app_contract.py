@@ -726,7 +726,7 @@ def test_frontend_contract_includes_selector_locking_v3_and_lens_rendering():
     assert "active_lenses:activeLenses" in html
     assert "lensSelectionLocked=true" in html
     assert "renderLensDiagnostic()" in html
-    assert "pr.lens_ids" in html
+    assert "f.lens_ids" in html  # priority lens badges lived only in the removed dead export card
     assert "function resumeExpressRun" not in html
     assert "restart Stage 1" in html
 

@@ -140,7 +140,7 @@ def test_gap_findings_are_full_qualified_and_independent_of_action_count():
     assert rendered.returncode == 0, rendered.stderr
     start = rendered.stdout.index("Key gaps at this stage")
     block = rendered.stdout[start:rendered.stdout.index("</section>", start)]
-    assert block.count('<p class="fr-p">') == 5
+    assert block.count('<p dir="auto" class="fr-p">') == 5
     text = html.unescape(block).replace('<strong>', '').replace('</strong>', '')
     assert len(text.split()) > 160
     for gap in GAP_TEXTS:

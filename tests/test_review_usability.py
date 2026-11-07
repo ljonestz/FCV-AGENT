@@ -91,7 +91,7 @@ def test_context_rating_meanings_are_six_tier_and_responsiveness_is_not_a_qualit
 
 def test_export_labels_word_annex_difference_and_html_keeps_full_sections():
     source = _source()
-    assert "Word export" in source and "Annex" in source
+    assert "Word (.docx): priorities and suggested text for the PAD team." in source and "Annex" in source
     export = source[source.index("function downloadHTML()") :]
     assert "researchBrief" in export
     # Priorities and the watch list come from the shared readout builder, not a bespoke loop.

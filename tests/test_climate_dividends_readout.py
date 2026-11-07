@@ -91,7 +91,7 @@ def test_readout_gaps_show_up_to_five_complete_findings():
     assert "optional opportunity" in html
     assert "distinct operational limitation" in html
     assert "Sixth finding" not in html
-    assert html.count('<p class="fr-p">') == 5
+    assert html.count('<p dir="auto" class="fr-p">') == 5
 
 
 def test_readout_gaps_preserve_qualifications_and_never_slice_long_fields():

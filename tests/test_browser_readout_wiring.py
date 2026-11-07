@@ -93,6 +93,31 @@ def test_copy_text_drops_go_deeper_and_warnings():
     assert "details.go-deeper" in body and ".warn-badge" in body
 
 
+def test_copy_text_strips_navigation_and_decoration():
+    body = function_body(html(), "function reportPlainText(")
+    for sel in ["[data-copy-skip]", ".fr-sc-scale", ".fr-h1-num", ".fr-pc-rank", ".fr-meter", ".fr-toc"]:
+        assert sel in body, sel
+
+
+def test_glossary_skips_headings_labels_and_summaries():
+    source = html()
+    assert "const GLOSSARY_SKIP_SELECTOR='summary, h1, h2, h3, h4, .fr-sc-label, .fr-lbl, .fr-rating-dim, .fr-pc-meta, .fr-h1';" in source
+    body = function_body(source, "function annotateGlossaryTerms(")
+    assert "parent.closest(GLOSSARY_SKIP_SELECTOR)" in body and "span.tabIndex = 0;" in body
+    assert ".glossary-term:focus-within .glossary-tooltip" in source and "max-width: min(320px, 90vw);" in source
+
+
+def test_readout_css_is_scoped_and_dead_code_removed():
+    source = html()
+    css = source[source.index('<style id="fcv-readout-style">'):source.index("</style>", source.index('<style id="fcv-readout-style">'))]
+    assert ".fr-readout h2,.fr-readout h3,.fr-readout h4{font-family:Arial,sans-serif!important" in css
+    assert "overflow-wrap:anywhere" in css and "print-color-adjust:exact" in css and "::details-content" in css
+    for gone in [".fr-pt-num", ".fr-notice", "#f3e8ff"]:
+        assert gone not in source, gone
+    for gone in ["_buildExportPriorityCard", ".exp-table", ".exp-pcard", ".exp-ratings-row", ".exp-rating-pill"]:
+        assert gone not in source, gone
+
+
 def test_removed_summary_state_is_gone():
     source = html()
     for gone in ["stage3View", "openSummaryPriority", "supportsAnyStage3Summary", "renderFcvRatingIndicators",

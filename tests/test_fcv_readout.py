@@ -139,9 +139,9 @@ def normal(extra: dict) -> str:
 
 def test_normal_readout_section_order_and_content():
     html = normal({})
-    order = ["id='n'", "fr-scorecard", ">Executive Summary<", "Assessment snapshot", ">FCV Risk Exposure<",
-             ">FCV Sensitivity and Responsiveness<", ">Priority Actions for the Task Team<",
-             "priority actions have been identified", 'id="fr-priority-1"', ">Watch List for Supervision<", "id='tail'"]
+    order = ["id='n'", "fr-scorecard", 'fr-h1-txt">Executive Summary<', "Assessment snapshot", 'fr-h1-txt">FCV Risk Exposure<',
+             'fr-h1-txt">FCV Sensitivity and Responsiveness<', 'fr-h1-txt">Priority Actions for the Task Team<',
+             "priority actions have been identified", 'id="fr-priority-1"', 'fr-h1-txt">Watch List for Supervision<', "id='tail'"]
     positions = [html.index(marker) for marker in order]
     assert positions == sorted(positions)
     assert ">01<" in html and ">05<" in html and ">06<" not in html
@@ -210,10 +210,10 @@ def climate(reader: dict, opts: dict | None = None) -> str:
 
 def test_climate_readout_structure():
     html = climate(CLIMATE_READER)
-    order = ["id=cn", "fr-scorecard", ">Overview<", "Snapshot sentence from overview.", "What is already working",
-             "Key gaps at this stage", ">Assessment Findings<", ">Climate-FCV Sensitivity and Responsiveness<",
-             ">Priority Actions for the Task Team<", 'id="fr-priority-1"', ">Smaller Points to Check During Preparation<",
-             ">Relevant WBG Guidance<", ">Limitations<"]
+    order = ["id=cn", "fr-scorecard", 'fr-h1-txt">Overview<', "Snapshot sentence from overview.", "What is already working",
+             "Key gaps at this stage", 'fr-h1-txt">Assessment Findings<', 'fr-h1-txt">Climate-FCV Sensitivity and Responsiveness<',
+             'fr-h1-txt">Priority Actions for the Task Team<', 'id="fr-priority-1"', 'fr-h1-txt">Smaller Points to Check During Preparation<',
+             'fr-h1-txt">Relevant WBG Guidance<', 'fr-h1-txt">Limitations<']
     positions = [html.index(marker) for marker in order]
     assert positions == sorted(positions)
     assert html.count('class="fr-ms fr-c') == 3
@@ -408,3 +408,50 @@ def test_confidence_pill_title_and_climate_target_casing():
     html = climate(reader)
     assert 'title="How well the documents support this priority"' in html
     assert "PAD - Project Description" in html and "Lead: Task team" in html and "Task team." not in html
+
+
+def test_priority_card_header_two_rows_with_title_and_chevron():
+    html = normal({})
+    card = html[html.index('id="fr-priority-1"'):html.index('id="fr-priority-2"')]
+    summary = card[card.index("<summary"):card.index("</summary>")]
+    assert '<span class="fr-pc-meta"><span class="fr-pill fr-pill-high">High priority</span> &middot; Sensitivity' in summary
+    assert '<span dir="auto" class="fr-pc-title-txt">Embed early warning indicators</span>' in summary
+    assert "<h3" not in summary
+    assert "Priority 1" not in summary and "<svg" in summary
+    assert summary.index("fr-pc-meta") < summary.index("fr-pc-title-txt")
+
+
+def test_draft_copy_button_has_no_model_text_in_handler():
+    html = normal({"priorities": [dict(NORMAL_PRIORITY, actions=[{"document_element": "RF", "guidance": "g",
+                                                                  "suggested_language": "Quote ' and \" text"}])]})
+    start = html.index('<button type="button" class="fr-copy"')
+    button = html[start:html.index("</button>", start)]
+    assert "data-copy-skip" in button and "Quote" not in button
+    assert "querySelector('.fr-draft-text').innerText" in button
+    assert '<p dir="auto" class="fr-draft-text">Quote' in html
+
+
+def test_expand_all_control_only_with_several_cards():
+    html = normal({})
+    assert html.index('class="fr-expand"') < html.index('class="fr-cards"')
+    assert ">Expand all</button>" in html and "details.fr-pc" in html
+    single = normal({"priorities": [NORMAL_PRIORITY]})
+    assert "fr-expand" not in single
+
+
+def test_jump_nav_links_every_numbered_section():
+    html = normal({})
+    nav = html[html.index('<nav class="fr-toc"'):html.index("</nav>")]
+    assert html.index("fr-scorecard") < html.index('<nav class="fr-toc"') < html.index(">Executive Summary<")
+    for i, title in enumerate(["Executive Summary", "FCV Risk Exposure", "FCV Sensitivity and Responsiveness",
+                               "Priority Actions for the Task Team", "Watch List for Supervision"], start=1):
+        assert f'<a href="#fr-s{i:02d}">{title}</a>' in nav
+        assert f'<header class="fr-h1" id="fr-s{i:02d}">' in html
+    assert "data-copy-skip" in nav
+
+
+def test_prose_and_titles_carry_dir_auto_and_copy_skip_markers():
+    html = climate(CLIMATE_READER)
+    assert '<p dir="auto" class="fr-p">' in html and '<p class="fr-p">' not in html
+    assert 'class="fr-sc-scale" data-copy-skip' in html and 'data-copy-skip>' in html
+    assert 'class="fr-pill fr-pill-conf fr-pill-conf-medium"' in html
