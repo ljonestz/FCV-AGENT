@@ -73,7 +73,9 @@ def test_legacy_unrated_issue_is_consequential(assessment):
 def test_invalid_or_block_review_never_unlocks_prose(assessment, defect):
     final = assessment['final_reader']
     review = review_for(final)
-    if defect == 'block': review['verdict'] = 'block'
+    # A block naming only findings now keeps the Summary; one naming the
+    # Summary still unlocks nothing.
+    if defect == 'block': review = {**review_for(final, 'SUM-001'), 'verdict': 'block'}
     if defect == 'unknown': review['issues'][0]['object_id'] = 'NARR-missing'
     if defect == 'quote': review['issues'][0]['quoted_text'] = 'Absent assertion'
     if defect == 'severity': review['issues'][0]['severity'] = 'safe'

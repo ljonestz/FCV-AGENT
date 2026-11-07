@@ -384,3 +384,68 @@ def test_pipeline_reviews_summary_when_compiler_returns_two_findings():
     assert [call['stage'] for call in reviewer.calls].count('reader_review') == 1
     assert 'reader_correction' not in [call['stage'] for call in assessment.calls]
     assert len(result['priorities']) == 1
+
+
+# A block that names only findings withholds those findings.
+
+def _block(*identifiers: str, issues: list | None = None) -> dict:
+    return {'verdict': 'block', 'object_ids': list(identifiers),
+            'reason_codes': ['PROJECT_FACT_UNSUPPORTED'],
+            'issues': issues if issues is not None else [
+                {'object_id': identifier, 'reason_codes': ['PROJECT_FACT_UNSUPPORTED'],
+                 'explanation': 'Unsupported.'} for identifier in identifiers]}
+
+
+def test_narrative_only_block_keeps_clean_summary_and_other_findings():
+    fixture = _load('success_20261027')
+    assessment = fixture['reader_assessment']
+    reader = normalize_reader_paragraphs(fixture['initial_final_reader'])
+    summary, narratives = reviewed_final_reader(reader, _block('NARR-dividends'), assessment)
+    assert len(summary) == len(reader['summary_paragraphs'])
+    assert _ids(narratives) == ['NARR-design', 'NARR-inclusion']
+    summary, narratives = reviewed_final_reader(
+        reader, _block('NARR-design', 'NARR-dividends', 'NARR-inclusion'), assessment)
+    assert summary and narratives == []
+
+
+@pytest.mark.parametrize('review', [
+    _block('SUM-001'),
+    _block('NARR-dividends', 'SUM-002'),
+    _block('NARR-dividends', issues=[{'object_id': 'SUM-001', 'reason_codes': ['PROJECT_FACT_UNSUPPORTED'],
+                                      'explanation': 'Unsupported.'}]),
+    _block(),
+    {'verdict': 'block'},
+    {'verdict': 'block', 'object_ids': ['NARR-dividends'], 'issues': [{'explanation': 'No target.'}]},
+    {'verdict': 'block', 'object_ids': ['NARR-dividends'], 'issues': ['not an object']},
+    {'verdict': 'block', 'object_ids': ['NARR-other']},
+    {'verdict': 'block', 'object_ids': 'NARR-dividends'},
+])
+def test_any_other_block_still_withholds_everything(review):
+    fixture = _load('success_20261027')
+    reader = normalize_reader_paragraphs(fixture['initial_final_reader'])
+    assert reviewed_final_reader(reader, review, fixture['reader_assessment']) == ([], [])
+
+
+def test_narrative_only_block_never_admits_a_summary_that_fails_precheck():
+    fixture = _load('success_20261027')
+    reader = normalize_reader_paragraphs(fixture['initial_final_reader'])
+    reader['summary_paragraphs'][0]['text'] += ' About 987654 people are affected.'
+    summary, narratives = reviewed_final_reader(reader, _block('NARR-dividends'), fixture['reader_assessment'])
+    assert summary == []
+    assert _ids(narratives) == ['NARR-design', 'NARR-inclusion']
+
+
+def test_pipeline_narrative_only_block_admits_summary_with_notice():
+    from sector_lenses.climate_verified_render import build_reader_model
+    responses = _responses()
+    responses[2]['reader_contract'] = 'final-reader-v1'
+    assessment = FakeClient(responses + [_final_reader()], [])
+    reviewer = FakeClient([_native_pass_review, _block('NARR-inclusion')], [])
+    result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(assessment, reviewer))
+    assert result['summary_overview_status'] == 'generated'
+    assert _ids(result['assessment_narratives']) == ['NARR-design', 'NARR-dividends']
+    assert 'FINAL_READER_REVIEW_REQUIRED' in result['validation']['reason_codes']
+    assert 'FINAL_READER_WITHHELD' not in result['validation']['reason_codes']
+    assert 'reader_correction' not in [call['stage'] for call in assessment.calls]
+    notice = build_reader_model(result)['reader_review_notice']
+    assert 'fair benefits' in notice and 'withheld' in notice

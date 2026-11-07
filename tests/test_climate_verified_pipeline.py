@@ -2443,8 +2443,12 @@ def test_native_reader_semantic_block_never_publishes_prose(unsupported):
     result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(
         FakeClient(responses + [final], []), reviewer))
     assert reviewer.calls[-1]['stage'] == 'reader_review'
-    assert result['summary_overview_status'] == 'fallback'
-    assert result['assessment_narratives'] == []
+    # The block names only NARR-inclusion: that finding is withheld, the clean
+    # Summary and the other findings are admitted.
+    assert result['summary_overview_status'] == 'generated'
+    assert [r['object_id'] for r in result['assessment_narratives']] == ['NARR-design', 'NARR-dividends']
+    assert unsupported not in json.dumps(result['assessment_narratives'])
+    assert unsupported not in json.dumps(result['summary_overview'])
     assert len(result['priorities']) == 1
 
 
@@ -2707,7 +2711,9 @@ def test_minor_reader_length_overrun_still_requires_meaning_review(verdict, word
     result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(
         FakeClient(responses + [final], []), reviewer))
     assert reviewer.calls[-1]['stage'] == 'reader_review'
-    assert result['summary_overview_status'] == ('generated' if verdict == 'pass' else 'fallback')
+    # A block naming only NARR-design withholds that finding, not the Summary.
+    assert result['summary_overview_status'] == 'generated'
+    assert ('NARR-design' in [r['object_id'] for r in result['assessment_narratives']]) == (verdict == 'pass')
 
 
 @pytest.mark.parametrize('verdict', ['pass', 'block'])
@@ -2729,4 +2735,6 @@ def test_reader_paragraph_cleanup_preserves_text_and_requires_meaning_review(ver
     reviewed = reviewer.calls[-1]['payload']['final_reader']['assessment_narratives'][0]
     assert ' '.join(reviewed['paragraphs']) == original
     assert len(reviewed['paragraphs']) <= 3
-    assert result['summary_overview_status'] == ('generated' if verdict == 'pass' else 'fallback')
+    # A block naming only NARR-design withholds that finding, not the Summary.
+    assert result['summary_overview_status'] == 'generated'
+    assert ('NARR-design' in [r['object_id'] for r in result['assessment_narratives']]) == (verdict == 'pass')
