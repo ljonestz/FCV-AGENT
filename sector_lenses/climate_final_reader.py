@@ -5,8 +5,8 @@ from copy import deepcopy
 import re
 
 from sector_lenses.climate_verified_schemas import (
-    _SUMMARY_MONTHS, SEMANTIC_REVIEW_REASON_CODES, _summary_strings, validate_summary_fragment,
-    validate_summary_overview,
+    _SUMMARY_MONTHS, SEMANTIC_REVIEW_REASON_CODES, _summary_strings, summary_number_key,
+    summary_numbers, validate_summary_fragment, validate_summary_overview,
 )
 
 
@@ -151,7 +151,7 @@ def _fact_prose_numbers(fact: dict) -> set[str]:
     """Numbers stated in a fact's prose; identifier fields are not evidence."""
     values = [value for key, value in fact.items()
               if not key.endswith(('_id', '_ids'))]
-    return set(_READER_NUMBER_RE.findall(' '.join(_summary_strings(values))))
+    return {key for _, key in summary_numbers(' '.join(_summary_strings(values)))}
 
 
 def bind_same_summary_number_references(payload: dict, assessment: dict) -> tuple[dict, int]:
@@ -190,7 +190,7 @@ def bind_same_summary_number_references(payload: dict, assessment: dict) -> tupl
                                           diagnostics=diagnostics)
                 if diagnostics.get('reason') != 'SUMMARY_NUMBER_UNSUPPORTED':
                     break
-                number = diagnostics.get('detail', '')
+                number = summary_number_key(diagnostics.get('detail', ''))
                 candidates = [identifier for identifier, numbers in facts.items()
                               if identifier not in refs and number in numbers]
                 preferred = [identifier for identifier in candidates if identifier in sibling_refs]

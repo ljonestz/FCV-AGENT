@@ -192,6 +192,34 @@ def validate_summary_overview(
     return paragraphs
 
 
+_SUMMARY_NUMBER_RE = re.compile(r"\b\d+(?:[.,]\d+)?%?\b")
+# Thousands grouping only: one to three leading digits, then comma groups of
+# exactly three digits and an optional decimal part, not followed by another
+# digit or a further separator and digit.
+_SUMMARY_GROUPED_NUMBER_RE = re.compile(r"(?<![\d.,])\b\d{1,3}(?:,\d{3})+(?:\.\d+)?\b(?![.,]\d)")
+
+
+def summary_number_key(number: str) -> str:
+    """Comparison key for one number: "1,000" and "1000" are equal; nothing else changes."""
+    return number.replace(",", "") if _SUMMARY_GROUPED_NUMBER_RE.fullmatch(number) else number
+
+
+def summary_numbers(text: str) -> list[tuple[str, str]]:
+    """(number as written, comparison key) pairs in text order.
+
+    Digit-grouped numbers are read whole and compared without their grouping
+    commas; every other number is extracted exactly as before.
+    """
+    found: list[tuple[str, str]] = []
+    start = 0
+    for match in _SUMMARY_GROUPED_NUMBER_RE.finditer(text):
+        found += [(number, number) for number in _SUMMARY_NUMBER_RE.findall(text[start:match.start()])]
+        found.append((match.group(0), summary_number_key(match.group(0))))
+        start = match.end()
+    found += [(number, number) for number in _SUMMARY_NUMBER_RE.findall(text[start:])]
+    return found
+
+
 def validate_summary_fragment(
     text: object,
     *,
@@ -225,11 +253,9 @@ def validate_summary_fragment(
             r"\bDemocratic Republic of (?:the )?Congo\b", "DRC", fragment,
         )
     canonical_words = _summary_words(canonical)
-    canonical_numbers = set(
-        re.findall(r"\b\d+(?:[.,]\d+)?%?\b", canonical)
-    )
-    for number in re.findall(r"\b\d+(?:[.,]\d+)?%?\b", fragment):
-        if number not in canonical_numbers:
+    canonical_numbers = {key for _, key in summary_numbers(canonical)}
+    for number, key in summary_numbers(fragment):
+        if key not in canonical_numbers:
             return reject("SUMMARY_NUMBER_UNSUPPORTED", number)
     for month in _SUMMARY_MONTHS:
         date_pattern = (
