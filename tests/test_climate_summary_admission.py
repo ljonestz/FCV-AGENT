@@ -6,8 +6,8 @@ deterministic precheck, plus one run that already succeeded (2026-10-27).
 """
 from __future__ import annotations
 
-from copy import deepcopy
 import json
+from copy import deepcopy
 from pathlib import Path
 
 import pytest
@@ -86,7 +86,8 @@ def test_afghanistan_correction_merges_with_numbers_from_cited_evidence():
     issues: list[dict] = []
     merged = apply_reader_corrections(
         reader, fixture['correction']['response'],
-        set(fixture['correction']['target_ids']), issues=issues)
+        set(fixture['correction']['target_ids']), issues=issues,
+        assessment=fixture['reader_assessment'])
     assert merged is not None
     assert issues == []
     narratives = {record['object_id']: record for record in merged['assessment_narratives']}
@@ -106,7 +107,8 @@ def test_afghanistan_one_bad_patch_does_not_discard_the_others():
     edit['new_text'] = edit['new_text'].replace('Subcomponent 1.3', 'Subcomponent 9.7')
     issues: list[dict] = []
     merged = apply_reader_corrections(
-        reader, response, set(fixture['correction']['target_ids']), issues=issues)
+        reader, response, set(fixture['correction']['target_ids']), issues=issues,
+        assessment=fixture['reader_assessment'])
     assert merged is not None
     assert [(issue['object_id'], issue['reason_codes']) for issue in issues] == [
         ('NARR-dividends', ['READER_CORRECTION_SUMMARY_NUMBER_UNSUPPORTED'])]
