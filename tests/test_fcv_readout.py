@@ -294,7 +294,7 @@ def test_climate_final_reader_contract_never_uses_executive_readout():
     reader = dict(CLIMATE_READER, reader_contract="final-reader-v1", summary_overview_status="fallback",
                   summary_overview=["The automated Summary could not be independently verified."])
     html = climate(reader)
-    assert "could not be independently verified" in html
+    assert "No short summary is shown for this run because it could not be checked against the project documents." in html and "could not be independently verified" not in html
     assert "Exec first sentence" not in html
     assert "Assessment snapshot" not in html
 
@@ -404,10 +404,11 @@ def test_climate_fallback_overview_moves_to_limitations():
     assert "A short summary" not in overview and "Assessment snapshot" not in overview
     assert "What is already working" in overview and "Key gaps at this stage" not in overview
     limits = html[html.index('class="fr-limits"'):]
-    assert limits.index("A short summary is not shown for this run.</strong> Use the priorities.") < limits.index("Concept stage only.")
+    # Limitations sits at the end of the note, so the note points to what is above it.
+    assert limits.index("No short summary is shown for this run because it could not be checked against the project documents.</strong> The findings and priority actions above are unaffected.") < limits.index("Concept stage only.")
     # Single-sentence Limitations paragraphs are not bold.
     assert '<p dir="auto" class="fr-p">Concept stage only.</p>' in limits
-    assert html.count("A short summary is not shown") == 1
+    assert html.count("No short summary is shown for this run because it could not be checked against the project documents.") == 1 and "A short summary" not in html
 
 
 def test_confidence_pill_title_and_climate_target_casing():
@@ -574,7 +575,8 @@ def test_meter_caption_and_climate_confidence_pills():
     assert '<span class="fr-sc-of">3 of 5</span>' in chtml
     count = chtml[chtml.index('class="fr-sc-count"'):chtml.index("</section>", chtml.index('class="fr-sc-count"'))]
     assert ">1 medium confidence<" in count and ">1 low confidence<" in count and "Confidence:" not in count
-    assert count.index(">1 medium confidence<") < count.index('class="fr-pill-sep" aria-hidden="true">&middot;<') < count.index(">1 low confidence<")
+    assert count.index(">1 medium confidence<") < count.index(">1 low confidence<")
+    assert "fr-pill-sep" not in count
 
 
 def test_climate_count_tile_reads_actions_and_confidence_when_uniform():
@@ -708,7 +710,7 @@ def test_legacy_climate_fallback_sentences_are_replaced():
               "Use the ranked operational priorities and points to check as the basis for review. Confirm the stated evidence limitations before relying on the brief."]
     html = climate(dict(CLIMATE_READER, reader_contract="final-reader-v1", summary_overview_status="fallback", summary_overview=legacy))
     assert "could not be independently verified" not in html and "Use the ranked operational priorities" not in html
-    assert html.count("A short summary is not shown for this run because it could not be checked against the project documents.") == 1
+    assert html.count("No short summary is shown for this run because it could not be checked against the project documents.") == 1
 
 
 def test_climate_drafts_follow_what_the_team_could_do():
@@ -761,3 +763,24 @@ def test_parenthetical_internal_ids_are_dropped_from_prose():
     reader = dict(CLIMATE_READER, existing_responses=[{"description": "Airstrips were screened (PF-011)."}])
     html = climate(reader)
     assert "PF-011" not in html and "Airstrips were screened." in html
+
+
+def test_partial_climate_overview_points_to_findings_and_counts_themes():
+    reader = dict(CLIMATE_READER, reader_contract="final-reader-v1", summary_overview_status="fallback",
+                  summary_overview=["x"])
+    html = climate(reader)
+    overview = html[html.index('fr-h1-txt">Overview<'):html.index('fr-h1-txt">Assessment Findings<')]
+    assert "No verified summary is available for this run" in overview and 'href="#fr-s02"' in overview
+    n = html.count('class="fr-theme"')
+    word = {1: "One cross-cutting question", 2: "Two cross-cutting questions", 3: "Three cross-cutting questions"}[n]
+    assert word in html and "Where relevant, each links" in html
+
+
+def test_climate_snapshot_is_two_sentences_rest_is_context():
+    reader = dict(CLIMATE_READER, summary_overview_status="generated",
+                  summary_overview=["First point. Second point. Third point. Fourth point."])
+    html = climate(reader)
+    snap = html[html.index("Assessment snapshot"):]
+    snap = snap[:snap.index("</strong>")]
+    assert "First point. Second point." in snap and "Third point" not in snap
+    assert "Third point." in html and "Fourth point." in html

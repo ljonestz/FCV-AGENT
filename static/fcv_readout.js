@@ -358,7 +358,7 @@
 
     function scorecard(tiles, count) {
       const tileHtml = tiles.map(t => `<div class="fr-sc-tile" data-fr-rating="${esc(t.key)}"><div class="fr-sc-label">${esc(t.label)}</div><div class="fr-sc-value">${esc(t.value || 'Not available')}</div>${meter(t.steps, t.level)}${t.level ? `<div class="fr-sc-scale" data-copy-skip><span>${esc(t.lo)}</span><span class="fr-sc-of">${t.level} of ${t.steps}</span><span>${esc(t.hi)}</span></div>` : ''}<div class="fr-sc-def">${esc(t.def)}</div></div>`).join('');
-      const pills = (count.pills || []).map(p => `<span class="fr-pill ${p.cls}">${esc(p.text)}</span>`).join('<span class="fr-pill-sep" aria-hidden="true">&middot;</span>');
+      const pills = (count.pills || []).map(p => `<span class="fr-pill ${p.cls}">${esc(p.text)}</span>`).join('');
       return `<p class="fr-sc-lead">${esc(SCORECARD_LEAD)}</p><section class="fr-scorecard" aria-label="Assessment ratings">${tileHtml}<div class="fr-sc-count"><div class="fr-sc-count-lbl">${esc(count.label)}</div><div class="fr-sc-count-num">${Number(count.number) || 0}</div>${pills ? `<div class="fr-sc-pills">${pills}</div>` : ''}${count.def ? `<div class="fr-sc-count-def">${esc(count.def)}</div>` : ''}</div></section>`;
     }
 
@@ -621,6 +621,7 @@
   }
 
   // Fallback overview text saved before the wording change; shown with the current sentence instead.
+  const LIMITS_FALLBACK_NOTE = 'No short summary is shown for this run because it could not be checked against the project documents. The findings and priority actions above are unaffected.';
   const FALLBACK_OVERVIEW = 'A short summary is not shown for this run because it could not be checked against the project documents. The findings and priorities below remain available; read them alongside the limitations at the end of this note.';
   const LEGACY_FALLBACK_OVERVIEW = [
     'The automated Summary could not be independently verified. The operational context and assessment findings provide the available analysis.',
@@ -664,11 +665,14 @@
     let contextHtml = '';
     let fallbackNote = '';
     if (r.summary_overview_status === 'generated' && overview.length) {
-      snapshot = overview[0];
-      contextHtml = k.paragraphs(overview.slice(1, 3));
+      // Keep the snapshot to two sentences; the rest reads as normal context, as on the normal route.
+      const split = k.takeSentences(overview[0], 2);
+      snapshot = split.head;
+      contextHtml = k.paragraphs([split.rest, ...overview.slice(1, 3)].filter(Boolean));
     } else if (r.reader_contract === 'final-reader-v1') {
       // Fallback text explains why no summary is shown; it opens the Limitations box, not the Overview.
-      fallbackNote = overview.join(' ');
+      // Placed inside Limitations at the end of the note, so it must not point "below".
+      if (overview.length) fallbackNote = LIMITS_FALLBACK_NOTE;
     } else {
       const paras = splitParagraphs(r.executive_readout);
       const split = k.takeSentences(paras[0] || '', 2);
@@ -686,19 +690,22 @@
       + (snapshot ? k.infoBox('Assessment snapshot', `<strong>${k.esc(snapshot)}</strong>`) : '')
       + contextHtml
       + (working.length ? k.sub('What is already working') + k.paragraphs(working) : '')
-      + (showGaps ? k.sub('Key gaps at this stage') + k.paragraphs(gaps) : ''));
+      + (showGaps ? k.sub('Key gaps at this stage') + k.paragraphs(gaps) : '')
+      + (!snapshot && themeList.length ? `<p class="fr-intro">No verified summary is available for this run. The gaps are set out under <a href="#${findingsId}">Assessment Findings</a> and in the priority actions.</p>` : ''));
 
     const rankIndex = new Map();
     priorities.forEach((p, i) => { const n = Number(p.rank); if (Number.isInteger(n) && !rankIndex.has(n)) rankIndex.set(n, i + 1); });
+    let themeCount = 0;
     const themes = themeList.map(t => {
       const question = t.question || THEME_QUESTIONS[t.title] || t.title || '';
       const findings = Array.isArray(t.findings) ? t.findings : [];
       const paras = Array.isArray(t.paragraphs) && t.paragraphs.length ? t.paragraphs : [findings.map(f => f.text || '').join(' ')];
       const ranks = Array.isArray(t.priority_ranks) ? t.priority_ranks : [];
       const links = ranks.map(n => rankIndex.get(n)).filter(Boolean).map(n => `<a href="#fr-priority-${n}" onclick="var d=document.getElementById('fr-priority-${n}');if(d)d.open=true;">Priority ${n}</a>`).join(' &middot; ');
+      themeCount += 1;
       return `<div class="fr-theme"><h3 class="fr-theme-q">${k.esc(question)}</h3>${k.paragraphs(paras)}${links ? `<p class="fr-theme-links">Related priority actions: ${links}</p>` : ''}</div>`;
     }).join('');
-    if (themes) html += k.section('fr-themes', h('Assessment Findings') + k.intro('Three cross-cutting questions about how the project interacts with climate and FCV dynamics. Each links to the priority actions below.') + `<div class="fr-themes-stack">${themes}</div>`);
+    if (themes) html += k.section('fr-themes', h('Assessment Findings') + k.intro(`${themeCount === 1 ? 'One cross-cutting question' : `${['', '', 'Two', 'Three', 'Four', 'Five'][themeCount] || themeCount} cross-cutting questions`} about how the project interacts with climate and FCV dynamics. Where relevant, each links to the priority actions below.`) + `<div class="fr-themes-stack">${themes}</div>`);
 
     const ops = judgment('operationalization');
     const rel = judgment('relevance');
