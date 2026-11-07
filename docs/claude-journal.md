@@ -2189,3 +2189,29 @@ The original compiler response passes the fixed structural gate but remains
 withheld without meaning review. A separate source-checked editorial preview is
 not native acceptance. See docs/20261014_climate-quality8-validation.md. PR83,
 production/main and ITS remain held pending fresh hosted prose acceptance.
+
+### 2026-11-07 per-record climate Summary admission and follow-ups
+
+Branch feat/browser-readout-redesign, commits 2b8bb23..33c6467 then 004af09..50f6a38.
+The final-reader precheck now reports pass/fail per record. A Summary is admitted
+when every SUM record passes and none is withheld, whatever the findings do; each
+finding is admitted or dropped on its own. Unsupported numbers bind only to the one
+admitted fact that states them (sibling-cited fact preferred, ambiguity binds
+nothing). Corrections merge per record, and a failed correction or re-review
+restores the reviewed pre-correction reader. Replay fixtures: Afghanistan
+2026-11-07, Honduras 2026-10-18, success 2026-10-27.
+
+Follow-ups: malformed findings (not exactly three objects) withhold all findings
+but no longer sink a well-formed Summary; a malformed Summary still fails all. A
+block verdict naming only finding IDs withholds those findings and keeps a clean
+Summary; any other block withholds everything. Recommendation repairs now draw on
+the 9,000-token allowance less a 3,000-token reader reserve (total unchanged). The
+Summary number check treats 1,000 and 1000 as equal; nothing else is loosened.
+For final-reader-v1 the reader status follows the recomputed admission.
+
+Saved sessions: /api/climate-report-snapshot returns the canonical reader when
+climate_reader is omitted. Both restore paths fetch it in the background and
+redraw Stage 3 only when it differs; failure keeps the stored reader silently.
+The Afghanistan, 2026-10-18 and 2026-10-14 sessions previously failed export with
+READER_SNAPSHOT_MISMATCH; all three now export, and Afghanistan shows its Summary.
+No prompt, schema, delimiter or version changes; no paid calls. ITS unaffected.
