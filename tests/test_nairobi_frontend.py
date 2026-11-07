@@ -243,6 +243,7 @@ const renderLensSelector=()=>{{}};
 const setStepper=()=>{{}};
 const enableClickableStepper=()=>{{calls.push('enableClickableStepper')}};
 const navigateToStage=stage=>{{calls.push('navigateToStage:'+stage)}};
+const refreshRestoredClimateReader=()=>{{}};
 const alert=message=>{{calls.push('alert:'+String(message))}};
 const elements={{}};
 const document={{getElementById(id){{

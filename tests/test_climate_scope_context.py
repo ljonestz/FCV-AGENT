@@ -58,7 +58,10 @@ def test_reader_correction_keeps_source_context_and_still_requires_fresh_review(
     payload = next(c['payload'] for c in assessment.calls if c['stage'] == 'reader_correction')
     assert payload['source_passages'][0]['text'] == arguments['source_blocks'][0].text
     assert sum(c['stage'] == 'reader_review' for c in reviewer.calls) == 2
-    assert result['summary_overview_status'] == 'fallback'
+    # A block naming only a narrative withholds that narrative; the clean summary is kept (2026-11-07).
+    assert result['summary_overview_status'] == 'generated'
+    narratives = [r.get('object_id') for r in (result.get('assessment_narratives') or [])]
+    assert 'NARR-dividends' not in narratives
 
 
 def test_source_context_excludes_uncited_blocks_and_deduplicates_shared_provenance():

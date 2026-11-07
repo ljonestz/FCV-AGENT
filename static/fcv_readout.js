@@ -21,6 +21,15 @@
   // Self-contained handlers (no model text) so they also work in the Share .html export.
   const COPY_DRAFT_HANDLER = "navigator.clipboard&&navigator.clipboard.writeText(this.closest('.fr-draft').querySelector('.fr-draft-text').innerText);this.textContent='Copied'";
   const EXPAND_ALL_HANDLER = "var d=Array.prototype.slice.call(this.closest('.fr-section').querySelectorAll('details.fr-pc')),o=d.some(function(x){return !x.open});d.forEach(function(x){x.open=o});this.textContent=o?'Collapse all':'Expand all'";
+  // Strength of the underlying OPCS source (authority_basis), worded for a task team reader.
+  const AUTHORITY_LABELS = {
+    policy: 'Bank policy', directive: 'Bank directive', procedure: 'Bank procedure', guidance: 'Bank guidance',
+    reviewer_judgment: 'Screener judgment, not a specific OPCS requirement', none_verified: 'No verified OPCS source',
+  };
+  function authorityLine(value) {
+    const label = AUTHORITY_LABELS[String(value || '').trim().toLowerCase().replace(/\s+/g, '_')];
+    return label ? [{ label: 'Source basis', text: label }] : [];
+  }
   const PRIORITIES_HREF = '__fr_priorities__';
   // Points the count tile at the rendered priorities section (numbers vary when sections are skipped).
   function linkPriorities(html, list) {
@@ -563,6 +572,7 @@
           zones: [{ label: 'The gap', html: k.prose(stripTagNotes(p.the_gap)) }, { label: 'Why it matters', html: k.prose(stripTagNotes(p.why_it_matters)) },
             { label: 'Suggested actions', html: actionsHtml }],
           drafts: actions.map(a => ({ label: 'Suggested Text', forText: a.document_element || '', text: a.suggested_language || '' })),
+          lines: authorityLine(p.authority_basis),
           cycle: { label: cycleLabel, text: cycleText },
           extraHtml: typeof d.priorityExtras === 'function' ? d.priorityExtras(p, index) : '',
         });

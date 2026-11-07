@@ -884,3 +884,13 @@ def test_climate_lead_meta_is_shortened_and_full_lead_sits_in_card_body():
     assert shorten("Implementing agency, with the ministry of water resources") == "Implementing agency, with the ministry\u2026"
     out = shorten(long_lead)
     assert len(out) <= 41 and out.endswith("\u2026") and not out[:-1].endswith(" ")
+
+
+def test_normal_card_shows_source_basis_from_authority_basis():
+    html = normal({"priorities": [{"title": "Priority 1 - Define triggers", "risk_level": "High", "tag": "[S]",
+                                   "the_gap": "Gap.", "why_it_matters": "Why.", "actions": [],
+                                   "authority_basis": "reviewer_judgment"}]})
+    assert "Source basis" in html and "Screener judgment, not a specific OPCS requirement" in html
+    plain = normal({"priorities": [{"title": "Priority 1 - X", "risk_level": "High", "tag": "[S]",
+                                    "the_gap": "Gap.", "why_it_matters": "Why.", "actions": []}]})
+    assert "Source basis" not in plain
