@@ -494,3 +494,62 @@ def test_reader_correction_keeps_reserve_after_recommendation_repairs():
     sampling = result['manifest']['sampling']
     assert sampling['correction_output_token_allowance'] == total
     assert sampling['correction_output_token_remaining'] == total - spent
+
+
+# Digit-grouped and ungrouped numbers compare equal; nothing else is loosened.
+
+def _number_check(text: str, canonical: str) -> tuple[bool, dict]:
+    from sector_lenses.climate_verified_schemas import validate_summary_fragment
+    diagnostics: dict = {}
+    ok = validate_summary_fragment(text, canonical_text=[canonical], allow_paraphrase=True,
+                                   semantic_review_required=True, diagnostics=diagnostics)
+    return ok, diagnostics
+
+
+@pytest.mark.parametrize('written, source', [
+    ('1,000', '1000'), ('1000', '1,000'), ('1,000,000', '1000000'),
+    ('12,500', '12500'), ('1,000.5', '1000.5'),
+])
+def test_grouped_and_ungrouped_numbers_are_equal(written, source):
+    ok, diagnostics = _number_check(f'About {written} households are reached.',
+                                    f'The project reaches {source} households.')
+    assert ok, diagnostics
+
+
+@pytest.mark.parametrize('written, source', [
+    ('1,000', '1,001'), ('1,5', '15'), ('1,0000', '10000'), ('12,50', '1250'),
+    ('1000', '100'), ('1,000', '1.000'), ('2,345', '2.345'),
+])
+def test_number_check_is_not_otherwise_loosened(written, source):
+    ok, diagnostics = _number_check(f'About {written} households are reached.',
+                                    f'The project reaches {source} households.')
+    assert not ok
+    assert diagnostics['reason'] == 'SUMMARY_NUMBER_UNSUPPORTED'
+
+
+def test_unsupported_grouped_number_is_reported_as_written():
+    ok, diagnostics = _number_check('About 1,000 households are reached.',
+                                    'The project reaches 2000 households.')
+    assert not ok and diagnostics['detail'] == '1,000'
+
+
+def test_afghanistan_unsupported_figure_still_fails_after_normalisation():
+    # The cited evidence states no 1000 in any form; the record stays withheld.
+    fixture = _load('afghanistan_20261107')
+    status = validate_final_reader_records(
+        fixture['initial_final_reader'], fixture['reader_assessment'])['record_status']
+    assert status['NARR-inclusion'] is False
+
+
+def test_number_binding_matches_grouped_and_ungrouped_forms():
+    assessment = {'facts': [
+        {'claim_id': 'PF-001', 'statement': 'The project rehabilitates water points.'},
+        {'claim_id': 'PF-002', 'statement': 'The project reaches 1000 households.'},
+    ]}
+    reader = {'summary_paragraphs': [{'object_id': 'SUM-001', 'evidence_ids': ['PF-001'],
+                                      'text': 'The project reaches 1,000 households.'}],
+              'assessment_narratives': []}
+    bound, added = bind_same_summary_number_references(reader, assessment)
+    assert added == 1
+    assert bound['summary_paragraphs'][0]['evidence_ids'] == ['PF-001', 'PF-002']
+    assert bound['summary_paragraphs'][0]['text'] == reader['summary_paragraphs'][0]['text']
