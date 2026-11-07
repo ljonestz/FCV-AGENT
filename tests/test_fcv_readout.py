@@ -296,10 +296,7 @@ def test_climate_final_reader_contract_never_uses_executive_readout():
     html = climate(reader)
     assert "No short summary is shown for this run because it could not be checked against the project documents." in html and "could not be independently verified" not in html
     assert "Exec first sentence" not in html
-    # The fallback snapshot is deterministic, never the executive readout.
-    snap = html[html.index("Assessment snapshot"):]
-    snap = snap[:snap.index("</strong>")]
-    assert "Exec" not in snap and "Snapshot sentence from overview" not in snap
+    assert "Assessment snapshot" not in html
 
 
 def test_climate_card_practical_considerations_dedup():
@@ -404,8 +401,7 @@ def test_climate_fallback_overview_moves_to_limitations():
                   summary_overview=["A short summary is not shown for this run.", "Use the priorities."])
     html = climate(reader)
     overview = html[html.index('fr-h1-txt">Overview<'):html.index('fr-h1-txt">Assessment Findings<')]
-    assert "A short summary" not in overview
-    assert "Climate-FCV sensitivity is rated Moderate and responsiveness Not expected." in overview
+    assert "A short summary" not in overview and "Assessment snapshot" not in overview
     assert "What is already working" in overview and "Key gaps at this stage" not in overview
     limits = html[html.index('class="fr-limits"'):]
     # Limitations sits at the end of the note, so the note points to what is above it.
@@ -788,8 +784,7 @@ def test_partial_climate_overview_points_to_findings_and_counts_themes():
                   summary_overview=["x"])
     html = climate(reader)
     overview = html[html.index('fr-h1-txt">Overview<'):html.index('fr-h1-txt">Assessment Findings<')]
-    assert "No verified summary is available for this run" not in html
-    assert "Assessment snapshot" in overview
+    assert "No verified summary is available for this run" in overview and 'href="#fr-s02"' in overview
     n = html.count('class="fr-theme"')
     word = {1: "One cross-cutting question", 2: "Two cross-cutting questions", 3: "Three cross-cutting questions"}[n]
     assert word in html and "Where relevant, each links" in html
@@ -887,63 +882,3 @@ def test_climate_lead_meta_is_shortened_and_full_lead_sits_in_card_body():
     assert shorten("Implementing agency, with the ministry of water resources") == "Implementing agency, with the ministry\u2026"
     out = shorten(long_lead)
     assert len(out) <= 41 and out.endswith("\u2026") and not out[:-1].endswith(" ")
-
-
-def fallback_overview(reader: dict) -> str:
-    html = climate(dict(reader, reader_contract="final-reader-v1", summary_overview_status="fallback", summary_overview=["x"]))
-    start = html.index('fr-h1-txt">Overview<')
-    return html[start:html.index('</section>', start)]
-
-
-def test_climate_fallback_snapshot_is_built_from_ratings_and_priorities():
-    overview = fallback_overview(CLIMATE_READER)
-    expected = ('<div class="fr-info"><div class="fr-info-lbl">Assessment snapshot</div><div class="fr-info-body"><strong>'
-                "Climate-FCV sensitivity is rated Moderate and responsiveness Not expected. "
-                "The screening identifies 2 priority actions, led by: First.</strong></div></div>")
-    assert expected in overview
-    assert overview.index("Assessment snapshot") < overview.index("What is already working")
-    assert "Exec" not in overview and "Snapshot sentence" not in overview and "No verified summary" not in overview
-    assert "—" not in overview
-
-
-def test_climate_fallback_snapshot_handles_one_priority_and_missing_ratings():
-    one = dict(CLIMATE_READER, priorities=[dict(CLIMATE_READER["priorities"][1], title="Priority 1: Fix targeting.")])
-    assert "The screening identifies 1 priority action: Fix targeting.</strong>" in fallback_overview(one)
-    no_ratings = dict(CLIMATE_READER, judgments=[j for j in CLIMATE_READER["judgments"] if j["dimension"] not in ("sensitivity", "responsiveness")])
-    overview = fallback_overview(no_ratings)
-    assert "is rated" not in overview
-    assert "<strong>The screening identifies 2 priority actions, led by: First.</strong>" in overview
-    only_sens = dict(CLIMATE_READER, judgments=[j for j in CLIMATE_READER["judgments"] if j["dimension"] != "responsiveness"])
-    assert "<strong>Climate-FCV sensitivity is rated Moderate. The screening" in fallback_overview(only_sens)
-
-
-def test_climate_fallback_snapshot_without_priorities_points_to_findings():
-    overview = fallback_overview(dict(CLIMATE_READER, priorities=[]))
-    assert ("Climate-FCV sensitivity is rated Moderate and responsiveness Not expected. "
-            'No priority actions were validated for this run; see <a href="#fr-s02">Assessment Findings</a>.</strong>') in overview
-    bare = climate(dict(CLIMATE_READER, reader_contract="final-reader-v1", summary_overview_status="fallback",
-                        summary_overview=["x"], priorities=[], assessment_themes=[]))
-    assert "No priority actions were validated for this run.</strong>" in bare and "Assessment Findings" not in bare
-
-
-def test_climate_fallback_snapshot_from_paid_session_reader():
-    session = json.loads((ROOT / "output" / "20261106_readout-paid-runs" / "20261107_climate-afghanistan-hcj-pad-session.json").read_text(encoding="utf-8"))
-    reader = session["climateVerifiedReader"]
-    assert reader["reader_contract"] == "final-reader-v1" and reader["summary_overview_status"] == "fallback"
-    # The reader is too large for a command line, so node loads the session file itself.
-    path = ROOT / "output" / "20261106_readout-paid-runs" / "20261107_climate-afghanistan-hcj-pad-session.json"
-    html = run_js(f"const s = require({json.dumps(str(path))});"
-                  "process.stdout.write(api.renderClimate(s.climateVerifiedReader, {draftingAllowed: true}));")
-    start = html.index('fr-h1-txt">Overview<')
-    overview = html[start:html.index('</section>', start)]
-    assert ("<strong>Climate-FCV sensitivity is rated Moderate and responsiveness Moderate. The screening identifies 3 priority "
-            "actions, led by: Specify in the Project Description how Skills Fund and start-up grant access will reach "
-            "climate-exposed, rural and mobility-restricted women and youth.</strong>") in overview
-    assert overview.index("Assessment snapshot") < overview.index("What is already working")
-    # Unverified model narrative never reaches the snapshot.
-    for narrative in (reader.get("executive_readout"), reader["climate_sensitivity_rating"].get("overview_summary")):
-        if narrative:
-            assert str(narrative)[:60] not in html
-    assert "No verified summary is available" not in html
-    limits = html[html.index('class="fr-limits"'):]
-    assert "No short summary is shown for this run" in limits
