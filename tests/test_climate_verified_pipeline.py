@@ -1777,7 +1777,9 @@ def test_correction_without_usage_consumes_shared_allowance_and_cannot_skip_revi
     client = OpaqueCorrection(responses + [deepcopy(responses[-1])], [])
     result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(client, reviewer))
     assert result["priorities"] == []
-    assert result["manifest"]["sampling"]["correction_output_token_remaining"] == 0
+    # Recommendation repairs exhaust their share; only the unspent reader reserve remains.
+    from sector_lenses.climate_verified_pipeline import READER_CORRECTION_RESERVE_TOKENS
+    assert result["manifest"]["sampling"]["correction_output_token_remaining"] == READER_CORRECTION_RESERVE_TOKENS
     assert len(reviewer.calls) == 1
     assert client.calls[-1]["max_transient_retries"] == 0
 

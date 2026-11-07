@@ -449,3 +449,48 @@ def test_pipeline_narrative_only_block_admits_summary_with_notice():
     assert 'reader_correction' not in [call['stage'] for call in assessment.calls]
     notice = build_reader_model(result)['reader_review_notice']
     assert 'fair benefits' in notice and 'withheld' in notice
+
+
+# The shared repair allowance keeps a reserve for the reader correction.
+
+def test_reader_correction_keeps_reserve_after_recommendation_repairs():
+    from sector_lenses.climate_verified_contracts import CALL_BUDGETS
+    from sector_lenses.climate_verified_pipeline import READER_CORRECTION_RESERVE_TOKENS
+    from tests.test_climate_verified_pipeline import _core_review
+
+    # Reported output tokens per stage; reader stages report what they use.
+    # Recommendation repairs spend their whole share (5,600 + 400 = 6,000).
+    used = {'recommendation_compiler': 5_600, 'conditional_review': 400}
+
+    class Metered(FakeClient):
+        @property
+        def last_output_tokens(self):
+            return used.get(self.calls[-1]['stage'], 0) if self.calls else 0
+
+    total = CALL_BUDGETS['recommendation_compiler'].output_tokens
+    responses = _responses()
+    responses[2]['reader_contract'] = 'final-reader-v1'
+    revise = {'verdict': 'revise', 'passed_core_ids': [],
+              'reason_codes': ['RECOMMENDATION_DISPROPORTIONATE'], 'object_ids': ['REC-001'],
+              'issues': [{'object_id': 'REC-001', 'explanation': 'Bound the action.'}],
+              'core_reviews': [_core_review('REC-001', 'unsupported',
+                                            codes=['RECOMMENDATION_DISPROPORTIONATE'])]}
+    assessment = Metered(responses + [deepcopy(responses[-1]), _reader_with_unsupported_inclusion_number(),
+                                      {'corrections': [_inclusion_patch()]}], [])
+    reviewer = Metered([revise] + [_native_pass_review] * 3, [])
+    result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(assessment, reviewer))
+    calls = {(call['stage'], call['payload'].get('call_scope')): call['max_output_tokens']
+             for call in assessment.calls + reviewer.calls if call['max_transient_retries'] == 0}
+    # Recommendation repairs see the allowance less the reserve ...
+    assert calls[('recommendation_compiler', 'core_correction')] == total - READER_CORRECTION_RESERVE_TOKENS
+    spent = used['recommendation_compiler'] + used['conditional_review']
+    left = total - READER_CORRECTION_RESERVE_TOKENS - spent
+    # ... and the reader correction still gets the reserve once that share is spent.
+    assert calls[('reader_correction', 'reader_correction')] == min(
+        CALL_BUDGETS['reader_correction'].output_tokens, left + READER_CORRECTION_RESERVE_TOKENS)
+    assert len(result['priorities']) == 1
+    assert result['summary_overview_status'] == 'generated'
+    assert len(result['assessment_narratives']) == 3
+    sampling = result['manifest']['sampling']
+    assert sampling['correction_output_token_allowance'] == total
+    assert sampling['correction_output_token_remaining'] == total - spent
