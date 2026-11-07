@@ -307,3 +307,10 @@ def test_term_tooltips_do_not_underline_navigation_or_headings():
     for scope in (".fr-toc", ".fr-h1", "summary", ".fr-sc-label", ".fr-rating-dim"):
         assert f".fr-readout {scope} .sr-term" in rule
     assert "border-bottom:0" in rule
+
+
+def test_climate_readout_receives_provenance_inputs_like_normal_route():
+    source = html()
+    climate = function_body(source, "function renderClimateVerifiedAssessment(")
+    assert "fileNames:readoutFileNames(),researchBrief}" in climate
+    assert "fileNames:readoutFileNames(),researchBrief," in function_body(source, "function renderNormalReadoutHtml(")

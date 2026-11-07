@@ -5168,7 +5168,7 @@
     if(String(r.evidence_status||'').toLowerCase()==='preview; not approved')notices.push('<div class="finalized-pad-notice"><div class="fpn-body"><strong>Candidate country evidence: preview; not approved.</strong></div></div>');
     if(!route.confirmed)notices.push('<p class="climate-route-warning">Suggested document wording is not shown because the document type or financing route could not be confirmed reliably.</p>');
     const hasPriorities=Array.isArray(r.priorities)&&r.priorities.length>0;
-    return frApi().renderClimate(r,{noticesHtml:notices.join(''),draftingAllowed:route.confirmed,advisoryText:hasPriorities?stage3AdvisoryText('climate'):''});
+    return frApi().renderClimate(r,{noticesHtml:notices.join(''),draftingAllowed:route.confirmed,advisoryText:hasPriorities?stage3AdvisoryText('climate'):'',fileNames:readoutFileNames(),researchBrief});
   }
 
   // Blunt, upfront caveat shown above the Stage 3 readout. Sits in the #stage-disp

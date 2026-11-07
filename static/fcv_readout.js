@@ -207,6 +207,17 @@
     return month ? `${Number(m[3])} ${month} ${m[1]}` : '';
   }
 
+  // Limitations provenance lines shared by both routes: uploaded documents and research retrieval date.
+  // `unreadClause` opens the unreadable-file sentence (the climate route has no Executive Summary to point to).
+  function provenanceLimits(fileNames, researchBrief, unreadClause) {
+    const files = (Array.isArray(fileNames) ? fileNames : []).map(displayFileName).filter(Boolean);
+    const retrieved = researchDate(researchBrief);
+    return [
+      files.length ? `Documents uploaded for this run: ${files.join(', ')}. ${unreadClause || 'Where the Executive Summary notes that a document could not be read'}, its content was not used in this screening.` : '',
+      retrieved ? `Background research was retrieved on ${retrieved}; events after that date are not reflected.` : '',
+    ].filter(Boolean);
+  }
+
   // Strategic fit for a normal-route priority: CPF and RRA alignment prose only (refresh_shift is a bare
   // "Shift X: Name" label and is never shown here). A value is shown only when it explains why or how:
   // at least 12 words, ends as a sentence, and carries a causal or means connective. Names and labels
@@ -579,11 +590,8 @@
     const guides = NORMAL_GUIDANCE.map(g => guideItem(k, g, '')).join('');
     if (guides) html += k.section('fr-guidance', h('Relevant WBG Guidance') + k.disclosure('Selected WBG resources for the team', guides));
 
-    const files = (Array.isArray(d.fileNames) ? d.fileNames : []).map(displayFileName).filter(Boolean);
-    const retrieved = researchDate(d.researchBrief);
     const limits = [
-      files.length ? `Documents uploaded for this run: ${files.join(', ')}. Where the Executive Summary notes that a document could not be read, its content was not used in this screening.` : '',
-      retrieved ? `Background research was retrieved on ${retrieved}; events after that date are not reflected.` : '',
+      ...provenanceLimits(d.fileNames, d.researchBrief),
       d.partial ? 'This run is partial; some sections may be missing.' : '',
       NORMAL_LIMITATION,
     ];
@@ -833,12 +841,12 @@
     const trail = r.evidence_trail || {};
     const limits = Array.isArray(trail.limitations) ? trail.limitations.filter(Boolean).join(' ') : String(trail.limitations || '').trim();
     const limitsText = limits || 'This automated screening is advisory and is limited by the coverage and detail of the uploaded documents. The team should confirm material findings through project and country expertise.';
-    html += k.section('fr-limits-sec', h('Limitations') + k.limitsBox([fallbackNote, ...withheldNotes, limitsText, r.advisory_notice], verifyNotes));
+    html += k.section('fr-limits-sec', h('Limitations') + k.limitsBox([...provenanceLimits(o.fileNames, o.researchBrief, 'Where a document could not be read'), fallbackNote, ...withheldNotes, limitsText, r.advisory_notice], verifyNotes));
     const saysAlready = /does not constitute/i.test(`${limitsText} ${r.advisory_notice || ''}`);
     return linkPriorities(`<article class="fr-readout fr-route-climate">${head}${k.toc(h.list)}${html}${saysAlready ? '' : k.closing()}</article>`, h.list);
   }
 
-  const api = { FCV_SCALE, CLIMATE_SCALE, FOCUS_LABELS, DEFINITIONS, CLOSING_LINE, CHEVRON_SVG, PINNED_CLIMATE_GUIDANCE, NORMAL_GUIDANCE, parseStage3Sections, parseSupplementaryPoints, researchDate, researchSources, orderByLevel, stripTagNotes, extractVerifyNotes, cleanVerifyNote, displayFileName, create };
+  const api = { FCV_SCALE, CLIMATE_SCALE, FOCUS_LABELS, DEFINITIONS, CLOSING_LINE, CHEVRON_SVG, PINNED_CLIMATE_GUIDANCE, NORMAL_GUIDANCE, parseStage3Sections, parseSupplementaryPoints, researchDate, provenanceLimits, researchSources, orderByLevel, stripTagNotes, extractVerifyNotes, cleanVerifyNote, displayFileName, create };
   root.FcvReadout = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

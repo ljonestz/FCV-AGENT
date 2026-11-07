@@ -99,11 +99,13 @@ def _readout_harness() -> str:
             "climateDraftingRouteGate",
             "frApi",
             "stage3AdvisoryText",
+            "readoutFileNames",
             "renderClimateVerifiedAssessment",
         )
     )
     return (
         "const window = {};\n"
+        "let pF = [], cF = [], restoredFileNames = {project: [], context: []}, researchBrief = '';\n"
         + READOUT_MODULE.read_text(encoding="utf-8")
         + "\nconst md = t => '<div class=\"md\">' + esc(t) + '</div>';\n"
         + timing + "\n" + functions + "\n"

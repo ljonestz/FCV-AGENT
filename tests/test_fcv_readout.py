@@ -837,3 +837,20 @@ def test_normal_strategic_fit_drops_labels_and_near_empty_values():
     card = normal({"priorities": [p]})
     fit = card[card.index("Strategic fit"):card.index("Suggested actions")]
     assert "CPF Outcome 2" in fit and "RRA Driver 2" in fit and fit.count('class="fr-p"') == 2
+
+
+def test_climate_limitations_start_with_shared_provenance_lines():
+    opts = {"draftingAllowed": True, "fileNames": ["PAD v3.docx", "RRA.docx"],
+            "researchBrief": "x\nResearch run timestamp: 2026-11-07T08:20:40+00:00 (retrieval time)."}
+    limits = climate(CLIMATE_READER, opts)
+    limits = limits[limits.index('class="fr-limits"'):]
+    uploaded = limits.index("Documents uploaded for this run: PAD v3, RRA.")
+    assert "Where a document could not be read, its content was not used in this screening." in limits
+    retrieved = limits.index("Background research was retrieved on 7 November 2026; events after that date are not reflected.")
+    assert uploaded < retrieved < limits.index("Concept stage only.")
+    assert "Executive Summary" not in limits
+    bare = climate(CLIMATE_READER)
+    bare = bare[bare.index('class="fr-limits"'):]
+    assert "uploaded for this run" not in bare and "retrieved on" not in bare
+    shared = json.loads(run_js("process.stdout.write(JSON.stringify(FR.provenanceLimits(['a/PAD.pdf'], '', '')));"))
+    assert shared == ["Documents uploaded for this run: PAD. Where the Executive Summary notes that a document could not be read, its content was not used in this screening."]
