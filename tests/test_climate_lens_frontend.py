@@ -2001,18 +2001,19 @@ console.log(renderClimateVerifiedAssessment({
         page.set_content(exported_html, wait_until="load")
         details = page.locator("details.fr-pc, details.fr-disc")
         count = details.count()
-        assert count == 4
+        # Priority card, checks, guidance and Limitations (collapsed by default) disclosures.
+        assert count == 5
         initial = details.evaluate_all("elements => elements.map(element => element.open)")
-        assert initial == [True, False, False, False]
+        assert initial == [True, False, False, False, False]
         assert page.get_by_text("Open priority prose.").is_visible()
         assert not page.get_by_text("Closed priority prose.").is_visible()
         assert not page.get_by_text("Closed check text for print.").is_visible()
         assert not page.get_by_text("Source text for print").is_visible()
-        assert page.get_by_text("Limitations text for print.").is_visible()
+        assert not page.get_by_text("Limitations text for print.").is_visible()
 
         page.locator("details.fr-pc > summary").nth(0).click()
         prior_states = details.evaluate_all("elements => elements.map(element => element.open)")
-        assert prior_states == [False, False, False, False]
+        assert prior_states == [False, False, False, False, False]
 
         page.emulate_media(media="print")
         page.evaluate("window.dispatchEvent(new Event('beforeprint'))")
