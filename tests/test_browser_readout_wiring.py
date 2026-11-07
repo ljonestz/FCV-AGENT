@@ -314,3 +314,86 @@ def test_climate_readout_receives_provenance_inputs_like_normal_route():
     climate = function_body(source, "function renderClimateVerifiedAssessment(")
     assert "fileNames:readoutFileNames(),researchBrief}" in climate
     assert "fileNames:readoutFileNames(),researchBrief," in function_body(source, "function renderNormalReadoutHtml(")
+
+
+def _restore_harness(scenario):
+    from tests.test_climate_lens_frontend import _extract_js_function
+    source = html()
+    function = ('async ' + _extract_js_function(source, "refreshRestoredClimateReader")
+                + "\n" + _extract_js_function(source, "supportsClimateVerifiedStage3View"))
+    script = """
+let reviewMode='design', busy=false, curS=3, stageOutputs={3:'ready'};
+let climateVerifiedAssessment={schema_version:'climate-verified-v2.1'};
+const storedReader={summary_overview_status:'fallback',priorities:[{id:'old'}]};
+let climateVerifiedReader=storedReader, stageThreePriorities=storedReader.priorities;
+let renders=0, posted=null;
+const window={scrollY:40,scrollTo:()=>{}};
+const navigateToStage=()=>{renders++;};
+const scenario=SCENARIO;
+const canonical={summary_overview_status:'generated',priorities:[{id:'new'}]};
+const fetch=async(url,options)=>{
+  posted={url,body:JSON.parse(options.body)};
+  if(scenario==='offline')throw new Error('offline');
+  if(scenario==='replaced')climateVerifiedReader={other:true};
+  if(scenario==='reject')return {ok:false,json:async()=>({error:'x'})};
+  if(scenario==='same')return {ok:true,json:async()=>({reader:JSON.parse(JSON.stringify(storedReader))})};
+  if(scenario==='malformed')return {ok:true,json:async()=>({reader:[]})};
+  return {ok:true,json:async()=>({reader:canonical})};
+};
+if(scenario==='legacy')climateVerifiedAssessment={schema_version:'climate-verified-v2.0'};
+FUNCTION
+(async()=>{
+  const changed=await refreshRestoredClimateReader();
+  console.log(JSON.stringify({changed,renders,posted,
+    reader:climateVerifiedReader===storedReader?'stored':climateVerifiedReader===canonical?'canonical':'other',
+    priorities:stageThreePriorities.map(p=>p.id)}));
+})().catch(e=>{console.error(e);process.exit(1)});
+""".replace("SCENARIO", json.dumps(scenario)).replace("FUNCTION", function)
+    result = subprocess.run(["node", "-e", script], capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    return json.loads(result.stdout.strip().splitlines()[-1])
+
+
+def test_restored_session_adopts_canonical_climate_reader():
+    out = _restore_harness("ok")
+    assert out["posted"]["url"] == "/api/climate-report-snapshot"
+    # The reader is omitted so the server returns the canonical one.
+    assert set(out["posted"]["body"]) == {"climate_assessment"}
+    assert out["changed"] is True and out["reader"] == "canonical"
+    assert out["priorities"] == ["new"] and out["renders"] == 1
+
+
+def test_restored_session_keeps_stored_reader_on_any_failure():
+    for scenario in ("offline", "reject", "malformed"):
+        out = _restore_harness(scenario)
+        assert out["changed"] is False, scenario
+        assert out["reader"] == "stored" and out["renders"] == 0, scenario
+        assert out["priorities"] == ["old"], scenario
+
+
+def test_restored_session_skips_redraw_when_reader_is_unchanged_or_replaced():
+    same = _restore_harness("same")
+    assert same["changed"] is False and same["renders"] == 0 and same["reader"] == "stored"
+    replaced = _restore_harness("replaced")
+    assert replaced["changed"] is False and replaced["renders"] == 0 and replaced["reader"] == "other"
+
+
+def test_restored_session_ignores_non_verified_assessment():
+    out = _restore_harness("legacy")
+    assert out["posted"] is None and out["changed"] is False
+
+
+def test_reader_refresh_runs_only_on_session_restore_paths():
+    source = html()
+    load = source[source.index("function loadSession(input)"):]
+    load = load[:load.index("setStepper(curS+1, 'active');")]
+    assert "refreshRestoredClimateReader();" in load
+    express = source[source.index("// Express recovery: checkpoints"):]
+    express = express[:express.index("if(hasSavedStage3Output){localStorage.removeItem")]
+    assert "refreshRestoredClimateReader();" in express
+    # Two restore calls plus the definition; the live-run path is unchanged.
+    assert source.count("refreshRestoredClimateReader(") == 3
+    # No user-facing error path: failures return quietly.
+    helper = source[source.index("async function refreshRestoredClimateReader"):]
+    helper = helper[:helper.index("\n  }\n")]
+    assert "alert(" not in helper

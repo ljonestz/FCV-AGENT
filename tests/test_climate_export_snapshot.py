@@ -149,3 +149,27 @@ def test_fallback_tolerance_does_not_cover_other_edits(pair):
     edited = _fallback_pair(pair)
     edited['climate_reader']['summary_overview'] = ['Any other text.']
     assert app_module.app.test_client().post('/api/climate-report-snapshot', json=edited).status_code == 409
+
+
+def test_snapshot_without_reader_returns_canonical_reader(pair):
+    """A restored session omits climate_reader to receive the canonical reader."""
+    expected = pair.pop('climate_reader')
+    response = app_module.app.test_client().post('/api/climate-report-snapshot', json=pair)
+    assert response.status_code == 200, response.get_json()
+    snapshot = response.get_json()
+    assert snapshot['reader'] == expected
+    assert snapshot['publication_approved'] is False
+    # The returned reader then exports without a snapshot mismatch.
+    pair['climate_reader'] = snapshot['reader']
+    assert app_module.app.test_client().post('/api/climate-report-snapshot', json=pair).status_code == 200
+
+
+def test_snapshot_without_reader_still_requires_verified_assessment(pair):
+    pair.pop('climate_reader')
+    pair['climate_assessment']['schema_version'] = 'climate-verified-v2.0'
+    assert app_module.app.test_client().post('/api/climate-report-snapshot', json=pair).status_code == 422
+
+
+def test_review_packet_still_requires_displayed_reader(pair):
+    pair.pop('climate_reader')
+    assert app_module.app.test_client().post('/api/climate-review-packet', json=pair).status_code == 422

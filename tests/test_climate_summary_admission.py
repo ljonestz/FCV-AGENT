@@ -300,3 +300,20 @@ def test_pipeline_reviews_partially_failing_reader_after_correction(second_revie
     assert result['summary_overview_status'] == 'generated'
     assert _ids(result['assessment_narratives']) == ['NARR-design', 'NARR-dividends']
     assert [call['stage'] for call in assessment.calls].count('reader_correction') == 1
+
+
+# Saved sessions: the reader status follows admission recomputed on load.
+
+def test_saved_fallback_status_follows_recomputed_admission():
+    from sector_lenses.climate_verified_render import build_reader_model
+    responses = _responses()
+    responses[2]['reader_contract'] = 'final-reader-v1'
+    result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(
+        FakeClient(responses + [_final_reader()], []), FakeClient([_native_pass_review] * 2, [])))
+    assert result['summary_overview_status'] == 'generated'
+    # A session saved when older rules withheld this Summary recorded 'fallback'.
+    saved = {**result, 'summary_overview_status': 'fallback'}
+    assert build_reader_model(saved)['summary_overview_status'] == 'generated'
+    # A review that does not admit the Summary still yields the fallback.
+    blocked = {**saved, 'reader_review': {'verdict': 'block'}}
+    assert build_reader_model(blocked)['summary_overview_status'] == 'fallback'
