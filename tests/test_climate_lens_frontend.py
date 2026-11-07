@@ -757,13 +757,13 @@ def test_download_html_uses_same_climate_sections_and_order():
 
 def test_live_and_shared_priority_extras_switch_climate_panel_only_when_active():
     source = INDEX.read_text(encoding="utf-8")
-    live_helper = _extract_js_function(source, "renderStandardPriorityContext")
     legacy = _extract_js_function(source, "renderLegacyClimatePrioritiesHtml")
 
     assert "_buildExportPriorityCard" not in source
-    assert "renderStandardPriorityContext(pr)" in _extract_js_function(source, "renderNormalExportPriorityExtras")
-    assert "renderStandardPriorityContext(pr)" in _extract_js_function(source, "renderNormalPriorityExtras")
-    assert "isClimateLensActive" in live_helper or "climate" in live_helper.lower()
+    # The context and strategic alignment dropdown is gone; explanatory CPF/RRA prose renders inline in fcv_readout.js.
+    assert "renderStandardPriorityContext" not in source and "priority-context-disclosure" not in source
+    assert "renderPriorityCompliance(pr)" in _extract_js_function(source, "renderNormalExportPriorityExtras")
+    assert "renderPriorityCompliance(pr)" in _extract_js_function(source, "renderNormalPriorityExtras")
     assert "renderPriorityClimateContribution(p)" in legacy
     assert "Differentiated approach note" not in source
     assert "country_category_relevance" not in source

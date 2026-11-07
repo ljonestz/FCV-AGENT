@@ -802,3 +802,38 @@ def test_partial_climate_limitations_explain_withheld_items():
     limits = limits[limits.index('class="fr-limits"'):]
     assert "Withheld findings: Two findings lacked validated evidence." in limits
     assert "Withheld actions: One action was withheld." in limits
+
+
+# Real cpf_alignment value from a saved Honduras session (2026-09-23 readiness QA).
+CPF_PROSE = ("This recommendation supports CPF Outcome 2 (Sustainable, Inclusive Growth and Competitiveness) by reducing "
+             "the criminal violence risk that could disrupt infrastructure delivery in the northern corridor, a priority "
+             "connectivity investment for Honduras's trade and growth agenda.")
+
+
+def test_normal_strategic_fit_shows_explanatory_alignment_prose_inline():
+    p = dict(NORMAL_PRIORITY, cpf_alignment=CPF_PROSE, rra_driver_alignment=None, refresh_shift="Shift B: Differentiate")
+    html = normal({"priorities": [p]})
+    card = html[html.index('id="fr-priority-1"'):]
+    order = ['<h4 class="fr-lbl">Why it matters</h4>', '<h4 class="fr-lbl">Strategic fit</h4>', "CPF Outcome 2",
+             '<h4 class="fr-lbl">Suggested actions</h4>']
+    positions = [card.index(m) for m in order]
+    assert positions == sorted(positions)
+    assert '<section class="fr-zone"><h4 class="fr-lbl">Strategic fit</h4>' in card
+    # The bare shift label is not shown anywhere in the browser card, and the old dropdown is gone.
+    assert "Shift B" not in html and "Differentiate" not in html
+    assert "Context and strategic alignment" not in html and "<details class=\"priority-context" not in html
+
+
+def test_normal_strategic_fit_drops_labels_and_near_empty_values():
+    for cpf, rra in [("CPF Outcome 2", "RRA driver"), ("Shift A: Anticipate", ""),
+                     ("Supports CPF Outcome 2 and RRA Driver 1 on land and water competition in the north", None),
+                     ("This recommendation is aligned with CPF Outcome 2 on growth, competitiveness and jobs.", None)]:
+        p = dict(NORMAL_PRIORITY, cpf_alignment=cpf, rra_driver_alignment=rra, refresh_shift="Shift A: Anticipate")
+        html = normal({"priorities": [p]})
+        assert "Strategic fit" not in html, cpf
+    rra_prose = ("This recommendation directly addresses RRA Driver 2 (competition over land and water) by embedding "
+                 "conflict-sensitive site selection and a local grievance mechanism.")
+    p = dict(NORMAL_PRIORITY, cpf_alignment=CPF_PROSE, rra_driver_alignment=rra_prose)
+    card = normal({"priorities": [p]})
+    fit = card[card.index("Strategic fit"):card.index("Suggested actions")]
+    assert "CPF Outcome 2" in fit and "RRA Driver 2" in fit and fit.count('class="fr-p"') == 2

@@ -81,7 +81,7 @@ def test_screen_and_export_share_normal_readout_builder():
 def test_print_opens_readout_disclosures():
     source = html()
     handler = function_body(source, "function installClimatePrintDisclosureHandler(")
-    for sel in ["details.fr-pc", "details.fr-disc", "details.priority-context-disclosure"]:
+    for sel in ["details.fr-pc", "details.fr-disc"]:
         assert sel in handler, sel
     assert "\n  installClimatePrintDisclosureHandler(document);" in source
     assert "climatePrintDisclosureScript()" in function_body(source, "async function downloadHTML(")
@@ -266,8 +266,7 @@ def test_readout_width_disclosure_chevrons_and_mobile_meta():
     assert "@media(max-width:760px){.fr-readout .fr-pc-meta .fr-meta-dim{display:none}" in style
     assert "fr-meta-time{display:none}" not in style
     assert '<span class="beyond-arrow" aria-hidden="true">${window.FcvReadout.CHEVRON_SVG}</span>' in function_body(source, "function renderGoDeeperHtml(")
-    assert '<span class="pcd-chev" aria-hidden="true">${window.FcvReadout.CHEVRON_SVG}</span>' in function_body(source, "function renderStandardPriorityContext(")
-    assert ".priority-context-disclosure[open]>summary .pcd-chev{transform:rotate(180deg)}" in source
+    assert "renderStandardPriorityContext" not in source and "pcd-chev" not in source
     assert 'details.fr-pc[data-fr-src-index="' in function_body(source, "function selectPrioritySb(")
 
 

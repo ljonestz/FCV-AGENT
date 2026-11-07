@@ -1075,15 +1075,6 @@
 
     .brief-download-actions{display:inline-flex;align-items:center;gap:6px;margin-right:2px}
     .brief-download-actions .btn{white-space:nowrap}
-    .priority-context-disclosure{border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-top:0}
-    .priority-context-disclosure>summary{cursor:pointer;list-style:none;padding:12px 22px;color:var(--wbg-blue);font-size:12px;font-weight:700;display:flex;align-items:center;gap:7px}
-    .priority-context-disclosure>summary::-webkit-details-marker{display:none}
-    .priority-context-disclosure .pcd-chev{margin-left:auto;display:flex;align-items:center;color:#002244;transition:transform .15s}
-    .priority-context-disclosure[open]>summary .pcd-chev{transform:rotate(180deg)}
-    .priority-context-body{padding:0 22px 12px}
-    .priority-context-item{margin:0 0 10px;line-height:1.6}
-    .priority-context-item:last-child{margin-bottom:0}
-    .priority-context-item strong{display:block;color:var(--wbg-navy);font-size:11px;text-transform:uppercase;letter-spacing:.05em}
     .normal-fcv-watch-narrative{line-height:1.65}
     .normal-fcv-watch-narrative h1,.normal-fcv-watch-narrative h2,.normal-fcv-watch-narrative h3{margin:8px 0 5px;font-size:12px;color:var(--wbg-navy)}
     .normal-fcv-watch-narrative p{margin:0 0 8px}
@@ -5141,7 +5132,7 @@
     const scope=root&&typeof root.querySelectorAll==='function'?root:null;
     const eventTarget=scope&&scope.defaultView?scope.defaultView:(typeof window!=='undefined'?window:null);
     if(!scope||!eventTarget||typeof eventTarget.addEventListener!=='function')return null;
-    const selector='details.climate-priority-card, details.climate-priority-detail, details.climate-fold, details.climate-guidance-disclosure, details.climate-summary-watch-disclosure, details.climate-summary-guidance-disclosure, details.stage3-rating-explanation, details.fr-pc, details.fr-disc, details.priority-context-disclosure';
+    const selector='details.climate-priority-card, details.climate-priority-detail, details.climate-fold, details.climate-guidance-disclosure, details.climate-summary-watch-disclosure, details.climate-summary-guidance-disclosure, details.stage3-rating-explanation, details.fr-pc, details.fr-disc';
     let priorStates=null;
     const beforePrint=()=>{
       if(priorStates!==null)return;
@@ -6630,12 +6621,12 @@ ${climatePrintDisclosureScript()}
   }
 
   function renderNormalPriorityExtras(pr,idx){
-    return renderPriorityWarningsHtml(pr,idx)+renderStandardPriorityContext(pr)+renderPriorityCompliance(pr)+renderGoDeeperHtml(idx);
+    return renderPriorityWarningsHtml(pr,idx)+renderPriorityCompliance(pr)+renderGoDeeperHtml(idx);
   }
 
   // Share .html export: no interactive Go Deeper or dismissible warnings (their handlers do not exist in the exported file).
   function renderNormalExportPriorityExtras(pr){
-    return renderStandardPriorityContext(pr)+renderPriorityCompliance(pr);
+    return renderPriorityCompliance(pr);
   }
 
   // Advisory sentence shown with the priorities (normal readout, verified climate and legacy climate-lens routes).
@@ -6822,18 +6813,6 @@ ${climatePrintDisclosureScript()}
     if(!item)return '';
     const mode=isClimateLensActive()?'climate':activeLenses.length===0?'standard':'climate';
     return `<span class="timing-pill ${item.cls}">${item[mode]}</span>`;
-  }
-
-  function renderStandardPriorityContext(priority){
-    if(isClimateLensActive()||activeLenses.length!==0)return '';
-    const fields=[
-      ['CPF alignment',priority&&priority.cpf_alignment],
-      ['RRA driver alignment',priority&&priority.rra_driver_alignment],
-      ['Strategy alignment',priority&&priority.refresh_shift]
-    ].filter(([,value])=>typeof value==='string'&&value.trim());
-    if(!fields.length)return '';
-    const body=fields.map(([label,value])=>'<p class="priority-context-item"><strong>'+esc(label)+'</strong>'+esc(value)+'</p>').join('');
-    return `<details class="priority-context-disclosure"><summary>Context and strategic alignment<span class="pcd-chev" aria-hidden="true">${window.FcvReadout.CHEVRON_SVG}</span></summary><div class="priority-context-body">${body}</div></details>`;
   }
 
   // Per-priority quality warnings (moved out of the removed stepper card).

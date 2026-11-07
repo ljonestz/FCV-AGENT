@@ -95,7 +95,6 @@ if(!supportsConciseStage3View())throw new Error('short valid readout was rejecte
 def test_standard_detailed_timing_is_advisory_and_differentiated_context_is_removed():
     source = INDEX.read_text(encoding="utf-8")
     timing = _extract_js_function(source, "renderPriorityTiming")
-    context = _extract_js_function(source, "renderStandardPriorityContext")
     script = f"""
 {_esc_js()}
 let activeLenses=[];
@@ -104,15 +103,11 @@ const isClimateLensActive=()=>false;
 const standard=renderPriorityTiming('required-before-appraisal');
 if(!standard.includes('Consider before appraisal'))throw new Error('standard timing is mandatory');
 if(standard.includes('Required before'))throw new Error('standard timing retained mandatory label');
-{context}
-const disclosure=renderStandardPriorityContext({{cpf_alignment:'CPF & <Outcome>',rra_driver_alignment:'RRA driver',refresh_shift:'Strategy contribution'}});
-for(const expected of ['<details','CPF &amp; &lt;Outcome&gt;','RRA driver','Strategy contribution']){{if(!disclosure.includes(expected))throw new Error('missing alignment '+expected);}}
-if(disclosure.includes(' open'))throw new Error('alignment should be closed by default');
-
 """
     result = subprocess.run(["node", "-e", script], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
-    for forbidden in ("renderSpecialistPriorityContext", "Differentiated approach note", "country_category_relevance"):
+    for forbidden in ("renderSpecialistPriorityContext", "renderStandardPriorityContext", "Context and strategic alignment",
+                      "Differentiated approach note", "country_category_relevance"):
         assert forbidden not in source
 
 

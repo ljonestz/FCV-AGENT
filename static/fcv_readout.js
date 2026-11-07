@@ -207,6 +207,27 @@
     return month ? `${Number(m[3])} ${month} ${m[1]}` : '';
   }
 
+  // Strategic fit for a normal-route priority: CPF and RRA alignment prose only (refresh_shift is a bare
+  // "Shift X: Name" label and is never shown here). A value is shown only when it explains why or how:
+  // at least 12 words, ends as a sentence, and carries a causal or means connective. Names and labels
+  // ("CPF Outcome 2", "RRA driver") fall below that bar and are dropped.
+  const FIT_CONNECTIVE_RE = /\b(?:by|through|because|since|so that|which|thereby|ensuring|to ensure|in order to)\b/i;
+  function explainsFit(value) {
+    const text = String(value == null ? '' : value).replace(/\s+/g, ' ').trim();
+    if (text.split(' ').length < 12) return '';
+    if (!/[.!?]["')\]]?$/.test(text)) return '';
+    return FIT_CONNECTIVE_RE.test(text) ? text : '';
+  }
+  function strategicFit(priority) {
+    const p = priority || {};
+    const seen = [];
+    return [p.cpf_alignment, p.rra_driver_alignment].map(explainsFit).filter(t => {
+      if (!t || seen.includes(t.toLowerCase())) return false;
+      seen.push(t.toLowerCase());
+      return true;
+    });
+  }
+
   // Markdown fragment -> one line of plain text (escapes, emphasis and link syntax removed).
   function plainText(text) {
     return String(text || '').replace(/\\(.)/g, '$1').replace(/\[([^\]]*)\]\([^)\s]*\)/g, '$1')
@@ -533,7 +554,8 @@
         const sup = k.metaSegments([[k.levelPill(p.risk_level)], [k.esc(FOCUS_LABELS[p.tag] || p.tag || '')], [k.esc(p.fcv_dimension || ''), 'fr-meta-dim'], [k.esc(k.timingLabel(p.action_timing)), 'fr-meta-time']]);
         return k.priorityCard({
           id: `fr-priority-${i + 1}`, rank: i + 1, open: i === 0, supHtml: sup, title: priorityTitle(p.title), srcIndex: index,
-          zones: [{ label: 'The gap', html: k.prose(stripTagNotes(p.the_gap)) }, { label: 'Why it matters', html: k.prose(stripTagNotes(p.why_it_matters)) }, { label: 'Suggested actions', html: actionsHtml }],
+          zones: [{ label: 'The gap', html: k.prose(stripTagNotes(p.the_gap)) }, { label: 'Why it matters', html: k.prose(stripTagNotes(p.why_it_matters)) },
+            { label: 'Strategic fit', html: k.paragraphs(strategicFit(p).map(stripTagNotes)) }, { label: 'Suggested actions', html: actionsHtml }],
           drafts: actions.map(a => ({ label: 'Suggested Text', forText: a.document_element || '', text: a.suggested_language || '' })),
           cycle: { label: cycleLabel, text: cycleText },
           extraHtml: typeof d.priorityExtras === 'function' ? d.priorityExtras(p, index) : '',
