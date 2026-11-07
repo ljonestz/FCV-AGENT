@@ -1,0 +1,995 @@
+{
+ "_provenance": "Trimmed from a saved honduras_20261018 climate session: cited support records, facts sharing a number with reader prose, judgments, and the final-reader trace. No source documents.",
+ "reader_assessment": {
+  "facts": [
+   {
+    "claim_id": "PF-003",
+    "claim_type": "component_scope",
+    "subject": "Component 1",
+    "predicate": "finances",
+    "object_value": "construction of a new two-lane 46-km climate-resilient and safe road connecting CA-4 near Macuelizo and CA-13 near Corinto, US$158 million",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-609151fe4e469695-B-e6dbcdf343f9"
+    ],
+    "supporting_excerpt": "Component 1: Construction of the CA -4 – CA-13 Connection Road Corridor (US$158 million). The component will finance the construction of a new two -lane 46 -km climate -resilient and safe road",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-005",
+    "claim_type": "design_measure",
+    "subject": "Component 1 two-lane road",
+    "predicate": "will include adaptation measures",
+    "object_value": "enhanced drainage, slope protection, enhanced pavement, embankment protection and nature-based solutions where feasible",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-609151fe4e469695-B-733b35c0276f"
+    ],
+    "supporting_excerpt": "specific dedicated adaptation measures such as enhanced drainage, slope protection, enhanced pavement, embankment protection and integration of nature-based solutions, where feasible",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-006",
+    "claim_type": "siting_criterion",
+    "subject": "Component 1 road corridor layout",
+    "predicate": "was selected considering",
+    "object_value": "climate change vulnerabilities, with road safety practices included in design",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-609151fe4e469695-B-733b35c0276f"
+    ],
+    "supporting_excerpt": "The layout of the road corridor, that will also include best road safety practices (such as road barriers, road signs and markings and a forgiving road design), was selected considering climate change vulnerabilities.",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-009",
+    "claim_type": "biodiversity_control",
+    "subject": "Component 1 road near Cusuco National Park",
+    "predicate": "will apply",
+    "object_value": "international best practices to mitigate environment and biodiversity impacts, including wildlife crossings, footprint reduction avoiding high carbon stock areas, and targeted offsets for vegetation cuts",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-609151fe4e469695-B-733b35c0276f",
+     "DOC-609151fe4e469695-B-8b89da0ab452"
+    ],
+    "supporting_excerpt": "including the use of wildlife crossings. The road construction planning will be geared towards reducing the road footprint (e.g., avoiding high carbon stock areas, minimizing disturbances) and targeted mitigation measures will off-set eventual vegetation cuts.",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-011",
+    "claim_type": "land_acquisition",
+    "subject": "Component 1 corridor",
+    "predicate": "is estimated to require",
+    "object_value": "acquisition of approximately 185 hectares of land, with housing resettlement expected to be limited",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-609151fe4e469695-B-8b89da0ab452"
+    ],
+    "supporting_excerpt": "It is estimated that the corridor will require the acquisition of approximately 185 hectares of land . Housing resettlements is expected to be limited",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-012",
+    "claim_type": "component_scope",
+    "subject": "Component 2",
+    "predicate": "finances",
+    "object_value": "paving about 41 km of existing unpaved feeder roads connected to the new corridor, US$14 million",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-609151fe4e469695-B-8b89da0ab452"
+    ],
+    "supporting_excerpt": "Component 2: Resilient improvement of feeder roads (US$14 million). The component will finance the paving of about 41 km of existing unpaved feeder roads",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-013",
+    "claim_type": "selection_criteria",
+    "subject": "Component 2 resource distribution per municipality",
+    "predicate": "was determined based on",
+    "object_value": "level of poverty, extent of existing roads, and potential for economic development",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-609151fe4e469695-B-9a58aacd90fd"
+    ],
+    "supporting_excerpt": "A distribution of the available resources per municipality was determined based on the following parameters: (a) the level of poverty; (b) the extent of existing roads; and (c) the potential for economic development.",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-015",
+    "claim_type": "participation_process",
+    "subject": "Component 2 road prioritization in each municipality",
+    "predicate": "will be finalized through",
+    "object_value": "a participatory process involving civil society and the private sector, with particular attention to women's voice",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-609151fe4e469695-B-9a58aacd90fd"
+    ],
+    "supporting_excerpt": "a participatory process involving civil society, and the private sector will be carried out to finalize the prioritization with a particular attention to care about women voice",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-016",
+    "claim_type": "design_measure",
+    "subject": "Component 2 road works",
+    "predicate": "involve",
+    "object_value": "paving with double surface treatment, upgrading drains and culverts, slope stabilization, small bridges, and road safety measures such as protected sidewalks and traffic calming",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-609151fe4e469695-B-9a58aacd90fd"
+    ],
+    "supporting_excerpt": "(b) upgrading road drains and culverts to enhance flood resilience; (c) stabilizing slopes to mitigate landslide risks from rainfall; (d) constructing small bridge s",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-022",
+    "claim_type": "component_scope",
+    "subject": "Component 3",
+    "predicate": "combines",
+    "object_value": "gender-inclusive sustainable landscape management with community-driven economic development in priority areas adjacent to Cusuco National Park and declared micro-basins along the new road alignment, US$5 million",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-609151fe4e469695-B-9a58aacd90fd",
+     "DOC-609151fe4e469695-B-79f0586f1b3b"
+    ],
+    "supporting_excerpt": "This component will combine gender -inclusive sustainable landscape management with community -driven economic development in priority areas adjacent to the CNP (including declared micro -basins) along the new road alignment West to the CNP.",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-023",
+    "claim_type": "activity_scope",
+    "subject": "Component 3 activities",
+    "predicate": "include",
+    "object_value": "local-population restoration and reforestation of degraded landscapes, sustainable value chains with agroforestry and climate-smart agriculture, and community-based ecotourism and women's entrepreneurship",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-609151fe4e469695-B-79f0586f1b3b"
+    ],
+    "supporting_excerpt": "(i) the involvement of local populations in restoration, including reforestation, of degraded landscapes to enhance connectivity within the network of existing protected areas and biological corridors",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-024",
+    "claim_type": "exclusion",
+    "subject": "Component 3",
+    "predicate": "will exclude",
+    "object_value": "interventions that can negatively impact community rights and access to natural resources or land, and any interventions within Cusuco National Park",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-609151fe4e469695-B-79f0586f1b3b"
+    ],
+    "supporting_excerpt": "The component will exclude interventions that can negatively impact community rights and access to natural resources or land, and any interventions within the CNP.",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-026",
+    "claim_type": "activity_scope",
+    "subject": "Subcomponent 4.1",
+    "predicate": "includes",
+    "object_value": "upgrading SIT road asset management and climate risk screening tools incorporating disaster risk management, a revised Road Maintenance Plan, data collection on road vulnerability to natural hazards, and a resilience-based road design manual",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-609151fe4e469695-B-35a03d38e402"
+    ],
+    "supporting_excerpt": "(b) upgrading SIT’s road asset management and climate risk screening tools and/or systems, incorporating disaster risk management aspects",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-028",
+    "claim_type": "beneficiary",
+    "subject": "Project primary beneficiaries",
+    "predicate": "are",
+    "object_value": "communities along the new corridor and neighboring municipalities where 70 to 89 percent of the population lives in poverty, with an estimated 194,000 direct beneficiaries by Project closure",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-609151fe4e469695-B-1e62fc527bf8"
+    ],
+    "supporting_excerpt": "The primary beneficiaries will be communities along the new corridor and neighboring municipalities, where 70 to 89 percent of the population lives in poverty, 42 with an estimated 194,000 direct beneficiaries by Project closure",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-030",
+    "claim_type": "design_standard",
+    "subject": "Corridor and rural roads",
+    "predicate": "will be designed to withstand",
+    "object_value": "a 100-year return period for floods, with flooding identified as the most significant risk for the Project",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-609151fe4e469695-B-eb250d70d409",
+     "DOC-609151fe4e469695-B-035905fc2fd5"
+    ],
+    "supporting_excerpt": "enhancing the designs to withstand a 100 -year return period for floods",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-031",
+    "claim_type": "design_measure",
+    "subject": "Flood resilience design",
+    "predicate": "will include",
+    "object_value": "local flood zone identification, detailed studies of current and future river crossings, improved local drainage capacity, hydrological modeling and climate-resilient materials in high-risk flood zones",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-609151fe4e469695-B-035905fc2fd5"
+    ],
+    "supporting_excerpt": "the design will incorporate measures to identify local flood zones and areas susceptible to flash floods. This includes conducting detailed studies to assess current and future river crossin gs and improve local drainage capacity",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-032",
+    "claim_type": "design_measure",
+    "subject": "Nature-based solutions in road design",
+    "predicate": "include",
+    "object_value": "vegetation for slope stabilization, retaining walls, breakwaters, gabions, debris flow measures and shotcrete",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-609151fe4e469695-B-eb250d70d409"
+    ],
+    "supporting_excerpt": "(i) incorporating vegetation for slope stabilization, which has been proven to reduce erosion rates by up to 90 percent in some cases; (ii) installing retaining walls, breakwaters, and gabions",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-034",
+    "claim_type": "adaptation_measures",
+    "subject": "Adaptation measures in PAD Paris alignment text",
+    "predicate": "include",
+    "object_value": "resilient designs, year-round access improvements, comprehensive maintenance plans addressing climate risk, sustainable water resource management, and possible community collaboration on maintenance",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-609151fe4e469695-B-c44dcbdfd3ee"
+    ],
+    "supporting_excerpt": "(ii) improving roads to ensure year-round access in areas that are currently impassable during rainy and hurricane seasons",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-035",
+    "claim_type": "maintenance",
+    "subject": "Basic routine maintenance",
+    "predicate": "will be incorporated",
+    "object_value": "in construction contracts of roads under Components 1 and 2 for one to two years after completion of works",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-609151fe4e469695-B-5e212d4388b9"
+    ],
+    "supporting_excerpt": "Basic routine maintenance will be incorporated in the construction contracts of roads under Components 1 and 2 for one to two years, upon completion of the works.",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-036",
+    "claim_type": "implementation_arrangement",
+    "subject": "Project implementation",
+    "predicate": "will be carried out by",
+    "object_value": "SIT through a Project Executing Unit, supported by a competitively selected consulting firm given SIT's limited experience with externally funded projects",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-609151fe4e469695-B-05080334b492"
+    ],
+    "supporting_excerpt": "The Project will be implemented by the SIT through a Project Executing Unit (UEP in its Spanish Acronym).",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-037",
+    "claim_type": "decision_gate",
+    "subject": "Project Operational Manual and key staff recruitment",
+    "predicate": "are set as",
+    "object_value": "conditions of effectiveness in the Loan Agreement",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-609151fe4e469695-B-b811432ef7eb"
+    ],
+    "supporting_excerpt": "Preparation of the Project Operational Manual (POM) SIT As a condition of effectiveness in the Loan Agreement.",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-040",
+    "claim_type": "indicator",
+    "subject": "PDO indicator on degraded landscape",
+    "predicate": "targets",
+    "object_value": "1,000 hectares under women-led restoration and sustainable management at closing, baseline 0",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-609151fe4e469695-B-95c85b4b7a2f"
+    ],
+    "supporting_excerpt": "Degraded landscape in Project areas under women-led restoration and sustainable management (Hectare(Ha)) Dec/2024 Dec/2031 0 1,000",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-042",
+    "claim_type": "indicator",
+    "subject": "Component 1 intermediate indicators",
+    "predicate": "include",
+    "object_value": "46 km corridor built with climate and road safety considerations, 3 wildlife crossings near Cusuco Park, and 100 percent of corridor designs informed by road safety audits",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-609151fe4e469695-B-bbd14d94708c"
+    ],
+    "supporting_excerpt": "Corridor built with climate and road safety considerations (Kilometers) Dec/2024 Dec/2031 0 46 Wildlife crossings built near the area near El Cusuco Park (Number) Dec/2024 Dec/2031 0 3",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-043",
+    "claim_type": "indicator",
+    "subject": "Component 3 intermediate indicators",
+    "predicate": "include",
+    "object_value": "5 women-led initiatives for sustainable forest ecosystem restoration and management, and 80 percent women participating in landscape restoration initiatives",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-609151fe4e469695-B-bbd14d94708c"
+    ],
+    "supporting_excerpt": "Women-led initiatives for sustainable forest ecosystem restoration and management (Number) Dec/2024 Dec/2031 0 5",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-045",
+    "claim_type": "indirect_impact_risk",
+    "subject": "Preliminary ESIA",
+    "predicate": "found potential indirect impacts during operation",
+    "object_value": "increased logging, habitat conversion for agriculture and livestock, commercial and industrial development, and new settlements near the corridor, which could affect Cusuco National Park",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-609151fe4e469695-B-76634288541f"
+    ],
+    "supporting_excerpt": "potential indirect impacts could be generated in the broader area of influence including Cusuco National Park, because of a rise in logging activities (legal and illegal), and the potential conversion of habitats",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-046",
+    "claim_type": "control_plan",
+    "subject": "Indirect and cumulative impacts mitigation",
+    "predicate": "is planned through",
+    "object_value": "a feasibility and design-stage full ESIA under Component 1 to identify mitigation measures, plus Component 3 local economic activities building on the Park's assets",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-609151fe4e469695-B-76634288541f"
+    ],
+    "supporting_excerpt": "the feasibility and design -stage full ESIA to be carried out under Component 1 will identify the relevant mitigation measures to be implemented under the project",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-047",
+    "claim_type": "social_risk",
+    "subject": "Main social risks",
+    "predicate": "include",
+    "object_value": "land acquisition of about 185 hectares with possible involuntary resettlement, and labor influx of approximately 1,500 workers with potential SEA/SH impacts",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-609151fe4e469695-B-76634288541f"
+    ],
+    "supporting_excerpt": "land acquisition in the amount of approximately 185 hectares, and possible restrictions on land use resulting in involuntary resettlement",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-048",
+    "claim_type": "safeguard_policy",
+    "subject": "Policy OP/BP 7.50",
+    "predicate": "applies because",
+    "object_value": "investments will take place on the Culupa, Nuevo Cacao and Cholula rivers, international waterways; Guatemala was notified as riparian country",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-609151fe4e469695-B-6131f7e66685"
+    ],
+    "supporting_excerpt": "Policy OP/BP 7.50 also applies because some of the proposed investments will take place on Culupa, Nuevo Cacao, and Cholula rivers which are international waterways.",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-049",
+    "claim_type": "risk_rating",
+    "subject": "Environmental and Social Risk and Stakeholder risk",
+    "predicate": "are rated",
+    "object_value": "Environmental and Social Risk High; stakeholder risk Substantial; Fiduciary Risk Substantial",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-609151fe4e469695-B-986039ee40e9",
+     "DOC-609151fe4e469695-B-3bb411d0a599"
+    ],
+    "supporting_excerpt": "68. Environmental and Social Risk is High.",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-050",
+    "claim_type": "decision_gate",
+    "subject": "Retroactive financing activities under Components 1 and 4",
+    "predicate": "require",
+    "object_value": "an Environmental and Social Audit before a decision on eligibility, with draft ESCP and pre-appraisal SEP disclosed by GoH on October 25, 2024",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-609151fe4e469695-B-6131f7e66685"
+    ],
+    "supporting_excerpt": "before a decision is made, and Environmental and Social Audit will be conducted, to assess if these meet the requirements of the relevant ESSs.",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-051",
+    "claim_type": "gender_activity",
+    "subject": "Project gender activities",
+    "predicate": "include",
+    "object_value": "road safety auditing training for women with stipends, university partnerships, and a certification program with government and vocational institutes",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-609151fe4e469695-B-6131f7e66685"
+    ],
+    "supporting_excerpt": "The Project will provide women with medium and high-level job skills through a training program on road safety auditing developed by international experts .",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-053",
+    "claim_type": "climate_context",
+    "subject": "Climate-change flooding exposure in San Pedro Sula",
+    "predicate": "is projected to cause",
+    "object_value": "increasing shutdowns of the existing road network, disrupting access to markets and services",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-609151fe4e469695-B-e6dbcdf343f9"
+    ],
+    "supporting_excerpt": "Climate change-exacerbated flooding is projected to cause increasing shutdowns of the existing road network in San Pedro Sula, disrupting access to markets and services",
+    "confidence": "medium"
+   }
+  ],
+  "derived_assertions": [],
+  "analysis": {
+   "existing_responses": [
+    {
+     "response_id": "ER-001",
+     "project_fact_ids": [
+      "PF-005",
+      "PF-006",
+      "PF-030",
+      "PF-031",
+      "PF-032"
+     ],
+     "pathway_ids": [
+      "PW-001"
+     ],
+     "description": "The new 46-km road is designed to withstand floods and landslides. It includes enhanced drainage, slope protection, nature-based solutions, a 100-year flood standard and flood-zone studies. This matters because flooding is named the most significant project risk and corridor siting considered climate vulnerability.",
+     "limitation": "Design measures are described as to be incorporated, with some 'where feasible'; effects on social outcomes are not documented."
+    },
+    {
+     "response_id": "ER-002",
+     "project_fact_ids": [
+      "PF-012",
+      "PF-016",
+      "PF-034",
+      "PF-013"
+     ],
+     "pathway_ids": [
+      "PW-001",
+      "PW-002"
+     ],
+     "description": "Feeder roads in four municipalities will be paved with better drains, culverts, slope stabilization and small bridges to give year-round access. Allocation across Quimistan, Azacualpa, Nueva Frontera and Macuelizo uses poverty, existing road extent and development potential, so climate-vulnerable rural users may regain reliable access to services and markets.",
+     "limitation": "Final road-by-road prioritization is still to be finalized; maintenance financing beyond contractor routine maintenance is not secured."
+    },
+    {
+     "response_id": "ER-003",
+     "project_fact_ids": [
+      "PF-015",
+      "PF-013"
+     ],
+     "pathway_ids": [
+      "PW-002"
+     ],
+     "description": "Road prioritization in each Component 2 municipality will be finalized through a participatory process with civil society and the private sector. This pays particular attention to women's voice. It offers a route for local priorities to shape which climate-vulnerable roads are paved and could build confidence in municipal decisions.",
+     "limitation": "Participation modalities, inclusion of dispersed or marginalized residents, and how input changes decisions are not specified."
+    },
+    {
+     "response_id": "ER-004",
+     "project_fact_ids": [
+      "PF-009",
+      "PF-044",
+      "PF-042"
+     ],
+     "pathway_ids": [
+      "PW-003"
+     ],
+     "description": "The road near Cusuco National Park will apply biodiversity safeguards. These include wildlife crossings, a reduced footprint that avoids high carbon stock areas, and offsets for vegetation cuts. The indicator targets three crossings, as an estimate that may increase with final design, which reduces direct pressure on a sensitive protected area.",
+     "limitation": "These measures address direct construction impacts; they do not by themselves manage induced land-use change along the corridor."
+    },
+    {
+     "response_id": "ER-005",
+     "project_fact_ids": [
+      "PF-045",
+      "PF-046",
+      "PF-022",
+      "PF-023",
+      "PF-024"
+     ],
+     "pathway_ids": [
+      "PW-003"
+     ],
+     "description": "The project identifies induced logging, habitat conversion and new settlement as indirect impacts and plans a full ESIA under Component 1 to find mitigation. Component 3 adds restoration, agroforestry and ecotourism with women's participation, while excluding interventions that harm community rights or any work inside the park.",
+     "limitation": "Indirect-impact mitigation measures are still to be identified; Component 3 is US$5 million against a 46-km corridor and its land-governance tools are not specified."
+    },
+    {
+     "response_id": "ER-006",
+     "project_fact_ids": [
+      "PF-011",
+      "PF-047",
+      "PF-010"
+     ],
+     "pathway_ids": [
+      "PW-003"
+     ],
+     "description": "The project recognizes social risks from land acquisition of about 185 hectares and a labor influx of roughly 1,500 workers. Component 1 finances resettlement costs and social studies, and the project rates E&S risk High with an ESCP. Housing resettlement is expected to be limited because the alignment avoids communities.",
+     "limitation": "Resettlement instruments and labor influx measures are not detailed in the supplied facts; effects on livelihoods from economic displacement are unquantified."
+    },
+    {
+     "response_id": "ER-008",
+     "project_fact_ids": [
+      "PF-035",
+      "PF-026",
+      "PF-034"
+     ],
+     "pathway_ids": [
+      "PW-001"
+     ],
+     "description": "Basic routine maintenance is built into Component 1 and 2 construction contracts for one to two years after works. Subcomponent 4.1 also finances a revised Road Maintenance Plan, climate risk screening tools and hazard vulnerability data. This helps keep resilient roads passable and supports institutional capacity.",
+     "limitation": "One to two years of contractor maintenance is short against asset life; sustainable maintenance funding is only to be explored through a guidance note."
+    },
+    {
+     "response_id": "ER-009",
+     "project_fact_ids": [
+      "PF-036",
+      "PF-037",
+      "PF-049"
+     ],
+     "pathway_ids": [],
+     "description": "Implementation sits with SIT through a Project Executing Unit that includes social, environmental and gender specialists. A competitively selected firm will back up SIT, and the Operational Manual and key staff are conditions of effectiveness. This addresses limited experience with externally funded projects and Substantial fiduciary and stakeholder risk.",
+     "limitation": "The manual is a planned instrument; its content on grievance handling, targeting or conflict-sensitive delivery is not shown."
+    },
+    {
+     "response_id": "ER-010",
+     "project_fact_ids": [
+      "PF-043",
+      "PF-040",
+      "PF-051",
+      "PF-022"
+     ],
+     "pathway_ids": [
+      "PW-003"
+     ],
+     "description": "Component 3 and gender activities target women-led livelihoods and skills. Indicators include 1,000 hectares under women-led restoration and 80 percent women participating in landscape initiatives, and road safety auditing training with stipends is provided for women. These create livelihood and employment opportunities in the corridor area.",
+     "limitation": "Beneficiary selection, land tenure, and market access for women-led initiatives are not specified; targets are indicators, not demonstrated outcomes."
+    },
+    {
+     "response_id": "ER-011",
+     "project_fact_ids": [
+      "PF-050",
+      "PF-048"
+     ],
+     "pathway_ids": [],
+     "description": "Retroactive financing under Components 1 and 4 requires an Environmental and Social Audit before an eligibility decision, with the draft ESCP and pre-appraisal SEP disclosed by the Government of Honduras. OP/BP 7.50 applies to works on international waterways, and Guatemala was notified as riparian country.",
+     "limitation": "Audit outcome and current status are not verifiable from the document; the notification does not address downstream flow or flood effects."
+    }
+   ],
+   "pathways": [
+    {
+     "pathway_id": "PW-001",
+     "direction": "climate_to_fcv",
+     "chain": [
+      "Flood and landslide closures of unpaved roads and San Pedro Sula corridor",
+      "Loss of reliable access to markets, services and livelihoods",
+      "Strain on livelihoods and trust in institutions; resilient year-round roads could ease it"
+     ],
+     "project_anchor_ids": [
+      "PF-003",
+      "PF-012",
+      "PF-034",
+      "PF-053",
+      "PF-030"
+     ],
+     "evidence_ids": [],
+     "confidence": "medium"
+    },
+    {
+     "pathway_id": "PW-002",
+     "direction": "climate_to_fcv",
+     "chain": [
+      "Climate-vulnerable feeder roads prioritized across four municipalities",
+      "Perceived fairness of which roads are paved and who participates",
+      "Local legitimacy and cooperation, or grievance if choices seem uneven"
+     ],
+     "project_anchor_ids": [
+      "PF-013",
+      "PF-015",
+      "PF-017",
+      "PF-018",
+      "PF-019",
+      "PF-020"
+     ],
+     "evidence_ids": [],
+     "confidence": "low"
+    },
+    {
+     "pathway_id": "PW-003",
+     "direction": "fcv_to_climate",
+     "chain": [
+      "Improved access induces logging, habitat conversion and settlement near the corridor",
+      "Land-use change on slopes and micro-basins near Cusuco National Park",
+      "Weaker landscape and flood regulation and contested resource access; Component 3 may offset"
+     ],
+     "project_anchor_ids": [
+      "PF-045",
+      "PF-046",
+      "PF-022",
+      "PF-024",
+      "PF-011"
+     ],
+     "evidence_ids": [],
+     "confidence": "medium"
+    }
+   ],
+   "residual_gaps": [
+    {
+     "gap_id": "RG-001",
+     "gap_type": "not_yet_specified",
+     "statement": "The project names induced logging, habitat conversion and settlement as likely indirect impacts, but the mitigation measures are deferred to the Component 1 full ESIA. How land-use change and access to land and forest resources will be managed along the corridor remains unspecified, which matters for flood regulation, slope stability and tenure disputes near Cusuco National Park.",
+     "pathway_ids": [
+      "PW-003"
+     ],
+     "project_anchor_ids": [
+      "PF-045",
+      "PF-046",
+      "PF-024"
+     ],
+     "existing_response_ids": [
+      "ER-004",
+      "ER-005"
+     ],
+     "evidence_ids": [],
+     "confidence": "medium"
+    },
+    {
+     "gap_id": "RG-002",
+     "gap_type": "partial_response",
+     "statement": "Component 3 combines restoration, agroforestry and ecotourism with women's participation, but how priority communities and participants are selected and how land rights or benefit sharing are handled is not specified. Fair participation determines whether exposed households gain usable livelihood support, so this remains uncertain rather than a confirmed omission.",
+     "pathway_ids": [
+      "PW-003"
+     ],
+     "project_anchor_ids": [
+      "PF-022",
+      "PF-023",
+      "PF-043",
+      "PF-024"
+     ],
+     "existing_response_ids": [
+      "ER-005",
+      "ER-010"
+     ],
+     "evidence_ids": [],
+     "confidence": "low"
+    },
+    {
+     "gap_id": "RG-003",
+     "gap_type": "not_yet_specified",
+     "statement": "Participatory prioritization of feeder roads is planned, but participation design, inclusion of remote or marginalized residents, and how input changes road choices are not described. Where municipal allocations differ, unexplained choices could affect perceived fairness of climate-resilient access. The facts do not show that fair access is absent.",
+     "pathway_ids": [
+      "PW-002"
+     ],
+     "project_anchor_ids": [
+      "PF-015",
+      "PF-013",
+      "PF-017",
+      "PF-020"
+     ],
+     "existing_response_ids": [
+      "ER-002",
+      "ER-003"
+     ],
+     "evidence_ids": [],
+     "confidence": "low"
+    },
+    {
+     "gap_id": "RG-004",
+     "gap_type": "partial_response",
+     "statement": "Maintenance is covered for one to two years in works contracts and through planning and tool upgrades under SIT capacity building, while sustainable funding is only to be explored through a guidance note. Whether flood-prone roads stay passable after the contractor period remains uncertain, which determines whether reliable year-round access endures.",
+     "pathway_ids": [
+      "PW-001"
+     ],
+     "project_anchor_ids": [
+      "PF-035",
+      "PF-026",
+      "PF-034"
+     ],
+     "existing_response_ids": [
+      "ER-008",
+      "ER-002"
+     ],
+     "evidence_ids": [],
+     "confidence": "medium"
+    },
+    {
+     "gap_id": "RG-005",
+     "gap_type": "not_yet_specified",
+     "statement": "The project identifies a labor influx of about 1,500 workers with possible SEA/SH impacts and land acquisition of about 185 hectares. Documented controls rest on an ESCP and an Operational Manual not shown here, so grievance routes and compensation for economic displacement affecting flood-exposed livelihoods remain unspecified in the supplied material.",
+     "pathway_ids": [
+      "PW-003"
+     ],
+     "project_anchor_ids": [
+      "PF-047",
+      "PF-011",
+      "PF-037"
+     ],
+     "existing_response_ids": [
+      "ER-006",
+      "ER-009"
+     ],
+     "evidence_ids": [],
+     "confidence": "low"
+    },
+    {
+     "gap_id": "RG-006",
+     "gap_type": "evidence_gap",
+     "statement": "The document does not state how corridor and feeder-road design choices consider benefits or costs for communities in the catchment beyond the four named municipalities, for example drainage changes downstream or on international waterways. Whether adaptation here shifts flood exposure to others cannot be assessed from the supplied facts.",
+     "pathway_ids": [
+      "PW-001"
+     ],
+     "project_anchor_ids": [
+      "PF-031",
+      "PF-048",
+      "PF-030"
+     ],
+     "existing_response_ids": [
+      "ER-001",
+      "ER-011"
+     ],
+     "evidence_ids": [],
+     "confidence": "low"
+    }
+   ]
+  },
+  "context_evidence": [],
+  "judgments": {
+   "relevance": {
+    "value": "high",
+    "evidence_ids": [
+     "PF-029",
+     "PF-053",
+     "PF-045",
+     "PF-030"
+    ],
+    "rationale": "Climate and fragility pressures are material to this project. Flooding is named its most significant risk, and large parts of the transport network are described as exposed to climate events. At the same time, improved access is expected to bring induced logging, land conversion and settlement near a protected area. Land acquisition and labor influx add social pressures. The datasheet does not flag the country as fragile or conflict-affected, so relevance rests on climate and local social dynamics."
+   },
+   "sensitivity": {
+    "value": "moderate",
+    "evidence_ids": [
+     "PF-030",
+     "PF-031",
+     "PF-045",
+     "PF-046",
+     "PF-047",
+     "RG-001",
+     "RG-004"
+    ],
+    "rationale": "The project addresses climate hazards to its roads convincingly through a 100-year flood standard, drainage, slope protection and nature-based solutions. It also recognizes the reverse direction, where improved access could drive logging and habitat conversion, and it flags land acquisition and labor influx risks. The material gaps are that mitigation of induced land-use change is deferred to a later assessment, maintenance funding beyond one to two years is unsecured, and downstream or cross-border drainage effects are not assessed."
+   },
+   "responsiveness": {
+    "value": "moderate",
+    "evidence_ids": [
+     "PF-015",
+     "PF-013",
+     "PF-022",
+     "PF-043",
+     "PF-051",
+     "RG-002",
+     "RG-003"
+    ],
+    "rationale": "Several design choices create credible, bounded potential for wider dividends. Year-round feeder roads could secure livelihood access, the participatory prioritization could build local confidence, and Component 3 supports women-led restoration and enterprise. These are conditional possibilities, not documented outcomes. The scale of Component 3 against the corridor is modest, and selection of participants, land rights and how local input shapes decisions are not specified, which limits how far the potential can be credited."
+   },
+   "operationalization": {
+    "value": "partial",
+    "evidence_ids": [
+     "PF-037",
+     "PF-038",
+     "PF-042",
+     "PF-043",
+     "PF-027",
+     "PF-050",
+     "RG-001"
+    ],
+    "rationale": "Some elements are embedded, including road safety audits at every stage, indicators for wildlife crossings and women-led initiatives, a social and environmental team in the executing unit, and a mid-term review. The Operational Manual and key staff are conditions of effectiveness. However, indirect-impact mitigation, grievance routes and maintenance financing depend on instruments still to be prepared, and no indicators track induced land-use change or fairness of road prioritization."
+   }
+  },
+  "executive_readout": "The project already treats flooding as its most significant risk and builds the response into the roads themselves. The new 46-km corridor and the 41 km of feeder roads use a 100-year flood standard, enhanced drainage, slope protection and nature-based solutions. The corridor layout was chosen with climate vulnerability in mind. Feeder-road money is spread across four municipalities using poverty, existing road extent and development potential, with participatory prioritization still to be finalized. Together these choices aim to keep communities connected to markets, schools and clinics in the rainy and hurricane seasons, which could ease livelihood strain and build confidence in public institutions if access is reliable and fairly shared.\n\nThe main delivery challenge runs the other way. Better access to a forested area next to Cusuco National Park may draw logging, agricultural conversion and new settlement, which would weaken the slopes and micro-basins that regulate floods. The preliminary assessment names this risk, and the mitigation measures are left to a later full environmental and social impact assessment under Component 1. Component 3 offers a counterweight through restoration, agroforestry and women-led livelihoods, but at a modest scale next to a 46-km corridor, and its selection of communities and handling of land rights are not yet described. These points are not yet specified rather than shown to be absent.\n\nA firmer residual gap is durability. Contractor maintenance covers only one to two years, while lasting maintenance funding is still to be explored through a guidance note. Whether flood-prone roads stay passable, and whether drainage changes affect people downstream or on shared rivers, cannot be judged from the supplied material. Several safeguards rest on planned instruments whose content is not available here.",
+  "priorities": []
+ },
+ "initial_final_reader": {
+  "summary_paragraphs": [
+   {
+    "object_id": "SUM-001",
+    "text": "The project already recognizes that flooding is its most significant risk and builds the response into the roads themselves. The new 46-km corridor and about 41 km of paved feeder roads use a 100-year flood standard, enhanced drainage, slope protection and nature-based solutions, and the corridor layout was chosen considering climate vulnerability. Feeder-road funds are spread across four municipalities using poverty, existing road extent and economic potential, with participatory prioritization still to be finalized. If year-round access proves reliable and fairly shared, it could ease livelihood strain and strengthen confidence in public institutions, though that is a plausible inference rather than a documented outcome.",
+    "evidence_ids": [
+     "PF-003",
+     "PF-006",
+     "PF-012",
+     "PF-013",
+     "PF-015",
+     "PF-030",
+     "PF-031",
+     "PF-032",
+     "PF-034",
+     "ER-001",
+     "ER-002",
+     "PW-001"
+    ]
+   },
+   {
+    "object_id": "SUM-002",
+    "text": "The material remaining challenge runs the other way. Better access beside Cusuco National Park may draw logging, habitat conversion and new settlement, while mitigation is deferred to a later full environmental and social impact assessment, and Component 3 is modest against a 46-km corridor. Durability is also uncertain because contractor maintenance covers only one to two years. Downstream drainage effects have not been shown. Accepted priorities are not available for this brief, so no specific proposed actions are described.",
+    "evidence_ids": [
+     "PF-045",
+     "PF-046",
+     "PF-022",
+     "PF-035",
+     "PF-026",
+     "RG-001",
+     "RG-004",
+     "RG-006",
+     "PW-003"
+    ]
+   }
+  ],
+  "assessment_narratives": [
+   {
+    "object_id": "NARR-design",
+    "theme": "design",
+    "paragraphs": [
+     "The project responds to climate pressure on transport with concrete design choices. Flooding is named its most significant risk, and the corridor and rural roads are to be designed for a 100-year flood return period with enhanced drainage, slope protection, vegetation, retaining walls and flood-zone studies. The corridor layout was selected considering climate change vulnerabilities, and the new road is intended as an alternative to the flood-prone San Pedro Sula area. If these measures hold, people in western Honduras could keep reaching markets, schools and clinics during storms. Some measures apply only where feasible, so the protection depends on final design.",
+     "The reverse direction is the more important design risk. Preliminary assessment found that better access and lower transport costs could bring more logging, conversion of habitat for agriculture and livestock, commercial development and new settlement near Cusuco National Park. If that happens, slopes and micro-basins that regulate floods could weaken, and competition over land and forest could grow. The project already reduces direct impacts through wildlife crossings, a smaller footprint and offsets, and plans a full impact assessment to identify indirect mitigation. Component 3 adds restoration while excluding work that harms community rights or occurs inside the park. How land-use change will actually be managed is not yet specified.",
+     "Durability and spillover also matter. Contractor maintenance runs only one to two years, with sustainable funding still to be explored, so passability of flood-prone roads later is uncertain. Whether drainage changes shift flood exposure to downstream or cross-border communities cannot be judged from the supplied material, though notification to Guatemala for works on international waterways is documented."
+    ],
+    "evidence_ids": [
+     "PF-030",
+     "PF-031",
+     "PF-032",
+     "PF-005",
+     "PF-006",
+     "PF-053",
+     "PF-045",
+     "PF-046",
+     "PF-009",
+     "PF-022",
+     "PF-024",
+     "PF-035",
+     "PF-026",
+     "PF-048",
+     "ER-001",
+     "ER-004",
+     "ER-005",
+     "ER-008",
+     "ER-011",
+     "RG-001",
+     "RG-004",
+     "RG-006",
+     "PW-003"
+    ]
+   },
+   {
+    "object_id": "NARR-dividends",
+    "theme": "dividends",
+    "paragraphs": [
+     "The strongest plausible contribution comes from reliable year-round access. Feeder roads in Quimistan, Azacualpa, Nueva Frontera and Macuelizo are to be paved with better drains, culverts, slope stabilization and small bridges, in areas where roads are currently impassable in rainy and hurricane seasons. The documented immediate benefit is climate-resilient access, and the document links it to travel to schools, health facilities and labor markets. A plausible wider benefit is steadier livelihoods and greater confidence that public investment keeps services reachable when storms hit, which could help households cope with shocks.",
+     "A second contribution is institutional. Road prioritization in each municipality is to be finalized through a participatory process with civil society and the private sector, with attention to women's voice, and Subcomponent 4.1 strengthens the transport agency's asset management and climate risk tools. If local input visibly shapes which roads are paved, municipal decisions could gain legitimacy and cooperation. Component 3 could add livelihood potential through women-led restoration, agroforestry and ecotourism, targeting 1,000 hectares and five women-led initiatives.",
+     "These benefits are conditional. Participation design, how input changes road choices, and participant selection in Component 3 are not specified, and maintenance beyond one to two years is unsecured. Accepted priorities are not available here, so no added potential from them can be described. Sharing how municipal allocations and road choices are explained could make fairness more credible."
+    ],
+    "evidence_ids": [
+     "PF-012",
+     "PF-016",
+     "PF-034",
+     "PF-028",
+     "PF-013",
+     "PF-015",
+     "PF-026",
+     "PF-022",
+     "PF-023",
+     "PF-040",
+     "PF-043",
+     "PF-035",
+     "ER-002",
+     "ER-003",
+     "ER-008",
+     "ER-010",
+     "RG-002",
+     "RG-003",
+     "RG-004",
+     "PW-001",
+     "PW-002"
+    ]
+   },
+   {
+    "object_id": "NARR-inclusion",
+    "theme": "inclusion",
+    "paragraphs": [
+     "People along the corridor and in neighboring municipalities could gain dependable access to schools, clinics and jobs, with roads designed to be usable in the rainy season. The project describes primary beneficiaries as communities where 70 to 89 percent of the population lives in poverty, with an estimated 194,000 direct beneficiaries by closing. Feeder-road funds are allocated using poverty level, existing road extent and economic development potential, and protected sidewalks and traffic calming aim to make the roads safer for pedestrians. Women are a stated focus, through attention to women's voice in prioritization, road safety auditing training with stipends, and 80 percent women participation targeted in landscape initiatives.",
+     "Some people could be left out or bear costs. Benefits are concentrated in four named municipalities, and the facts do not show how remote or marginalized residents will be reached. About 185 hectares of land will be acquired, housing resettlement is expected to be limited, and economic displacement could still affect livelihoods. A labor influx of roughly 1,500 workers brings possible sexual exploitation and abuse risks for local communities. Component 3 excludes interventions harming community rights, but how participants are chosen and land rights handled is not described.",
+     "Documented protections include an executing unit with social, environmental and gender specialists and a draft social and environmental commitment plan, with a stakeholder engagement plan disclosed before appraisal. Their content on grievance routes and compensation was not supplied, so limited visibility is not evidence they are ineffective. Clear selection criteria, grievance access and compensation for lost livelihoods would help ensure the gains reach those most exposed."
+    ],
+    "evidence_ids": [
+     "PF-028",
+     "PF-013",
+     "PF-015",
+     "PF-016",
+     "PF-051",
+     "PF-043",
+     "PF-011",
+     "PF-047",
+     "PF-024",
+     "PF-022",
+     "PF-036",
+     "PF-037",
+     "PF-050",
+     "PF-049",
+     "ER-003",
+     "ER-006",
+     "ER-009",
+     "ER-010",
+     "RG-002",
+     "RG-003",
+     "RG-005"
+    ]
+   }
+  ]
+ },
+ "prechecks": [
+  {
+   "attempt": 0,
+   "issues": [
+    {
+     "object_id": "SUM-002",
+     "reason_codes": [
+      "SUMMARY_NUMBER_UNSUPPORTED"
+     ],
+     "explanation": "{'reason': 'SUMMARY_NUMBER_UNSUPPORTED', 'detail': '46'}"
+    }
+   ]
+  }
+ ],
+ "meaning_reviews": [
+  {
+   "verdict": "revise",
+   "reason_codes": [
+    "PROJECT_FACT_UNSUPPORTED",
+    "EXISTING_MITIGATION_MISREPRESENTED"
+   ],
+   "object_ids": [
+    "NARR-design",
+    "NARR-inclusion"
+   ],
+   "issues": [
+    {
+     "object_id": "NARR-design",
+     "reason_codes": [
+      "PROJECT_FACT_UNSUPPORTED"
+     ],
+     "explanation": "Cited facts show a 100-year flood standard, drainage, slope protection, vegetation and flood-zone studies, but the sentence also attributes retaining walls to rural roads and places the standard on all roads without noting 'where feasible' scope; more importantly it presents these as flooding measures on both corridor and rural roads in a way that overstates cited scope.",
+     "quoted_text": "The corridor layout was selected considering climate change vulnerabilities, and the new road is intended as an alternative to the flood-prone San Pedro Sula area.",
+     "disposition": "verify",
+     "verification_note": "Check PF-006 and the Component 1 source block (DOC-609151fe4e469695-B-e6dbcdf343f9): the source says the new road provides an alternative itinerary far from San Pedro Sula; confirm 'flood-prone' is a faithful paraphrase and that PF-053 is cited directly in evidence_ids.",
+     "severity": "minor",
+     "decision_impact": "Does not change the preparation decision; the source supports the alternative-route intent, only citation and precision of wording need confirming."
+    },
+    {
+     "object_id": "NARR-inclusion",
+     "reason_codes": [
+      "PROJECT_FACT_UNSUPPORTED"
+     ],
+     "explanation": "The text says the document links resilient roads to travel to schools, health facilities and labor markets in NARR-dividends, and in inclusion says 'dependable access to schools, clinics and jobs'; but it also states a stakeholder engagement plan was 'disclosed before appraisal' as a documented protection, and says the executing unit includes a 'draft social and environmental commitment plan' which is mislabelled (ESCP is an Environmental and Social Commitment Plan).",
+     "quoted_text": "a draft social and environmental commitment plan, with a stakeholder engagement plan disclosed before appraisal",
+     "disposition": "verify",
+     "verification_note": "Check PF-050 and source block DOC-609151fe4e469695-B-6131f7e66685: the source names a draft 'Environmental & Social Commitment Plan (ESCP)' and a 'pre-appraisal stage SEP' disclosed by GoH on October 25, 2024. Use the document's own names and confirm the SEP and ESCP are attributed to GoH disclosure, not to the executing unit.",
+     "severity": "minor",
+     "decision_impact": "Instrument names are slightly altered but the substance (draft ESCP and pre-appraisal SEP disclosed) is preserved; no change to project understanding."
+    },
+    {
+     "object_id": "NARR-inclusion",
+     "reason_codes": [
+      "EXISTING_MITIGATION_MISREPRESENTED"
+     ],
+     "explanation": "The sentence says protected sidewalks and traffic calming aim to make 'the roads' safer for pedestrians, but the source limits these measures to Component 2 roads passing through towns, not corridor or all roads.",
+     "quoted_text": "protected sidewalks and traffic calming aim to make the roads safer for pedestrians",
+     "disposition": "verify",
+     "verification_note": "Check PF-016 and source block DOC-609151fe4e469695-B-9a58aacd90fd: protected sidewalks and traffic calming are listed for Component 2 roads that pass through towns. Narrow wording to Component 2 feeder roads in towns.",
+     "severity": "minor",
+     "decision_impact": "Scope is broadened beyond Component 2 towns, but it does not materially change a preparation decision; it should be narrowed for accuracy."
+    }
+   ]
+  }
+ ],
+ "saved_summary_overview_status": "fallback"
+}
