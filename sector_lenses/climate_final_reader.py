@@ -5,7 +5,8 @@ from copy import deepcopy
 import re
 
 from sector_lenses.climate_verified_schemas import (
-    _SUMMARY_MONTHS, SEMANTIC_REVIEW_REASON_CODES, validate_summary_fragment, validate_summary_overview,
+    _SUMMARY_MONTHS, SEMANTIC_REVIEW_REASON_CODES, _summary_strings, validate_summary_fragment,
+    validate_summary_overview,
 )
 
 
@@ -137,6 +138,63 @@ def bind_same_passage_project_references(payload: dict, assessment: dict) -> tup
     return repaired, added
 
 
+def _fact_prose_numbers(fact: dict) -> set[str]:
+    """Numbers stated in a fact's prose; identifier fields are not evidence."""
+    values = [value for key, value in fact.items()
+              if not key.endswith(('_id', '_ids'))]
+    return set(_READER_NUMBER_RE.findall(' '.join(_summary_strings(values))))
+
+
+def bind_same_summary_number_references(payload: dict, assessment: dict) -> tuple[dict, int]:
+    """Bind the one admitted fact that states a number a record uses, without editing prose.
+
+    A compiler can state a figure in two records but cite its fact in only one
+    (Honduras: "46-km corridor" cited by SUM-001, not SUM-002). When a record's
+    own evidence does not support a number, the number is bound only when one
+    admitted fact states it: a fact already cited by a sibling record in this
+    reader is preferred, otherwise the single admitted fact. More than one
+    candidate is ambiguous and nothing is bound. Meaning still requires review.
+    """
+    repaired = deepcopy(payload)
+    support = reader_support_records(assessment)
+    facts = {
+        fact['claim_id']: _fact_prose_numbers(fact) for fact in assessment.get('facts', [])
+        if isinstance(fact, dict) and fact.get('claim_id') in support
+    }
+    records = [record for key in ('summary_paragraphs', 'assessment_narratives')
+               for record in (repaired.get(key) if isinstance(repaired.get(key), list) else [])
+               if isinstance(record, dict)]
+    judgments = assessment.get('judgments', {})
+    added = 0
+    for record in records:
+        refs = record.get('evidence_ids')
+        if not isinstance(refs, list) or not refs or any(ref not in support for ref in refs):
+            continue
+        texts = [record['text']] if 'text' in record else record.get('paragraphs', [])
+        if not isinstance(texts, list):
+            continue
+        sibling_refs = {ref for other in records if other is not record
+                        for ref in (other.get('evidence_ids') or []) if isinstance(ref, str)}
+        for text in texts:
+            for _ in range(len(facts)):
+                diagnostics: dict = {}
+                validate_summary_fragment(text, canonical_text=[support[ref] for ref in refs] + [judgments],
+                                          allow_paraphrase=True, semantic_review_required=True,
+                                          diagnostics=diagnostics)
+                if diagnostics.get('reason') != 'SUMMARY_NUMBER_UNSUPPORTED':
+                    break
+                number = diagnostics.get('detail', '')
+                candidates = [identifier for identifier, numbers in facts.items()
+                              if identifier not in refs and number in numbers]
+                preferred = [identifier for identifier in candidates if identifier in sibling_refs]
+                chosen = preferred or candidates
+                if len(chosen) != 1:
+                    break
+                refs.append(chosen[0])
+                added += 1
+    return repaired, added
+
+
 def validate_final_reader(payload: object, assessment: dict[str, object],
                           *, issues: list[dict] | None = None) -> tuple[list[str], list[dict]]:
     """All-or-nothing precheck: every record must pass, or nothing is returned.
@@ -256,9 +314,61 @@ def validate_final_reader_records(payload: object, assessment: dict[str, object]
     return result(summary if summary_passes else [], passing)
 
 
+def _corrected_paragraphs(original: dict, edits: object, canonical: list[object],
+                          reject) -> list[str] | None:
+    """Apply one record's exact edits, or report why the patch is unusable."""
+    identifier = original['object_id']
+    paragraphs = [original['text']] if 'text' in original else list(original['paragraphs'])
+    if not isinstance(edits, list):
+        return reject('READER_CORRECTION_EDIT_FIELDS_INVALID', identifier)
+    spans: dict[int, list[tuple[int, int, str]]] = {}
+    for edit in edits:
+        if not isinstance(edit, dict) or set(edit) != {'paragraph_index', 'old_text', 'new_text'}:
+            return reject('READER_CORRECTION_EDIT_FIELDS_INVALID', identifier)
+        index, old, new = edit['paragraph_index'], edit['old_text'], edit['new_text']
+        if type(index) is not int or not 0 <= index < len(paragraphs):
+            return reject('READER_CORRECTION_PARAGRAPH_INVALID', identifier)
+        if not isinstance(old, str) or not old.strip() or not isinstance(new, str):
+            return reject('READER_CORRECTION_TEXT_INVALID', identifier)
+        # Conservative sentence boundary: decimals do not match. If an
+        # abbreviation matches, request a smaller clause anchor instead.
+        if any(re.search(r"[.!?][\"'’”)]*\s+\S", text) for text in (old, new)):
+            return reject('READER_CORRECTION_SENTENCE_SCOPE_INVALID', identifier)
+        text = paragraphs[index]
+        start = text.find(old)
+        if start < 0 or text.find(old, start + 1) >= 0:
+            return reject('READER_CORRECTION_ANCHOR_INVALID', identifier)
+        end = start + len(old)
+        existing = spans.setdefault(index, [])
+        if any(start < prior_end and prior_start < end for prior_start, prior_end, _ in existing):
+            return reject('READER_CORRECTION_OVERLAP_INVALID', identifier)
+        existing.append((start, end, new))
+    # Resolve every anchor against the unchanged original, then merge from
+    # right to left so one edit cannot change another edit's location.
+    for index, paragraph_spans in spans.items():
+        for start, end, new in sorted(paragraph_spans, reverse=True):
+            paragraphs[index] = paragraphs[index][:start] + new + paragraphs[index][end:]
+    if any(not text.strip() for text in paragraphs):
+        return reject('READER_CORRECTION_TEXT_INVALID', identifier)
+    diagnostic: dict = {}
+    if not validate_summary_fragment(' '.join(paragraphs), canonical_text=canonical,
+                                     allow_paraphrase=True, semantic_review_required=True,
+                                     diagnostics=diagnostic):
+        return reject('READER_CORRECTION_' + diagnostic.get('reason', 'TEXT_INVALID'), identifier)
+    return paragraphs
+
+
 def apply_reader_corrections(payload: dict, response: object, targets: set[str],
-                             *, issues: list[dict]) -> dict | None:
-    """Merge exact text patches; the model cannot alter evidence or other records."""
+                             *, issues: list[dict],
+                             assessment: dict[str, object] | None = None) -> dict | None:
+    """Merge exact text patches per record; the model cannot alter evidence or other records.
+
+    Each patch stands alone: an unusable patch is reported and dropped, and its
+    record keeps its current text, while valid patches for other records merge.
+    New numbers and dates must already appear in the record's text or, when the
+    assessment is supplied, in the admitted evidence the record cites. Returns
+    None when the response is malformed or no patch could be applied.
+    """
     def reject(code: str, identifier: str = 'reader') -> None:
         issues.append({'object_id': identifier, 'reason_codes': [code], 'explanation': code})
 
@@ -267,70 +377,42 @@ def apply_reader_corrections(payload: dict, response: object, targets: set[str],
         return None
     records = {record['object_id']: record for key in ('summary_paragraphs', 'assessment_narratives')
                for record in payload[key]}
-    patches = {}
+    support = reader_support_records(assessment) if isinstance(assessment, dict) else {}
+    patches: dict[str, list[str]] = {}
+    seen: set[str] = set()
+    duplicated: set[str] = set()
     for patch in response['corrections']:
         if not isinstance(patch, dict) or set(patch) != {'object_id', 'edits'}:
-            reject('READER_CORRECTION_FIELDS_INVALID', patch.get('object_id', 'reader') if isinstance(patch, dict) else 'reader')
-            return None
+            identifier = patch.get('object_id') if isinstance(patch, dict) else None
+            reject('READER_CORRECTION_FIELDS_INVALID', identifier if isinstance(identifier, str) else 'reader')
+            if isinstance(identifier, str):
+                if identifier in seen:
+                    duplicated.add(identifier)
+                seen.add(identifier)
+            continue
         identifier = patch['object_id']
-        if not isinstance(identifier, str) or identifier not in targets or identifier in patches:
+        if not isinstance(identifier, str) or identifier not in targets or identifier not in records:
             reject('READER_CORRECTION_TARGET_INVALID', identifier if isinstance(identifier, str) else 'reader')
-            return None
-        original = records.get(identifier)
-        if original is None:
+            continue
+        if identifier in seen:
+            # Two patches for one record are ambiguous; neither is applied.
             reject('READER_CORRECTION_TARGET_INVALID', identifier)
-            return None
-        paragraphs = [original['text']] if 'text' in original else list(original['paragraphs'])
-        edits = patch['edits']
-        if not isinstance(edits, list):
-            reject('READER_CORRECTION_EDIT_FIELDS_INVALID', identifier)
-            return None
-        spans: dict[int, list[tuple[int, int, str]]] = {}
-        for edit in edits:
-            if not isinstance(edit, dict) or set(edit) != {'paragraph_index', 'old_text', 'new_text'}:
-                reject('READER_CORRECTION_EDIT_FIELDS_INVALID', identifier)
-                return None
-            index, old, new = edit['paragraph_index'], edit['old_text'], edit['new_text']
-            if type(index) is not int or not 0 <= index < len(paragraphs):
-                reject('READER_CORRECTION_PARAGRAPH_INVALID', identifier)
-                return None
-            if not isinstance(old, str) or not old.strip() or not isinstance(new, str):
-                reject('READER_CORRECTION_TEXT_INVALID', identifier)
-                return None
-            # Conservative sentence boundary: decimals do not match. If an
-            # abbreviation matches, request a smaller clause anchor instead.
-            if any(re.search(r"[.!?][\"'’”)]*\s+\S", text) for text in (old, new)):
-                reject('READER_CORRECTION_SENTENCE_SCOPE_INVALID', identifier)
-                return None
-            text = paragraphs[index]
-            start = text.find(old)
-            if start < 0 or text.find(old, start + 1) >= 0:
-                reject('READER_CORRECTION_ANCHOR_INVALID', identifier)
-                return None
-            end = start + len(old)
-            existing = spans.setdefault(index, [])
-            if any(start < prior_end and prior_start < end for prior_start, prior_end, _ in existing):
-                reject('READER_CORRECTION_OVERLAP_INVALID', identifier)
-                return None
-            existing.append((start, end, new))
-        # Resolve every anchor against the unchanged original, then merge from
-        # right to left so one edit cannot change another edit's location.
-        for index, paragraph_spans in spans.items():
-            for start, end, new in sorted(paragraph_spans, reverse=True):
-                paragraphs[index] = paragraphs[index][:start] + new + paragraphs[index][end:]
-        if any(not text.strip() for text in paragraphs):
-            reject('READER_CORRECTION_TEXT_INVALID', identifier)
-            return None
-        original_text = _reader_record_text(original)
-        diagnostic = {}
-        if not validate_summary_fragment(' '.join(paragraphs), canonical_text=original_text,
-                                         allow_paraphrase=True, semantic_review_required=True,
-                                         diagnostics=diagnostic):
-            reject('READER_CORRECTION_' + diagnostic.get('reason', 'TEXT_INVALID'), identifier)
-            return None
-        patches[identifier] = paragraphs
-    if set(patches) != targets or not targets <= records.keys():
+            duplicated.add(identifier)
+            continue
+        seen.add(identifier)
+        original = records[identifier]
+        canonical: list[object] = [_reader_record_text(original)]
+        refs = original.get('evidence_ids')
+        if isinstance(refs, list):
+            canonical.extend(support[ref] for ref in refs if isinstance(ref, str) and ref in support)
+        paragraphs = _corrected_paragraphs(original, patch['edits'], canonical, reject)
+        if paragraphs is not None:
+            patches[identifier] = paragraphs
+    for identifier in duplicated:
+        patches.pop(identifier, None)
+    if not targets <= seen:
         reject('READER_CORRECTION_TARGETS_MISSING')
+    if not patches:
         return None
     corrected = deepcopy(payload)
     for key in ('summary_paragraphs', 'assessment_narratives'):
