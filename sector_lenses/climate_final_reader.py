@@ -13,6 +13,15 @@ from sector_lenses.climate_verified_schemas import (
 _READER_NUMBER_RE = re.compile(r"\b\d+(?:[.,]\d+)?%?\b")
 
 
+def reader_records(payload: object) -> list[dict]:
+    """Summary and finding records that are objects; malformed containers yield none."""
+    if not isinstance(payload, dict):
+        return []
+    return [record for key in ('summary_paragraphs', 'assessment_narratives')
+            for record in (payload.get(key) if isinstance(payload.get(key), list) else [])
+            if isinstance(record, dict)]
+
+
 def _reader_record_text(record: dict) -> str:
     return record.get('text') or ' '.join(record.get('paragraphs', []))
 
@@ -109,8 +118,8 @@ def bind_same_passage_project_references(payload: dict, assessment: dict) -> tup
                         ('statement', 'subject', 'predicate', 'object_value'))
 
     added = 0
-    for record in repaired.get('summary_paragraphs', []) + repaired.get('assessment_narratives', []):
-        refs = record.get('evidence_ids') if isinstance(record, dict) else None
+    for record in reader_records(repaired):
+        refs = record.get('evidence_ids')
         if not isinstance(refs, list) or not refs or any(ref not in support for ref in refs):
             continue
         cited_blocks = {block for ref in refs if ref in facts
@@ -161,9 +170,7 @@ def bind_same_summary_number_references(payload: dict, assessment: dict) -> tupl
         fact['claim_id']: _fact_prose_numbers(fact) for fact in assessment.get('facts', [])
         if isinstance(fact, dict) and fact.get('claim_id') in support
     }
-    records = [record for key in ('summary_paragraphs', 'assessment_narratives')
-               for record in (repaired.get(key) if isinstance(repaired.get(key), list) else [])
-               if isinstance(record, dict)]
+    records = reader_records(repaired)
     judgments = assessment.get('judgments', {})
     added = 0
     for record in records:
@@ -238,10 +245,16 @@ def validate_final_reader_records(payload: object, assessment: dict[str, object]
     support = reader_support_records(assessment)
     paragraphs = payload.get("summary_paragraphs", [])
     narratives = payload.get("assessment_narratives", [])
-    if (not isinstance(paragraphs, list) or not isinstance(narratives, list)
-            or len(narratives) != 3):
-        rejected('reader', 'Reader requires Summary records and exactly three findings.', 'READER_STRUCTURE_INVALID')
+    if not isinstance(paragraphs, list):
+        rejected('reader', 'Reader requires a list of Summary records.', 'READER_STRUCTURE_INVALID')
         return result(structure_valid=False)
+    # A malformed findings list withholds every finding but cannot sink a
+    # Summary whose records are well formed; those are still checked and reviewed.
+    if (not isinstance(narratives, list) or len(narratives) != 3
+            or not all(isinstance(record, dict) for record in narratives)):
+        rejected('reader', 'Reader requires exactly three finding objects; findings are withheld.', 'READER_STRUCTURE_INVALID')
+        record_status['reader-narratives'] = False
+        narratives = []
     ids: set[str] = set()
 
     def grounded(record: dict, texts: list[str]) -> bool:
@@ -262,10 +275,6 @@ def validate_final_reader_records(payload: object, assessment: dict[str, object]
     for index, record in enumerate(paragraphs):
         if not isinstance(record, dict) or record.get('object_id') != f'SUM-{index + 1:03d}':
             rejected('reader', 'Summary IDs must be sequential and unique.', 'READER_STRUCTURE_INVALID')
-            return result(structure_valid=False)
-    for record in narratives:
-        if not isinstance(record, dict):
-            rejected('reader', 'Each finding must be an object.', 'READER_STRUCTURE_INVALID')
             return result(structure_valid=False)
     for record in paragraphs:
         record_status[record['object_id']] = grounded(record, [record.get('text')])
@@ -375,8 +384,8 @@ def apply_reader_corrections(payload: dict, response: object, targets: set[str],
     if not isinstance(response, dict) or set(response) != {'corrections'} or not isinstance(response['corrections'], list):
         reject('READER_CORRECTION_FORMAT_INVALID')
         return None
-    records = {record['object_id']: record for key in ('summary_paragraphs', 'assessment_narratives')
-               for record in payload[key]}
+    records = {record['object_id']: record for record in reader_records(payload)
+               if isinstance(record.get('object_id'), str)}
     support = reader_support_records(assessment) if isinstance(assessment, dict) else {}
     patches: dict[str, list[str]] = {}
     seen: set[str] = set()
@@ -416,8 +425,8 @@ def apply_reader_corrections(payload: dict, response: object, targets: set[str],
         return None
     corrected = deepcopy(payload)
     for key in ('summary_paragraphs', 'assessment_narratives'):
-        for record in corrected[key]:
-            if record['object_id'] in patches:
+        for record in corrected[key] if isinstance(corrected.get(key), list) else []:
+            if isinstance(record, dict) and record.get('object_id') in patches:
                 if key == 'summary_paragraphs':
                     record['text'] = patches[record['object_id']][0]
                 else:
@@ -464,19 +473,16 @@ def valid_reader_revision(review: dict, final_reader: object) -> bool:
             or len(set(identifiers)) != len(identifiers)
             or not all(isinstance(code, str) and code in SEMANTIC_REVIEW_REASON_CODES for code in codes)):
         return False
-    if not isinstance(final_reader, dict) or not all(
-            isinstance(final_reader.get(key), list) and all(isinstance(r, dict) for r in final_reader[key])
-            for key in ("summary_paragraphs", "assessment_narratives")):
+    # The Summary must be well formed; malformed findings are already withheld by
+    # the precheck, so an issue can only anchor in a finding that is an object.
+    if (not isinstance(final_reader, dict) or not isinstance(final_reader.get("summary_paragraphs"), list)
+            or not all(isinstance(r, dict) for r in final_reader["summary_paragraphs"])):
         return False
     records = {}
-    if isinstance(final_reader, dict):
-        for record in (
-            final_reader.get("summary_paragraphs", [])
-            + final_reader.get("assessment_narratives", [])
-        ):
-            identifier = record.get("object_id")
-            if isinstance(identifier, str):
-                records[identifier] = record
+    for record in reader_records(final_reader):
+        identifier = record.get("object_id")
+        if isinstance(identifier, str):
+            records[identifier] = record
     issue_ids, issue_codes = [], set()
     for issue in issues:
         if (not isinstance(issue, dict) or not isinstance(issue.get('object_id'), str)
@@ -572,7 +578,7 @@ def reader_review_notice(payload: object, review: object, assessment: dict[str, 
               'NARR-dividends': 'peace and social dividends', 'NARR-inclusion': 'fair benefits'}
     minor, consequential, marked = [], [], []
     for issue in review['issues']:
-        label = labels['SUM'] if issue['object_id'].startswith('SUM-') else labels[issue['object_id']]
+        label = labels['SUM'] if issue['object_id'].startswith('SUM-') else labels.get(issue['object_id'], 'findings')
         retained = (bool(summary) if issue['object_id'].startswith('SUM-') else
                     any(record['object_id'] == issue['object_id'] for record in narratives))
         target = marked if retained and issue.get('disposition') in {'verify', 'omit_sentence'} else minor if issue.get('severity') == 'minor' else consequential

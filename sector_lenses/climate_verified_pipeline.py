@@ -23,7 +23,7 @@ from sector_lenses.climate_final_reader import (
     valid_reader_revision as _valid_reader_revision,
     apply_reader_corrections, bind_same_passage_project_references,
     bind_same_summary_number_references, reader_support_records,
-    reader_correction_allowed_numeric_date_tokens, validate_final_reader_records, reviewed_final_reader, normalize_reader_paragraphs,
+    reader_correction_allowed_numeric_date_tokens, reader_records, validate_final_reader_records, reviewed_final_reader, normalize_reader_paragraphs,
 )
 
 from sector_lenses.climate_analysis import (
@@ -1891,11 +1891,12 @@ def run_verified_climate_pipeline(
                 reader_review = {}
                 # Repairable text defects must not hide meaning defects from the
                 # one available correction. Invalid evidence/structure still blocks.
-                records_list = (final_reader.get('summary_paragraphs', [])
-                                + final_reader.get('assessment_narratives', []))
+                # Malformed findings are withheld by the precheck (a
+                # READER_STRUCTURE_INVALID issue keeps this unreviewable); only
+                # object records can be reviewed or corrected.
+                records_list = reader_records(final_reader)
                 reviewable = all(
-                    isinstance(record, dict)
-                    and isinstance(record.get('evidence_ids'), list)
+                    isinstance(record.get('evidence_ids'), list)
                     and record['evidence_ids']
                     and all(isinstance(ref, str) and ref in support_records
                             for ref in record['evidence_ids'])
@@ -1958,7 +1959,8 @@ def run_verified_climate_pipeline(
                     reasons.extend(code for issue in precheck_issues for code in issue['reason_codes'])
                     break
                 correction_issues = precheck_issues + (semantic_issues if valid_revision else [])
-                records = {record['object_id']: record for record in records_list}
+                records = {record['object_id']: record for record in records_list
+                           if isinstance(record.get('object_id'), str)}
                 # Text edits cannot repair invalid evidence or structure. Those
                 # records stay withheld; the rest still get the one correction.
                 unrepairable = [issue for issue in correction_issues
