@@ -107,6 +107,16 @@ PROMPT_VERSIONS = {
 }
 
 
+# Output tokens of the shared repair allowance held back from recommendation
+# repairs for the final-reader correction and its fresh review. The run's total
+# allowance is unchanged; this only partitions it. 3,000 covers a correction
+# (452 tokens in the 2026-11-07 Afghanistan run) plus a re-review (1,240-1,276
+# observed; 2,500 budget) and leaves 6,000 for recommendation repairs, above
+# the drafting correction budget (5,000) and about three times the observed
+# repair spend (1,670 + 408).
+READER_CORRECTION_RESERVE_TOKENS = 3_000
+
+
 class JsonClient(Protocol):
     def complete_json(
         self,
@@ -881,7 +891,11 @@ def run_verified_climate_pipeline(
     metric_starts = {role: len(getattr(client, 'call_metrics', []))
                      for role, client in (('assessment', clients.assessment), ('reviewer', clients.reviewer))}
     latency_ms: dict[str, int] = {}
-    repair_allowance = {"remaining": CALL_BUDGETS["recommendation_compiler"].output_tokens}
+    repair_allowance_total = CALL_BUDGETS["recommendation_compiler"].output_tokens
+    reader_reserve = min(READER_CORRECTION_RESERVE_TOKENS, repair_allowance_total)
+    # Recommendation repairs draw on the allowance less the reader reserve; the
+    # reserve is returned before the final reader runs.
+    repair_allowance = {"remaining": repair_allowance_total - reader_reserve}
     reasons: list[str] = []
     repairs: list[str] = []
     suppressed = {
@@ -1841,6 +1855,7 @@ def run_verified_climate_pipeline(
         reasons.append("READINESS_FLAGS_NOT_ACCEPTED")
     readiness = accepted_readiness
 
+    repair_allowance["remaining"] += reader_reserve
     final_reader = {}
     reader_review = {}
     reader_trace = {'prechecks': [], 'meaning_reviews': []}
@@ -2072,7 +2087,7 @@ def run_verified_climate_pipeline(
         model_aliases=model_aliases,
         sampling={"max_transient_retries": 1,
                   "correction_transient_retries": 0,
-                  "correction_output_token_allowance": CALL_BUDGETS["recommendation_compiler"].output_tokens,
+                  "correction_output_token_allowance": repair_allowance_total,
                   "correction_output_token_remaining": repair_allowance["remaining"]},
         source_fingerprints=tuple(item.sha256 for item in source_documents),
         applicability_fingerprint=applicability,
