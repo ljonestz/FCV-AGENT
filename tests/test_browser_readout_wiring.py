@@ -349,7 +349,7 @@ FUNCTION
     priorities:stageThreePriorities.map(p=>p.id)}));
 })().catch(e=>{console.error(e);process.exit(1)});
 """.replace("SCENARIO", json.dumps(scenario)).replace("FUNCTION", function)
-    result = subprocess.run(["node", "-e", script], capture_output=True, text=True)
+    result = subprocess.run(["node", "-e", script], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
     return json.loads(result.stdout.strip().splitlines()[-1])
 
