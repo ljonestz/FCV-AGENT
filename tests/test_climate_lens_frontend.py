@@ -752,7 +752,7 @@ def test_download_html_uses_same_climate_sections_and_order():
     assert "renderClimateDividendSynthesis" not in _seg
     assert "renderWiderFcvContext" not in _seg
     # The normal route reuses the on-screen readout builder.
-    assert "buildNormalReadout(stageOutputs[3]||'',true)" in helper
+    assert "buildNormalReadout(stageOutputs[3]||'',true,_briefHtml)" in helper
 
 
 def test_live_and_shared_priority_extras_switch_climate_panel_only_when_active():

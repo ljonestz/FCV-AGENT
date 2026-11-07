@@ -682,7 +682,7 @@ def test_downloads_remain_detailed_only():
         "stageConciseReadout",
     ):
         assert forbidden not in exports
-    assert "buildNormalReadout(stageOutputs[3]||'',true)" in exports  # readout carries the advisory
+    assert "buildNormalReadout(stageOutputs[3]||'',true,_briefHtml)" in exports  # readout carries the advisory
     assert "review_mode: reviewMode || 'design'" in exports
 
 
