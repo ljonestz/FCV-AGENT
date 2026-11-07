@@ -523,6 +523,18 @@ def test_normal_limitations_lines_and_closing_after():
     assert "\u2014" not in html
 
 
+def test_limitations_are_collapsed_disclosure_on_both_routes():
+    chev = '<span class="fr-disc-chev" aria-hidden="true"><svg'
+    for html in (normal({}), climate(CLIMATE_READER)):
+        sec = html[html.index('<section class="fr-section fr-limits-sec">'):]
+        sec = sec[:sec.index("</section>")]
+        # Heading and its number stay outside the disclosure.
+        assert sec.index('fr-h1-txt">Limitations<') < sec.index('<details class="fr-disc">')
+        assert '<details class="fr-disc"><summary class="fr-disc-sum"><span>Limitations of this screening</span>' + chev in sec
+        assert "<details class=\"fr-disc\" open" not in sec
+        assert sec.index("</summary>") < sec.index('class="fr-limits"') < sec.index("</details>")
+
+
 def test_normal_research_briefing_after_limitations_collapsed():
     html = normal({"researchHtml": "<p>Brief body</p>"})
     assert html.index('fr-h1-txt">Limitations<') < html.index("Background research and sources") < html.index("fr-closing")

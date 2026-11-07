@@ -14,6 +14,8 @@
     climateResponsiveness: 'Does the project use relevant opportunities to generate wider peace and social dividends? Not expected for every project.',
   };
 
+  // Limitations sit in a collapsed disclosure on both routes; printing opens it (beforeprint handler).
+  const LIMITS_SUMMARY = 'Limitations of this screening';
   const CLOSING_LINE = 'This automated screening supports task-team judgment. It is not a compliance, eligibility or clearance decision.';
 
   // Self-contained handlers (no model text) so they also work in the Share .html export.
@@ -588,7 +590,7 @@
       d.partial ? 'This run is partial; some sections may be missing.' : '',
       NORMAL_LIMITATION,
     ];
-    html += k.section('fr-limits-sec', h('Limitations') + k.limitsBox(limits, verifyNotes));
+    html += k.section('fr-limits-sec', h('Limitations') + k.disclosure(LIMITS_SUMMARY, k.limitsBox(limits, verifyNotes)));
     if (d.researchHtml) html += `<details class="fr-disc fr-research"><summary class="fr-disc-sum"><span>Background research and sources</span><span class="fr-disc-chev" aria-hidden="true">${CHEVRON_SVG}</span></summary><div class="fr-disc-body out-body">${d.researchHtml}</div></details>`;
     return linkPriorities(`<article class="fr-readout fr-route-fcv">${head}${k.toc(h.list)}${html}${k.closing()}</article>`, h.list);
   }
@@ -835,7 +837,7 @@
     const trail = r.evidence_trail || {};
     const limits = Array.isArray(trail.limitations) ? trail.limitations.filter(Boolean).join(' ') : String(trail.limitations || '').trim();
     const limitsText = limits || 'This automated screening is advisory and is limited by the coverage and detail of the uploaded documents. The team should confirm material findings through project and country expertise.';
-    html += k.section('fr-limits-sec', h('Limitations') + k.limitsBox([...provenanceLimits(o.fileNames, o.researchBrief, 'Where a document could not be read'), fallbackNote, ...withheldNotes, limitsText, r.advisory_notice], verifyNotes));
+    html += k.section('fr-limits-sec', h('Limitations') + k.disclosure(LIMITS_SUMMARY, k.limitsBox([...provenanceLimits(o.fileNames, o.researchBrief, 'Where a document could not be read'), fallbackNote, ...withheldNotes, limitsText, r.advisory_notice], verifyNotes)));
     const saysAlready = /does not constitute/i.test(`${limitsText} ${r.advisory_notice || ''}`);
     return linkPriorities(`<article class="fr-readout fr-route-climate">${head}${k.toc(h.list)}${html}${saysAlready ? '' : k.closing()}</article>`, h.list);
   }
