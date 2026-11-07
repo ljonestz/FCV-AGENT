@@ -139,11 +139,36 @@ def bind_same_passage_project_references(payload: dict, assessment: dict) -> tup
 
 def validate_final_reader(payload: object, assessment: dict[str, object],
                           *, issues: list[dict] | None = None) -> tuple[list[str], list[dict]]:
+    """All-or-nothing precheck: every record must pass, or nothing is returned.
+
+    Kept for callers that certify a whole reader; admission uses the per-record
+    result from validate_final_reader_records.
+    """
+    result = validate_final_reader_records(payload, assessment, issues=issues)
+    if (not result['structure_valid'] or not result['summary']
+            or not all(result['record_status'].values())):
+        return [], []
+    return result['summary'], payload['assessment_narratives']
+
+
+def validate_final_reader_records(payload: object, assessment: dict[str, object],
+                                  *, issues: list[dict] | None = None) -> dict[str, object]:
     """Allow paraphrase, with each paragraph bound to specific admitted evidence.
 
     This checks numbers, dates, identifiers and format, not meaning. Independent
     reader_review is mandatory before these paragraphs may be published.
+
+    Returns ``structure_valid`` (reader shape), ``record_status`` (pass/fail by
+    object_id), ``summary`` (normalized Summary paragraphs, only when every
+    Summary record passes) and ``narratives`` (the passing narrative records).
     """
+    record_status: dict[str, bool] = {}
+
+    def result(summary: list[str] | None = None, passing: list[dict] | None = None,
+               structure_valid: bool = True) -> dict[str, object]:
+        return {'structure_valid': structure_valid, 'record_status': record_status,
+                'summary': summary or [], 'narratives': passing or []}
+
     def rejected(identifier: object, explanation: str, code: str = 'READER_FORMAT_INVALID') -> bool:
         if issues is not None and isinstance(identifier, str):
             issues.append({'object_id': identifier, 'reason_codes': [code], 'explanation': explanation})
@@ -151,14 +176,14 @@ def validate_final_reader(payload: object, assessment: dict[str, object],
 
     if not isinstance(payload, dict):
         rejected('reader', 'Reader must be an object.', 'READER_STRUCTURE_INVALID')
-        return [], []
+        return result(structure_valid=False)
     support = reader_support_records(assessment)
     paragraphs = payload.get("summary_paragraphs", [])
     narratives = payload.get("assessment_narratives", [])
     if (not isinstance(paragraphs, list) or not isinstance(narratives, list)
             or len(narratives) != 3):
         rejected('reader', 'Reader requires Summary records and exactly three findings.', 'READER_STRUCTURE_INVALID')
-        return [], []
+        return result(structure_valid=False)
     ids: set[str] = set()
 
     def grounded(record: dict, texts: list[str]) -> bool:
@@ -176,13 +201,16 @@ def validate_final_reader(payload: object, assessment: dict[str, object],
                 return rejected(identifier, str(diagnostics), diagnostics.get('reason', 'READER_FORMAT_INVALID'))
         return True
 
-    valid = True
     for index, record in enumerate(paragraphs):
         if not isinstance(record, dict) or record.get('object_id') != f'SUM-{index + 1:03d}':
             rejected('reader', 'Summary IDs must be sequential and unique.', 'READER_STRUCTURE_INVALID')
-            return [], []
-        if not grounded(record, [record.get('text')]):
-            valid = False
+            return result(structure_valid=False)
+    for record in narratives:
+        if not isinstance(record, dict):
+            rejected('reader', 'Each finding must be an object.', 'READER_STRUCTURE_INVALID')
+            return result(structure_valid=False)
+    for record in paragraphs:
+        record_status[record['object_id']] = grounded(record, [record.get('text')])
     summary_diagnostics: dict = {}
     summary = validate_summary_overview(
         {"paragraphs": [record.get("text") for record in paragraphs]},
@@ -199,30 +227,33 @@ def validate_final_reader(payload: object, assessment: dict[str, object],
                            if summary_diagnostics.get('reason') == 'SUMMARY_WORD_COUNT'
                            else str(summary_diagnostics))
             rejected(record['object_id'], explanation, summary_diagnostics.get('reason', 'READER_FORMAT_INVALID'))
-        valid = False
+            record_status[record['object_id']] = False
     themes: set[str] = set()
-    for record in narratives:
-        if not isinstance(record, dict):
-            rejected('reader', 'Each finding must be an object.', 'READER_STRUCTURE_INVALID')
-            return [], []
+    passing: list[dict] = []
+    for position, record in enumerate(narratives):
         theme, texts = record.get("theme"), record.get("paragraphs")
+        identifier = record.get('object_id')
+        status_key = identifier if isinstance(identifier, str) and identifier not in record_status else f'reader-narrative-{position}'
         if (not isinstance(theme, str) or theme not in {"design", "dividends", "inclusion"} or theme in themes
-                or record.get("object_id") != f"NARR-{theme}"
+                or identifier != f"NARR-{theme}"
                 or not isinstance(texts, list) or not 1 <= len(texts) <= 3
                 or any(not isinstance(text, str) for text in texts)):
-            rejected(record.get('object_id'), 'Use the required ID/theme and one to three text paragraphs.', 'READER_STRUCTURE_INVALID')
+            rejected(identifier, 'Use the required ID/theme and one to three text paragraphs.', 'READER_STRUCTURE_INVALID')
             valid = False
         else:
             # Presentation defects must not mask unsupported evidence references.
-            if not grounded(record, texts):
-                valid = False
+            valid = grounded(record, texts)
             count = sum(len(text.split()) for text in texts)
             if not 1 <= count <= 400:
-                rejected(record['object_id'], f'Finding has {count} words; nonempty prose is required and the hard ceiling is 400 (editorial target 180-240).', 'READER_WORD_COUNT')
+                rejected(identifier, f'Finding has {count} words; nonempty prose is required and the hard ceiling is 400 (editorial target 180-240).', 'READER_WORD_COUNT')
                 valid = False
+        record_status[status_key] = valid
+        if valid:
+            passing.append(record)
         if isinstance(theme, str):
             themes.add(theme)
-    return (summary, narratives) if valid else ([], [])
+    summary_passes = bool(summary) and all(record_status[record['object_id']] for record in paragraphs)
+    return result(summary if summary_passes else [], passing)
 
 
 def apply_reader_corrections(payload: dict, response: object, targets: set[str],
@@ -337,7 +368,10 @@ def review_display_text(texts: list[str], issue: dict) -> list[str] | None:
 
 
 def valid_reader_revision(review: dict, final_reader: object) -> bool:
-    """Reject incomplete diagnostics before spending the single text correction."""
+    """Reject incomplete diagnostics before spending the single text correction.
+
+    Several issues may target one record; each must anchor its own quote.
+    """
     if review.get('verdict') != 'revise':
         return False
     issues, identifiers, codes = (review.get(key) for key in ('issues', 'object_ids', 'reason_codes'))
@@ -392,18 +426,26 @@ def valid_reader_revision(review: dict, final_reader: object) -> bool:
             return False
         issue_ids.append(issue['object_id'])
         issue_codes.update(issue['reason_codes'])
-    # Complete anchored findings control disposition; surplus aggregate codes remain visible metadata warnings.
-    return (len(set(issue_ids)) == len(issue_ids)
-            and set(issue_ids) == set(identifiers) and issue_codes <= set(codes))
+    # Complete anchored findings control disposition; surplus aggregate codes remain
+    # visible metadata warnings. A record may carry several anchored issues, but the
+    # aggregate object_ids list names each record once.
+    return set(issue_ids) == set(identifiers) and issue_codes <= set(codes)
 
 
 def reviewed_final_reader(payload: object, review: object, assessment: dict[str, object]) -> tuple[list[str], list[dict]]:
-    """Keep reviewed usable sections; a partial review never certifies publication."""
-    summary, narratives = validate_final_reader(payload, assessment)
-    if not summary or not narratives or not isinstance(review, dict):
+    """Keep reviewed usable sections; a partial review never certifies publication.
+
+    Admission is per record. The Summary is admitted when every Summary record
+    passes the precheck and none is withheld by review, whatever happens to the
+    narratives; each narrative is admitted or dropped on its own. A record that
+    fails the precheck is never admitted, whatever the review says.
+    """
+    checked = validate_final_reader_records(payload, assessment)
+    summary, narratives = checked['summary'], checked['narratives']
+    if not checked['structure_valid'] or (not summary and not narratives) or not isinstance(review, dict):
         return [], []
     if review.get('verdict') == 'pass':
-        return (summary, narratives) if all(review.get(k) == [] for k in ('object_ids', 'reason_codes', 'issues')) else ([], [])
+        return (list(summary), list(narratives)) if all(review.get(k) == [] for k in ('object_ids', 'reason_codes', 'issues')) else ([], [])
     if not valid_reader_revision(review, payload):
         return [], []
     summary = list(summary)
@@ -412,6 +454,8 @@ def reviewed_final_reader(payload: object, review: object, assessment: dict[str,
     for issue in review['issues']:
         identifier = issue['object_id']
         if identifier.startswith('SUM-'):
+            if not summary:
+                continue  # Already withheld by the precheck.
             index = next(i for i, record in enumerate(payload['summary_paragraphs']) if record['object_id'] == identifier)
             changed = review_display_text([summary[index]], issue)
             if changed is not None:
@@ -419,7 +463,9 @@ def reviewed_final_reader(payload: object, review: object, assessment: dict[str,
             elif issue.get('severity') != 'minor' or 'disposition' in issue:
                 withheld.add(identifier)
         else:
-            record = next(record for record in narratives if record['object_id'] == identifier)
+            record = next((record for record in narratives if record['object_id'] == identifier), None)
+            if record is None:
+                continue  # Dropped by the precheck.
             changed = review_display_text(record['paragraphs'], issue)
             if changed is not None:
                 record['paragraphs'] = changed

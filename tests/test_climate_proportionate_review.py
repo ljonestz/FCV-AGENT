@@ -87,7 +87,10 @@ def test_minor_cannot_override_invalid_evidence(assessment):
     final = deepcopy(assessment['final_reader'])
     review = review_for(final)
     final['assessment_narratives'][0]['evidence_ids'] = ['PF-MISSING']
-    assert reviewed_final_reader(final, review, assessment) == ([], [])
+    # Admission is per record: the invalid finding is dropped, never the clean Summary.
+    summary, narratives = reviewed_final_reader(final, review, assessment)
+    assert summary
+    assert final['assessment_narratives'][0]['object_id'] not in [r['object_id'] for r in narratives]
 
 
 def test_minor_runtime_stops_without_paid_correction_and_keeps_attention():
