@@ -207,6 +207,16 @@
     return month ? `${Number(m[3])} ${month} ${m[1]}` : '';
   }
 
+  // Shortens text to at most `max` characters at a word boundary, adding an ellipsis when cut.
+  function shortenAtWord(text, max) {
+    const value = String(text || '').replace(/\s+/g, ' ').trim();
+    if (value.length <= max) return value;
+    const cut = value.slice(0, max + 1);
+    const space = cut.lastIndexOf(' ');
+    const head = (space > 0 ? cut.slice(0, space) : value.slice(0, max)).replace(/[\s,;:.\-]+$/, '');
+    return `${head}\u2026`;
+  }
+
   // Limitations provenance lines shared by both routes: uploaded documents and research retrieval date.
   // `unreadClause` opens the unreadable-file sentence (the climate route has no Executive Summary to point to).
   function provenanceLimits(fileNames, researchBrief, unreadClause) {
@@ -414,7 +424,9 @@
       const allZones = p.zones || [];
       const at = Number.isInteger(p.draftsAt) ? p.draftsAt : allZones.length;
       const drafts = (p.drafts || []).filter(d => d.text).map(d => `<section class="fr-draft"><div class="fr-draft-hd"><div class="fr-draft-lbl">${esc(d.label)}</div><button type="button" class="fr-copy" data-copy-skip onclick="${COPY_DRAFT_HANDLER}">Copy</button></div>${d.forText ? `<div class="fr-draft-for">For: ${esc(d.forText)}</div>` : ''}<p dir="auto" class="fr-draft-text">${esc(d.text)}</p></section>`).join('');
-      const cycle = p.cycle && p.cycle.text ? `<p class="fr-cycle"><strong>${esc(p.cycle.label || 'When to address')}:</strong> ${esc(p.cycle.text)}</p>` : '';
+      const line = x => x && x.text ? `<p class="fr-cycle"><strong>${esc(x.label || 'When to address')}:</strong> ${esc(x.text)}</p>` : '';
+      // Labelled one-line notes (e.g. the full suggested lead) sit just above the project-cycle line.
+      const cycle = (p.lines || []).map(line).join('') + line(p.cycle);
       const meta = p.supHtml ? `<span class="fr-pc-meta">${p.supHtml}</span>` : '';
       const src = Number.isInteger(p.srcIndex) ? ` data-fr-src-index="${p.srcIndex}"` : '';
       return `<details class="fr-pc" id="${p.id}"${src}${p.open ? ' open' : ''}><summary class="fr-pc-hdr"><span class="fr-pc-rank">${p.rank}</span><span class="fr-pc-title">${meta}<span dir="auto" class="fr-pc-title-txt">${esc(p.title)}</span></span><span class="fr-pc-chev" aria-hidden="true">${CHEVRON_SVG}</span></summary><div class="fr-pc-body">${zoneHtml(allZones.slice(0, at))}${drafts}${zoneHtml(allZones.slice(at))}${cycle}${p.extraHtml || ''}</div></details>`;
@@ -790,12 +802,13 @@
         const optional = optionalText && fresh(optionalText) ? [optionalText] : [];
         return k.priorityCard({
           id: `fr-priority-${rank}`, rank, open: i === 0, title: priorityTitle(p.title), draftsAt: 2,
-          supHtml: [confidencePill(k, p.confidence, ' confidence'), lead ? `Lead: ${k.esc(lead)}` : '', k.esc(target)].filter(Boolean).join(' &middot; '),
+          supHtml: [confidencePill(k, p.confidence, ' confidence'), lead ? `Lead: ${k.esc(shortenAtWord(lead, 40))}` : '', k.esc(target)].filter(Boolean).join(' &middot; '),
           zones: [{ label: 'Why this matters', html: k.paragraphs(why) }, { label: 'What the team could do', html: k.paragraphs(act) },
             { label: 'Practical considerations', html: k.paragraphs([practical.join(' ')]) },
             { label: 'Optional further work', html: k.paragraphs(optional) }],
           drafts: [cur && { label: 'Suggested Text', forText: target, text: cur.text },
             opd && { label: 'Suggested Text for an operational instrument', forText: [titleKey(opd.target_document), titleKey(opd.target_section)].filter(Boolean).join(' - '), text: opd.text }].filter(Boolean),
+          lines: [{ label: 'Suggested lead', text: lead }],
           cycle: { label: cycle.primary_label || 'When to address', text: cycle.primary_text || '' },
           extraHtml: typeof o.priorityExtras === 'function' ? o.priorityExtras(p, i) : '',
         });
@@ -848,7 +861,7 @@
     return linkPriorities(`<article class="fr-readout fr-route-climate">${head}${k.toc(h.list)}${html}${saysAlready ? '' : k.closing()}</article>`, h.list);
   }
 
-  const api = { FCV_SCALE, CLIMATE_SCALE, FOCUS_LABELS, DEFINITIONS, CLOSING_LINE, CHEVRON_SVG, PINNED_CLIMATE_GUIDANCE, NORMAL_GUIDANCE, parseStage3Sections, parseSupplementaryPoints, researchDate, provenanceLimits, researchSources, orderByLevel, stripTagNotes, extractVerifyNotes, cleanVerifyNote, displayFileName, create };
+  const api = { FCV_SCALE, CLIMATE_SCALE, FOCUS_LABELS, DEFINITIONS, CLOSING_LINE, CHEVRON_SVG, PINNED_CLIMATE_GUIDANCE, NORMAL_GUIDANCE, parseStage3Sections, parseSupplementaryPoints, researchDate, provenanceLimits, shortenAtWord, researchSources, orderByLevel, stripTagNotes, extractVerifyNotes, cleanVerifyNote, displayFileName, create };
   root.FcvReadout = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

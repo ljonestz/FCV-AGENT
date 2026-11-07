@@ -226,7 +226,7 @@ def test_climate_readout_structure():
     assert "Operationalization: Early." in html and "Climate relevance: High." in html
     assert 'href="https://example.org/a"' in html and "javascript:" not in html
     assert "Concept stage only." in html and "Supports judgment." in html
-    assert "Lead: Team" in html and "Suggested lead" not in html and "fr-ptable" not in html
+    assert "Lead: Team" in html and "<strong>Suggested lead:</strong> Team</p>" in html and "fr-ptable" not in html
     assert "2 priority actions are identified by the FCV Screener." in html
 
 
@@ -867,3 +867,20 @@ def test_collapsed_disclosures_show_item_counts_on_both_routes():
     guides = html[html.index('fr-h1-txt">Relevant WBG Guidance<'):html.index('fr-h1-txt">Limitations<')]
     assert f"<span>Selected WBG resources for the team ({guides.count('class=\"fr-guide\"')})</span>" in guides
     assert "(0)" not in run_js("process.stdout.write(api.disclosure('Empty', '<p></p>', 0));")
+
+
+def test_climate_lead_meta_is_shortened_and_full_lead_sits_in_card_body():
+    long_lead = "Task Team Leader with the implementing agency safeguards and M&E specialists."
+    reader = dict(CLIMATE_READER, priorities=[dict(CLIMATE_READER["priorities"][1], responsible_function=long_lead)])
+    html = climate(reader)
+    summary = html[html.index('id="fr-priority-1"'):]
+    body = summary[summary.index("</summary>"):]
+    summary = summary[:summary.index("</summary>")]
+    assert "Lead: Task Team Leader with the implementing\u2026" in summary
+    assert "safeguards" not in summary
+    assert "<strong>Suggested lead:</strong> Task Team Leader with the implementing agency safeguards and M&amp;E specialists</p>" in body
+    shorten = lambda t: json.loads(run_js(f"process.stdout.write(JSON.stringify(FR.shortenAtWord({json.dumps(t)}, 40)));"))
+    assert shorten("Task team") == "Task team"
+    assert shorten("Implementing agency, with the ministry of water resources") == "Implementing agency, with the ministry\u2026"
+    out = shorten(long_lead)
+    assert len(out) <= 41 and out.endswith("\u2026") and not out[:-1].endswith(" ")
