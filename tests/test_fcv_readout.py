@@ -615,7 +615,7 @@ def test_pinned_climate_reports_on_climate_route_only_in_order():
     assert all(t not in normal_block for t in PINNED)
     assert normal_block.count('class="fr-guide"') == 7
     assert "Relevant to this project" not in normal_block
-    assert normal_block.index("World Bank Group Strategy for Fragility") < normal_block.index(">Forced Displacement</a>")
+    assert normal_block.index("Strategy for Engaging in FCV Settings (2026-2030)") < normal_block.index(">Forced Displacement</a>")
 
 
 def test_climate_pinned_report_from_server_is_not_duplicated_and_blurb_renders():
