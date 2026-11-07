@@ -11,7 +11,7 @@ from sector_lenses.research import verify_climate_research_claims
 from sector_lenses.climate_verified_prompts import build_verified_stage_prompt
 from tests.test_climate_summary_completeness import _run_multiple, GAP_TEXTS
 from tests.test_climate_quality3_regressions import _quoted_bundle
-from tests.test_climate_lens_frontend import INDEX, _extract_js_function, _js_escape_helper
+from tests.test_climate_lens_frontend import _readout_harness, _run_node
 
 
 def test_new_responsiveness_classification_cannot_enter_only_through_narrative():
@@ -74,13 +74,15 @@ def test_only_cited_sources_and_provider_publication_dates_are_retained():
 
 
 def test_dividend_gap_list_keeps_scope_relative_optional_message():
-    source=INDEX.read_text(encoding="utf-8")
-    script=_js_escape_helper()+_extract_js_function(source,"boldEscapedFirstSentence")+_extract_js_function(source,"renderClimateSummaryGaps")
-    script+="\nconsole.log(renderClimateSummaryGaps("+json.dumps({"summary_gaps":[{"text":text} for text in GAP_TEXTS]})+",[]));"
-    result=subprocess.run(["node","-"],input=script,text=True,capture_output=True)
+    script=_readout_harness()+"\nconsole.log(renderClimateVerifiedAssessment("+json.dumps({"summary_gaps":[{"text":text} for text in GAP_TEXTS]})+"));"
+    result=_run_node(script)
     assert result.returncode==0,result.stderr
-    assert result.stdout.count('<li class="normal-summary-gap"')==5
-    assert "Optional wider dividends depend on the project's scope" in result.stdout
+    start=result.stdout.index("Key gaps at this stage")
+    block=result.stdout[start:result.stdout.index("</section>",start)]
+    assert block.count('<p class="fr-p">')==5
+    text=block.replace("<strong>","").replace("</strong>","")
+    assert "A wider livelihoods dividend remains an optional opportunity." in text
+    assert "any additional action depends on the project's objectives and delivery capacity." in text
 
 
 def test_prompts_keep_titles_minimum_actions_and_dividend_classification_aligned():

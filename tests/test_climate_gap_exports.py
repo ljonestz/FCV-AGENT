@@ -33,9 +33,11 @@ def test_legacy_reader_without_gap_projection_keeps_export_behavior():
 
 
 
-def test_browser_detailed_renderer_retains_the_same_gap_findings_for_html_sharing():
-    from tests.test_climate_lens_frontend import INDEX, _extract_js_function
-    helper=_extract_js_function(INDEX.read_text(encoding="utf-8"),"renderClimateVerifiedAssessment")
-    assert "r.summary_gaps" in helper
-    assert "Supporting gap findings" in helper
-    assert "renderClimateVerifiedSummary" not in helper
+def test_browser_readout_retains_the_same_gap_findings_for_html_sharing():
+    from tests.test_climate_lens_frontend import INDEX, READOUT_MODULE, _extract_js_function
+    wrapper=_extract_js_function(INDEX.read_text(encoding="utf-8"),"renderClimateVerifiedAssessment")
+    module=READOUT_MODULE.read_text(encoding="utf-8")
+    assert "frApi().renderClimate(" in wrapper
+    assert "r.summary_gaps" in module
+    assert "Key gaps at this stage" in module
+    assert "renderClimateVerifiedSummary" not in wrapper

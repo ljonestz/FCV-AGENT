@@ -64,5 +64,5 @@ def test_metadata_helpers_disable_thinking_and_select_text_blocks():
 def test_unresolved_preparation_notice_has_browser_and_export_parity():
     root = Path(app.__file__).parent
     notice = "Preparation route: confirm the OIS date and applicable review; the upload does not establish them."
-    assert (root / "index.html").read_text(encoding="utf-8").count(notice) == 2
+    assert (root / "index.html").read_text(encoding="utf-8").count(notice) == 1
     assert (root / "sector_lenses/climate_verified_render.py").read_text(encoding="utf-8").count(notice) == 2

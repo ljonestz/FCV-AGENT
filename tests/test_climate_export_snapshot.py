@@ -86,6 +86,7 @@ const document={querySelectorAll:()=>[],body:{appendChild:()=>{}},createElement:
 const URL={createObjectURL:()=>'',revokeObjectURL:()=>{}};
 const renderClimateVerifiedAssessment=r=>{rendered++;return r.executive_readout;};
 const climatePrintDisclosureScript=()=>'';
+const screenerCaveatHtml=()=>'';
 const scenario=SCENARIO;
 if(scenario==='missing')climateVerifiedReader=null;
 const fetch=async()=>{

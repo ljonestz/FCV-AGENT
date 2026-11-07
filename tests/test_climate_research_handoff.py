@@ -68,7 +68,7 @@ def test_pruned_analysis_has_a_plain_reader_limitation():
 
 
 
-def test_pruned_analysis_notice_is_retained_in_html_word_and_both_views():
+def test_pruned_analysis_notice_is_retained_in_html_word_and_browser_readout():
     from io import BytesIO
     from docx import Document
     from sector_lenses.climate_verified_render import render_reader_html, write_reader_docx
@@ -79,10 +79,9 @@ def test_pruned_analysis_notice_is_retained_in_html_word_and_both_views():
     stream=BytesIO();write_reader_docx(reader,stream);stream.seek(0)
     assert message in " ".join(p.text for p in Document(stream).paragraphs)
     source=INDEX.read_text(encoding="utf-8")
-    for name in ("renderClimateVerifiedSummary","renderClimateVerifiedAssessment"):
-        helper=_extract_js_function(source,name)
-        assert "analysis_status" in helper and "analysis_message" in helper
-        assert "Assessment evidence is incomplete" in helper
+    helper=_extract_js_function(source,"renderClimateVerifiedAssessment")
+    assert "analysis_status" in helper and "analysis_message" in helper
+    assert "Assessment evidence is incomplete" in helper
 
 
 def test_pause_turn_search_hits_are_counted_across_preserved_turns():

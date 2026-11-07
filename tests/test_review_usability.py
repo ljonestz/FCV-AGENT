@@ -125,9 +125,12 @@ def test_context_rating_meanings_are_six_tier_and_responsiveness_is_not_a_qualit
 def test_export_labels_word_annex_difference_and_html_keeps_full_sections():
     source = _source()
     assert "Word export" in source and "Annex" in source
-    assert "researchBrief" in source[source.index("function downloadHTML()") :]
-    assert "stageThreePriorities.forEach" in source[source.index("function downloadHTML()") :]
-    assert "md(stripWatchHeading(horizonConsiderations))" in source[source.index("function downloadHTML()") :]
+    export = source[source.index("function downloadHTML()") :]
+    assert "researchBrief" in export
+    # Priorities and the watch list come from the shared readout builder, not a bespoke loop.
+    assert "buildNormalReadout(stageOutputs[3]||'',true)" in export
+    assert "md(stripWatchHeading(group.narrative))" in source
+    assert "watchHtml:renderNormalFcvWatchBody()" in source
 
 
 

@@ -3,8 +3,6 @@
 import copy
 import json
 import os
-import re
-from pathlib import Path
 import subprocess
 import sys
 
@@ -359,7 +357,6 @@ def test_concise_contract_preserves_detail_and_covers_overall_assessment():
     assert "Add these optional fields" not in contract
 
 
-
 @pytest.mark.parametrize(
     "prompt_key,review_mode,doc_type",
     [("3", "design", "PID"), ("impl_3", "implementation", "ISR")],
@@ -422,8 +419,6 @@ def test_default_stage3_json_schema_embeds_concise_fields():
 def test_stage3_prompt_contract_is_wired_to_both_workflows():
     source = open(app.__file__, encoding="utf-8").read()
     assert source.count("append_core_concise_stage3_contract(") == 3
-
-
 
 
 def _decode_sse(response):
@@ -602,49 +597,36 @@ def _extract_js_function(source: str, name: str) -> str:
     raise AssertionError(f"Unterminated JS helper {name}()")
 
 
-def test_frontend_declares_shared_summary_state_capability_and_fallback():
+def test_frontend_declares_concise_state_and_capability_gate():
     source = open(os.path.join(os.path.dirname(app.__file__), "index.html"), encoding="utf-8").read()
 
     for expected in (
         "let stageConciseReadout",
         "function supportsConciseStage3View(",
-        "function supportsAnyStage3Summary(",
-        "function renderNormalFcvSummary(",
-        "function renderFcvRatingIndicators(",
-        "function renderStage3Summary(",
-        "concise_readout_unavailable",
-        "The summary was unavailable for this run; the full analysis is shown.",
     ):
         assert expected in source
-    assert "stage3View=supportsAnyStage3Summary()?'summary':'detailed'" in source
 
 
-def test_frontend_rejects_incomplete_saved_readout_and_keeps_fallback_diagnostic():
+def test_frontend_rejects_incomplete_saved_readout():
     source = open(os.path.join(os.path.dirname(app.__file__), "index.html"), encoding="utf-8").read()
     supports = _extract_js_function(source, "supportsConciseStage3View")
-    unavailable = _extract_js_function(source, "conciseUnavailableHtml")
     script = f"""
 let activeLenses=[];
 let stageThreePriorities={json.dumps(_payload()["priorities"])};
 let stageConciseReadout={json.dumps(CONCISE_READOUT)};
 {supports}
-{unavailable}
+if(!supportsConciseStage3View())throw new Error('rejected a complete saved readout');
 for(const field of ['strengths_transition','priorities_transition','closing']){{
   const missing={{...stageConciseReadout}};
   delete missing[field];
   stageConciseReadout=missing;
   if(supportsConciseStage3View())throw new Error('accepted saved readout missing '+field);
-  const incompleteFallback=conciseUnavailableHtml();
-  if(!incompleteFallback.includes('The summary was unavailable for this run; the full analysis is shown.'))throw new Error('missing incomplete saved summary diagnostic');
   stageConciseReadout={{...missing,[field]:'   '}};
   if(supportsConciseStage3View())throw new Error('accepted saved readout blank '+field);
   stageConciseReadout={json.dumps(CONCISE_READOUT)};
 }}
 stageConciseReadout=null;
-const fallback=conciseUnavailableHtml();
-for(const expected of ['data-diagnostic="concise_readout_unavailable"','The summary was unavailable for this run; the full analysis is shown.']){{
-  if(!fallback.includes(expected))throw new Error('missing fallback diagnostic '+expected);
-}}
+if(supportsConciseStage3View())throw new Error('accepted a missing readout');
 """
     result = subprocess.run(
         ["node", "-e", script], capture_output=True, text=True, check=False
@@ -652,148 +634,7 @@ for(const expected of ['data-diagnostic="concise_readout_unavailable"','The summ
     assert result.returncode == 0, result.stderr
 
 
-def test_frontend_normal_summary_renderer_includes_required_sections():
-    source = open(os.path.join(os.path.dirname(app.__file__), "index.html"), encoding="utf-8").read()
-    helpers = "\n".join(
-        _extract_js_function(source, name)
-        for name in (
-            "normalizeVisibleText",
-            "findVisibleSentenceEnd",
-            "boldVisibleFirstSentence",
-            "renderNormalSummaryGaps",
-            "renderFcvRatingIndicators",
-            "getConcisePriority",
-            "renderNormalSummaryPriorities",
-            "normalFcvWatchGroups",
-            "renderNormalFcvWatchDisclosure",
-            "renderNormalFcvSummary",
-        )
-    )
-    script = f"""
-const esc=value=>String(value??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-let stageConciseReadout={json.dumps({**CONCISE_READOUT, "strengths_transition": "Strengths bridge <strong>", "priorities_transition": "Priorities bridge & tradeoffs", "closing": "Closing note <em>"})};
-let openSummaryPriority=0;
-let stageThreePriorities={json.dumps(_payload()["priorities"])};
-let fcvRating='Adequate';
-let fcvResponsivenessRating='Emerging';
-const renderStage3AdvisoryTransition=()=>'<p>advisory</p>';
-{helpers}
-const html=renderNormalFcvSummary();
-for(const expected of ['Five-minute readout','Overall assessment','What the project does well','Priority actions for the task team','How to read the FCV assessment']){{
-  if(!html.includes(expected))throw new Error('missing '+expected+' | '+html);
-}}
-for(const forbidden of ['FCV sensitivity','FCV responsiveness','Strengths bridge','Closing note','summary-priority-accordion']){{
-  if(html.includes(forbidden))throw new Error('compact summary exposed '+forbidden);
-}}
-const order=['Overall assessment','What the project does well','advisory','Priority actions for the task team','summary-priority-list'];
-for(let i=1;i<order.length;i++){{
-  const previous=html.indexOf(order[i-1]);
-  const current=html.indexOf(order[i]);
-  if(previous<0||current<0||previous>=current)throw new Error('wrong summary narrative order: '+order[i-1]+' -> '+order[i]+' | '+html);
-}}
-console.log(html);
-"""
-    result = subprocess.run(
-        ["node", "-e", script], capture_output=True, text=True, check=False
-    )
-    assert result.returncode == 0, result.stderr
-
-
-def test_summary_priority_accordion_is_single_open_and_accessible():
-    source = open(os.path.join(os.path.dirname(app.__file__), "index.html"), encoding="utf-8").read()
-    helpers = "\n".join(
-        _extract_js_function(source, name)
-        for name in (
-            "getConcisePriority",
-            "renderSummaryPriorityAccordion",
-            "toggleSummaryPriority",
-        )
-    )
-    priorities = [_detailed_priority(index) for index in range(1, 5)]
-    script = f"""
-const esc=value=>String(value??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-let stageThreePriorities={json.dumps(priorities)};
-let openSummaryPriority=0;
-let currentPriority=0;
-let focused='';
-const supportsClimateVerifiedStage3View=()=>false;
-const host={{innerHTML:''}};
-const document={{getElementById:id=>id==='summary-priority-accordion'?host:{{focus:()=>{{focused=id;}}}}}};
-{helpers}
-const initial=renderSummaryPriorityAccordion();
-if((initial.match(/class="summary-priority-toggle/g)||[]).length!==4)throw new Error('wrong header count');
-if((initial.match(/aria-expanded="true"/g)||[]).length!==1)throw new Error('wrong expanded count');
-if(!initial.includes('id="summary-priority-panel-0"')||/id="summary-priority-panel-0"[^>]* hidden/.test(initial))throw new Error('first not open');
-if(!initial.includes('aria-controls="summary-priority-panel-3"'))throw new Error('missing aria controls');
-toggleSummaryPriority(2);
-if(currentPriority!==2)throw new Error('detailed priority selection not synchronized');
-if(!host.innerHTML.includes('id="summary-priority-toggle-2"')||!host.innerHTML.includes('aria-expanded="true"'))throw new Error('third not open');
-if(!/id="summary-priority-panel-0"[^>]* hidden/.test(host.innerHTML))throw new Error('first not collapsed');
-if(focused!=='summary-priority-toggle-2')throw new Error('focus not restored');
-"""
-    result = subprocess.run(
-        ["node", "-e", script], capture_output=True, text=True, check=False
-    )
-    assert result.returncode == 0, result.stderr
-
-
-
-def test_climate_summary_is_canonical_and_does_not_reconstruct_guidance():
-    source = (Path(__file__).resolve().parents[1] / "index.html").read_text(
-        encoding="utf-8"
-    )
-    match = re.search(r"function\s+renderClimateVerifiedSummary\s*\(", source)
-    assert match
-    start = match.start()
-    brace = source.find("{", match.end())
-    depth = 0
-    end = None
-    for index in range(brace, len(source)):
-        if source[index] == "{":
-            depth += 1
-        elif source[index] == "}":
-            depth -= 1
-            if depth == 0:
-                end = index + 1
-                break
-    assert end is not None
-    summary = source[start:end]
-    assert "summary_overview" in summary
-    assert "executive_readout" not in summary
-    assert "buildClimateGuidanceItems" not in summary
-    assert "climate-decision-preparation" in source
-    assert "climate-further-guidance" in source
-def test_shared_advisory_is_controlled_and_used_by_both_routes():
-    source = open(os.path.join(os.path.dirname(app.__file__), "index.html"), encoding="utf-8").read()
-    advisory = _extract_js_function(source, "renderStage3AdvisoryTransition")
-    climate = _extract_js_function(source, "renderClimateVerifiedSummary")
-    normal = _extract_js_function(source, "renderNormalFcvSummary")
-    script = f"""
-let reviewMode='design';
-{advisory}
-const html=renderStage3AdvisoryTransition('normal')+renderStage3AdvisoryTransition('climate');
-for(const expected of ['not mandatory requirements','FCV Country Coordinator','Global Practice experts']){{
-  if(!html.includes(expected))throw new Error('missing '+expected);
-}}
-"""
-    result = subprocess.run(
-        ["node", "-e", script], capture_output=True, text=True, check=False
-    )
-    assert result.returncode == 0, result.stderr
-    assert "renderStage3AdvisoryTransition('normal')" in normal
-    assert "renderStage3AdvisoryTransition('climate')" in climate
-    assert "aria-expanded" in source
-    assert "aria-controls" in source
-
-
-def test_stage3_view_uses_the_active_tab_as_its_panel_label():
-    source = open(os.path.join(os.path.dirname(app.__file__), "index.html"), encoding="utf-8").read()
-
-    assert 'role="tabpanel"' in source
-    assert "view==='summary'?'stage3-summary-tab':'stage3-detailed-tab'" in source
-
-
-def test_concise_summary_persists_with_priorities_and_restores_before_view_selection():
+def test_concise_readout_persists_with_priorities_and_restores():
     source = open(os.path.join(os.path.dirname(app.__file__), "index.html"), encoding="utf-8").read()
     express_store = _extract_js_function(source, "epSafeStore")
     save_session = _extract_js_function(source, "saveSession")
@@ -812,23 +653,16 @@ def test_concise_summary_persists_with_priorities_and_restores_before_view_selec
     assert "fcvResponsivenessRating=savedLensState.fcvResponsivenessRating||''" in express_restore
     assert "if(hasSavedStage3Output&&isRestorableExpressStage3Output(outputs[3]))" in express_restore
     assert "if(outputs[3]&&climateVerifiedAssessment&&climateVerifiedReader)" not in express_restore
-    assert express_restore.index("stageConciseReadout=savedLensState") < express_restore.index(
-        "stage3View=supportsAnyStage3Summary()?'summary':'detailed'"
-    )
 
     assert "stageConciseReadout = state.stageConciseReadout || null" in load_session
     assert "stageThreePriorities = Array.isArray(state.stageThreePriorities)" in load_session
     assert "fcvRating = state.fcvRating || ''" in load_session
     assert "fcvResponsivenessRating = state.fcvResponsivenessRating || ''" in load_session
-    assert load_session.index("stageConciseReadout = state.stageConciseReadout") < load_session.index(
-        "stage3View=supportsAnyStage3Summary()?'summary':'detailed'"
-    )
 
     reset = _extract_js_function(source, "reset")
     for expected in (
         "stageThreePriorities=[]",
         "stageConciseReadout=null",
-        "openSummaryPriority=0",
         "fcvRating=''",
         "fcvResponsivenessRating=''",
     ):
@@ -1306,9 +1140,11 @@ def test_fallback_concise_title_strips_rank_prefix_without_touching_detailed_tit
 
 def test_normal_fcv_watch_groups_are_applicable_stable_deduplicated_and_escaped():
     source = open(os.path.join(os.path.dirname(app.__file__), "index.html"), encoding="utf-8").read()
-    helpers = "\n".join(_extract_js_function(source, name) for name in ("normalFcvWatchGroups", "renderNormalFcvWatchDisclosure"))
+    helpers = "\n".join(_extract_js_function(source, name) for name in ("normalFcvWatchGroups", "renderNormalFcvWatchBody"))
     script = f"""
 const esc=value=>String(value??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const md=value=>esc(value);
+const stripWatchHeading=value=>value;
 {helpers}
 const groups=normalFcvWatchGroups({{
   doc_type:'AF', instrument_type:'IPF', country_scope:'multi',
@@ -1322,10 +1158,9 @@ if(groups[0].label!=='Mid-cycle changes')throw new Error('wrong AF label');
 if(groups[1].label!=='Regional or multi-country delivery')throw new Error('wrong regional label');
 if(groups[2].label!=='Longer-term considerations')throw new Error('wrong horizon label');
 if(groups[0].items.length!==1||groups[1].items.length!==1)throw new Error('stable dedup failed: '+JSON.stringify(groups));
-const html=renderNormalFcvWatchDisclosure({{doc_type:'AF',country_scope:'multi',mid_cycle_watch:['Access <b>risk</b>'],regional_watch:['Regional coordination']}});
-if(!html.includes('What to keep an eye on'))throw new Error('missing disclosure label');
+const html=renderNormalFcvWatchBody({{doc_type:'AF',country_scope:'multi',mid_cycle_watch:['Access <b>risk</b>'],regional_watch:['Regional coordination']}});
+if(!html.includes('Mid-cycle changes')||!html.includes('Regional or multi-country delivery'))throw new Error('missing group labels: '+html);
 if(html.includes('<b>risk</b>')||!html.includes('Access &lt;b&gt;risk&lt;/b&gt;'))throw new Error('watch HTML was not escaped: '+html);
-if(html.includes(' open')||html.includes('<details open'))throw new Error('disclosure should be closed initially');
 """
     result = subprocess.run(["node", "-e", script], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
@@ -1354,22 +1189,33 @@ if(labels.includes({json.dumps(forbidden_label)}))throw new Error('inapplicable 
     assert result.returncode == 0, result.stderr
 
 
-def test_normal_fcv_watch_disclosure_follows_priorities_without_guidance_or_deeper_refs():
+def test_normal_fcv_watch_section_follows_priorities_without_guidance_or_deeper_refs():
     source = open(os.path.join(os.path.dirname(app.__file__), "index.html"), encoding="utf-8").read()
-    helpers = "\n".join(_extract_js_function(source, name) for name in ("normalizeVisibleText", "findVisibleSentenceEnd", "boldVisibleFirstSentence", "renderNormalSummaryGaps", "renderFcvRatingIndicators", "getConcisePriority", "renderNormalSummaryPriorities", "normalFcvWatchGroups", "renderNormalFcvWatchDisclosure", "renderNormalFcvSummary"))
+    module = open(os.path.join(os.path.dirname(app.__file__), "static", "fcv_readout.js"), encoding="utf-8").read()
+    helpers = "\n".join(_extract_js_function(source, name) for name in ("normalFcvWatchGroups", "renderNormalFcvWatchBody"))
     script = f"""
+const window={{}};
+{module}
 const esc=value=>String(value??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-let stageConciseReadout={json.dumps({**CONCISE_READOUT, "closing": "Closing note <em>"})}; let openSummaryPriority=0; let stageThreePriorities={json.dumps(_payload()["priorities"])};
-let fcvRating='Adequate'; let fcvResponsivenessRating='Emerging'; let reviewMode='design'; let docType='AF',instrumentType='IPF',countryScope='single';
+const md=value=>esc(value);
+const stripWatchHeading=value=>value;
+let docType='AF',instrumentType='IPF',countryScope='single';
 let midCycleWatch=['Check access <i>triggers</i>.']; let dpfWatch=[]; let p4rWatch=[]; let regionalWatch=[]; let horizonConsiderations='';
-const renderStage3AdvisoryTransition=()=>'<p>advisory</p>';
 {helpers}
-const html=renderNormalFcvSummary(); const order=['summary-priority-list','What to keep an eye on'];
+const api=window.FcvReadout.create({{esc,md,boldFirst:esc}});
+const html=api.renderNormal({{
+  stage3Markdown:'', fcvRating:'Adequate', fcvResponsivenessRating:'Low',
+  priorities:{json.dumps(_payload()["priorities"])}, watchHtml:renderNormalFcvWatchBody()
+}});
+const order=['Strategic Priorities','Watch List for Supervision'];
 if(html.indexOf(order[0])<0||html.indexOf(order[1])<0)throw new Error('missing order marker: '+html);
-if(!(html.indexOf(order[0])<html.indexOf(order[1])))throw new Error('watch disclosure order changed: '+html);
-if(html.includes('Relevant WBG guidance')||html.includes('Go Deeper')||html.includes('go deeper'))throw new Error('watch disclosure aggregated forbidden content');
+if(!(html.indexOf(order[0])<html.indexOf(order[1])))throw new Error('watch section order changed: '+html);
+const watch=html.slice(html.indexOf(order[1]));
+if(!watch.includes('Check access &lt;i&gt;triggers&lt;/i&gt;.'))throw new Error('watch item missing or unescaped');
+if(watch.includes('Relevant WBG guidance')||watch.includes('Go Deeper')||watch.includes('go deeper'))throw new Error('watch section aggregated forbidden content');
+if(/<details class="fr-disc" open/.test(watch))throw new Error('watch disclosure should be closed initially');
 """
-    result = subprocess.run(["node", "-e", script], capture_output=True, text=True, check=False)
+    result = subprocess.run(["node", "-"], input=script, capture_output=True, text=True, encoding="utf-8", check=False)
     assert result.returncode == 0, result.stderr
 
 
@@ -1385,16 +1231,6 @@ def test_normal_fcv_watch_state_persists_restores_and_resets():
         assert expected in load_session
     for expected in ("midCycleWatch=[]", "dpfWatch=[]", "p4rWatch=[]", "regionalWatch=[]", "horizonConsiderations=''"):
         assert expected in reset
-
-
-def test_summary_init_keeps_horizon_inside_disclosure_and_detailed_keeps_legacy_panel():
-    source = open(os.path.join(os.path.dirname(app.__file__), "index.html"), encoding="utf-8").read()
-    init_ui = _extract_js_function(source, "initStage3UI")
-    summary_start = init_ui.index("if(summaryActive){")
-    detailed_start = init_ui.index("}else{", summary_start)
-    update_sidebar = init_ui.index("    updateSidebar();", detailed_start)
-    assert "renderHorizonPanel" not in init_ui[summary_start:detailed_start]
-    assert "renderHorizonPanel(horizonConsiderations)" in init_ui[detailed_start:update_sidebar]
 
 
 def test_reset_removes_all_express_checkpoint_keys():
@@ -1433,41 +1269,6 @@ console.log('ok');
     assert result.returncode == 0, result.stderr
 
 
-def test_set_stage3_view_detailed_restores_horizon_panel_after_summary_transition():
-    source = open(os.path.join(os.path.dirname(app.__file__), "index.html"), encoding="utf-8").read()
-    set_view = _extract_js_function(source, "setStage3View")
-    detailed_start = set_view.index("}else{")
-    assert "renderHorizonPanel(horizonConsiderations)" in set_view[detailed_start:]
-    assert "typeof horizonConsiderations==='string'&&horizonConsiderations.trim()" in set_view[detailed_start:]
-    assert "md.render" not in _extract_js_function(source, "renderHorizonPanel")
-    assert "md(watch)" in _extract_js_function(source, "renderHorizonPanel")
-
-
-def test_render_horizon_panel_uses_local_md_and_replaces_existing_panel_without_duplication():
-    source = open(os.path.join(os.path.dirname(app.__file__), "index.html"), encoding="utf-8").read()
-    md = _extract_js_function(source, "md")
-    renderer = _extract_js_function(source, "renderHorizonPanel")
-    strip_heading = _extract_js_function(source, "stripWatchHeading")
-    script = f"""
-{md}
-{strip_heading}
-let panel=null; const container={{children:[],appendChild(node){{this.children.push(node);panel=node;}}}};
-const document={{
-  getElementById(id){{return id==='out-txt'?container:(id==='horizon-panel'?panel:null);}},
-  createElement(){{return {{id:'',className:'',innerHTML:'',remove(){{const index=container.children.indexOf(this);if(index>=0)container.children.splice(index,1);if(panel===this)panel=null;}}}};}}
-}};
-{renderer}
-renderHorizonPanel('Watch <script>alert(1)</script>.');
-renderHorizonPanel('Watch <script>alert(2)</script>.');
-if(container.children.length!==1)throw new Error('duplicate horizon panels: '+container.children.length);
-if(container.children[0].innerHTML.includes('<script>'))throw new Error('horizon HTML was not escaped');
-if(!container.children[0].innerHTML.includes('&lt;script&gt;'))throw new Error('escaped horizon text missing');
-console.log('ok');
-"""
-    result = subprocess.run(["node", "-e", script], capture_output=True, text=True, check=False)
-    assert result.returncode == 0, result.stderr
-
-
 def test_step_stage3_path_has_one_normalized_watch_assignment_block():
     source = open(os.path.join(os.path.dirname(app.__file__), "index.html"), encoding="utf-8").read()
     handler_start = source.index("if(stage===3){", source.index("async function runStage"))
@@ -1480,32 +1281,3 @@ def test_step_stage3_path_has_one_normalized_watch_assignment_block():
     assert stage3_path.count("horizonConsiderations=typeof p.horizon_considerations==='string'?p.horizon_considerations:''") == 1
 
 
-def test_climate_summary_priorities_all_open_and_collapse_independently():
-    source = (Path(__file__).resolve().parents[1] / "index.html").read_text(encoding="utf-8")
-    helpers = "\n".join(_extract_js_function(source, name) for name in (
-        "getConcisePriority", "renderSummaryPriorityAccordion", "toggleSummaryPriority"))
-    priorities = [_detailed_priority(index) for index in range(1, 5)]
-    script = f"""
-const esc=value=>String(value??'');
-let stageThreePriorities={json.dumps(priorities)};
-let climateVerifiedReader={{}};
-const climateSummaryPriorityItems=()=>stageThreePriorities;
-const supportsClimateVerifiedStage3View=()=>true;
-let openSummaryPriority=0, currentPriority=0, focused='';
-const panels=stageThreePriorities.map(()=>({{hidden:false}}));
-const buttons=stageThreePriorities.map((_,idx)=>({{expanded:'true',setAttribute:(key,val)=>{{buttons[idx].expanded=val;}},focus:()=>{{focused=String(idx);}}}}));
-const document={{getElementById:id=>id.startsWith('summary-priority-panel-')?panels[Number(id.split('-').pop())]:buttons[Number(id.split('-').pop())]}};
-{helpers}
-const initial=renderSummaryPriorityAccordion();
-if((initial.match(/aria-expanded="true"/g)||[]).length!==4)throw new Error('not all open');
-if(/class="summary-priority-panel"[^>]* hidden/.test(initial))throw new Error('closed default');
-toggleSummaryPriority(1);
-if(!panels[1].hidden||panels[0].hidden||panels[2].hidden)throw new Error('collapse changed sibling');
-if(buttons[1].expanded!=='false'||focused!=='1')throw new Error('aria/focus not updated');
-toggleSummaryPriority(1,true);
-if(panels[1].hidden||buttons[1].expanded!=='true')throw new Error('gap link did not open');
-toggleSummaryPriority(1,true);
-if(panels[1].hidden)throw new Error('gap link closed open priority');
-"""
-    result = subprocess.run(["node", "-e", script], capture_output=True, text=True, check=False)
-    assert result.returncode == 0, result.stderr

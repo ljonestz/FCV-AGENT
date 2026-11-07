@@ -41,6 +41,38 @@ const esc = value => String(value ?? '')
 """
 
 
+READOUT_MODULE = Path(__file__).resolve().parents[1] / "static" / "fcv_readout.js"
+
+
+def _readout_harness() -> str:
+    """JS preamble running the real verified-climate wrapper over the real readout module."""
+    source = INDEX.read_text(encoding="utf-8")
+    timing = re.search(r"const TIMING_LABELS=\{.*?\};", source).group(0)
+    functions = "\n".join(
+        _extract_js_function(source, name)
+        for name in (
+            "normalizeVisibleText",
+            "esc",
+            "findVisibleSentenceEnd",
+            "boldVisibleFirstSentence",
+            "climateAccessibleRouteValue",
+            "climateDraftingRouteGate",
+            "frApi",
+            "renderClimateVerifiedAssessment",
+        )
+    )
+    return (
+        "const window = {};\n"
+        + READOUT_MODULE.read_text(encoding="utf-8")
+        + "\nconst md = t => '<div class=\"md\">' + esc(t) + '</div>';\n"
+        + timing + "\n" + functions + "\n"
+    )
+
+
+def _run_node(script: str):
+    return subprocess.run(["node", "-"], input=script, capture_output=True, text=True, encoding="utf-8", check=False)
+
+
 def test_stage3_detailed_reading_shell_uses_compact_sticky_rating_rail():
     html = INDEX.read_text(encoding="utf-8")
 
@@ -67,120 +99,6 @@ def test_stage3_detailed_reading_shell_uses_compact_sticky_rating_rail():
     assert ".sw-grid{display:grid;grid-template-columns:1fr;" in html
     assert '<aside class="fcv-sidebar"' not in html
     assert "stage3OverviewHtml()" in html
-
-
-def test_stage3_reading_shell_switches_rail_visibility_with_the_active_view():
-    source = INDEX.read_text(encoding="utf-8")
-
-    setter = _extract_js_function(source, "setStage3View")
-    assert "stage3-reading-shell" in setter
-    assert "data-stage3-view" in setter
-    assert "is-summary" in setter
-    assert "is-detailed" in setter
-    assert "stage3View=view" in setter
-
-
-def test_stage3_view_keyboard_navigation_refocuses_the_rerendered_tab():
-    source = INDEX.read_text(encoding="utf-8")
-    handler = _extract_js_function(source, "handleStage3ViewKeydown")
-    script = f"""
-let generation = 0;
-let activeId = 'stage3-summary-tab';
-let focusedOld = false;
-let focusedNew = false;
-const oldTabs = [
-  {{id:'stage3-summary-tab', focus:()=>{{focusedOld=true;}}}},
-  {{id:'stage3-detailed-tab', focus:()=>{{focusedOld=true;}}}}
-];
-const newTabs = [
-  {{id:'stage3-summary-tab', focus:()=>{{focusedNew=true;}}}},
-  {{id:'stage3-detailed-tab', focus:()=>{{focusedNew=true;}}}}
-];
-const document = {{
-  get activeElement() {{ return activeId === 'stage3-summary-tab' ? (generation ? newTabs[0] : oldTabs[0]) : (generation ? newTabs[1] : oldTabs[1]); }},
-  querySelectorAll: () => generation ? newTabs : oldTabs,
-  getElementById: id => (generation ? newTabs : oldTabs).find(tab => tab.id === id) || null
-}};
-const setStage3View = (view,preservePriority,focusTabId) => {{
-  generation = 1;
-  activeId = view === 'summary' ? 'stage3-summary-tab' : 'stage3-detailed-tab';
-  if (focusTabId) document.getElementById(focusTabId).focus();
-}};
-{handler}
-handleStage3ViewKeydown({{key:'ArrowRight', preventDefault:()=>{{}}}});
-if (focusedOld) throw new Error('keyboard navigation focused detached tab');
-if (!focusedNew) throw new Error('keyboard navigation did not focus rerendered tab');
-"""
-    result = subprocess.run(
-        ["node", "-"], input=script, capture_output=True, text=True, check=False
-    )
-    assert result.returncode == 0, result.stderr
-
-
-def test_stage3_direct_tab_activation_refocuses_only_when_requested():
-    source = INDEX.read_text(encoding="utf-8")
-    toggle = _extract_js_function(source, "stage3ViewToggleHtml")
-    setter = _extract_js_function(source, "setStage3View")
-    script = f"""
-let stage3View = 'detailed';
-let stage3DetailedHtml = '<p>Detailed</p>';
-let openSummaryPriority = 0;
-let currentPriority = 0;
-let generation = 0;
-let focusedOld = false;
-let focusedNew = false;
-const makeTab = (id, fresh) => ({{
-  id,
-  classList: {{remove(){{}}, toggle(){{}}}},
-  setAttribute(){{}},
-  focus(){{ if (fresh) focusedNew = true; else focusedOld = true; }}
-}});
-const oldTabs = {{summary:makeTab('stage3-summary-tab',false), detailed:makeTab('stage3-detailed-tab',false)}};
-const newTabs = {{summary:makeTab('stage3-summary-tab',true), detailed:makeTab('stage3-detailed-tab',true)}};
-const shell = {{dataset:{{}}, setAttribute(){{}}, classList:{{toggle(){{}}}}}};
-const stageDisplay = {{dataset:{{}}, setAttribute(){{}}, classList:{{toggle(){{}}}}}};
-const out = {{dataset:{{}}, setAttribute(){{}}, set innerHTML(value){{ this.html = value; generation = 1; }}}};
-const document = {{
-  getElementById(id) {{
-    if (id === 'stage3-summary-tab') return generation ? newTabs.summary : oldTabs.summary;
-    if (id === 'stage3-detailed-tab') return generation ? newTabs.detailed : oldTabs.detailed;
-    if (id === 'stage-disp') return stageDisplay;
-    if (id === 'out-txt') return out;
-    return null;
-  }},
-  querySelector(selector) {{ return selector === '.stage3-reading-shell' ? shell : null; }}
-}};
-const supportsAnyStage3Summary = () => true;
-const supportsConciseStage3View = () => true;
-const supportsClimateVerifiedStage3View = () => false;
-const climateSummaryPriorityItems = () => [];
-const climateVerifiedReader = null;
-const stageThreePriorities = [];
-const renderStage3Summary = () => '<p>Summary</p>';
-const renderSummaryPriorityAccordion = () => '';
-const renderPrioritiesIntro = () => {{}};
-const renderPriorityStepper = () => {{}};
-const showPriority = () => {{}};
-{_extract_js_function(source, "renderManagementBriefControls")}
-{_extract_js_function(source, "getConcisePriority")}
-{_extract_js_function(source, "renderNormalSummaryPriorities")}
-{toggle}
-{setter}
-const toggleHtml = stage3ViewToggleHtml();
-if (!toggleHtml.includes("setStage3View('summary',true,'stage3-summary-tab')")) throw new Error('direct Summary activation does not request focus');
-setStage3View('summary');
-if (focusedOld || focusedNew) throw new Error('programmatic view change stole focus');
-generation = 0;
-focusedOld = false;
-focusedNew = false;
-setStage3View('summary', true, 'stage3-summary-tab');
-if (focusedOld) throw new Error('direct activation focused detached tab');
-if (!focusedNew) throw new Error('direct activation did not focus rerendered tab');
-"""
-    result = subprocess.run(
-        ["node", "-"], input=script, capture_output=True, text=True, check=False
-    )
-    assert result.returncode == 0, result.stderr
 
 
 def test_climate_opening_uses_relevance_language_and_quiet_provenance():
@@ -241,425 +159,120 @@ for (const [state,copy] of Object.entries(expectedEvidence)) {{
     assert result.returncode == 0, result.stderr
 
 
-def test_climate_summary_caps_dynamic_strengths_and_uses_longer_overview():
-    source = INDEX.read_text(encoding="utf-8")
-    helpers = "\n".join(
-        _extract_js_function(source, name)
-        for name in (
-            "climateSummaryStrengths",
-            "climateSummaryPriorityItems",
-            "renderStage3AdvisoryTransition",
-            "getConcisePriority",
-            "renderSummaryPriorityAccordion",
-            "climateAccessibleRouteValue",
-            "climateDraftingRouteGate",
-            "boldEscapedFirstSentence",
-            "climateSummaryWatchItems",
-            "renderClimateWatchDisclosure",
-            "normalizeClimateSourceTitle",
-            "isPublicWorldBankHttpsUrl",
-            "renderClimateRelevantGuidance",
-            "renderClimateSummaryGaps",
-            "renderClimateVerifiedSummary",
-        )
-    )
-    script = f"""
-const esc = value => String(value ?? '')
-  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-  .replace(/\"/g,'&quot;').replace(/'/g,'&#039;');
-const reviewMode='design';
-const supportsClimateVerifiedStage3View=()=>true;
-let openSummaryPriority=0;
-{helpers}
-const reader = {{
-  operation_context: {{
-    document_type:'Program Paper', instrument_type:'PforR',
-    preparation_regime:'new_model', es_regime:'INSTRUMENT_SPECIFIC', is_mpa:false
-  }},
-  summary_overview: ['First overview paragraph with the project context and the main climate-FCV interaction.', 'Second overview paragraph with the design choices and remaining implementation implications.'],
-  existing_responses: [
-    {{description:'Climate resilience is embedded in infrastructure standards.'}},
-    {{description:'Resource governance is sequenced before investment.'}},
-    {{description:'Inclusion safeguards are concrete and operational.'}},
-    {{description:'A fourth positive design feature should not appear in the compact summary.'}}
-  ],
-  priorities: [{{rank:1, title:'Priority 1', narrative:'A concrete operational action.', minimum_action:'Add the action to the design.'}}],
-  climate_sensitivity_rating: {{label:'Strong'}}
-}};
-const strengths = climateSummaryStrengths(reader);
-if (strengths.length !== 3) throw new Error('expected three strengths, got '+strengths.length);
-const html = renderClimateVerifiedSummary(reader);
-if (html.includes('Climate-FCV design readout')) throw new Error('summary contains redundant climate title');
-if (!html.includes('Second overview paragraph')) throw new Error('summary omitted the longer overview');
-if (html.includes('A fourth positive design feature')) throw new Error('summary exceeded the three-tile cap');
-if (!html.includes('class="concise-strength-text"')) throw new Error('strength explanation lacks readable body element');
-if (!html.includes('id="summary-priority-accordion"')) throw new Error('summary omitted the priority accordion');
-if (html.includes('Review context') || html.includes('Document: Program Paper | Instrument: PforR')) throw new Error('summary retained removed routing metadata');
-for (const removed of [
-  '<summary>Technical routing details</summary>',
-  'How this operation was routed',
-  'climate-summary-routing',
-  'E&amp;S route',
-  'INSTRUMENT SPECIFIC'
-]) {{
-  if (html.includes(removed)) throw new Error('technical routing disclosure remains: ' + removed);
-}}
-"""
-    result = subprocess.run(
-        ["node", "-"], input=script, capture_output=True, text=True, check=False
-    )
-    assert result.returncode == 0, result.stderr
-
-
-
-
-def test_climate_summary_uses_canonical_overview_and_closed_follow_up_disclosures():
-    source = INDEX.read_text(encoding="utf-8")
-    summary = _extract_js_function(source, "renderClimateVerifiedSummary")
-    assert "summary_overview" in summary
-    assert "executive_readout" not in summary
-    assert "boldEscapedFirstSentence" in summary
-    assert "renderClimateWatchDisclosure" in summary
-    assert "renderClimateRelevantGuidance" in summary
-    assert "Relevant WBG guidance for this project" in summary
-    assert "buildClimateGuidanceItems" not in summary
-
-    helpers = "\n".join(
-        _extract_js_function(source, name)
-        for name in (
-            "boldEscapedFirstSentence",
-            "climateSummaryStrengths",
-            "climateSummaryPriorityItems",
-            "renderStage3AdvisoryTransition",
-            "getConcisePriority",
-            "renderSummaryPriorityAccordion",
-            "climateAccessibleRouteValue",
-            "climateDraftingRouteGate",
-            "boldEscapedFirstSentence",
-            "climateSummaryWatchItems",
-            "renderClimateWatchDisclosure",
-            "normalizeClimateSourceTitle",
-            "isPublicWorldBankHttpsUrl",
-            "renderClimateRelevantGuidance",
-            "renderClimateSummaryGaps",
-            "renderClimateVerifiedSummary",
-        )
-    )
-    script = f"""
-{_js_escape_helper()}
-const reviewMode='design';
-let openSummaryPriority=0;
-{helpers}
-const html=renderClimateVerifiedSummary({{
-  summary_overview:[
-    'Overall finding <unsafe>. The documented design is grounded. Second sentence.',
-    'Relevance, sensitivity, responsiveness, and operationalization are all addressed.'
-  ],
-  existing_responses:[], priorities:[], core_questions:[
-    {{question:'Watch access',watch:'Monitor seasonal access.'}},
-    {{question:'Watch access duplicate',watch:'  monitor seasonal access.  '}},
-    {{question:'Watch inclusion',watch:'Check inclusive representation.'}}
-  ],
-  guidance_items:[{{
-    title:'Defueling Conflict',
-    url:'https://documents.worldbank.org/defueling',
-    practical_value:'Use this source to assess natural-resource governance.',
-    project_use:'Use this source to assess natural-resource governance.'
-  }}]
-}});
-if (!html.includes('<strong>Overall finding &lt;unsafe&gt;.</strong>')) throw new Error('first sentence was not semantic or escaped | '+html);
-if (!html.includes('<strong>Relevance, sensitivity, responsiveness, and operationalization are all addressed.</strong>')) throw new Error('all overview paragraphs were not rendered | '+html);
-if (html.includes('executive')) throw new Error('executive content leaked into Summary | '+html);
-if ((html.match(/<details/g)||[]).length < 2) throw new Error('missing native follow-up disclosures | '+html);
-if (html.includes('<details class="climate-summary-watch-disclosure" open') || html.includes('<details class="climate-summary-guidance-disclosure" open')) throw new Error('follow-up disclosure opened by default | '+html);
-if ((html.match(/Monitor seasonal access\\./g)||[]).length !== 1) throw new Error('watch list was not stably deduplicated | '+html);
-"""
-    result = subprocess.run(
-        ["node", "-"], input=script, capture_output=True, text=True, check=False
-    )
-    assert result.returncode == 0, result.stderr
-
-
-
-def test_climate_drafting_route_gate_is_shared_by_summary_and_detailed_views():
-    source = INDEX.read_text(encoding="utf-8")
-    helpers = "\n".join(
-        _extract_js_function(source, name)
-        for name in (
-            "climateAccessibleRouteValue",
-            "climateDraftingRouteGate",
-            "climateSummaryPriorityItems",
-            "renderPriorityProjectCycle",
-            "climateSummaryWatchItems",
-            "renderClimateVerifiedAssessment",
-        )
-    )
-    script = f"""
-{_js_escape_helper()}
-const renderClimateRelevantGuidance = () => '';
-{helpers}
+def test_climate_drafting_route_gate_applies_to_the_unified_readout():
+    script = _readout_harness() + r"""
 const warning='Suggested document wording is not shown because the document type or financing route could not be confirmed reliably.';
-const draft={{target_document:'PCN',target_section:'Project Description',text:'Canonical current drafting text.'}};
-const makeReader=(document_type,instrument_type,es_regime)=>({{
-  operation_context:{{document_type,instrument_type,preparation_regime:'legacy_transitional',es_regime}},
-  priorities:[{{rank:1,title:'Action',narrative:'Action narrative.',current_document_drafting:draft}}]
-}});
+const draft={target_document:'PCN',target_section:'Project Description',text:'Canonical current drafting text.'};
+const makeReader=(document_type,instrument_type,es_regime)=>({
+  operation_context:{document_type,instrument_type,preparation_regime:'legacy_transitional',es_regime},
+  priorities:[{rank:1,title:'Action',narrative:'Action narrative.',current_document_drafting:draft}]
+});
 const safe=makeReader('PCN','IPF','UNRESOLVED');
 if (climateAccessibleRouteValue('legacy_transitional') !== 'Earlier policy framework') throw new Error('legacy route was not humanized');
 const safeGate=climateDraftingRouteGate(safe);
 if (!safeGate.confirmed || safeGate.status !== 'available') throw new Error('confirmed route was withheld | '+JSON.stringify(safeGate));
-if (!climateSummaryPriorityItems(safe)[0].concise.suggested_wording.text.includes('Canonical current drafting text.')) throw new Error('Summary hid drafting for E&S-only unresolved route');
-const safeDetailed=renderClimateVerifiedAssessment(safe);
-if (!safeDetailed.includes('Canonical current drafting text.')) throw new Error('Detailed hid drafting for E&S-only unresolved route');
-if (safeDetailed.includes(warning)) throw new Error('E&S-only unresolved route triggered withholding');
-for (const invalid of [['Unknown','IPF'],['PCN','Unknown']]) {{
+const safeHtml=renderClimateVerifiedAssessment(safe);
+if (!safeHtml.includes('Canonical current drafting text.')) throw new Error('readout hid drafting for E&S-only unresolved route');
+if (safeHtml.includes(warning)) throw new Error('E&S-only unresolved route triggered withholding');
+for (const invalid of [['Unknown','IPF'],['PCN','Unknown']]) {
   const reader=makeReader(invalid[0],invalid[1],'ESF');
   if (climateDraftingRouteGate(reader).confirmed) throw new Error('unknown route treated as confirmed');
-  const summary=climateSummaryPriorityItems(reader)[0];
-  if (summary.concise.suggested_wording.text) throw new Error('Summary leaked withheld drafting');
-  const detailed=renderClimateVerifiedAssessment(reader);
-  if (detailed.includes('Canonical current drafting text.')) throw new Error('Detailed leaked withheld drafting');
-  if (!detailed.includes(warning)) throw new Error('Detailed missing exact withholding explanation');
-}}
+  const html=renderClimateVerifiedAssessment(reader);
+  if (html.includes('Canonical current drafting text.')) throw new Error('readout leaked withheld drafting');
+  if (!html.includes(warning)) throw new Error('readout missing exact withholding explanation');
+}
 """
-    result = subprocess.run(["node", "-"], input=script, capture_output=True, text=True, check=False)
+    result = _run_node(script)
     assert result.returncode == 0, result.stderr
 
 
-def test_unconfirmed_route_withholds_both_drafting_blocks_in_summary_and_detailed():
-    source = INDEX.read_text(encoding="utf-8")
-    helpers = "\n".join(
-        _extract_js_function(source, name)
-        for name in (
-            "climateSummaryPriorityItems",
-            "climateAccessibleRouteValue",
-            "climateDraftingRouteGate",
-            "climateSummaryWatchItems",
-            "renderPriorityProjectCycle",
-            "renderClimateVerifiedAssessment",
-        )
-    )
-    script = f"""
-{_js_escape_helper()}
-const reviewMode='design';
-const renderClimateRelevantGuidance = () => '';
-{helpers}
+def test_unconfirmed_route_withholds_both_drafting_blocks_in_the_readout():
+    script = _readout_harness() + r"""
 const warning='Suggested document wording is not shown because the document type or financing route could not be confirmed reliably.';
-const current={{target_document:'PCN',target_section:'Project Description',text:'Current drafting text.'}};
-const operational={{target_document:'Security Risk Management Plan',target_section:'Continuity',text:'Operational drafting text.'}};
-const makeReader=(operation_context)=>({{
-  ...(operation_context===null?{{}}:{{operation_context}}),
-  priorities:[{{rank:1,title:'Action',narrative:'Action narrative.',current_document_drafting:current,operational_instrument_drafting:operational}}]
-}});
-const safe=makeReader({{document_type:'PCN',instrument_type:'IPF',es_regime:'UNRESOLVED'}});
-if (!climateSummaryPriorityItems(safe)[0].concise.suggested_wording.text.includes('Current drafting text.')) throw new Error('Summary hid confirmed current drafting');
-if (!renderClimateVerifiedAssessment(safe).includes('Operational drafting text.')) throw new Error('Detailed hid confirmed operational drafting');
-for (const route of [{{document_type:'Unknown',instrument_type:'IPF'}},{{document_type:'PCN',instrument_type:'Unknown'}},null]) {{
-  const reader=makeReader(route);
-  const summaryItem=climateSummaryPriorityItems(reader)[0];
-  const detailed=renderClimateVerifiedAssessment(reader);
-  if (summaryItem.concise.suggested_wording.text) throw new Error('Summary leaked current drafting | '+JSON.stringify(route));
-  if (detailed.includes('Current drafting text.')||detailed.includes('Operational drafting text.')) throw new Error('Detailed leaked unresolved drafting | '+JSON.stringify(route));
-  if (route!==null && (detailed.match(new RegExp(warning,'g'))||[]).length !== 1) throw new Error('Detailed warning count mismatch | '+detailed);
-}}
+const current={target_document:'PCN',target_section:'Project Description',text:'Current drafting text.'};
+const operational={target_document:'Security Risk Management Plan',target_section:'Continuity',text:'Operational drafting text.'};
+const makeReader=(operation_context)=>({
+  ...(operation_context===null?{}:{operation_context}),
+  priorities:[{rank:1,title:'Action',narrative:'Action narrative.',current_document_drafting:current,operational_instrument_drafting:operational}]
+});
+const safe=makeReader({document_type:'PCN',instrument_type:'IPF',es_regime:'UNRESOLVED'});
+const safeHtml=renderClimateVerifiedAssessment(safe);
+if (!safeHtml.includes('Current drafting text.')) throw new Error('readout hid confirmed current drafting');
+if (!safeHtml.includes('Operational drafting text.')) throw new Error('readout hid confirmed operational drafting');
+for (const route of [{document_type:'Unknown',instrument_type:'IPF'},{document_type:'PCN',instrument_type:'Unknown'},null]) {
+  const html=renderClimateVerifiedAssessment(makeReader(route));
+  if (html.includes('Current drafting text.')||html.includes('Operational drafting text.')) throw new Error('readout leaked unresolved drafting | '+JSON.stringify(route));
+  if ((html.match(new RegExp(warning,'g'))||[]).length !== 1) throw new Error('warning count mismatch | '+html);
+}
 """
-    result = subprocess.run(["node", "-"], input=script, capture_output=True, text=True, check=False)
+    result = _run_node(script)
     assert result.returncode == 0, result.stderr
 
 
-def test_climate_watch_deduplication_is_shared_by_summary_and_detailed_and_print():
+def test_climate_readout_follow_up_sections_and_plain_route_warning_are_explicit():
     source = INDEX.read_text(encoding="utf-8")
-    assert "climate-summary-watch-disclosure" in source
-    assert "climate-summary-guidance-disclosure" in source
-    handler = _extract_js_function(source, "installClimatePrintDisclosureHandler")
-    assert "climate-summary-watch-disclosure" in handler
-    assert "climate-summary-guidance-disclosure" in handler
-    helpers = "\n".join(
-        _extract_js_function(source, name)
-        for name in (
-            "climateSummaryWatchItems",
-            "renderClimateWatchDisclosure",
-            "renderPriorityProjectCycle",
-            "climateDraftingRouteGate",
-            "renderClimateVerifiedAssessment",
-        )
-    )
-    script = f"""
-{_js_escape_helper()}
-const renderClimateRelevantGuidance = () => '';
-{helpers}
-const reader={{core_questions:[
-  {{question:'First watch',watch:'Track access.'}},
-  {{question:'Duplicate watch',watch:'  track   access!  '}},
-  {{question:'Second watch',watch:'Check representation.'}}
-]}};
-const summary=renderClimateWatchDisclosure(reader);
-const detailed=renderClimateVerifiedAssessment(reader);
-if(detailed.includes('Track access.')) throw new Error('Removed supporting watches leaked into Detailed');
-for (const [name,html] of [['summary',summary]]) {{
-  if ((html.match(/Track access/g)||[]).length !== 1) throw new Error(name+' did not deduplicate watches | '+html);
-  if (html.indexOf('Track access') > html.indexOf('Check representation')) throw new Error(name+' changed watch order | '+html);
-}}
-"""
-    result = subprocess.run(["node", "-"], input=script, capture_output=True, text=True, check=False)
-    assert result.returncode == 0, result.stderr
-
-def test_climate_detailed_follow_up_panels_and_plain_route_warning_are_explicit():
-    source = INDEX.read_text(encoding="utf-8")
-    detailed = _extract_js_function(source, "renderClimateVerifiedAssessment")
-    assert "climate-decision-preparation" in detailed
-    assert "climate-reference-panel" in detailed
-    assert "Climate decision preparation" in detailed
-    assert "Selected WBG resources" in detailed
-    assert "Suggested document wording is not shown because the document type or financing route could not be confirmed reliably." in detailed
-    assert "UNRESOLVED" not in detailed
-def test_climate_summary_weaves_bridge_count_and_closing_in_order():
-    source = INDEX.read_text(encoding="utf-8")
-    helpers = "\n".join(
-        _extract_js_function(source, name)
-        for name in (
-            "climateSummaryStrengths",
-            "climateSummaryPriorityItems",
-            "renderStage3AdvisoryTransition",
-            "getConcisePriority",
-            "renderSummaryPriorityAccordion",
-            "climateAccessibleRouteValue",
-            "climateDraftingRouteGate",
-            "boldEscapedFirstSentence",
-            "climateSummaryWatchItems",
-            "renderClimateWatchDisclosure",
-            "normalizeClimateSourceTitle",
-            "isPublicWorldBankHttpsUrl",
-            "renderClimateRelevantGuidance",
-            "renderClimateSummaryGaps",
-            "renderClimateVerifiedSummary",
-        )
-    )
-    script = f"""
-{_js_escape_helper()}
-const reviewMode='design';
-const supportsClimateVerifiedStage3View=()=>true;
-let openSummaryPriority=0;
-{helpers}
-const priorities = Array.from({{length:5}}, (_,index) => ({{
+    wrapper = _extract_js_function(source, "renderClimateVerifiedAssessment")
+    assert "Suggested document wording is not shown because the document type or financing route could not be confirmed reliably." in wrapper
+    assert "UNRESOLVED" not in wrapper
+    module = READOUT_MODULE.read_text(encoding="utf-8")
+    assert "Points to Check Before the Applicable Review" in module
+    assert "Relevant WBG Guidance" in module
+    assert "Selected WBG resources for the team" in module
+def test_climate_readout_weaves_overview_priority_statement_and_limitations_in_order():
+    script = _readout_harness() + r"""
+const priorities = Array.from({length:5}, (_,index) => ({
   rank:index+1,
   title:index===0?'Priority 1 - Strengthen adaptive delivery':'Action '+(index+1),
-  narrative:'Bounded rationale '+(index+1)+'.',
-  minimum_action:'Complete action '+(index+1)+'.',
-  completion_evidence:'Record evidence '+(index+1)+'.',
-  project_cycle:{{
-    primary_label:'At concept stage', primary_text:'Complete action '+(index+1)+'.',
-    secondary_label:'During preparation', secondary_text:'Record evidence '+(index+1)+'.'
-  }}
-}}));
+  narrative:'Bounded rationale '+(index+1)+'.\n\nComplete action '+(index+1)+'.',
+  project_cycle:{primary_label:'At concept stage', primary_text:'Complete action '+(index+1)+'.'}
+}));
 const bridge='The overview and strengths lead to five focused operational priorities.';
-const html=renderClimateVerifiedSummary({{
-  summary_overview:['A complete overview.'], existing_responses:[], priorities,
-  priority_summary:{{count:5,titles:priorities.map(item=>item.title),statement:bridge}},
-  operation_context:{{document_type:'PCN',instrument_type:'IPF',preparation_regime:'legacy',es_regime:'ESF',is_mpa:false}}
-}});
-const count='Showing the 3 highest-ranked of 5 priorities. See Detailed analysis for all 5.';
-if(html.includes(count)||!html.includes('>Action 5<'))throw new Error('all five priorities must be visible');
-const closing='For supporting evidence and completion signals behind each priority, continue to Detailed analysis.';
-for (const expected of [bridge,closing]) {{
-  if (!html.includes(expected)) throw new Error('missing '+expected+' | '+html);
-}}
-if (!(html.indexOf(bridge) < html.indexOf('id="summary-priority-accordion"') && html.indexOf('id="summary-priority-accordion"') < html.indexOf(closing))) {{
-  throw new Error('summary narrative order is incoherent | '+html);
-}}
+const html=renderClimateVerifiedAssessment({
+  summary_overview:['A complete overview.'], summary_overview_status:'generated', existing_responses:[], priorities,
+  priority_summary:{count:5,titles:priorities.map(item=>item.title),statement:bridge},
+  operation_context:{document_type:'PCN',instrument_type:'IPF',preparation_regime:'legacy',es_regime:'ESF',is_mpa:false}
+});
+if (!html.includes('>Action 5<')) throw new Error('all five priorities must be visible');
+if (!html.includes(bridge)) throw new Error('missing priority statement | '+html);
+const order=['A complete overview.',bridge,'fr-pc-title-txt">Action 5','Limitations'].map(t=>html.indexOf(t));
+if (order.some(i=>i<0) || order.slice(1).some((v,i)=>v<order[i])) throw new Error('readout order is incoherent | '+order);
 if (html.includes('Priority 1 - Strengthen adaptive delivery')) throw new Error('duplicate priority prefix remains');
 if (!html.includes('>Strengthen adaptive delivery<')) throw new Error('normalized priority title missing');
 
 const gap='Flood-resilient design is documented, but upkeep arrangements are not shown.';
-const withGaps=renderClimateVerifiedSummary({{
-  summary_overview:['A complete overview.'],
-  existing_responses:[{{description:'Flood-resilient design is documented.'}}],
-  priorities:[{{...priorities[0],limitation:gap}}],
-  priority_summary:{{statement:bridge}}
-}});
-if (!(withGaps.indexOf('What is already working') < withGaps.indexOf('Potential gaps') && withGaps.indexOf('Potential gaps') < withGaps.indexOf('Priority actions for the task team'))) throw new Error('gap section order is incorrect');
-if (!withGaps.replace(/<[^>]+>/g,'').includes(gap) || withGaps.includes(bridge)) throw new Error('gaps must replace the general bridge');
-
+const withGaps=renderClimateVerifiedAssessment({
+  summary_overview:['A complete overview.'], summary_overview_status:'generated',
+  existing_responses:[{description:'Flood-resilient design is documented.'}],
+  summary_gaps:[{text:gap}],
+  priorities:[priorities[0]],
+  priority_summary:{statement:bridge}
+});
+if (!(withGaps.indexOf('What is already working') < withGaps.indexOf('Key gaps at this stage') && withGaps.indexOf('Key gaps at this stage') < withGaps.indexOf('Ranked Operational Priorities'))) throw new Error('gap section order is incorrect');
+if (!withGaps.replace(/<[^>]+>/g,'').includes(gap)) throw new Error('gap finding missing');
 """
-    result = subprocess.run(
-        ["node", "-"], input=script, capture_output=True, text=True, check=False
-    )
+    result = _run_node(script)
     assert result.returncode == 0, result.stderr
 
 
-def test_climate_summary_keeps_unresolved_warning_visible_and_incomplete_closing_fail_loud():
-    source = INDEX.read_text(encoding="utf-8")
-    helpers = "\n".join(
-        _extract_js_function(source, name)
-        for name in (
-            "climateSummaryStrengths",
-            "climateSummaryPriorityItems",
-            "renderStage3AdvisoryTransition",
-            "getConcisePriority",
-            "renderSummaryPriorityAccordion",
-            "climateAccessibleRouteValue",
-            "climateDraftingRouteGate",
-            "boldEscapedFirstSentence",
-            "climateSummaryWatchItems",
-            "renderClimateWatchDisclosure",
-            "normalizeClimateSourceTitle",
-            "isPublicWorldBankHttpsUrl",
-            "renderClimateRelevantGuidance",
-            "renderClimateSummaryGaps",
-            "renderClimateVerifiedSummary",
-        )
-    )
-    script = f"""
-{_js_escape_helper()}
-const reviewMode='design';
-let openSummaryPriority=0;
-{helpers}
-const html=renderClimateVerifiedSummary({{
+def test_climate_readout_keeps_unresolved_warning_and_incomplete_notice_visible():
+    script = _readout_harness() + r"""
+const html=renderClimateVerifiedAssessment({
   summary_overview:['A bounded overview.'], priorities:[], existing_responses:[],
   recommendation_status:'incomplete',
   recommendation_message:'The recommendation stage could not be completed.',
-  operation_context:{{document_type:'Unknown',instrument_type:'Unknown',preparation_regime:'unresolved',es_regime:'UNRESOLVED',is_mpa:false}}
-}});
+  operation_context:{document_type:'Unknown',instrument_type:'Unknown',preparation_regime:'unresolved',es_regime:'UNRESOLVED',is_mpa:false}
+});
 const warning='Suggested document wording is not shown because the document type or financing route could not be confirmed reliably.';
-const closing='Recommendations are incomplete. Review the Detailed analysis and rerun the assessment or contact support before relying on this note.';
-if (!html.includes(warning) || !html.includes(closing)) throw new Error('missing visible fail-loud language | '+html);
-const contextStart=html.indexOf('<section class="climate-summary-context">');
-const warningIndex=html.indexOf(warning);
-const contextBeforeWarning=contextStart>=0&&warningIndex>=0?html.slice(contextStart,warningIndex):'';
-if (!(contextStart>=0 && warningIndex>contextStart) || contextBeforeWarning.includes('<details')) {{
-  throw new Error('unresolved warning is not visible in the compact context | '+html);
-}}
-if (html.includes('<details class="climate-summary-routing">')) {{
-  throw new Error('retired technical routing disclosure remains | '+html);
-}}
+if (!html.includes(warning)) throw new Error('missing route warning | '+html);
+if (!html.includes('Recommendations stage incomplete')) throw new Error('missing incomplete heading | '+html);
 if (!html.includes('could not be completed')) throw new Error('recommendation failure was hidden');
+if (html.indexOf(warning) > html.indexOf('fr-scorecard')) throw new Error('notices must precede the readout body');
 """
-    result = subprocess.run(
-        ["node", "-"], input=script, capture_output=True, text=True, check=False
-    )
+    result = _run_node(script)
     assert result.returncode == 0, result.stderr
 
-def test_incomplete_recommendations_are_fail_loud_in_both_climate_views():
+def test_incomplete_recommendations_are_fail_loud_in_the_climate_readout():
     source = INDEX.read_text(encoding="utf-8")
-    helpers = "\n".join(
-        _extract_js_function(source, name)
-        for name in (
-            "climateSummaryStrengths",
-            "climateSummaryPriorityItems",
-            "renderStage3AdvisoryTransition",
-            "getConcisePriority",
-            "renderSummaryPriorityAccordion",
-            "climateAccessibleRouteValue",
-            "climateDraftingRouteGate",
-            "boldEscapedFirstSentence",
-            "renderClimateSummaryGaps",
-            "renderClimateVerifiedSummary",
-            "climateAccessibleRouteValue",
-            "climateDraftingRouteGate",
-            "climateSummaryWatchItems",
-            "renderClimateVerifiedAssessment",
-        )
-    )
     reader = {
         "recommendation_status": "incomplete",
         "recommendation_message": (
@@ -673,215 +286,85 @@ def test_incomplete_recommendations_are_fail_loud_in_both_climate_views():
         "review_readiness_flags": [],
         "minor_climate_points": [],
     }
-    script = f"""
-{_js_escape_helper()}
-const renderClimateRelevantGuidance = () => '';
-const renderClimateWatchDisclosure = () => '';
-const reviewMode='design';
-let openSummaryPriority=0;
-{helpers}
+    script = _readout_harness() + f"""
 const reader = {json.dumps(reader)};
-for (const [name,html] of [
-  ['summary',renderClimateVerifiedSummary(reader)],
-  ['detailed',renderClimateVerifiedAssessment(reader)]
-]) {{
-  if (!html.toLowerCase().includes('could not be completed')) {{
-    throw new Error(name+' view hides incomplete recommendation state | '+html);
-  }}
-  if (html.includes('No operational priorities were identified')) {{
-    throw new Error(name+' view uses neutral zero-priority copy | '+html);
-  }}
+const html = renderClimateVerifiedAssessment(reader);
+if (!html.toLowerCase().includes('could not be completed')) {{
+  throw new Error('readout hides incomplete recommendation state | '+html);
+}}
+if (html.includes('No operational priorities were identified')) {{
+  throw new Error('readout uses neutral zero-priority copy | '+html);
 }}
 """
-    result = subprocess.run(
-        ["node", "-"], input=script, capture_output=True, text=True, encoding="utf-8", check=False
-    )
-
+    result = _run_node(script)
     assert result.returncode == 0, result.stderr
     render_out = _extract_js_function(source, "renderOut")
     assert "recommendation_status==='incomplete'" in render_out
     assert "Recommendations stage incomplete" in render_out
 
 
-def test_climate_summary_strength_cards_split_full_heading_from_explanation():
-    source = INDEX.read_text(encoding="utf-8")
-    helper = _extract_js_function(source, "climateSummaryStrengths")
-    script = f"""
-{helper}
-const fullHeading = 'Climate-resilient infrastructure standards protect fisheries investments and local livelihoods from severe seasonal flooding.';
-const explanation = 'Sub-component 1.2 requires all-weather facilities, helping services continue when seasonal water levels rise.';
-const cards = climateSummaryStrengths({{existing_responses:[
-  {{description:fullHeading+' '+explanation}},
-  {{description:'Co-management agreements are sequenced before infrastructure becomes operational.'}}
-]}});
-if (cards[0].title !== fullHeading) throw new Error('heading was truncated: '+cards[0].title);
-if (cards[0].text !== explanation) throw new Error('explanation was not separated: '+cards[0].text);
-if (cards[1].title !== cards[1].text) throw new Error('one-sentence fallback was not preserved');
+def test_climate_readout_displays_up_to_five_ranked_priorities():
+    script = _readout_harness() + r"""
+const titles = ['Fourth','Second','Seventh','First','Sixth','Third','Fifth'];
+const ranks = [4,2,7,1,6,3,5];
+const html = renderClimateVerifiedAssessment({
+  priorities: titles.map((title, i) => ({rank: ranks[i], title, narrative: title + ' narrative.'}))
+});
+const cardTitles = Array.from(html.matchAll(/class="fr-pc-title-txt">([^<]+)</g), m => m[1]);
+if (cardTitles.join('|') !== 'First|Second|Third|Fourth|Fifth') {
+  throw new Error('priority cards are not capped at five in rank order: ' + cardTitles.join('|'));
+}
+const rows = Array.from(html.matchAll(/class="fr-pt-link"[^>]*>([^<]+)</g), m => m[1]);
+if (rows.join('|') !== cardTitles.join('|')) throw new Error('priority table does not match cards: ' + rows.join('|'));
 """
-    result = subprocess.run(
-        ["node", "-"], input=script, capture_output=True, text=True, check=False
-    )
+    result = _run_node(script)
     assert result.returncode == 0, result.stderr
 
 
-def test_climate_summary_initial_render_hydrates_priority_navigation():
-    source = INDEX.read_text(encoding="utf-8")
-
-    assert "if(host)host.innerHTML=renderSummaryPriorityAccordion(summaryPriorities);" in source
-    assert "el.style.display=showSummary||supportsClimateVerifiedStage3View()?'none':''" in source
-    assert "if(supportsClimateVerifiedStage3View())stageThreePriorities=Array.isArray(climateVerifiedReader&&climateVerifiedReader.priorities)?climateVerifiedReader.priorities:[];" in source
-    assert "if(supportsClimateVerifiedStage3View()&&stageThreePriorities&&stageThreePriorities.length)initStage3UI();" in source
-
-
-def test_climate_summary_displays_up_to_five_ranked_priorities():
-    source = INDEX.read_text(encoding="utf-8")
-    helper = "\n".join((
-        _extract_js_function(source, "climateDraftingRouteGate"),
-        _extract_js_function(source, "climateSummaryPriorityItems"),
-    ))
-    script = f"""
-{helper}
-const priorities = climateSummaryPriorityItems({{
-  priorities: [
-    {{rank:4, title:'Fourth'}},
-    {{rank:2, title:'Second'}},
-    {{rank:1, title:'First'}},
-    {{rank:3, title:'Third'}}
-  ]
-}});
-if (priorities.length !== 4) throw new Error('expected all four priorities, got '+priorities.length);
-if (priorities.map(item => item.title).join('|') !== 'First|Second|Third|Fourth') {{
-  throw new Error('priorities are not ranked correctly: '+priorities.map(item => item.title).join('|'));
-}}
+def test_climate_readout_copies_canonical_project_cycle_exactly_and_escaped():
+    script = _readout_harness() + r"""
+const cycle={primary_label:'In the <restructuring> package',primary_text:'Update the package & record it.',secondary_label:'During implementation',secondary_text:'Track the trigger.'};
+const html=renderClimateVerifiedAssessment({priorities:[{rank:1,title:'Action',narrative:'Why.',project_cycle:cycle}]});
+const expected='<p class="fr-cycle"><strong>In the &lt;restructuring&gt; package:</strong> Update the package &amp; record it.</p>';
+if (!html.includes(expected)) throw new Error('canonical lifecycle was not rendered exactly | '+html);
+if (html.includes('Legacy')) throw new Error('legacy lifecycle leaked');
+const none=renderClimateVerifiedAssessment({priorities:[{rank:1,title:'Action',narrative:'Why.',project_cycle:{primary_label:'Only label',primary_text:''}}]});
+if (none.includes('Only label')) throw new Error('invalid canonical cycle was rendered');
 """
-    result = subprocess.run(
-        ["node", "-"], input=script, capture_output=True, text=True, check=False
-    )
+    result = _run_node(script)
     assert result.returncode == 0, result.stderr
 
 
-
-def test_climate_summary_priority_items_copy_canonical_lifecycle_exactly():
-    source = INDEX.read_text(encoding="utf-8")
-    helper = "\n".join((
-        _extract_js_function(source, "climateDraftingRouteGate"),
-        _extract_js_function(source, "climateSummaryPriorityItems"),
-    ))
-    script = f"""
-{helper}
-const cycle={{primary_label:'In the restructuring package',primary_text:'Update the package.',secondary_label:'During implementation',secondary_text:'Track the trigger.'}};
-const item=climateSummaryPriorityItems({{priorities:[{{rank:1,title:'Action',project_cycle:cycle}}]}})[0];
-if (JSON.stringify(item.concise.project_cycle) !== JSON.stringify(cycle)) {{
-  throw new Error('summary lifecycle diverged from canonical reader data: '+JSON.stringify(item.concise.project_cycle));
-}}
-"""
-    result = subprocess.run(
-        ["node", "-"], input=script, capture_output=True, text=True, check=False
-    )
-    assert result.returncode == 0, result.stderr
-
-
-
-def test_climate_summary_reprojects_during_hydration_and_view_switch():
-    source = INDEX.read_text(encoding="utf-8")
-    for function_name in ("setStage3View", "initStage3UI"):
-        function_source = _extract_js_function(source, function_name)
-        assert "supportsClimateVerifiedStage3View()" in function_source
-        assert "climateSummaryPriorityItems(climateVerifiedReader)" in function_source
-        assert (
-            "renderSummaryPriorityAccordion(summaryPriorities)" in function_source
-        )
-
-def test_climate_summary_projection_does_not_replace_detailed_priority_state():
-    source = INDEX.read_text(encoding="utf-8")
-    assert (
-        "stageThreePriorities=climateSummaryPriorityItems(climateVerifiedReader);"
-        not in source
-    )
-    assert source.count(
-        "stageThreePriorities=Array.isArray(climateVerifiedReader&&climateVerifiedReader.priorities)?climateVerifiedReader.priorities:[];"
-    ) >= 4
-
-    helpers = "\n".join(
-        _extract_js_function(source, name)
-        for name in ("climateDraftingRouteGate", "climateSummaryPriorityItems", "toggleSummaryPriority")
-    )
-    script = f"""
-const raw=Array.from({{length:5}},(_,index)=>({{rank:index+1,title:'Action '+(index+1),project_cycle:{{primary_label:'At concept stage',primary_text:'Act.'}}}}));
-const climateVerifiedReader={{priorities:raw}};
-const stageThreePriorities=raw;
-const supportsClimateVerifiedStage3View=()=>true;
-let openSummaryPriority=0;
-let currentPriority=0;
-const panel={{hidden:false}};
-const button={{setAttribute:()=>{{}},focus:()=>{{}}}};
-const document={{getElementById:id=>id==='summary-priority-panel-2'?panel:id==='summary-priority-toggle-2'?button:null}};
-{helpers}
-if (climateSummaryPriorityItems(climateVerifiedReader).length !== 5) throw new Error('summary projection truncated actions');
-toggleSummaryPriority(2);
-if (stageThreePriorities.length !== 5) throw new Error('canonical detailed priorities were truncated');
-if (!panel.hidden || currentPriority !== 2) throw new Error('targeted panel/selection not updated');
-"""
-    result = subprocess.run(
-        ["node", "-"], input=script, capture_output=True, text=True, check=False
-    )
-    assert result.returncode == 0, result.stderr
-
-def test_climate_summary_truncates_overview_at_a_complete_sentence():
-    source = INDEX.read_text(encoding="utf-8")
-    helpers = "\n".join(
-        _extract_js_function(source, name)
-        for name in (
-            "climateSummaryStrengths",
-            "climateSummaryPriorityItems",
-            "renderStage3AdvisoryTransition",
-            "getConcisePriority",
-            "renderSummaryPriorityAccordion",
-            "climateAccessibleRouteValue",
-            "climateDraftingRouteGate",
-            "boldEscapedFirstSentence",
-            "climateSummaryWatchItems",
-            "renderClimateWatchDisclosure",
-            "normalizeClimateSourceTitle",
-            "isPublicWorldBankHttpsUrl",
-            "renderClimateRelevantGuidance",
-            "renderClimateSummaryGaps",
-            "renderClimateVerifiedSummary",
-        )
-    )
-    script = f"""
-const esc = value => String(value ?? '')
-  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-  .replace(/\"/g,'&quot;').replace(/'/g,'&#039;');
-const reviewMode='design';
-let openSummaryPriority=0;
-{helpers}
+def test_climate_readout_keeps_generated_overview_paragraphs_complete():
+    script = _readout_harness() + r"""
 const first = 'Context '.repeat(119) + 'first sentence ends here.';
 const second = 'Design '.repeat(109) + 'second sentence ends here.';
 const third = 'Unfinished-tail-marker '.repeat(40) + 'third sentence ends here.';
-const html = renderClimateVerifiedSummary({{summary_overview:[first+' '+second, third]}});
-if (!html.includes('second sentence ends here.')) throw new Error('canonical overview omitted a complete sentence');
-if (!html.includes('Unfinished-tail-marker')) throw new Error('canonical overview omitted a full paragraph');
+const html = renderClimateVerifiedAssessment({summary_overview:[first, second, third], summary_overview_status:'generated'});
+for (const expected of ['first sentence ends here.', 'second sentence ends here.', 'third sentence ends here.']) {
+  if (!html.includes(expected)) throw new Error('overview omitted a complete paragraph: ' + expected);
+}
+if (!html.includes('Unfinished-tail-marker')) throw new Error('overview omitted a full paragraph');
 """
-    result = subprocess.run(
-        ["node", "-"], input=script, capture_output=True, text=True, check=False
-    )
+    result = _run_node(script)
     assert result.returncode == 0, result.stderr
 
 
-def test_climate_detailed_reader_keeps_rating_above_core_questions_and_plain_method_fold():
-    source = INDEX.read_text(encoding="utf-8")
-    renderer = "\n".join((
-        _extract_js_function(source, "renderPriorityProjectCycle"),
-        _extract_js_function(source, "climateAccessibleRouteValue"),
-        _extract_js_function(source, "climateDraftingRouteGate"),
-        _extract_js_function(source, "climateSummaryWatchItems"),
-        _extract_js_function(source, "renderClimateVerifiedAssessment"),
-    ))
-
-    assert renderer.index("${ratingsInSidebar?'':ratingHtml}") < renderer.index("climateReportSection('Ranked operational priorities'")
-    assert "Limitations" in renderer
-    assert "technical_annex" not in renderer
+def test_climate_readout_keeps_ratings_before_priorities_and_hides_technical_annex():
+    script = _readout_harness() + r"""
+const html = renderClimateVerifiedAssessment({
+  executive_readout:'Overview text.',
+  priorities:[{rank:1,title:'Action',narrative:'Why.'}],
+  technical_annex:{recommendation_admitted_count:3,semantic_reviewer_verdict:'block'},
+  evidence_trail:{limitations:'Plain limitations text.'}
+});
+const order = ['Climate &amp; FCV Sensitivity &amp; Responsiveness','Ranked Operational Priorities','Limitations'].map(t => html.indexOf(t));
+if (order.some(i => i < 0) || order[0] > order[1] || order[1] > order[2]) throw new Error('section order is wrong | ' + order);
+if (!html.includes('Plain limitations text.')) throw new Error('limitations text missing');
+for (const leaked of ['3 recommendation','semantic','block']) if (html.includes(leaked)) throw new Error('technical annex leaked: ' + leaked);
+"""
+    result = _run_node(script)
+    assert result.returncode == 0, result.stderr
 
 
 def test_climate_stage3_overview_explains_why_strengthening_is_needed():
@@ -1186,38 +669,37 @@ if(climateLensEntry({{error:true}})!==null) throw new Error('invalid entry accep
     assert result.returncode == 0, result.stderr
 
 
-def test_live_stage3_orders_option_a_and_preserves_core_fallback():
+def test_live_stage3_orders_legacy_climate_lens_and_preserves_normal_fallback():
     source = INDEX.read_text(encoding="utf-8")
     helper = _extract_js_function(source, "renderOut")
 
-    # Climate-valid path (redesign): notice/gauge -> strengths & weaknesses -> core questions.
-    # renderSRNarrative is NOT in the climate path (replaced by integration gauge + core questions)
+    # Legacy climate-lens path: notices (module notice via the lens state) -> strengths &
+    # weaknesses -> core questions -> readout priorities. The normal route uses the readout.
     climate_order = [
-        "renderClimateModuleNotice",
+        "stage3NoticesHtml(_climate)",
         "renderClimateStrengthsWeaknesses",
         "renderClimateCoreQuestions",
+        "renderLegacyClimatePrioritiesHtml()",
     ]
     positions = [helper.index(name) for name in climate_order]
     assert positions == sorted(positions)
-    assert "isClimateLensActive" in helper
-    assert "renderRiskExposure(stageRiskExposure)" in helper
-    assert (
-        "renderSRCards(stageSensitivitySummary,stageResponsivenessSummary)"
-        in helper
-    )
+    assert "stage3ClimateLensState()" in helper
+    assert "_outBodyContent=buildNormalReadout(result);" in helper
+    assert "renderClimateModuleNotice" in _extract_js_function(source, "stage3ClimateLensState")
 
 
 def test_download_html_uses_same_climate_sections_and_order():
     source = INDEX.read_text(encoding="utf-8")
     helper = _extract_js_function(source, "downloadHTML")
 
-    assert "isClimateLensActive" in helper
-    # Climate-valid path mirrors renderOut (redesign): notice -> strengths&weaknesses -> core questions.
+    assert "stage3ClimateLensState()" in helper
+    # Climate-valid path mirrors renderOut: notices -> narrative -> strengths&weaknesses -> core questions -> priorities.
     required = [
-        "renderClimateModuleNotice",
+        "stage3NoticesHtml(_exportClimate)",
         "wrapSRTerms(md(bulletFindingSections(summarybody)))",
         "renderClimateStrengthsWeaknesses",
         "renderClimateCoreQuestions",
+        "renderLegacyClimatePrioritiesHtml(true)",
     ]
     positions = [helper.index(value) for value in required]
     assert positions == sorted(positions)
@@ -1225,37 +707,24 @@ def test_download_html_uses_same_climate_sections_and_order():
     _seg = helper[helper.index("renderClimateStrengthsWeaknesses"):helper.index("renderClimateCoreQuestions") + 400]
     assert "renderClimateDividendSynthesis" not in _seg
     assert "renderWiderFcvContext" not in _seg
-    assert "renderRiskExposure(stageRiskExposure)" in helper
-    assert (
-        "renderSRCards(stageSensitivitySummary, stageResponsivenessSummary)"
-        in helper
-    )
+    # The normal route reuses the on-screen readout builder.
+    assert "buildNormalReadout(stageOutputs[3]||'',true)" in helper
 
 
-def test_live_and_shared_priority_cards_switch_climate_panel_only_when_active():
+def test_live_and_shared_priority_extras_switch_climate_panel_only_when_active():
     source = INDEX.read_text(encoding="utf-8")
     export_helper = _extract_js_function(source, "_buildExportPriorityCard")
-    live_helper = _extract_js_function(source, "showPriority")
+    live_helper = _extract_js_function(source, "renderStandardPriorityContext")
+    legacy = _extract_js_function(source, "renderLegacyClimatePrioritiesHtml")
 
-    for helper in (export_helper, live_helper):
-        assert "renderPriorityClimateContribution(pr)" in helper
-        assert "renderStandardPriorityContext(pr)" in helper
-        assert "isClimateLensActive()" in helper
+    assert "renderPriorityClimateContribution(pr)" in export_helper
+    assert "renderStandardPriorityContext(pr)" in export_helper
+    assert "isClimateLensActive()" in export_helper
+    assert "renderStandardPriorityContext(pr)" in _extract_js_function(source, "renderNormalPriorityExtras")
+    assert "isClimateLensActive" in live_helper or "climate" in live_helper.lower()
+    assert "renderPriorityClimateContribution(p)" in legacy
     assert "Differentiated approach note" not in source
     assert "country_category_relevance" not in source
-
-
-
-def test_priority_controls_have_no_secondary_next_previous_navigator():
-    source = INDEX.read_text(encoding="utf-8")
-    helper = _extract_js_function(source, "showPriority")
-
-    assert "pc-nav" not in source
-    assert "nextPriority" not in source
-    assert "prevPriority" not in source
-    assert "if(nextBtn)" not in helper
-    assert '<button type="button" class="ps-step' in source
-    assert 'aria-pressed="${i===currentPriority?' in source
 
 
 def test_express_mode_surfaces_stage2_structured_diagnostic_failures():
@@ -1563,7 +1032,7 @@ def test_reflections_render_without_status_chips():
 def test_live_climate_order_notice_sw_questions():
     html = INDEX.read_text(encoding="utf-8")
     body = html.split("function renderOut", 1)[1][:8000]
-    i_notice = body.index("renderClimateModuleNotice")
+    i_notice = body.index("stage3NoticesHtml(_climate)")
     i_sw = body.index("renderClimateStrengthsWeaknesses")
     i_q = body.index("renderClimateCoreQuestions")
     assert i_notice < i_sw < i_q
@@ -1742,23 +1211,6 @@ def test_priorities_intro_shows_soft_notice_when_links_unvalidated():
     assert "provenance could not be validated" in source
 
 
-def test_priority_navigation_is_explicit_and_keyboard_operable():
-    source = INDEX.read_text(encoding="utf-8")
-
-    assert "priority-navigation-callout" not in source
-    assert "Select each numbered priority" not in source
-    assert "Priority overview" not in source
-    assert "pov-sb" not in source
-    intro = _extract_js_function(source, "renderPrioritiesIntro")
-    assert "pi-lead" in intro
-    assert "pi-list" not in intro
-    assert "priority-navigation-callout" not in intro
-    assert '<button type="button" class="ps-step' in source
-    assert 'aria-pressed="${i===currentPriority?' in source
-    assert "setAttribute('aria-pressed'" in source
-    assert ".ps-step:focus-visible" in source
-
-
 def test_reference_describes_current_compact_stage3_controls():
     reference = (INDEX.parent / "docs" / "reference" / "reference_frontend_functions.md").read_text(encoding="utf-8")
     for stale in (
@@ -1883,16 +1335,7 @@ if (legacy.bar.attrs['aria-valuenow'] !== '66') throw new Error('legacy climate 
     assert result.returncode == 0, result.stderr
 
 
-def test_verified_reader_visual_refresh_preserves_depth_and_orders_sections():
-    source = INDEX.read_text(encoding="utf-8")
-    renderer = "\n".join((
-        _extract_js_function(source, "renderPriorityProjectCycle"),
-        _extract_js_function(source, "climateAccessibleRouteValue"),
-        _extract_js_function(source, "climateDraftingRouteGate"),
-        _extract_js_function(source, "climateSummaryWatchItems"),
-        _extract_js_function(source, "renderClimateVerifiedAssessment"),
-    ))
-    url_helper = _extract_js_function(source, "isPublicWorldBankHttpsUrl")
+def test_verified_reader_readout_preserves_depth_and_orders_sections():
     reader = {
         "operation_context": {
             "document_type": "Program Paper", "instrument_type": "PforR",
@@ -1990,145 +1433,88 @@ def test_verified_reader_visual_refresh_preserves_depth_and_orders_sections():
         }],
         "advisory_notice": "Use this assessment alongside specialist judgement.",
     }
-    script = f"""
-{_js_escape_helper()}
-const renderClimateRelevantGuidance = () => '';
-{url_helper}
-{renderer}
-const html = renderClimateVerifiedAssessment({json.dumps(reader)});
-if (html.includes('Review context') ||
-    html.includes('Document: Program Paper | Instrument: PforR')) {{
+    script = _readout_harness() + f"const reader = {json.dumps(reader)};\n" + r"""
+const html = renderClimateVerifiedAssessment(reader);
+const text = html.replace(/<[^>]+>/g, '');
+if (html.includes('Review context') || html.includes('Document: Program Paper | Instrument: PforR')) {
   throw new Error('removed review metadata remains | ' + html);
-}}
-for (const removed of [
-  'How this operation was routed',
-  'Technical routing details',
-  'climate-operation-routing',
-  'E&amp;S route',
-  'INSTRUMENT SPECIFIC'
-]) {{
-  if (html.includes(removed)) {{
-    throw new Error('technical routing disclosure remains: ' + removed);
-  }}
-}}
-const orderedSections = [
-  'Overview', 'Ranked operational priorities',
-  'Points to check before the applicable review', 'Limitations'
-];
-let previous = -1;
-for (const section of orderedSections) {{
-  const current = html.indexOf(section);
-  if (current === -1 || current <= previous) {{
-    throw new Error('section hierarchy is missing or out of order: ' + section + ' | ' + html);
-  }}
-  previous = current;
-}}
-const minorIndex = html.indexOf('Smaller climate and fragility points to consider');
-const documentIndex = html.indexOf('Document points to confirm');
-if (minorIndex < 0 || documentIndex < 0 || minorIndex >= documentIndex) {{
-  throw new Error('smaller climate points must appear before document points | ' + html);
-}}
+}
+for (const removed of ['How this operation was routed', 'Technical routing details', 'climate-operation-routing', 'E&amp;S route', 'INSTRUMENT SPECIFIC']) {
+  if (html.includes(removed)) throw new Error('technical routing disclosure remains: ' + removed);
+}
 for (const expected of [
   'Seasonal flooding and insecurity can disrupt works. The project needs agreed triggers for pausing and restarting activity.',
   'These triggers should be discussed with local delivery partners. They can reduce uneven access to project benefits.',
   'Include seasonal access triggers in the implementation arrangements.',
-  'Practical considerations', '<article class="climate-verified-assessment">',
-  '<section class="climate-report-section', '<header class="climate-section-heading">',
-  '<details class="climate-priority-detail">',
+  '<article class="fr-readout fr-route-climate">',
   'Complete drafting paragraph for priority four.',
   'Retain the complete priority-four drafting language.',
-  'identifies 4 main operational priorities',
-  'Limitations',
   'The uploaded concept note does not yet include final implementation protocols.',
-  'Candidate country evidence: preview; not approved.'
-]) {{
-  if (!html.includes(expected)) throw new Error('missing preserved reader detail: ' + expected + ' | ' + html);
-}}
-if (!html.includes('data-rating-key="climate-sensitivity"') || !html.includes('data-rating-key="climate-responsiveness"')) {{
-  throw new Error('overview panel missing | ' + html);
-}}
-if ((html.match(/class="climate-paired-ratings"/g)||[]).length !== 1) {{
-  throw new Error('overview must use one restrained panel | ' + html);
-}}
-if ((html.match(/class="climate-priority-card"/g)||[]).length !== 4) {{
-  throw new Error('all priorities must be native disclosures | ' + html);
-}}
-if ((html.match(/class="climate-priority-card" open/g)||[]).length !== 4) {{
-  throw new Error('all priorities should be open | ' + html);
-}}
-if ((html.match(/class="climate-item-number"/g)||[]).length !== 4) {{
-  throw new Error('checks must be visibly numbered | ' + html);
-}}
-for (const removed of ['How this analysis was produced', 'The analysis used project evidence and the country bank.', 'Sources &amp; further reading', 'Evidence status:', 'Evidence key', 'Run diagnostics', 'final operational priorities are presented:']) {{
+  'Candidate country evidence: preview; not approved.',
+  'Check local communication channels', 'Confirm the works calendar'
+]) {
+  if (!text.includes(expected) && !html.includes(expected)) throw new Error('missing preserved reader detail: ' + expected + ' | ' + html);
+}
+if (!html.includes('data-fr-rating="climate-sensitivity"') || !html.includes('data-fr-rating="climate-responsiveness"')) {
+  throw new Error('scorecard missing | ' + html);
+}
+if ((html.match(/class="fr-scorecard"/g) || []).length !== 1) throw new Error('one scorecard expected');
+if (!html.includes('class="fr-sc-count-num">4<')) throw new Error('priority count missing');
+if ((html.match(/<details class="fr-pc"/g) || []).length !== 4) throw new Error('all priorities must be native disclosures | ' + html);
+if ((html.match(/<details class="fr-pc" id="fr-priority-\d" open>/g) || []).length !== 1 || !html.includes('<details class="fr-pc" id="fr-priority-1" open>')) {
+  throw new Error('only the first priority should be open | ' + html);
+}
+if ((html.match(/class="fr-check-num"/g) || []).length !== 4) throw new Error('checks must be visibly numbered | ' + html);
+for (const removed of ['How this analysis was produced', 'The analysis used project evidence and the country bank.', 'Sources &amp; further reading', 'Evidence status:', 'Evidence key', 'Run diagnostics', 'final operational priorities are presented:']) {
   if (html.includes(removed)) throw new Error('reader clutter remains: ' + removed + ' | ' + html);
-}}
-const headingPattern = new RegExp('<header class="climate-section-heading"><span class="climate-section-number">([0-9]{{2}})</span><h2>([^<]+)</h2></header>', 'g');
-const headings = Array.from(html.matchAll(headingPattern), match => [match[1], match[2]]);
+}
+const headings = Array.from(html.matchAll(/<span class="fr-h1-num">([0-9]{2})<\/span><h2 class="fr-h1-txt">([^<]+)<\/h2>/g), m => [m[1], m[2]]);
 const expectedHeadings = [
   ['01', 'Overview'],
-  ['02', 'Ranked operational priorities'],
-  ['03', 'Points to check before the applicable review'],
-  ['04', 'Limitations']
+  ['02', 'Climate &amp; FCV Sensitivity &amp; Responsiveness'],
+  ['03', 'Ranked Operational Priorities'],
+  ['04', 'Strategic Priorities'],
+  ['05', 'Points to Check Before the Applicable Review'],
+  ['06', 'Limitations']
 ];
-if (JSON.stringify(headings) !== JSON.stringify(expectedHeadings)) {{
+if (JSON.stringify(headings) !== JSON.stringify(expectedHeadings)) {
   throw new Error('numbered section sequence is not gap-free: ' + JSON.stringify(headings) + ' | ' + html);
-}}
+}
 """
-    result = subprocess.run(
-        ["node", "-"], input=script, capture_output=True, text=True, check=False
-    )
+    result = _run_node(script)
     assert result.returncode == 0, result.stderr
 
 
 def test_verified_reader_fallback_numbers_limitations_last_without_unsafe_values():
-    source = INDEX.read_text(encoding="utf-8")
-    renderer = "\n".join((
-        _extract_js_function(source, "renderPriorityProjectCycle"),
-        _extract_js_function(source, "climateAccessibleRouteValue"),
-        _extract_js_function(source, "climateDraftingRouteGate"),
-        _extract_js_function(source, "climateSummaryWatchItems"),
-        _extract_js_function(source, "renderClimateVerifiedAssessment"),
-    ))
     reader = {
         "executive_readout": "The project needs a bounded climate-FCV review.",
         "evidence_trail": {
             "methodology_note": "The analysis used project evidence and the country bank."
         },
     }
-    script = f"""
-{_js_escape_helper()}
-const renderClimateRelevantGuidance = () => '';
-{renderer}
-const html = renderClimateVerifiedAssessment({json.dumps(reader)});
-for (const expected of [
-  'The project needs a bounded climate-FCV review.',
-  'Limitations'
-]) {{
+    script = _readout_harness() + f"const reader = {json.dumps(reader)};\n" + r"""
+const html = renderClimateVerifiedAssessment(reader);
+for (const expected of ['The project needs a bounded climate-FCV review.', 'Limitations']) {
   if (!html.includes(expected)) throw new Error('missing fallback content: ' + expected + ' | ' + html);
-}}
-for (const unsafe of ['undefined', '[object Object]']) {{
+}
+for (const unsafe of ['undefined', '[object Object]']) {
   if (html.includes(unsafe)) throw new Error('unsafe rendered value: ' + unsafe + ' | ' + html);
-}}
-if (html.includes('Points to check before the applicable review')) {{
+}
+if (html.includes('Points to Check Before the Applicable Review')) {
   throw new Error('empty points section should be suppressed | ' + html);
-}}
-const headingPattern = new RegExp('<header class="climate-section-heading"><span class="climate-section-number">([0-9]{{2}})</span><h2>([^<]+)</h2></header>', 'g');
-const headings = Array.from(html.matchAll(headingPattern), match => [match[1], match[2]]);
+}
+const headings = Array.from(html.matchAll(/<span class="fr-h1-num">([0-9]{2})<\/span><h2 class="fr-h1-txt">([^<]+)<\/h2>/g), m => [m[1], m[2]]);
 const expectedHeadings = [
   ['01', 'Overview'],
-  ['02', 'Ranked operational priorities'],
-  ['03', 'Limitations']
+  ['02', 'Climate &amp; FCV Sensitivity &amp; Responsiveness'],
+  ['03', 'Ranked Operational Priorities'],
+  ['04', 'Limitations']
 ];
-if (JSON.stringify(headings) !== JSON.stringify(expectedHeadings)) {{
+if (JSON.stringify(headings) !== JSON.stringify(expectedHeadings)) {
   throw new Error('fallback section sequence is not gap-free or limitations are not final: ' + JSON.stringify(headings) + ' | ' + html);
-}}
-if (!html.includes('<h2>Limitations</h2>')) {{
-  throw new Error('limitations heading is missing | ' + html);
-}}
+}
 """
-    result = subprocess.run(
-        ["node", "-"], input=script, capture_output=True, text=True, check=False
-    )
+    result = _run_node(script)
     assert result.returncode == 0, result.stderr
 
 
@@ -2294,81 +1680,52 @@ def test_verified_reader_balanced_styles_cover_mobile_print_and_accessibility():
         assert expected in source
 
 
-
 def test_print_expands_every_closed_reader_disclosure_with_its_content():
     source = INDEX.read_text(encoding="utf-8")
-    renderer = "\n".join((
-        _extract_js_function(source, "renderPriorityProjectCycle"),
-        _extract_js_function(source, "climateAccessibleRouteValue"),
-        _extract_js_function(source, "climateDraftingRouteGate"),
-        _extract_js_function(source, "climateSummaryWatchItems"),
-        _extract_js_function(source, "renderClimateVerifiedAssessment"),
-    ))
-    script = f"""
-{_js_escape_helper()}
-const renderClimateRelevantGuidance = () => '';
-{renderer}
-const html = renderClimateVerifiedAssessment({{
+    script = _readout_harness() + r"""
+const html = renderClimateVerifiedAssessment({
   executive_readout:'Reader overview.',
   priorities:[
-    {{rank:1,title:'First priority',narrative:'First narrative.',decision:'First decision.'}},
-    {{rank:2,title:'Second priority',narrative:'Closed priority narrative.',decision:'Closed priority decision.'}}
+    {rank:1,title:'First priority',narrative:'First narrative.\n\nFirst action.'},
+    {rank:2,title:'Second priority',narrative:'Closed priority narrative.\n\nClosed priority action.'}
   ],
-  evidence_trail:{{
-    methodology_note:'Closed method text.',
-    limitations:'Closed limitations text.'
-  }}
-}});
+  review_readiness_flags:[{flag:'Closed check',why_it_matters:'Closed check reason.',suggested_verification:'Closed check how.'}],
+  evidence_trail:{limitations:'Closed limitations text.'}
+});
 for (const expected of [
-  '<details id="climate-priority-2" class="climate-priority-card" open><summary>',
-  '<details class="climate-priority-detail"><summary>Practical considerations</summary>',
-  '<h2>Limitations</h2>',
-  'Closed priority narrative.', 'Closed priority decision.',
+  '<details class="fr-pc" id="fr-priority-2"><summary',
+  '<details class="fr-disc"><summary class="fr-disc-sum">Smaller checks for the project team to confirm</summary>',
+  'Limitations',
+  'Closed priority narrative.', 'Closed priority action.',
+  'Closed check reason.',
   'Closed limitations text.'
-]) {{
-  if (!html.includes(expected)) throw new Error('closed disclosure/content missing: '+expected+' | '+html);
-}}
+]) {
+  if (!html.replace(/<\/?strong>/g, '').includes(expected)) throw new Error('closed disclosure/content missing: '+expected+' | '+html);
+}
 """
-    result = subprocess.run(
-        ["node", "-"], input=script, capture_output=True, text=True, check=False
-    )
+    result = _run_node(script)
     assert result.returncode == 0, result.stderr
 
-    print_block = source[source.index("@media print{"):source.index("\n\n    /* Buttons */")]
-    assert ".climate-priority-card:not([open])>.climate-priority-body" in print_block
-    assert ".climate-priority-detail:not([open])>:not(summary)" in print_block
-    assert ".climate-fold:not([open])>:not(summary)" in print_block
-    assert ".climate-supporting-analysis:not([open])>:not(summary)" not in print_block
+    handler = _extract_js_function(source, "installClimatePrintDisclosureHandler")
+    for selector in ("details.fr-pc", "details.fr-disc"):
+        assert selector in handler
+    assert "beforeprint" in handler and "afterprint" in handler
 
 
-def test_priority_summary_contains_one_valid_heading_with_rank_inside():
-    source = INDEX.read_text(encoding="utf-8")
-    renderer = "\n".join((
-        _extract_js_function(source, "renderPriorityProjectCycle"),
-        _extract_js_function(source, "climateAccessibleRouteValue"),
-        _extract_js_function(source, "climateDraftingRouteGate"),
-        _extract_js_function(source, "climateSummaryWatchItems"),
-        _extract_js_function(source, "renderClimateVerifiedAssessment"),
-    ))
-    script = f"""
-{_js_escape_helper()}
-const renderClimateRelevantGuidance = () => '';
-{renderer}
-const html = renderClimateVerifiedAssessment({{
-  priorities:[{{rank:1,title:'Accessible priority',narrative:'Full priority prose.'}}]
-}});
-if (!html.includes('<summary><h3 class="pc-title"><span class="pc-rank">1</span><span class="pc-title-text">Accessible priority</span></h3></summary>')) {{
-  throw new Error('priority summary does not use one valid heading with rank inside | '+html);
-}}
-if (html.includes('</span><h3 class="pc-title">')) {{
-  throw new Error('rank remains a sibling of the summary heading | '+html);
-}}
+def test_priority_summary_contains_rank_and_title_inside_one_summary():
+    script = _readout_harness() + r"""
+const html = renderClimateVerifiedAssessment({
+  priorities:[{rank:1,title:'Accessible priority',narrative:'Full priority prose.'}]
+});
+const summary = html.match(/<summary class="fr-pc-hdr">[\s\S]*?<\/summary>/);
+if (!summary) throw new Error('priority summary missing | '+html);
+if (!summary[0].includes('<span class="fr-pc-rank">1</span>') || !summary[0].includes('<span class="fr-pc-title-txt">Accessible priority</span>')) {
+  throw new Error('priority summary does not carry rank and title | '+summary[0]);
+}
+if ((summary[0].match(/<h[1-6]/g)||[]).length !== 0) throw new Error('summary must not nest a heading element | '+summary[0]);
 """
-    result = subprocess.run(
-        ["node", "-"], input=script, capture_output=True, text=True, check=False
-    )
+    result = _run_node(script)
     assert result.returncode == 0, result.stderr
-
 
 
 def test_fallback_question_id_dedup_matches_canonical_ranking():
@@ -2538,87 +1895,50 @@ if (html.includes('First project use.')) throw new Error('project-specific guida
     assert result.returncode == 0, result.stderr
 
 
-
 def test_zero_priority_reader_is_neutral_and_hides_diagnostic_verdicts():
-    source = INDEX.read_text(encoding="utf-8")
-    renderer = "\n".join((
-        _extract_js_function(source, "renderPriorityProjectCycle"),
-        _extract_js_function(source, "climateAccessibleRouteValue"),
-        _extract_js_function(source, "climateDraftingRouteGate"),
-        _extract_js_function(source, "climateSummaryWatchItems"),
-        _extract_js_function(source, "renderClimateVerifiedAssessment"),
-    ))
-    script = f"""
-{_js_escape_helper()}
-const renderClimateRelevantGuidance = () => '';
-{renderer}
-const html=renderClimateVerifiedAssessment({{
+    script = _readout_harness() + r"""
+const html=renderClimateVerifiedAssessment({
   priorities:[],
-  technical_annex:{{recommendation_admitted_count:3,semantic_reviewer_verdict:'block'}}
-}});
-if (!html.includes('No operational priorities were identified in this assessment. Review the assessment findings and points to check below.')) {{
+  technical_annex:{recommendation_admitted_count:3,semantic_reviewer_verdict:'block'}
+});
+if (!html.includes('No operational priorities were identified in this assessment. Review the assessment findings and points to check below.')) {
   throw new Error('neutral zero-priority message missing | '+html);
-}}
-for (const diagnostic of ['3 recommendation','candidate','held back','block','outcome:']) {{
+}
+for (const diagnostic of ['3 recommendation','candidate','held back','block','outcome:']) {
   if (html.includes(diagnostic)) throw new Error('zero-priority diagnostics leaked: '+diagnostic+' | '+html);
-}}
+}
 """
-    result = subprocess.run(
-        ["node", "-"], input=script, capture_output=True, text=True, check=False
-    )
+    result = _run_node(script)
     assert result.returncode == 0, result.stderr
-
 
 
 def test_chromium_print_opens_exported_disclosures_and_restores_screen_state():
     from playwright.sync_api import sync_playwright
 
     source = INDEX.read_text(encoding="utf-8")
-    renderer = "\n".join((
-        _extract_js_function(source, "renderPriorityProjectCycle"),
-        _extract_js_function(source, "climateAccessibleRouteValue"),
-        _extract_js_function(source, "climateDraftingRouteGate"),
-        _extract_js_function(source, "climateSummaryWatchItems"),
-        _extract_js_function(source, "renderClimateVerifiedAssessment"),
-    ))
-    url_helper = _extract_js_function(source, "isPublicWorldBankHttpsUrl")
-    body_script = f"""
-{_js_escape_helper()}
-const renderClimateRelevantGuidance = () => '';
-{url_helper}
-{renderer}
-console.log(renderClimateVerifiedAssessment({{
+    body_script = _readout_harness() + r"""
+console.log(renderClimateVerifiedAssessment({
   executive_readout:'Print lifecycle overview.',
   priorities:[
-    {{rank:1,title:'Open priority',narrative:'Open priority prose.',decision:'Open decision.'}},
-    {{rank:2,title:'Closed priority',narrative:'Closed priority prose.',decision:'Closed decision.'}}
+    {rank:1,title:'Open priority',narrative:'Open priority prose.\n\nOpen decision.'},
+    {rank:2,title:'Closed priority',narrative:'Closed priority prose.\n\nClosed decision.'}
   ],
-  evidence_trail:{{
-    methodology_note:'Method text for print.',
-    limitations:'Limitations text for print.'
-  }},
-  sources:[{{title:'Source text for print',url:'https://documents.worldbank.org/print-source',description:'Source description for print.'}}]
-}}));
+  review_readiness_flags:[{flag:'Closed check',why_it_matters:'Closed check text for print.',suggested_verification:'Verify.'}],
+  evidence_trail:{limitations:'Limitations text for print.'},
+  guidance_items:[{title:'Source text for print',url:'https://documents.worldbank.org/print-source',use:'Source description for print.'}]
+}));
 """
-    body_result = subprocess.run(
-        ["node", "-e", body_script], capture_output=True, text=True, check=False
-    )
+    body_result = _run_node(body_script)
     assert body_result.returncode == 0, body_result.stderr
 
-    try:
-        handler = _extract_js_function(source, "installClimatePrintDisclosureHandler")
-        script_builder = _extract_js_function(source, "climatePrintDisclosureScript")
-    except AssertionError:
-        handler_script = ""
-    else:
-        script_result = subprocess.run(
-            ["node", "-e", f"{handler}\n{script_builder}\nconsole.log(climatePrintDisclosureScript());"],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        assert script_result.returncode == 0, script_result.stderr
-        handler_script = script_result.stdout
+    handler = _extract_js_function(source, "installClimatePrintDisclosureHandler")
+    script_builder = _extract_js_function(source, "climatePrintDisclosureScript")
+    script_result = subprocess.run(
+        ["node", "-e", f"{handler}\n{script_builder}\nconsole.log(climatePrintDisclosureScript());"],
+        capture_output=True, text=True, encoding="utf-8", check=False,
+    )
+    assert script_result.returncode == 0, script_result.stderr
+    handler_script = script_result.stdout
 
     css = "\n".join(re.findall(r"<style[^>]*>([\s\S]*?)</style>", source))
     exported_html = (
@@ -2626,8 +1946,6 @@ console.log(renderClimateVerifiedAssessment({{
         + css
         + "</style></head><body>"
         + body_result.stdout
-        + '<details class="climate-guidance-disclosure"><summary>Closed guidance follow-up</summary><div>Closed guidance text for print.</div></details>'
-        + '<details class="climate-guidance-disclosure" open><summary>Pre-opened guidance follow-up</summary><div>Pre-opened guidance text for print.</div></details>'
         + handler_script
         + "</body></html>"
     )
@@ -2636,38 +1954,36 @@ console.log(renderClimateVerifiedAssessment({{
         browser = playwright.chromium.launch(headless=True)
         page = browser.new_page()
         page.set_content(exported_html, wait_until="load")
-        details = page.locator("details.climate-priority-card, details.climate-priority-detail, details.climate-fold, details.climate-guidance-disclosure")
-        assert page.locator("details.climate-priority-card").evaluate_all("elements => elements.every(element => element.open)")
-        page.locator("details.climate-priority-card > summary").nth(1).click()
-        prior_states = details.evaluate_all("elements => elements.map(element => element.open)")
-        assert prior_states == [True, False, False, False, False, True]
+        details = page.locator("details.fr-pc, details.fr-disc")
+        count = details.count()
+        assert count == 4
+        initial = details.evaluate_all("elements => elements.map(element => element.open)")
+        assert initial == [True, False, False, False]
         assert page.get_by_text("Open priority prose.").is_visible()
         assert not page.get_by_text("Closed priority prose.").is_visible()
-        assert not page.get_by_text("Method text for print.").is_visible()
-        assert page.get_by_text("Limitations text for print.").is_visible()
+        assert not page.get_by_text("Closed check text for print.").is_visible()
         assert not page.get_by_text("Source text for print").is_visible()
-        assert not page.get_by_text("Closed guidance text for print.").is_visible()
-        assert page.get_by_text("Pre-opened guidance text for print.").is_visible()
+        assert page.get_by_text("Limitations text for print.").is_visible()
+
+        page.locator("details.fr-pc > summary").nth(0).click()
+        prior_states = details.evaluate_all("elements => elements.map(element => element.open)")
+        assert prior_states == [False, False, False, False]
 
         page.emulate_media(media="print")
         page.evaluate("window.dispatchEvent(new Event('beforeprint'))")
         assert details.evaluate_all("elements => elements.every(element => element.open)")
+        assert page.get_by_text("Open priority prose.").is_visible()
         assert page.get_by_text("Closed priority prose.").is_visible()
-        assert page.get_by_text("Closed decision.", exact=True).is_visible()
-        assert page.get_by_text("Method text for print.").count() == 0
+        assert page.get_by_text("Closed check text for print.").is_visible()
+        assert page.get_by_text("Source text for print").is_visible()
         assert page.get_by_text("Limitations text for print.").is_visible()
-        assert page.get_by_text("Source text for print").count() == 0
-        assert page.get_by_text("Closed guidance text for print.").is_visible()
-        assert page.get_by_text("Pre-opened guidance text for print.").is_visible()
 
         page.evaluate("window.dispatchEvent(new Event('afterprint'))")
         page.emulate_media(media="screen")
         assert details.evaluate_all("elements => elements.map(element => element.open)") == prior_states
-        assert page.get_by_text("Open priority prose.").is_visible()
+        assert not page.get_by_text("Open priority prose.").is_visible()
         assert not page.get_by_text("Closed priority prose.").is_visible()
-        assert not page.get_by_text("Method text for print.").is_visible()
-        assert not page.get_by_text("Closed guidance text for print.").is_visible()
-        assert page.get_by_text("Pre-opened guidance text for print.").is_visible()
+        assert not page.get_by_text("Source text for print").is_visible()
         browser.close()
 
     download_helper = _extract_js_function(source, "downloadHTML")
@@ -2769,25 +2085,22 @@ def test_print_handler_includes_guidance_disclosure_state():
 def test_detailed_priority_project_cycle_uses_one_escaped_canonical_renderer():
     source = INDEX.read_text(encoding="utf-8")
     renderer = _extract_js_function(source, "renderPriorityProjectCycle")
-    live_helper = _extract_js_function(source, "showPriority")
     export_helper = _extract_js_function(source, "_buildExportPriorityCard")
 
-    assert "renderPriorityProjectCycle(pr)" in live_helper
     assert "renderPriorityProjectCycle(pr)" in export_helper
-    assert "priority.concise" not in live_helper
     assert "priority.concise" not in export_helper
 
     script = f"""
 const esc = value => String(value ?? '')
   .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-  .replace(/\"/g,'&quot;').replace(/'/g,'&#039;');
+  .replace(/\\"/g,'&quot;').replace(/'/g,'&#039;');
 {renderer}
 const html = renderPriorityProjectCycle({{
   project_cycle: {{
     primary_label: 'Before <appraisal>',
     primary_text: 'Confirm & sequence the design.',
     secondary_label: 'At "implementation"',
-    secondary_text: "Track the team\'s response."
+    secondary_text: "Track the team\\'s response."
   }},
   concise: {{ project_cycle: {{ primary_label: 'Legacy', primary_text: 'Do not use.' }} }}
 }});
@@ -2816,7 +2129,7 @@ if (renderPriorityProjectCycle({{ project_cycle: {{ primary_label:'Only label', 
     )
     assert result.returncode == 0, result.stderr
 
-def test_detailed_project_cycle_integrated_renderers_align_order_and_scope():
+def test_export_priority_card_project_cycle_aligns_order_and_scope():
     source = INDEX.read_text(encoding="utf-8")
     helpers = "\n".join(
         _extract_js_function(source, name)
@@ -2826,7 +2139,6 @@ def test_detailed_project_cycle_integrated_renderers_align_order_and_scope():
             "renderPriorityTiming",
             "renderStandardPriorityContext",
             "_buildExportPriorityCard",
-            "showPriority",
         )
     )
     priority = {
@@ -2904,8 +2216,6 @@ function checkOutput(name, html) {{
 }}
 const exported = _buildExportPriorityCard(stageThreePriorities[0],0,1);
 checkOutput('export',exported);
-showPriority(0);
-checkOutput('live',cardArea.innerHTML);
 """
     result = subprocess.run(
         ["node", "-"], input=script, capture_output=True, text=True, check=False
@@ -2932,60 +2242,39 @@ for (const invalid of ['', '   ', null, 42, {{result:'detailed'}}]) {{
     assert result.returncode == 0, result.stderr
 
 
-def test_climate_verified_detailed_renderer_keeps_distinct_timing_as_a_note():
-    source = INDEX.read_text(encoding="utf-8")
-    renderer = "\n".join((
-        _extract_js_function(source, "renderPriorityProjectCycle"),
-        _extract_js_function(source, "climateAccessibleRouteValue"),
-        _extract_js_function(source, "climateDraftingRouteGate"),
-        _extract_js_function(source, "climateSummaryWatchItems"),
-        _extract_js_function(source, "renderClimateVerifiedAssessment"),
-    ))
-
-    script = f"""
-{_js_escape_helper()}
-const renderClimateRelevantGuidance = () => '';
-const isPublicWorldBankHttpsUrl = () => true;
-{renderer}
-const html = renderClimateVerifiedAssessment({{
+def test_climate_verified_readout_keeps_project_cycle_timing_as_a_note():
+    script = _readout_harness() + r"""
+const html = renderClimateVerifiedAssessment({
   executive_readout:'Detailed overview.',
-  priority_summary:{{statement:'Canonical priority bridge.'}},
-  priorities:[{{
+  priority_summary:{statement:'Canonical priority bridge.'},
+  priorities:[{
     rank:1,
     title:'Sequence delivery decisions',
     narrative:'Action body.',
-    project_cycle:{{
+    project_cycle:{
       primary_label:'At concept stage',
       primary_text:'Confirm the delivery sequence.',
       secondary_label:'During preparation',
       secondary_text:'Record completion evidence.'
-    }}
-  }}]
-}});
-for (const expected of [
-  'Canonical priority bridge.',
-  'At concept stage',
-  'Confirm the delivery sequence.',
-  'During preparation',
-  'Record completion evidence.'
-]) {{
+    }
+  }]
+});
+for (const expected of ['Canonical priority bridge.', 'At concept stage', 'Confirm the delivery sequence.']) {
   if (!html.includes(expected)) throw new Error('missing '+expected+' | '+html);
-}}
-if ((html.match(/class="climate-priority-detail-timing"/g)||[]).length !== 1 || html.includes('Where this fits in the project cycle')) {{
-  throw new Error('distinct timing must appear once as a compact note | '+html);
-}}
+}
+if ((html.match(/class="fr-cycle"/g)||[]).length !== 1 || html.includes('Where this fits in the project cycle')) {
+  throw new Error('timing must appear once as a compact note | '+html);
+}
 """
-    result = subprocess.run(
-        ["node", "-"], input=script, capture_output=True, text=True, check=False
-    )
+    result = _run_node(script)
     assert result.returncode == 0, result.stderr
 
 
-def test_climate_shareable_html_uses_the_full_verified_detailed_renderer():
+def test_climate_shareable_html_uses_the_full_verified_readout_renderer():
     source = INDEX.read_text(encoding="utf-8")
     exporter = _extract_js_function(source, "downloadHTML")
 
-    assert "const body=renderClimateVerifiedAssessment(climateVerifiedReader);" in exporter
+    assert "const body=screenerCaveatHtml()+renderClimateVerifiedAssessment(climateVerifiedReader);" in exporter
 
 
 def test_result_stage_tabs_do_not_overflow_phone_viewport():
@@ -3117,27 +2406,15 @@ def test_result_session_bar_wraps_inside_phone_viewport():
     assert all(right <= document["clientWidth"] for right in button_right_edges)
 
 
-def test_verified_climate_detailed_does_not_render_duplicate_normal_priority_cards():
+def test_verified_climate_readout_does_not_render_duplicate_normal_priority_cards():
     source = INDEX.read_text(encoding="utf-8")
-    setter = _extract_js_function(source, "setStage3View")
-    script = """
-let stage3View='summary',currentPriority=0,openSummaryPriority=0;
-const stageThreePriorities=[{}];
-const supportsAnyStage3Summary=()=>true;
-const supportsClimateVerifiedStage3View=()=>true;
-let renders=0;
-const renderPrioritiesIntro=()=>renders++;
-const renderPriorityStepper=()=>renders++;
-const showPriority=()=>renders++;
-const elements={'priority-stepper':{style:{}},'priority-card-area':{style:{}}};
-const document={getElementById:id=>elements[id]||null,querySelector:()=>null};
-""" + setter + """
-setStage3View('detailed');
-if(renders)throw new Error('duplicated normal priority renderer');
-if(elements['priority-card-area'].style.display!=='none')throw new Error('duplicate card area visible');
-"""
-    result = subprocess.run(["node", "-"], input=script, capture_output=True, text=True)
-    assert result.returncode == 0, result.stderr
+    render_out = _extract_js_function(source, "renderOut")
+    start = render_out.index("if(_verifiedV2){")
+    branch = render_out[start:render_out.index("}else if(isLast){", start)]
+    assert "renderClimateVerifiedAssessment(climateVerifiedReader)" in branch
+    for duplicate in ("renderNormalReadoutHtml", "buildNormalReadout", "renderLegacyClimatePrioritiesHtml"):
+        assert duplicate not in branch
+    assert 'id="priority-stepper"' not in source and 'id="priority-card-area"' not in source
 
 
 def test_failed_climate_diagnostic_is_separate_saved_only_and_not_a_reader():

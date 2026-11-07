@@ -97,11 +97,11 @@ HELPER
     assert result.returncode == 0, result.stderr
 
 
-def test_browser_views_always_include_draft_notice():
+def test_browser_readout_always_includes_draft_notice():
     from tests.test_climate_lens_frontend import INDEX, _extract_js_function
     from sector_lenses.climate_verified_render import DRAFT_REVIEW_NOTICE
     source = INDEX.read_text(encoding='utf-8')
-    for name in ['renderClimateVerifiedSummary', 'renderClimateVerifiedAssessment']:
+    for name in ['renderClimateVerifiedAssessment']:
         helper = _extract_js_function(source, name)
         assert DRAFT_REVIEW_NOTICE in helper
         assert 'publication_approved' not in helper

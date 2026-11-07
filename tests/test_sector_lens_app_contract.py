@@ -2428,59 +2428,36 @@ def test_verified_runtime_bridge_cancels_after_wall_clock(monkeypatch):
 
 
 def test_verified_climate_ui_contract_is_ranked_and_multidimensional():
-    html = (Path(app_module.__file__).parent / "index.html").read_text(
-        encoding="utf-8"
-    )
+    root = Path(app_module.__file__).parent
+    html = (root / "index.html").read_text(encoding="utf-8")
+    module = (root / "static" / "fcv_readout.js").read_text(encoding="utf-8")
 
     assert "renderClimateVerifiedAssessment" in html
-    # Detailed uses three narrative answers; canonical questions stay internal.
-    assert "Supporting question analysis" not in html
-    # Headline sensitivity rating (from server data) replaces the old reads strip.
-    assert "climate_sensitivity_rating" in html
-    assert "csr.question" in html
-    assert "d.scale.length" in html
-    assert "The tool's overall reads" not in html
-    assert "core_questions" in html
-    assert "Does the project address interacting climate and FCV risks" in html
-    assert "Points to check before the applicable review" in html
     start = html.index("function renderClimateVerifiedAssessment")
-    end = html.index("\n  function ", start + 20)
+    end = html.index("\n  }\n", start)
     body = html[start:end]
-    assert ".climate-verified-assessment{" in html
-    assert ".climate-report-section{" in html
-    assert ".climate-section-heading{" in html
-    assert ".climate-guidance{" in html
-    assert "@media(max-width:760px)" in html
-    assert "buildClimateGuidanceItems" in html
-    assert "renderClimateRelevantGuidance" in body
-    assert "priority.rank" in body
-    assert "priority.priority_label" not in body
-    assert "High priority" not in body
+    # The browser readout is rendered by the shared module, wrapped with status notices.
+    assert "frApi().renderClimate(" in body
     assert "Smoke test: validates workflow completion only" in body
-    assert "recommendation_admitted_count" not in body
-    assert "semantic_reviewer_verdict" not in body
+    assert "recommendation_admitted_count" not in body and "semantic_reviewer_verdict" not in body
     assert "held back on review" not in body
-    assert "No operational priorities were identified in this assessment. Review the assessment findings and points to check below." in body
-    assert "current_document_drafting" in body
-    assert "operational_instrument_drafting" in body
-    assert "Suggested drafting for the current document" in body
-    assert "Suggested drafting for an operational instrument" in body
-    # The card leads with the model narrative; the useful structured fields fold
-    # into a "Practical considerations" collapsible, and app-internal routing/coded
-    # references are dropped from the user view entirely.
-    assert "Practical considerations" in body
-    assert "pc-narr" in body
-    assert "priority_summary" in body
-    assert "prioritySummary.statement" in body
-    assert "Evidence key" not in body
-    assert "Run diagnostics" not in body
-    assert "Evidence status:" not in body
-    assert "drafting_language" not in body
-    assert "recommendation_reason_codes" not in body
-    assert body.index("minorPointsHtml") < body.index("docFlagsHtml")
-    assert "climateVerifiedRatingCards(r)" in body
-    assert 'class="climate-priority-card"' in body
-    assert "Limitations" in body
+    # Headline sensitivity and responsiveness ratings come from server data.
+    assert "climate_sensitivity_rating" in module
+    assert "judgments" in module
+    assert "Does the project address interacting climate and FCV risks" in module
+    assert "Ranked Operational Priorities" in module
+    assert "Points to Check Before the Applicable Review" in module
+    assert "No operational priorities were identified in this assessment. Review the assessment findings and points to check below." in module
+    assert "priority_summary" in module and "Number(a.rank)" in module
+    assert "High priority" not in module
+    assert "current_document_drafting" in module
+    assert "operational_instrument_drafting" in module
+    assert "Suggested drafting" in module
+    assert "Suggested drafting for an operational instrument" in module
+    assert "Evidence key" not in module and "Run diagnostics" not in module and "Evidence status:" not in module
+    assert "drafting_language" not in module and "recommendation_reason_codes" not in module
+    assert "Limitations" in module
+    assert ".fr-pc-hdr{" in html and "@media(max-width:760px)" in html
 
 
 

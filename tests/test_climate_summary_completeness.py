@@ -5,7 +5,6 @@ from copy import deepcopy
 from io import BytesIO
 import html
 import json
-import subprocess
 
 from docx import Document
 import pytest
@@ -13,7 +12,7 @@ import pytest
 from sector_lenses.climate_verified_pipeline import PipelineClients, run_verified_climate_pipeline
 from sector_lenses.climate_verified_prompts import build_verified_stage_prompt
 from sector_lenses.climate_verified_render import build_reader_model, render_reader_html, write_reader_docx
-from tests.test_climate_lens_frontend import INDEX, _extract_js_function, _js_escape_helper
+from tests.test_climate_lens_frontend import _readout_harness, _run_node
 from tests.test_climate_verified_pipeline import FakeClient, _arguments, _responses
 
 
@@ -101,15 +100,14 @@ def test_five_grounded_gaps_can_survive_when_only_one_action_passes_review():
     assert {item["text"] for item in reader["summary_gaps"]} == set(GAP_TEXTS)
 
 
-def test_summary_displays_all_five_supported_actions():
-    source = INDEX.read_text(encoding="utf-8")
-    script = _js_escape_helper() + _extract_js_function(source, "climateSummaryPriorityItems") + """
-const climateDraftingRouteGate=()=>({canRender:true});
+def test_readout_displays_all_five_supported_actions():
+    script = _readout_harness() + r"""
 const reader={priorities:Array.from({length:5},(_,i)=>({rank:i+1,title:'Action '+(i+1),minimum_action:'Do this.'}))};
-const items=climateSummaryPriorityItems(reader);
-if(items.length!==5||items[4].rank!==5)throw new Error('Summary dropped valid actions');
+const html=renderClimateVerifiedAssessment(reader);
+const cards=(html.match(/<details class="fr-pc"/g)||[]).length;
+if(cards!==5||!html.includes('fr-pc-title-txt">Action 5<'))throw new Error('Readout dropped valid actions: '+cards);
 """
-    result = subprocess.run(["node", "-"], input=script, text=True, capture_output=True)
+    result = _run_node(script)
     assert result.returncode == 0, result.stderr
 
 
@@ -135,18 +133,18 @@ def test_reader_gap_projection_rejects_unknown_refs_and_never_slices_qualificati
     assert {g["text"] for g in reader["summary_gaps"]} == set(GAP_TEXTS[3:])
 
 
-def test_gap_bullets_are_full_qualified_findings_independent_of_action_count():
-    source = INDEX.read_text(encoding="utf-8")
+def test_gap_findings_are_full_qualified_and_independent_of_action_count():
     reader = {"summary_gaps": [{"text": text} for text in GAP_TEXTS]}
-    script = _js_escape_helper() + "\n".join(_extract_js_function(source, name) for name in
-        ("boldEscapedFirstSentence", "renderClimateSummaryGaps"))
-    script += "\nconsole.log(renderClimateSummaryGaps(" + json.dumps(reader) + ",[]));"
-    rendered = subprocess.run(["node", "-"], input=script, text=True, capture_output=True)
+    script = _readout_harness() + "\nconsole.log(renderClimateVerifiedAssessment(" + json.dumps(reader) + "));"
+    rendered = _run_node(script)
     assert rendered.returncode == 0, rendered.stderr
-    assert rendered.stdout.count('<li class="normal-summary-gap"') == 5
-    assert len(html.unescape(rendered.stdout).split()) > 160
-    for text in GAP_TEXTS:
-        assert html.unescape(rendered.stdout).replace('<strong>', '').replace('</strong>', '').find(text) >= 0
+    start = rendered.stdout.index("Key gaps at this stage")
+    block = rendered.stdout[start:rendered.stdout.index("</section>", start)]
+    assert block.count('<p class="fr-p">') == 5
+    text = html.unescape(block).replace('<strong>', '').replace('</strong>', '')
+    assert len(text.split()) > 160
+    for gap in GAP_TEXTS:
+        assert text.find(gap) >= 0
 
 
 def test_prompts_assess_all_gaps_and_explain_them_without_a_three_item_bias():
@@ -211,12 +209,11 @@ def test_regional_search_and_structuring_share_coverage_and_untrusted_input_rule
 
 
 def test_risk_relevance_is_not_credited_as_a_project_strength():
-    source = INDEX.read_text(encoding="utf-8")
-    script = _extract_js_function(source, "climateSummaryStrengths") + """
-const exposure=climateSummaryStrengths({judgments:[{dimension:'relevance',value:'high',rationale:'Climate risks are material.'}]});
-if(exposure.length)throw new Error('risk exposure was credited as a project strength');
-const dividend=climateSummaryStrengths({judgments:[{dimension:'responsiveness',value:'very_strong',title:'Peace dividends',rationale:'An evidenced design supports wider dividends.'}]});
-if(dividend.length!==1)throw new Error('very strong contribution was lost');
+    script = _readout_harness() + r"""
+const exposure=renderClimateVerifiedAssessment({judgments:[{dimension:'relevance',value:'high',rationale:'Climate risks are material.'}]});
+if(exposure.includes('What is already working'))throw new Error('risk exposure was credited as a project strength');
+const dividend=renderClimateVerifiedAssessment({judgments:[{dimension:'responsiveness',value:'very_strong',rationale:'An evidenced design supports wider dividends.'}]});
+if(!dividend.includes('Very strong')||!dividend.includes('An evidenced design supports wider dividends.'))throw new Error('very strong contribution was lost');
 """
-    result = subprocess.run(["node", "-"], input=script, text=True, capture_output=True)
+    result = _run_node(script)
     assert result.returncode == 0, result.stderr
