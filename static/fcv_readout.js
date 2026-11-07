@@ -330,7 +330,7 @@
         return paras.length ? paras.map(t => `<p dir="auto" class="fr-p">${esc(t)}</p>`).join('') : '';
       }
       const date = researchDate(brief);
-      const lead = `Public sources retrieved ${date ? `on ${date} ` : ''}to supplement the project documents.`;
+      const lead = `Public sources retrieved ${date ? `on ${date} ` : ''}to supplement the project documents. These are in addition to the model's wider background knowledge.`;
       const items = sources.map(src => `<li><a href="${esc(src.url)}" target="_blank" rel="noopener noreferrer">${esc(src.title)}</a>${src.excerpt ? `<span class="fr-research-ex" dir="auto">${esc(src.excerpt)}</span>` : ''}</li>`).join('');
       return `<p class="fr-p fr-research-intro">${esc(lead)}</p><ul class="fr-research-list">${items}</ul>`;
     }

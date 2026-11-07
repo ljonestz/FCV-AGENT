@@ -750,7 +750,8 @@ def test_research_briefing_lists_sources_from_paid_session():
         brief = ("Research run timestamp: 2026-11-07T08:20:40+00:00 (retrieval time).\n\n#### Provider-cited source-backed excerpts\n"
                  "- [Report one](https://news.un.org/a) - 0 days ago\n  > Excerpt one.\n- [Report one](https://news.un.org/a) - 0 days ago\n  > Other.\n")
     out = run_js(f"process.stdout.write(api.researchBriefing({json.dumps(brief)}));")
-    assert out.startswith('<p class="fr-p fr-research-intro">Public sources retrieved on 7 November 2026 to supplement the project documents.</p><ul class="fr-research-list">')
+    assert out.startswith('<p class="fr-p fr-research-intro">Public sources retrieved on 7 November 2026 to supplement the project documents. '
+                          "These are in addition to the model's wider background knowledge.</p><ul class=\"fr-research-list\">")
     for bad in ["####", "](", "&gt;", "days ago", "\\", "**"]:
         assert bad not in out, bad
     hrefs = [part.split('"')[0] for part in out.split('href="')[1:]]
@@ -763,7 +764,8 @@ def test_research_briefing_rejects_unsafe_urls_and_handles_unstructured_text():
     out = run_js(f"process.stdout.write(api.researchBriefing({json.dumps(brief)}));")
     assert "javascript:" not in out and "Evil." not in out
     assert '<a href="https://example.org/x" target="_blank" rel="noopener noreferrer">Good</a><span class="fr-research-ex" dir="auto">Kept excerpt.</span>' in out
-    assert "Public sources retrieved to supplement the project documents." in out
+    assert ('<p class="fr-p fr-research-intro">Public sources retrieved to supplement the project documents. '
+            "These are in addition to the model's wider background knowledge.</p>") in out
     plain_brief = "I'll search first.\n\n\\#\\# Security\n\nViolence rose.\n\n> Quote."
     plain = run_js(f"process.stdout.write(api.researchBriefing({json.dumps(plain_brief)}));")
     assert plain == '<p dir="auto" class="fr-p">Violence rose.</p><p dir="auto" class="fr-p">Quote.</p>'
