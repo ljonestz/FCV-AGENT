@@ -297,3 +297,14 @@ def test_session_bar_buttons_are_icon_only_with_labels_on_phones():
     prompt_btn = function_body(source, "function updateTopbarPromptBtn(")
     assert prompt_btn.count('<span class="sb-lbl">') == 2 and prompt_btn.count("setAttribute('aria-label'") == 2
 
+
+
+def test_term_tooltips_do_not_underline_navigation_or_headings():
+    style = INDEX.read_text(encoding="utf-8")
+    style = style[style.index('<style id="fcv-readout-style">'):]
+    style = style[:style.index("</style>")]
+    rule = style[style.index(".fr-readout .fr-toc .sr-term"):]
+    rule = rule[:rule.index("}") + 1]
+    for scope in (".fr-toc", ".fr-h1", "summary", ".fr-sc-label", ".fr-rating-dim"):
+        assert f".fr-readout {scope} .sr-term" in rule
+    assert "border-bottom:0" in rule
