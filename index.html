@@ -5209,10 +5209,10 @@
     return (Array.isArray(docChecks)&&docChecks.length)?`<details id="document-checks" style="margin-top:18px;border:1px solid #E2E6EC;border-radius:8px;padding:8px 14px;background:#F7F8FA"><summary style="cursor:pointer;font-weight:700;color:#002244">Points to check in the document</summary><p style="color:#4b5563;margin:8px 0 10px">A light automated check of the uploaded document for things worth confirming - placeholders, empty fields, or values that do not match. This is not the main analysis, just a checklist.</p>${docChecks.map(dc=>`<section style="margin:0 0 11px"><p style="font-weight:700;color:#002244;margin:0 0 3px">${esc(dc.finding||'')}</p>${dc.why_it_matters?`<p style="margin:0 0 3px">${esc(dc.why_it_matters)}</p>`:''}${dc.where?`<p style="margin:0;color:#6b7280;font-size:12px">Where: ${esc(dc.where)}</p>`:''}</section>`).join('')}</details>`:'';
   }
 
-  function buildNormalReadout(markdownText,forExport=false){
+  function buildNormalReadout(markdownText,forExport=false,researchHtml=''){
     const climate=stage3ClimateLensState();
     const tail=(climate.active?renderClimateGroundingSources(climateGrounding):'')+stage3DocChecksHtml();
-    return wrapSRTerms(renderNormalReadoutHtml(stripStage3DoNoHarmHeader(markdownText),stage3NoticesHtml(climate),tail,forExport));
+    return wrapSRTerms(renderNormalReadoutHtml(stripStage3DoNoHarmHeader(markdownText),stage3NoticesHtml(climate),tail,forExport,researchHtml,climate));
   }
 
   function renderOut(stage,result,isFollowOn){
@@ -6112,13 +6112,17 @@
     </div>`;
 
     const _exportClimate=stage3ClimateLensState();
+    const _briefHtml=researchBrief?exportResearchBriefHtml(researchBrief):'';
     if(_exportClimate.valid){
       // Legacy climate-lens route keeps its own narrative; priorities use the readout cards.
       body += screenerCaveatHtml()+wrapSRTerms(stage3NoticesHtml(_exportClimate));
       if(summarybody)body += `<div class="out-body exp-narrative">${wrapSRTerms(md(bulletFindingSections(summarybody)))}</div>`;
       body += wrapSRTerms(renderClimateStrengthsWeaknesses(_exportClimate.entry)+renderClimateCoreQuestions(_exportClimate.entry)+renderClimateGroundingSources(climateGrounding))+renderLegacyClimatePrioritiesHtml(true)+stage3DocChecksHtml();
+      // Legacy climate-lens route has no Limitations section; the briefing closes the readout body.
+      if(_briefHtml)body += '<div class="fr-readout"><details class="fr-disc fr-research"><summary class="fr-disc-sum">Background research and sources</summary><div class="fr-disc-body out-body">'+_briefHtml+'</div></details></div>';
     }else{
-      body+=screenerCaveatHtml()+buildNormalReadout(stageOutputs[3]||'',true);
+      // The research briefing renders inside the readout, after Limitations.
+      body+=screenerCaveatHtml()+buildNormalReadout(stageOutputs[3]||'',true,_briefHtml);
     }
     // ── Responses to your priority points ──
     if(focusQuestionsResult && (focusQuestionsResult.responses||[]).length){
@@ -6141,9 +6145,6 @@
     }
 
     // Watch lists (mid-cycle, DPF, PforR, regional, longer-term) are rendered inside the readout.
-
-    const _briefHtml=researchBrief?exportResearchBriefHtml(researchBrief):'';
-    if(_briefHtml)body += '<h2 class="exp-section-hdr">Research briefing</h2><div class="fr-readout"><details class="fr-disc"><summary class="fr-disc-sum">Automated country research briefing</summary><div class="fr-disc-body out-body">'+_briefHtml+'</div></details></div>';
 
     // ── Annex: Stage 2 tables ──
     // Reviewed structural sources are distinct from accepted live country context.
@@ -6633,7 +6634,20 @@ ${climatePrintDisclosureScript()}
     return `The following priorities are suggestions to strengthen the ${subject} in its ${context} context. They are not mandatory requirements, nor may they all be relevant. The task team may wish to focus on those they believe to be more pertinent based on their own sectoral expertise and knowledge of the context within which the project will be applied. For more complex or difficult issues raised, the team are encouraged to reach out and discuss them with the FCV Country Coordinator or relevant Global Practice experts as needed.`;
   }
 
-  function renderNormalReadoutHtml(markdownText,noticesHtml,tailHtml,forExport=false){
+  // Uploaded file names for the Limitations section (live upload or restored session).
+  function readoutFileNames(){
+    const project=pF.length?pF.map(f=>f.name):restoredFileNames.project;
+    const context=cF.length?cF.map(f=>f.name):restoredFileNames.context;
+    return [...(project||[]),...(context||[])].filter(n=>typeof n==='string'&&n.trim());
+  }
+
+  // Reuses the existing stage and climate-readout completeness checks.
+  function normalReadoutIsPartial(climate){
+    const state=climate||stage3ClimateLensState();
+    return !stageOutputs[1]||!stageOutputs[2]||(state.active&&(!!state.error||!climateReadoutComplete(state.entry)));
+  }
+
+  function renderNormalReadoutHtml(markdownText,noticesHtml,tailHtml,forExport=false,researchHtml='',climate=null){
     const hasPriorities=Array.isArray(stageThreePriorities)&&stageThreePriorities.length>0;
     return frApi().renderNormal({
       advisoryText:hasPriorities?stage3AdvisoryText('normal'):'',
@@ -6641,6 +6655,8 @@ ${climatePrintDisclosureScript()}
       sensitivitySummary:stageSensitivitySummary,responsivenessSummary:stageResponsivenessSummary,
       riskExposure:stageRiskExposure,priorities:stageThreePriorities,
       watchHtml:renderNormalFcvWatchBody(),noticesHtml,tailHtml,
+      smallerPoints:window.FcvReadout.parseSupplementaryPoints(stageOutputs[2]||''),
+      fileNames:readoutFileNames(),researchBrief,partial:normalReadoutIsPartial(climate),researchHtml,
       priorityExtras:forExport?renderNormalExportPriorityExtras:renderNormalPriorityExtras
     });
   }

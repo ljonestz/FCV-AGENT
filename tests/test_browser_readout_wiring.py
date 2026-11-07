@@ -72,7 +72,7 @@ def test_screen_and_export_share_normal_readout_builder():
         assert part in notices, part
     assert "_outBodyContent=buildNormalReadout(result);" in function_body(source, "function renderOut(")
     export = function_body(source, "async function downloadHTML(")
-    assert "buildNormalReadout(stageOutputs[3]||'',true)" in export
+    assert "buildNormalReadout(stageOutputs[3]||'',true,_briefHtml)" in export
     assert "renderNormalReadoutHtml(" not in export
     assert "priorityExtras:forExport?renderNormalExportPriorityExtras:renderNormalPriorityExtras" in source
     assert "renderGoDeeperHtml" not in function_body(source, "function renderNormalExportPriorityExtras(")
@@ -200,7 +200,8 @@ def test_export_research_briefing_is_cleaned_and_collapsed():
     helper = function_body(source, "function exportResearchBriefHtml(")
     export = function_body(source, "async function downloadHTML(")
     assert "exportResearchBriefHtml(researchBrief)" in export
-    assert '<details class="fr-disc"><summary class="fr-disc-sum">Automated country research briefing</summary>' in export
+    assert "Research briefing</h2>" not in export
+    assert '<details class="fr-disc fr-research"><summary class="fr-disc-sum">Background research and sources</summary>' in export
     brief = ("I'll run a small set of searches first.\n\n\\#\\#\\# Security\n\nViolence rose \\[uncited link removed\\].\n\n"
              "> \\\n\n> Quoted excerpt.\n\n> Quoted excerpt.")
     script = "const md=t=>'<md>'+t+'</md>';\n" + helper + "\n}\nprocess.stdout.write(exportResearchBriefHtml(" + json.dumps(brief) + "));"
@@ -250,3 +251,15 @@ def test_tab_title_and_icon_track_run_status():
     assert out[2] == "\u25cf [Complete] FCV Screener" and 'M9 16.5l5 5 9-10' in out[3]
     assert out[4] == "[Needs attention] FCV Screener" and 'fill="#F2A900"' in out[5]
     assert out[6] == "FCV Screener" and '<rect width="32" height="32" fill="#002244"/>' in out[7] and ">F</text>" in out[7]
+
+
+def test_normal_readout_wires_smaller_points_limitations_and_partial():
+    source = html()
+    readout = function_body(source, "function renderNormalReadoutHtml(")
+    for part in ["parseSupplementaryPoints(stageOutputs[2]||'')", "fileNames:readoutFileNames()", "researchBrief",
+                 "partial:normalReadoutIsPartial(climate)", "researchHtml"]:
+        assert part in readout, part
+    partial = function_body(source, "function normalReadoutIsPartial(")
+    assert "!stageOutputs[1]||!stageOutputs[2]" in partial and "climateReadoutComplete(state.entry)" in partial
+    files = function_body(source, "function readoutFileNames(")
+    assert "restoredFileNames.project" in files and "restoredFileNames.context" in files

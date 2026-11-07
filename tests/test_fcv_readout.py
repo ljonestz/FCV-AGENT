@@ -144,7 +144,8 @@ def test_normal_readout_section_order_and_content():
              "priority actions have been identified", 'id="fr-priority-1"', 'fr-h1-txt">Watch List for Supervision<', "id='tail'"]
     positions = [html.index(marker) for marker in order]
     assert positions == sorted(positions)
-    assert ">01<" in html and ">05<" in html and ">06<" not in html
+    assert ">01<" in html and ">06<" in html and ">07<" not in html
+    assert html.index("id='tail'") < html.index('fr-h1-txt">Limitations<')
     assert "fr-ptable" not in html and "Strategic Priorities" not in html
     assert "2 priority actions are identified by the FCV Screener." in html
     assert html.count('class="fr-ms fr-c') == 4 + 3
@@ -455,3 +456,67 @@ def test_prose_and_titles_carry_dir_auto_and_copy_skip_markers():
     assert '<p dir="auto" class="fr-p">' in html and '<p class="fr-p">' not in html
     assert 'class="fr-sc-scale" data-copy-skip' in html and 'data-copy-skip>' in html
     assert 'class="fr-pill fr-pill-conf fr-pill-conf-medium"' in html
+
+
+STAGE2_MD = """## Do No Harm
+
+Text.
+
+## Supplementary FCV Dimensions
+- **SORT adequacy:** Ratings look low. [S]
+- **Gender and GBV**: Reporting channels are missing. [S+R]
+- Not a bold bullet.
+- **Empty label:**
+
+### Nested note
+- **Nested:** still inside.
+
+## Synthesis
+
+- **FCV Sensitivity:** Not a supplementary point.
+"""
+
+
+def test_supplementary_points_parse_labels_and_strip_tags():
+    out = json.loads(run_js(f"process.stdout.write(JSON.stringify(FR.parseSupplementaryPoints({json.dumps(STAGE2_MD)})));"))
+    assert out == [{"title": "SORT adequacy", "why": "Ratings look low."},
+                   {"title": "Gender and GBV", "why": "Reporting channels are missing."},
+                   {"title": "Empty label", "why": ""},
+                   {"title": "Nested", "why": "still inside."}]
+    assert json.loads(run_js("process.stdout.write(JSON.stringify(FR.parseSupplementaryPoints('## Synthesis\\n- **A:** b')));")) == []
+
+
+def test_normal_smaller_points_section_order_and_skip():
+    html = normal({"smallerPoints": [{"title": "SORT adequacy", "why": "Ratings look low."}]})
+    order = ['fr-h1-txt">Priority Actions for the Task Team<', 'fr-h1-txt">Smaller Points to Check During Preparation<',
+             "Smaller checks for the project team to confirm", "None is a reason to stop the project.", 'class="fr-check-title">SORT adequacy<',
+             'fr-h1-txt">Watch List for Supervision<', 'fr-h1-txt">Limitations<']
+    positions = [html.index(marker) for marker in order]
+    assert positions == sorted(positions)
+    assert ">05</span><h2 class=\"fr-h1-txt\">Smaller Points" in html
+    assert 'href="#fr-s05">Smaller Points to Check During Preparation<' in html
+    assert "How to address" not in html
+    assert "Smaller Points" not in normal({"smallerPoints": []})
+
+
+def test_normal_limitations_lines_and_closing_after():
+    html = normal({"fileNames": ["PAD v3.docx", "RRA.docx"], "researchBrief": "x\nResearch run timestamp: 2026-11-07T08:20:40+00:00 (retrieval time).",
+                   "partial": True})
+    lim = html[html.index('fr-h1-txt">Limitations<'):]
+    assert "This screening draws only on the documents uploaded for this run: PAD v3.docx, RRA.docx." in lim
+    assert "Background research was retrieved on 7 November 2026; events after that date are not reflected." in lim
+    assert "This run is partial; some sections may be missing." in lim
+    assert "Findings are based on the text of the project documents and may miss arrangements described elsewhere." in lim
+    assert lim.index('class="fr-limits"') < lim.index("fr-closing")
+    bare = normal({})
+    lim = bare[bare.index('fr-h1-txt">Limitations<'):]
+    assert "uploaded for this run" not in lim and "retrieved on" not in lim and "partial" not in lim
+    assert "Ratings and priorities are advisory" in lim
+    assert "\u2014" not in html
+
+
+def test_normal_research_briefing_after_limitations_collapsed():
+    html = normal({"researchHtml": "<p>Brief body</p>"})
+    assert html.index('fr-h1-txt">Limitations<') < html.index("Background research and sources") < html.index("fr-closing")
+    assert '<details class="fr-disc fr-research"><summary class="fr-disc-sum">Background research and sources</summary>' in html
+    assert "Background research" not in normal({})

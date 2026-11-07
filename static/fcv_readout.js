@@ -101,6 +101,37 @@
     return sections;
   }
 
+  const STAGE_TAG_RE = /\s*\[(?:S|R|S\+R)\]/g;
+  const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+  // Stage 2 "## Supplementary FCV Dimensions" bullets ("- **Label:** text") as smaller checks.
+  function parseSupplementaryPoints(markdown) {
+    const lines = String(markdown || '').replace(/\r\n?/g, '\n').split('\n');
+    const start = lines.findIndex(l => /^#{2,4}\s+supplementary fcv dimensions\b/i.test(l.trim()));
+    if (start < 0) return [];
+    const level = (lines[start].trim().match(/^#+/) || [''])[0].length;
+    const out = [];
+    for (let i = start + 1; i < lines.length; i++) {
+      const line = lines[i].trim();
+      const head = line.match(/^(#{1,6})\s/);
+      if (head && head[1].length <= level) break;
+      const m = line.match(/^[-*+]\s+\*\*(.+?)\*\*\s*:?\s*(.*)$/);
+      if (!m) continue;
+      const title = m[1].replace(/:\s*$/, '').replace(STAGE_TAG_RE, '').trim();
+      const why = m[2].replace(/^:\s*/, '').replace(STAGE_TAG_RE, '').replace(/\*\*/g, '').replace(/\s{2,}/g, ' ').trim();
+      if (title) out.push({ title, why });
+    }
+    return out;
+  }
+
+  // "Research run timestamp: 2026-11-07T08:20:40+00:00" -> "7 November 2026" (date part only, no timezone shift).
+  function researchDate(brief) {
+    const m = String(brief || '').match(/Research run timestamp:\s*(\d{4})-(\d{2})-(\d{2})/i);
+    if (!m) return '';
+    const month = MONTHS[Number(m[2]) - 1];
+    return month ? `${Number(m[3])} ${month} ${m[1]}` : '';
+  }
+
   function create(deps) {
     const esc = deps.esc;
     const md = deps.md;
@@ -233,6 +264,8 @@
     });
   }
 
+  const NORMAL_LIMITATION = 'Findings are based on the text of the project documents and may miss arrangements described elsewhere. Ratings and priorities are advisory and should be confirmed through project and country expertise.';
+
   const SCORECARD_LEAD = 'The ratings below are a high-level AI assessment based on insights from the project package. They do not reflect a formal WBG or FCV Group designation. Read them as a general guide, alongside the more detailed overview and assessment that follows.';
 
   // Zero gets no line: an empty list can mean a withheld or incomplete stage, not "none needed".
@@ -316,11 +349,29 @@
       html += k.section('fr-cards-sec', h('Priority Actions for the Task Team') + intro + k.cards(cards, n));
     }
 
+    const smaller = (Array.isArray(d.smallerPoints) ? d.smallerPoints : []).filter(x => x && x.title);
+    if (smaller.length) {
+      html += k.section('fr-checks', h('Smaller Points to Check During Preparation')
+        + k.disclosure('Smaller checks for the project team to confirm', '<p class="fr-intro">These sit alongside the main priorities above. None is a reason to stop the project.</p>' + k.checkItems(smaller)));
+    }
+
     if (d.watchHtml) {
       html += k.section('fr-watch', h('Watch List for Supervision')
         + k.disclosure('Risks to monitor during implementation', '<p class="fr-intro">These are FCV risks or dynamics the team cannot act on now but should monitor during implementation. They do not affect the FCV ratings above.</p>' + d.watchHtml));
     }
-    return `<article class="fr-readout fr-route-fcv">${head}${k.toc(h.list)}${html}${d.tailHtml || ''}${k.closing()}</article>`;
+    html += d.tailHtml || '';
+
+    const files = (Array.isArray(d.fileNames) ? d.fileNames : []).map(f => String(f || '').trim()).filter(Boolean);
+    const retrieved = researchDate(d.researchBrief);
+    const limits = [
+      files.length ? `This screening draws only on the documents uploaded for this run: ${files.join(', ')}.` : '',
+      retrieved ? `Background research was retrieved on ${retrieved}; events after that date are not reflected.` : '',
+      d.partial ? 'This run is partial; some sections may be missing.' : '',
+      NORMAL_LIMITATION,
+    ];
+    html += k.section('fr-limits-sec', h('Limitations') + `<div class="fr-limits">${k.paragraphs(limits)}</div>`);
+    if (d.researchHtml) html += `<details class="fr-disc fr-research"><summary class="fr-disc-sum">Background research and sources</summary><div class="fr-disc-body out-body">${d.researchHtml}</div></details>`;
+    return `<article class="fr-readout fr-route-fcv">${head}${k.toc(h.list)}${html}${k.closing()}</article>`;
   }
   const THEME_QUESTIONS = {
     'Climate risks, design and delivery': 'Does the project address interacting climate and FCV risks in design and delivery?',
@@ -502,7 +553,7 @@
     return `<article class="fr-readout fr-route-climate">${head}${k.toc(h.list)}${html}${saysAlready ? '' : k.closing()}</article>`;
   }
 
-  const api = { FCV_SCALE, CLIMATE_SCALE, FOCUS_LABELS, DEFINITIONS, CLOSING_LINE, parseStage3Sections, create };
+  const api = { FCV_SCALE, CLIMATE_SCALE, FOCUS_LABELS, DEFINITIONS, CLOSING_LINE, parseStage3Sections, parseSupplementaryPoints, researchDate, create };
   root.FcvReadout = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);
