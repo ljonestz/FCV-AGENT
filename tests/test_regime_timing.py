@@ -60,9 +60,15 @@ def test_new_model_timing_labels_wired_into_ui_and_docx():
     root = Path(__file__).resolve().parent.parent
     html = (root / "index.html").read_text(encoding="utf-8")
     appsrc = (root / "app.py").read_text(encoding="utf-8")
-    # Human label present in all three index.html timing maps (summary, pill, downloadHTML)
-    assert html.count("Before Technical Design review") >= 3
-    assert html.count("During implementation support") >= 3
+    # The readout uses one shared TIMING_LABELS map (the old summary/export copies were merged into it);
+    # the pill map keeps its own standard/climate wording. Both must label every new-model timing.
+    shared = html[html.index("const TIMING_LABELS={"):]
+    shared = shared[:shared.index("};")]
+    for key, label in (("before-TD-review", "Before Technical Design review"),
+                       ("during-implementation-support", "During implementation support")):
+        assert f"'{key}':'{label}'" in shared, key
+    assert html.count("Before Technical Design review") >= 2
+    assert html.count("During implementation support") >= 2
     for key in ("shortly-after-OIS", "before-TD-review", "before-IR", "before-One-Review", "before-Board"):
         assert key in html, key
     # DOCX timing_map (app.py) carries the labels too
