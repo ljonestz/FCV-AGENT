@@ -317,3 +317,70 @@ def test_saved_fallback_status_follows_recomputed_admission():
     # A review that does not admit the Summary still yields the fallback.
     blocked = {**saved, 'reader_review': {'verdict': 'block'}}
     assert build_reader_model(blocked)['summary_overview_status'] == 'fallback'
+
+
+# Malformed findings withhold the findings only; a malformed Summary fails all.
+
+_CLEAN = {'verdict': 'pass', 'object_ids': [], 'reason_codes': [], 'issues': []}
+
+
+def _malformed_findings(narratives: list, case: str) -> object:
+    if case == 'two':
+        return narratives[:2]
+    if case == 'four':
+        return narratives + [deepcopy(narratives[0])]
+    if case == 'non_dict':
+        return [narratives[0], 'not a record', narratives[2]]
+    return {'NARR-design': narratives[0]}
+
+
+@pytest.mark.parametrize('case', ['two', 'four', 'non_dict', 'not_list'])
+def test_malformed_findings_still_admit_a_clean_reviewed_summary(case):
+    fixture = _load('success_20261027')
+    assessment = fixture['reader_assessment']
+    reader = normalize_reader_paragraphs(fixture['initial_final_reader'])
+    reader['assessment_narratives'] = _malformed_findings(reader['assessment_narratives'], case)
+    issues: list[dict] = []
+    checked = validate_final_reader_records(reader, assessment, issues=issues)
+    assert checked['structure_valid']
+    assert checked['summary'] and checked['narratives'] == []
+    assert checked['record_status']['reader-narratives'] is False
+    assert ('reader', ['READER_STRUCTURE_INVALID']) in [
+        (issue['object_id'], issue['reason_codes']) for issue in issues]
+    # The all-or-nothing wrapper still refuses the whole reader.
+    assert validate_final_reader(reader, assessment) == ([], [])
+    summary, narratives = reviewed_final_reader(reader, _CLEAN, assessment)
+    assert len(summary) == len(reader['summary_paragraphs'])
+    assert narratives == []
+
+
+@pytest.mark.parametrize('case', ['non_dict', 'wrong_id', 'not_list'])
+def test_malformed_summary_still_fails_the_whole_reader(case):
+    fixture = _load('success_20261027')
+    assessment = fixture['reader_assessment']
+    reader = normalize_reader_paragraphs(fixture['initial_final_reader'])
+    if case == 'non_dict':
+        reader['summary_paragraphs'][1] = 'not a record'
+    elif case == 'wrong_id':
+        reader['summary_paragraphs'][1]['object_id'] = 'SUM-007'
+    else:
+        reader['summary_paragraphs'] = {'SUM-001': reader['summary_paragraphs'][0]}
+    checked = validate_final_reader_records(reader, assessment)
+    assert not checked['structure_valid']
+    assert reviewed_final_reader(reader, _CLEAN, assessment) == ([], [])
+
+
+def test_pipeline_reviews_summary_when_compiler_returns_two_findings():
+    responses = _responses()
+    responses[2]['reader_contract'] = 'final-reader-v1'
+    final = _final_reader()
+    final['assessment_narratives'] = final['assessment_narratives'][:2]
+    assessment = FakeClient(responses + [final], [])
+    reviewer = FakeClient([_native_pass_review] * 2, [])
+    result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(assessment, reviewer))
+    assert result['summary_overview_status'] == 'generated'
+    assert result['summary_overview']['paragraphs']
+    assert result['assessment_narratives'] == []
+    assert [call['stage'] for call in reviewer.calls].count('reader_review') == 1
+    assert 'reader_correction' not in [call['stage'] for call in assessment.calls]
+    assert len(result['priorities']) == 1
