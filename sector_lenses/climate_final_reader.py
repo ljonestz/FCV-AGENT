@@ -520,18 +520,45 @@ def valid_reader_revision(review: dict, final_reader: object) -> bool:
     return set(issue_ids) == set(identifiers) and issue_codes <= set(codes)
 
 
+_NARRATIVE_IDS = frozenset({'NARR-design', 'NARR-dividends', 'NARR-inclusion'})
+
+
+def narrative_only_block(review: object) -> set[str] | None:
+    """Finding IDs a block verdict names when it names nothing else, else None.
+
+    A block is confined to findings only when object_ids is a non-empty list of
+    finding IDs and every issue is an object naming a finding ID. A block that
+    names a Summary record, an unknown target or no target stays a full block.
+    """
+    if not isinstance(review, dict) or review.get('verdict') != 'block':
+        return None
+    identifiers, issues = review.get('object_ids'), review.get('issues', [])
+    if (not isinstance(identifiers, list) or not identifiers or not isinstance(issues, list)
+            or not all(isinstance(identifier, str) and identifier in _NARRATIVE_IDS
+                       for identifier in identifiers)
+            or not all(isinstance(issue, dict) and issue.get('object_id') in _NARRATIVE_IDS
+                       for issue in issues)):
+        return None
+    return set(identifiers) | {issue['object_id'] for issue in issues}
+
+
 def reviewed_final_reader(payload: object, review: object, assessment: dict[str, object]) -> tuple[list[str], list[dict]]:
     """Keep reviewed usable sections; a partial review never certifies publication.
 
     Admission is per record. The Summary is admitted when every Summary record
     passes the precheck and none is withheld by review, whatever happens to the
     narratives; each narrative is admitted or dropped on its own. A record that
-    fails the precheck is never admitted, whatever the review says.
+    fails the precheck is never admitted, whatever the review says. A block
+    that names only findings withholds those findings; any other block
+    withholds everything.
     """
     checked = validate_final_reader_records(payload, assessment)
     summary, narratives = checked['summary'], checked['narratives']
     if not checked['structure_valid'] or (not summary and not narratives) or not isinstance(review, dict):
         return [], []
+    blocked = narrative_only_block(review)
+    if blocked is not None:
+        return list(summary), [record for record in deepcopy(narratives) if record['object_id'] not in blocked]
     if review.get('verdict') == 'pass':
         return (list(summary), list(narratives)) if all(review.get(k) == [] for k in ('object_ids', 'reason_codes', 'issues')) else ([], [])
     if not valid_reader_revision(review, payload):
@@ -577,11 +604,17 @@ def reader_review_notice(payload: object, review: object, assessment: dict[str, 
     labels = {'SUM': 'opening', 'NARR-design': 'climate risks and delivery',
               'NARR-dividends': 'peace and social dividends', 'NARR-inclusion': 'fair benefits'}
     minor, consequential, marked = [], [], []
-    for issue in review['issues']:
+    blocked = narrative_only_block(review) or set()
+    entries = list(review.get('issues') or [])
+    entries += [{'object_id': identifier} for identifier in sorted(blocked)
+                if not any(issue['object_id'] == identifier for issue in entries)]
+    for issue in entries:
         label = labels['SUM'] if issue['object_id'].startswith('SUM-') else labels.get(issue['object_id'], 'findings')
         retained = (bool(summary) if issue['object_id'].startswith('SUM-') else
                     any(record['object_id'] == issue['object_id'] for record in narratives))
-        target = marked if retained and issue.get('disposition') in {'verify', 'omit_sentence'} else minor if issue.get('severity') == 'minor' else consequential
+        target = (consequential if issue['object_id'] in blocked else
+                  marked if retained and issue.get('disposition') in {'verify', 'omit_sentence'} else
+                  minor if issue.get('severity') == 'minor' else consequential)
         if label not in target:
             target.append(label)
     messages = []
@@ -591,7 +624,9 @@ def reader_review_notice(payload: object, review: object, assessment: dict[str, 
         messages.append('Minor uncertainties remain in ' + ', '.join(minor) + '; the narrative is retained for human review.')
     if consequential:
         messages.append('Potentially consequential claims need source confirmation in ' + ', '.join(consequential) + '; the affected narrative is withheld, while other reviewed sections remain available.')
-    issue_codes = {code for issue in review['issues'] for code in issue['reason_codes']}
-    if issue_codes != set(review['reason_codes']):
+    issue_codes = {code for issue in entries
+                   for code in (issue.get('reason_codes') if isinstance(issue.get('reason_codes'), list) else [])}
+    review_codes = review.get('reason_codes') if isinstance(review.get('reason_codes'), list) else []
+    if issue_codes != set(review_codes):
         messages.append('Automated review metadata is inconsistent; confirm the findings against the sources before sharing.')
     return ' '.join(messages)

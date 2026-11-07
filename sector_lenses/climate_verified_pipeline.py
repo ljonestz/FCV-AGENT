@@ -2026,7 +2026,8 @@ def run_verified_climate_pipeline(
                     break
                 final_reader = merged
                 review_input_reader = {**reader_input, 'correction_originals': target_records}
-            if reader_review.get('verdict') == 'revise':
+            # A block confined to findings still admits a clean Summary.
+            if reader_review.get('verdict') in ('revise', 'block'):
                 reasons.append('FINAL_READER_REVIEW_REQUIRED')
             if summary_overview_paragraphs:
                 summary_overview_status = 'generated'
