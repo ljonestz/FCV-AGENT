@@ -2290,3 +2290,43 @@ and the Guinea water PAD + CPF ran end to end in 8.5 min with live research. The
 was analytical with all headings and no lists; there were 5 priorities, the readout
 checks were clean and the Word export worked. Records: output/20261108_e2e-run/.
 Rollback: branch main, 474b3cf.
+
+### 2026-11-08 Climate prose layer, reader admission fix and production runs
+
+The verified Climate-FCV route got the same analytical-prose treatment as the normal
+route. sector_lenses/climate_prose_layer.py rewrites the reader_compiler,
+bounded_analysis, judgment_review and drafting_compiler prompts at assembly. It asks for
+a Summary that opens with a judgment specific to the project, expert register, no
+internal terms or formula openers, acronyms spelled out, no stock closer, and
+Suggested Text written in the project document's own voice with proposals kept visibly
+proposed. Reviewer and correction prompts are unchanged. It is on by default;
+CLIMATE_PROSE_STYLE=legacy switches it off. The operationalization line is now labelled
+"Operationalizing climate and FCV" and carries a definition. PRs #93 (1ff2219), #94
+(b105279), #95 (8d0a9af), #96 (f5f34ca).
+
+Two pre-existing defects surfaced and were fixed. A trailing "[Verify before sharing:
+...]" marker made drafting text look incomplete (DRAFTING_TEXT_INCOMPLETE) and failed
+the first Honduras run (#94; linear string check after a CodeQL ReDoS flag). On the
+Syria confirmation run the reviewer's aggregate object_ids left out SUM-002 while an
+anchored minor issue targeted it, so valid_reader_revision rejected the whole review
+and a good Summary was withheld. The check now requires every named record to have an
+anchored issue but still applies anchored issues on unlisted records (#96). The Word
+export also stopped leaking PF-nnn, block hashes and DOC block ids in verify notes:
+fcv_docx_style.clean_verify_note mirrors the browser's cleanVerifyNote using linear
+token passes (#96, CodeQL clean).
+
+Paid runs on production FCV-AGENT (user-authorised, about USD 30 budget; estimated
+spend USD 27-33, counted per run because production has no spend guard): Honduras
+(attempt 1 failed on the marker bug, attempt 2 complete), Afghanistan (attempt 1 lost
+to a corporate network drop, attempt 2 hit a 502 after a 512 MB OOM at 16:25 UTC,
+attempt 3 complete), Syria, Syria confirmation, and a final Sahel AF Project Paper
+(P173830) run. Blind review of new against old prose: Honduras 7 vs 5, Afghanistan 7
+vs 2, Syria close. The Sahel run on f5f34ca admitted the Summary and all three findings
+with five priorities, and its Word notes carry no internal ids. Records:
+output/20261108_climate-benchmark/ (authorization JSON holds the tally).
+
+Open: some repetition between the Summary and findings; reviewer verify notes keep
+unexpanded acronyms; a source's French decimal comma passed through once ("49,17
+percent"); production memory headroom at 512 MB. Two test_climate_lens_frontend tests
+fail locally only without PYTHONUTF8=1 (Windows console encoding when piping to node). ITS is untouched; the handover is
+20261108_ITS_Handover_prose-and-climate-reader.docx.

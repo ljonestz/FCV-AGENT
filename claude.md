@@ -31,8 +31,8 @@ review-packet helpers remain in code but have no toolbar buttons (approved 2026-
 ## Commands
 
 ```powershell
-# Test
-C:/WBG/Python313/python.exe -m pytest -q
+# Test (set PYTHONUTF8=1 first; tests that pipe JS to node fail on cp1252 otherwise)
+C:/WBG/Python313/python.exe -m pytest -q tests
 
 # Lint
 C:/WBG/Python313/python.exe -m ruff check .
@@ -46,7 +46,8 @@ C:/WBG/Python313/python.exe -m flask --app app run
 - **Service:** `fcv-agent.onrender.com` (Render).
 - **Auto-deploy is OFF** on main after the 2026-10-18 climate incident. Production
   deploys are manual via Render dashboard trigger.
-- **Rollback reference:** commit `1168a8f` (pre-climate-pilot stable).
+- **Rollback references:** `474b3cf` (before the 2026-11-08 readout and prose work),
+  `1168a8f` (pre-climate-pilot stable). Production `main` is `f5f34ca` as of 2026-11-08.
 - Preview environments use the normal Render PR preview flow.
 
 ## Hard constraints
@@ -92,6 +93,16 @@ teal border). Default header only — do not create a separate even-page header.
 - **Large PADs + USD6 ceiling.** Final `reader_review` can be budget-blocked on
   large documents; distinguish budget withhold from genuine reviewer withhold
   before diagnosing output quality.
+- **Prose layers (2026-11-08).** Stage 3 and verified Climate-FCV prompts get a
+  Render-only analytical-prose layer at assembly (`app.py` Stage 3 helpers,
+  `sector_lenses/climate_prose_layer.py`); base prompt text is unchanged. Switches:
+  `FCV_STAGE3_PROSE_STYLE=legacy`, `FCV_STAGE3_PROSE_REPAIR=0`, `CLIMATE_PROSE_STYLE=legacy`.
+  Never put sample text in these layers: outputs copied example wording in the past.
+- **Climate reader admission.** A withheld climate Summary is usually an admission
+  rule, not prose quality: check `diagnostic_trace.final_reader` and the reviewer's
+  `object_ids` against its issues before tuning prompts.
+- **Production memory.** 512 MB plan; an orphaned run plus a new upload OOM-killed the
+  service once (2026-11-08). Avoid overlapping paid runs.
 
 ## Historical context
 
