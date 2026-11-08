@@ -941,3 +941,16 @@ def test_successful_web_research_keeps_the_sources_box():
                    "researchHtml": "<p>Sources</p>"})
     assert "Background research and sources" in html
     assert "Live web research could not be completed" not in html
+
+
+def test_note_preamble_moves_from_snapshot_to_priorities():
+    # 2026-11-08 Guinea paid run: a framing paragraph sits before "## EXECUTIVE SUMMARY".
+    md = ("# FCV Support Note: Guinea Water\n\n"
+          "**This note offers peer input on how to strengthen the FCV integration of the PAD.** Every suggestion is framed as an adjustment to the POM.\n\n"
+          "## EXECUTIVE SUMMARY\n\n### Opening Assessment\n\n**The project handles fiduciary risk well but not the political risks it creates.**\n\n"
+          "### Operational Context\n\nGuinea context paragraph.\n\n### Strengths\n\nStrength prose.\n\n### Gaps\n\nGap prose.\n")
+    html = normal({"stage3Markdown": md})
+    snap_end = html.index("Operational context")
+    assert "This note offers peer input" not in html[:snap_end]
+    pri = html.index('fr-cards-sec')
+    assert html.index("This note offers peer input") > pri

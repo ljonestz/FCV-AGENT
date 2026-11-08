@@ -52,7 +52,7 @@
     text = text.replace(/%{2,3}[A-Z][A-Z0-9_]*(?::[^%\n]*)?%{2,3}/g, '');
     text = text.replace(/^\s*(?:-{3,}|\*{3,}|_{3,})\s*$/gm, '');
     text = text.replace(/^#\s+.*$/m, '');
-    const sections = { snapshot: '', leadRest: '', context: '', strengths: '', gaps: '', risk: '', other: [], found: false };
+    const sections = { snapshot: '', leadRest: '', framing: '', context: '', strengths: '', gaps: '', risk: '', other: [], found: false };
     const blocks = [];
     let current = { heading: '', level: 0, lines: [] };
     text.split('\n').forEach(line => {
@@ -97,7 +97,14 @@
       if (leadHeading) sections.other.unshift({ heading: leadHeading, body });
       else sections.leadRest = body;
     };
-    if (!sections.snapshot && lead) {
+    // Untitled text before the Executive Summary heading, when an Opening Assessment exists, is the
+    // model's note preamble ("This note offers peer input ..."). It frames the suggestions rather than
+    // assessing the project, so it moves to the priorities instead of sitting under the snapshot.
+    const esIndex = blocks.findIndex(b => /executive summary/.test(keyOf(b)));
+    const preamble = sections.snapshot && leadBlock && !leadBlock.heading && esIndex > blocks.indexOf(leadBlock);
+    if (preamble) {
+      sections.framing = lead;
+    } else if (!sections.snapshot && lead) {
       const paragraphs = splitParagraphs(lead);
       const first = paragraphs.shift() || '';
       // A bold opening span is the verdict; the rest of that paragraph is supporting text.
@@ -588,7 +595,7 @@
           extraHtml: typeof d.priorityExtras === 'function' ? d.priorityExtras(p, index) : '',
         });
       }).join('');
-      html += k.section('fr-cards-sec', h('Priority Actions for the Task Team') + intro + k.cards(cards, n));
+      html += k.section('fr-cards-sec', h('Priority Actions for the Task Team') + intro + (s.framing ? k.prose(s.framing) : '') + k.cards(cards, n));
     }
 
     const smaller = (Array.isArray(d.smallerPoints) ? d.smallerPoints : []).filter(x => x && x.title);
