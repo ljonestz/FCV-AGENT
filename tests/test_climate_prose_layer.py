@@ -48,3 +48,15 @@ def test_drafting_voice(monkeypatch):
     p = _prompt("drafting_compiler", monkeypatch, "analytical")
     assert "project document's own voice" in p
     assert "Do not\nturn them into assertions that a PIU will decide" in p
+
+
+def test_drafting_keeps_proposals_visibly_proposed(monkeypatch):
+    p = _prompt("drafting_compiler", monkeypatch, "analytical")
+    assert "'The project proposes to'" in p and "never 'will' for anything not already in the document" in p
+
+
+def test_trailing_review_marker_does_not_make_a_draft_incomplete():
+    from sector_lenses.climate_verified_render import drafting_text_complete
+    assert drafting_text_complete("The project proposes to report it. [Verify before sharing: check the method.]")
+    assert not drafting_text_complete("The project proposes to report it [Verify before sharing: x.]")
+    assert not drafting_text_complete("")

@@ -1305,6 +1305,21 @@ def _all_strings(value: object):
             yield from _all_strings(item)
 
 
+def drafting_text_complete(text: str) -> bool:
+    """A draft is complete when its own prose ends a sentence.
+
+    A trailing bracketed reviewer marker ("[Verify before sharing: ...]") is
+    display annotation, not part of the draft, so it is ignored here. Plain
+    string operations keep this linear on untrusted model text.
+    """
+    core = (text or "").rstrip()
+    if core.endswith("]"):
+        start = core.rfind("[")
+        if start >= 0 and "]" not in core[start + 1:-1]:
+            core = core[:start].rstrip()
+    return bool(core) and core[-1:] in ".?!"
+
+
 def validate_reader_model(model: dict[str, object]) -> tuple[str, ...]:
     """Return deterministic reader-integrity reason codes."""
 
@@ -1374,8 +1389,7 @@ def validate_reader_model(model: dict[str, object]) -> tuple[str, ...]:
         for block in (current, _mapping(optional_value)):
             if not block:
                 continue
-            draft_text = _text(block.get("text"))
-            if not draft_text or draft_text[-1:] not in ".?!":
+            if not drafting_text_complete(_text(block.get("text"))):
                 issues.append("DRAFTING_TEXT_INCOMPLETE")
 
     if any(not all(_text(item.get(key)) for key in required) for item in priorities):
