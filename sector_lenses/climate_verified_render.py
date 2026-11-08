@@ -50,7 +50,7 @@ DIMENSIONS = (
     ),
     (
         "operationalization",
-        "From intent to delivery (operationalization)",
+        "Operationalizing climate and FCV",
         "Are these intentions turned into concrete requirements, roles, "
         "indicators, and triggers the team can act on?",
     ),

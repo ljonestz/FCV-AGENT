@@ -244,6 +244,9 @@
 
   // Limitations provenance lines shared by both routes: uploaded documents and research retrieval date.
   // `unreadClause` opens the unreadable-file sentence (the climate route has no Executive Summary to point to).
+  // Climate operationalization judgment: the label and a one-line definition for TTLs.
+  const OPS_DEFINITION = 'This asks whether the design turns its climate and FCV intentions into concrete requirements, roles, resources, indicators and triggers.';
+
   // app.py writes "*Web research for <country> could not be completed ...*" as the whole brief on failure.
   const RESEARCH_FAILED_RE = /^\W*web research\b[^\n]*\bcould not be completed\b/i;
   const RESEARCH_FAILED_NOTE = 'Live web research could not be completed for this run, so no current external sources were used. Check current-context claims against recent sources before sharing.';
@@ -775,7 +778,7 @@
     const ops = judgment('operationalization');
     const rel = judgment('relevance');
     const notes = [rel.value ? `<p><strong>Climate relevance: ${k.esc(climateLabel(rel.value))}.</strong> ${k.esc(rel.rationale || '')}</p>` : '',
-      ops.value ? `<p><strong>Operationalization: ${k.esc(climateLabel(ops.value))}.</strong> ${k.esc(ops.rationale || '')}</p>` : ''].join('');
+      ops.value ? `<p><strong>Operationalizing climate and FCV: ${k.esc(climateLabel(ops.value))}.</strong> ${k.esc(OPS_DEFINITION)} ${k.esc(ops.rationale || '')}</p>` : ''].join('');
     html += k.section('fr-ratings-sec', h('Climate-FCV Sensitivity and Responsiveness')
       + k.intro('Each rating rests on the judgment summarized here.')
       + k.ratingRows([
