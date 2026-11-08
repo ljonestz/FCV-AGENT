@@ -200,7 +200,9 @@ STAGE_STREAM_TIMEOUTS = {
 STAGE_MAX_TOKENS = {
     1: 8000,
     2: 32000,
-    3: 32000,
+    # 48k (from 32k, 2026-11-08): the analytical prose layer plus Opus thinking cut the
+    # narrative off at 32k in a benchmark replay; 48k completed every run.
+    3: 48000,
 }
 # Native-climate Stage 3 formerly capped at 9000 (compact climate output); raised
 # for Opus 5.5 thinking headroom while staying below the standard Stage 3 budget.
@@ -3257,19 +3259,21 @@ complete detailed-plus-concise JSON block before the narrative. Close it with
 any earlier instruction that places the JSON block after the narrative.
 '''
 
-# ── Stage 3 prose experiment (test service only; default off) ───────────────
-# FCV_STAGE3_STYLE_EXPERIMENT=1 swaps the management-style paragraph above for a
-# version that confines plain-language targets to the JSON summary layer and asks
-# for connected analytical prose in the detailed narrative. FCV_STAGE3_MODEL_EXPERIMENT
-# selects the Stage 3 model. Both exist only to run a controlled replay; production
-# never sets them. Remove or promote after the 2026-11 prose investigation.
+# ── Stage 3 analytical prose layer (Render-only; on by default) ────────────────
+# Chosen by the 2026-11-08 blind benchmark (output/20261108_stage3-benchmark/):
+# the detailed narrative is written as connected analytical prose, plain-language
+# targets apply only to the JSON summary fields, and the opening sections follow
+# the qualities of the owner's example notes (described, never quoted, to avoid
+# near-verbatim reuse). Applied at prompt assembly so DEFAULT_PROMPTS["3"], shared
+# in spirit with the ITS build, stays textually unchanged. Set
+# FCV_STAGE3_PROSE_STYLE=legacy to restore the previous management style.
 _STANDARD_STYLE_PARAGRAPH_START = "Write the narrative in a clear technical report style for management."
 _STANDARD_STYLE_PARAGRAPH_END = "repeating the why text of each priority.\n"
-_EXPERIMENT_STYLE_PARAGRAPH = """NARRATIVE STYLE FOR THE DETAILED NOTE: Write the Opening Assessment, Operational
+_STAGE3_PROSE_STYLE_PARAGRAPH = """NARRATIVE STYLE FOR THE DETAILED NOTE: Write the Opening Assessment, Operational
 Context, Strengths, Gaps, FCV Risk Exposure and the two Summary paragraphs as connected
 analytical prose for an experienced FCV and operations reader, in the register of a senior
-peer reviewer. Each paragraph opens with a bold topic sentence that states an analytical
-judgment, then develops it through linked sentences that explain mechanisms, causes and
+peer reviewer. Each paragraph opens with a bold first sentence, a topic sentence that states
+an analytical judgment, then develops it through linked sentences that explain mechanisms, causes and
 consequences and show how the points relate to one another. Do not use bullet lists,
 numbered lists or bold lead-in labels in these sections; integrate the points into the
 paragraph. Vary sentence length and do not reduce the analysis to a series of short
@@ -3282,13 +3286,13 @@ fields concise_readout and priority.concise. JSON field values are plain text wi
 Markdown and use plain management language. In the overview, each strength text and each
 how action, start with a short plain main-point sentence and add a concise explanatory
 second sentence where the substance supports it; do not add sentences only to satisfy a
-format. Keep the concise Summary from repeating the why text of each priority.
+format. The concise brief should be approximately 650-850 words and fit within two A4 pages.
+Keep the concise Summary from repeating the why text of each priority.
 """
 
 
-# Style v2 adds a description (no sample text, to avoid near-verbatim reuse) of how
-# strong openings are built, plus reasoning about how risks compound.
-_EXPERIMENT_STYLE_V2_ADDITION = """
+# A description (no sample text) of how strong openings are built.
+_STAGE3_PROSE_QUALITIES = """
 HOW A STRONG OPENING IS BUILT (a description of qualities, not text to imitate):
 - Opening Assessment: write it as its own crafted judgment, not a summary of the gaps. In one
   sentence of 35-60 words and plain words, name the project's single central tension (for
@@ -3315,8 +3319,8 @@ HOW A STRONG OPENING IS BUILT (a description of qualities, not text to imitate):
   appears elsewhere in these instructions.
 """
 
-# Section specifications aligned with the target style (applied only under style v2).
-_STAGE3_V2_SECTION_SPECS = [
+# Section specifications aligned with the target style.
+_STAGE3_SECTION_SPECS = [
     ("### Opening Assessment (ONE BOLD SENTENCE, 25-35 words)\nA single bolded sentence summarising the project's overall FCV integration status.",
      "### Opening Assessment (ONE BOLD SENTENCE, 35-60 words)\nA single bolded sentence giving the overall verdict on the project's FCV integration, the areas that need strengthening, and what is at stake."),
     ("### Operational Context (150-200 words, ONE PARAGRAPH)\nSynthesise 3-4 converging FCV risks creating a uniquely challenging operating environment for THIS project.",
@@ -3326,27 +3330,21 @@ _STAGE3_V2_SECTION_SPECS = [
 ]
 
 
-def _stage3_style_variant() -> str:
-    value = os.environ.get("FCV_STAGE3_STYLE_EXPERIMENT", "")
-    return value if value in {"1", "2"} else ""
+def _stage3_prose_layer_enabled() -> bool:
+    return os.environ.get("FCV_STAGE3_PROSE_STYLE", "analytical").strip().lower() != "legacy"
 
 
 def _stage3_contract_text() -> str:
-    """Return the standard contract, with the experimental style paragraph when enabled."""
+    """Return the standard contract with the analytical prose style paragraph."""
     contract = STANDARD_FCV_STAGE3_OUTPUT_CONTRACT
-    variant = _stage3_style_variant()
-    if variant:
-        start = contract.find(_STANDARD_STYLE_PARAGRAPH_START)
-        end = contract.find(_STANDARD_STYLE_PARAGRAPH_END, start)
-        if start >= 0 and end >= 0:
-            paragraph = _EXPERIMENT_STYLE_PARAGRAPH + (_EXPERIMENT_STYLE_V2_ADDITION if variant == "2" else "")
-            contract = contract[:start] + paragraph + contract[end + len(_STANDARD_STYLE_PARAGRAPH_END):]
-    if _stage3_narrative_first():
-        # Drop the JSON-first override so the base prompt order (narrative, then JSON) applies.
-        cut = contract.find("OUTPUT ORDER OVERRIDE:")
-        if cut >= 0:
-            contract = contract[:cut].rstrip() + "\n"
-    return contract
+    if not _stage3_prose_layer_enabled():
+        return contract
+    start = contract.find(_STANDARD_STYLE_PARAGRAPH_START)
+    end = contract.find(_STANDARD_STYLE_PARAGRAPH_END, start)
+    if start < 0 or end < 0:
+        return contract
+    paragraph = _STAGE3_PROSE_STYLE_PARAGRAPH + _STAGE3_PROSE_QUALITIES
+    return contract[:start] + paragraph + contract[end + len(_STANDARD_STYLE_PARAGRAPH_END):]
 
 
 _GUARDRAIL_STYLE_OLD = """Write the management narrative in clear technical report style: start each
@@ -3359,7 +3357,7 @@ only to the JSON summary fields. Define acronyms on first use, use no em-dash
 punctuation and use semicolons sparingly."""
 
 
-_STAGE3_V2_FINAL_FORMAT_CHECK = """
+_STAGE3_FINAL_FORMAT_CHECK = """
 
 FINAL FORMAT CHECK BEFORE WRITING THE NARRATIVE:
 - Under ## EXECUTIVE SUMMARY, use these exact subheadings in this order, each on its own line:
@@ -3371,47 +3369,11 @@ FINAL FORMAT CHECK BEFORE WRITING THE NARRATIVE:
 
 
 def _stage3_apply_section_specs(stage_prompt: str) -> str:
-    if _stage3_style_variant() != "2":
+    if not _stage3_prose_layer_enabled():
         return stage_prompt
-    for old, new in _STAGE3_V2_SECTION_SPECS:
+    for old, new in _STAGE3_SECTION_SPECS:
         stage_prompt = stage_prompt.replace(old, new, 1)
     return stage_prompt
-
-
-def _stage3_narrative_first() -> bool:
-    return os.environ.get("FCV_STAGE3_ORDER_EXPERIMENT") == "narrative_first"
-
-
-_JSON_FIRST_REPLACEMENTS = [
-    ('Before writing the narrative output, emit a machine-readable JSON block',
-     'After completing the full narrative output above, append a machine-readable JSON block'),
-    ('IMPORTANT: The JSON block must come BEFORE all narrative text.',
-     'IMPORTANT: The JSON block must come AFTER all narrative text.'),
-    ('- JSON block is present at the start,', '- JSON block is present at the end,'),
-    ('Emit before the narrative. Same structure as Design Review Stage 3.',
-     'Append after the narrative. Same structure as Design Review Stage 3.'),
-]
-
-
-def _stage3_restore_narrative_first(prompt: str) -> str:
-    if not _stage3_narrative_first():
-        return prompt
-    for json_first, narrative_first in _JSON_FIRST_REPLACEMENTS:
-        prompt = prompt.replace(json_first, narrative_first, 1)
-    return prompt
-
-
-def _stage3_experiment_max_tokens() -> int | None:
-    raw = os.environ.get("FCV_STAGE3_MAX_TOKENS_EXPERIMENT", "")
-    return int(raw) if raw.isdigit() and 32000 <= int(raw) <= 64000 else None
-
-
-_STAGE3_EXPERIMENT_MODELS = {"claude-sonnet-5-5", "claude-opus-5-5"}
-
-
-def _stage3_experiment_model() -> str | None:
-    configured = os.environ.get("FCV_STAGE3_MODEL_EXPERIMENT")
-    return configured if configured in _STAGE3_EXPERIMENT_MODELS else None
 
 
 _STANDARD_CONCISE_READOUT_SCHEMA = '''  "concise_readout": {
@@ -3820,16 +3782,16 @@ def append_core_concise_stage3_contract(
     if active_lenses:
         return stage_prompt
     stage_prompt = _stage3_apply_section_specs(_prepare_standard_stage3_prompt(stage_prompt))
-    if _stage3_style_variant():
+    if _stage3_prose_layer_enabled():
         stage_prompt = stage_prompt.replace(_GUARDRAIL_STYLE_OLD, _GUARDRAIL_STYLE_NEW, 1)
-    return _stage3_restore_narrative_first(
+    return (
         _embed_core_concise_stage3_schema(stage_prompt, standard=True)
         + "\n\n--- Concise readout lifecycle framing ---\n"
         + build_concise_lifecycle_context(doc_type, temporal_context, review_mode)
         + "\n\n"
         + _stage3_contract_text()
         + STANDARD_RESEARCH_EVIDENCE_CONTRACT
-        + (_STAGE3_V2_FINAL_FORMAT_CHECK if _stage3_style_variant() == "2" else "")
+        + (_STAGE3_FINAL_FORMAT_CHECK if _stage3_prose_layer_enabled() else "")
     )
 
 
@@ -10870,8 +10832,6 @@ def _stage_timeout_seconds(stage_num):
 def _stage_model(stage_num):
     """Stage 1 does long-context extraction on the fast standard model; Stages 2
     and 3 (FCV assessment + recommendations) use the reasoning model."""
-    if stage_num == 3 and _stage3_experiment_model():
-        return _stage3_experiment_model()
     return MODEL_REASONING if stage_num in (2, 3) else MODEL_STANDARD
 
 
@@ -10883,10 +10843,10 @@ def _stage3_prose_repair_events(text, assessment_id, holder):
 
     Runs the repair call in a thread and yields keepalive events meanwhile, so the
     SSE stream never sits silent. Puts the (possibly unchanged) text and a report in
-    holder. Enabled only when FCV_STAGE3_PROSE_REPAIR=1.
+    holder. On by default; FCV_STAGE3_PROSE_REPAIR=0 disables it.
     """
     holder['text'] = text
-    if os.environ.get("FCV_STAGE3_PROSE_REPAIR") != "1":
+    if os.environ.get("FCV_STAGE3_PROSE_REPAIR", "1").strip() == "0":
         return
     if not stage3_prose.listy_sections(text):
         missing = stage3_prose.missing_headings(text)
@@ -10929,8 +10889,6 @@ def _stage3_prose_repair_events(text, assessment_id, holder):
 
 
 def _stage_output_budget(stage_num):
-    if stage_num == 3 and _stage3_experiment_max_tokens():
-        return _stage3_experiment_max_tokens()
     return STAGE_MAX_TOKENS.get(stage_num, STAGE_MAX_TOKENS[3])
 
 

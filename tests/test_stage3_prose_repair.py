@@ -31,7 +31,7 @@ LISTY = """## EXECUTIVE SUMMARY
 
 def _fake_ok(prompt):
     body = prompt[len(sp.REPAIR_INSTRUCTIONS) + 2:]
-    body = re.sub(r"^\s*(?:[-*+]|\d+[.)])\s+", "", body, flags=re.M)
+    body = re.sub(r"^\s*(?:[-*+]|\d+[.)])\s+", "", body, flags=re.MULTILINE)
     return re.sub(r"\*\*([^*\n]{2,60})[.:]\*\*(?=\s)", r"\1 is a concern:", body)
 
 
@@ -70,9 +70,9 @@ def test_no_call_when_already_prose():
     assert out == prose and report["listy"] == []
 
 
-def test_repair_events_off_by_default(monkeypatch):
+def test_repair_events_can_be_disabled(monkeypatch):
     import app
-    monkeypatch.delenv("FCV_STAGE3_PROSE_REPAIR", raising=False)
+    monkeypatch.setenv("FCV_STAGE3_PROSE_REPAIR", "0")
     holder = {}
     assert list(app._stage3_prose_repair_events(LISTY, "t", holder)) == []
     assert holder["text"] == LISTY
