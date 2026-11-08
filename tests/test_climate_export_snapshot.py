@@ -86,6 +86,7 @@ const document={querySelectorAll:()=>[],body:{appendChild:()=>{}},createElement:
 const URL={createObjectURL:()=>'',revokeObjectURL:()=>{}};
 const renderClimateVerifiedAssessment=r=>{rendered++;return r.executive_readout;};
 const climatePrintDisclosureScript=()=>'';
+const screenerCaveatHtml=()=>'';
 const scenario=SCENARIO;
 if(scenario==='missing')climateVerifiedReader=null;
 const fetch=async()=>{
@@ -114,3 +115,61 @@ def test_runtime_reader_survives_json_round_trip(monkeypatch):
                                     'climate_reader': result['reader']}, sort_keys=True))
     response = app_module.app.test_client().post('/api/climate-report-snapshot', json=payload)
     assert response.status_code == 200, response.get_json()
+
+
+def _fallback_pair(pair):
+    from sector_lenses.climate_verified_render import FALLBACK_SUMMARY_OVERVIEW
+    assessment = pair['climate_assessment']
+    assessment['reader_contract'] = 'final-reader-v1'
+    assessment['final_reader'] = None
+    assessment['reader_review'] = None
+    reader = json.loads(json.dumps(attach_provenance(build_reader_model(assessment), assessment)))
+    assert reader['summary_overview_status'] == 'fallback'
+    assert reader['summary_overview'] == list(FALLBACK_SUMMARY_OVERVIEW)
+    pair['climate_reader'] = reader
+    return pair
+
+
+def test_session_saved_with_old_fallback_wording_still_exports(pair):
+    from sector_lenses.climate_verified_render import LEGACY_FALLBACK_SUMMARY_OVERVIEWS
+    pair = _fallback_pair(pair)
+    pair['climate_reader']['summary_overview'] = list(LEGACY_FALLBACK_SUMMARY_OVERVIEWS[0])
+    response = app_module.app.test_client().post('/api/climate-report-snapshot', json=pair)
+    assert response.status_code == 200
+    assert response.get_json()['reader']['summary_overview'][0].startswith('A short summary is not shown')
+
+
+def test_fallback_tolerance_does_not_cover_other_edits(pair):
+    from sector_lenses.climate_verified_render import LEGACY_FALLBACK_SUMMARY_OVERVIEWS
+    pair = _fallback_pair(pair)
+    pair['climate_reader']['summary_overview'] = list(LEGACY_FALLBACK_SUMMARY_OVERVIEWS[0])
+    pair['climate_reader']['executive_readout'] = 'Changed in browser only.'
+    response = app_module.app.test_client().post('/api/climate-report-snapshot', json=pair)
+    assert response.status_code == 409
+    edited = _fallback_pair(pair)
+    edited['climate_reader']['summary_overview'] = ['Any other text.']
+    assert app_module.app.test_client().post('/api/climate-report-snapshot', json=edited).status_code == 409
+
+
+def test_snapshot_without_reader_returns_canonical_reader(pair):
+    """A restored session omits climate_reader to receive the canonical reader."""
+    expected = pair.pop('climate_reader')
+    response = app_module.app.test_client().post('/api/climate-report-snapshot', json=pair)
+    assert response.status_code == 200, response.get_json()
+    snapshot = response.get_json()
+    assert snapshot['reader'] == expected
+    assert snapshot['publication_approved'] is False
+    # The returned reader then exports without a snapshot mismatch.
+    pair['climate_reader'] = snapshot['reader']
+    assert app_module.app.test_client().post('/api/climate-report-snapshot', json=pair).status_code == 200
+
+
+def test_snapshot_without_reader_still_requires_verified_assessment(pair):
+    pair.pop('climate_reader')
+    pair['climate_assessment']['schema_version'] = 'climate-verified-v2.0'
+    assert app_module.app.test_client().post('/api/climate-report-snapshot', json=pair).status_code == 422
+
+
+def test_review_packet_still_requires_displayed_reader(pair):
+    pair.pop('climate_reader')
+    assert app_module.app.test_client().post('/api/climate-review-packet', json=pair).status_code == 422

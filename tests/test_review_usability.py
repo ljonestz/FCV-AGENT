@@ -1,6 +1,5 @@
 """Behavioral contracts for the Render review frontend fixes."""
 
-import json
 import re
 import subprocess
 from pathlib import Path
@@ -45,61 +44,19 @@ def test_stage3_controls_offer_one_active_view_copy_action():
     assert 'onclick="copyFullReport()"' not in source
 
 
-def test_full_copy_uses_canonical_priority_actions_watch_risk_and_ratings():
+def test_copy_reuses_the_unified_readout_with_priorities_watch_risk_and_ratings():
+    # The unified readout (renderNormalReadoutHtml) carries ratings, risk exposure,
+    # priorities, advisory and watch list; Copy reuses it instead of a separate builder.
     source = _source()
-    helpers = "\n".join(
-        _extract_js_function(source, name)
-        for name in (
-            "isClimateLensActive",
-            "renderStage3AdvisoryTransition",
-            "buildFullReportText",
-        )
-    )
-    payload = {
-        "stage3": "Narrative lead",
-        "priorities": [
-            {
-                "title": "Protect access",
-                "risk_level": "High",
-                "the_gap": "Access trigger is missing.",
-                "why_it_matters": "Delivery may exclude remote communities.",
-                "actions": [
-                    {
-                        "document_element": "Implementation arrangements",
-                        "guidance": "Name the trigger and owner.",
-                        "suggested_language": "The team will review access quarterly.",
-                    }
-                ],
-            }
-        ],
-        "risk": {"risks_to": "Conflict may interrupt delivery.", "risks_from": "Unequal access may deepen grievance."},
-        "watch": "Monitor access conditions during supervision.",
-        "sensitivity": "Adequate",
-        "responsiveness": "Low",
-    }
-    script = f"""
-const state = {json.dumps(payload)};
-const stageThreePriorities = state.priorities;
-const stageOutputs = {{3: state.stage3}};
-const stageRiskExposure = state.risk;
-const horizonConsiderations = state.watch;
-const fcvRating = state.sensitivity;
-const fcvResponsivenessRating = state.responsiveness;
-let activeLenses=[];
-let reviewMode='design';
-let midCycleWatch = [], dpfWatch = [], p4rWatch = [], regionalWatch = [];
-const stageSensitivitySummary='',stageResponsivenessSummary='',focusQuestionsResult=null;
-const supportsClimateVerifiedStage3View=()=>false,md=x=>x,esc=x=>x,stripWatchHeading=x=>x,reportPlainText=x=>x;
-const renderRiskExposure=x=>JSON.stringify(x),renderSRCards=()=>'',_buildExportPriorityCard=x=>JSON.stringify(x);
-{helpers}
-const out = buildFullReportText();
-if(!out.includes('The following priorities are suggestions')) throw new Error('Detailed copy omitted the full-priority advisory');
-for (const expected of Object.values(state)) {{
-  const values = typeof expected === 'object' ? Object.values(expected).flatMap(value => typeof value === 'object' ? Object.values(value) : [value]) : [expected];
-  for (const value of values) if (typeof value === 'string' && value && !out.includes(value)) throw new Error('missing ' + value + '\\n' + out);
-}}
-"""
-    _run_node(script)
+    copy = _extract_js_function(source, "copyActiveView")
+    assert "buildNormalReadout(stageOutputs[3]||'',true)" in copy
+    assert "renderClimateVerifiedAssessment(climateVerifiedReader)" in copy
+    readout = _extract_js_function(source, "renderNormalReadoutHtml")
+    for field in ("fcvRating", "fcvResponsivenessRating", "riskExposure:stageRiskExposure",
+                  "priorities:stageThreePriorities", "watchHtml:renderNormalFcvWatchBody()",
+                  "stage3AdvisoryText('normal')"):
+        assert field in readout
+    assert "function buildFullReportText(" not in source
 
 
 def test_research_fields_are_saved_and_restored():
@@ -134,10 +91,13 @@ def test_context_rating_meanings_are_six_tier_and_responsiveness_is_not_a_qualit
 
 def test_export_labels_word_annex_difference_and_html_keeps_full_sections():
     source = _source()
-    assert "Word export" in source and "Annex" in source
-    assert "researchBrief" in source[source.index("function downloadHTML()") :]
-    assert "stageThreePriorities.forEach" in source[source.index("function downloadHTML()") :]
-    assert "md(stripWatchHeading(horizonConsiderations))" in source[source.index("function downloadHTML()") :]
+    assert "Word (.docx): priorities and suggested text for the PAD team." in source and "Annex" in source
+    export = source[source.index("function downloadHTML()") :]
+    assert "researchBrief" in export
+    # Priorities and the watch list come from the shared readout builder, not a bespoke loop.
+    assert "buildNormalReadout(stageOutputs[3]||'',true,_briefHtml)" in export
+    assert "md(stripWatchHeading(group.narrative))" in source
+    assert "watchHtml:renderNormalFcvWatchBody()" in source
 
 
 

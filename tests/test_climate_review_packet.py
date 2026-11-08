@@ -119,7 +119,7 @@ HELPER
 def test_browser_views_omit_generic_draft_notice():
     from tests.test_climate_lens_frontend import INDEX, _extract_js_function
     source = INDEX.read_text(encoding='utf-8')
-    for name in ['renderClimateVerifiedSummary', 'renderClimateVerifiedAssessment']:
+    for name in ['renderClimateVerifiedAssessment']:
         helper = _extract_js_function(source, name)
         assert 'Draft - human review required' not in helper
         assert 'publication_approved' not in helper

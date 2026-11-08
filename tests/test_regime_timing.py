@@ -60,9 +60,15 @@ def test_new_model_timing_labels_wired_into_ui_and_docx():
     root = Path(__file__).resolve().parent.parent
     html = (root / "index.html").read_text(encoding="utf-8")
     appsrc = (root / "app.py").read_text(encoding="utf-8")
-    # Human label present in all three index.html timing maps (summary, pill, downloadHTML)
-    assert html.count("Before Technical Design review") >= 3
-    assert html.count("During implementation support") >= 3
+    # The readout uses one shared TIMING_LABELS map (the old summary/export copies were merged into it);
+    # the pill map keeps its own standard/climate wording. Both must label every new-model timing.
+    shared = html[html.index("const TIMING_LABELS={"):]
+    shared = shared[:shared.index("};")]
+    for key, label in (("before-TD-review", "Before Technical Design review"),
+                       ("during-implementation-support", "During implementation support")):
+        assert f"'{key}':'{label}'" in shared, key
+    assert html.count("Before Technical Design review") >= 2
+    assert html.count("During implementation support") >= 2
     for key in ("shortly-after-OIS", "before-TD-review", "before-IR", "before-One-Review", "before-Board"):
         assert key in html, key
     # DOCX timing_map (app.py) carries the labels too
@@ -99,6 +105,7 @@ def test_docx_renders_canonical_project_cycle_after_actions():
             "secondary_text": "Track whether the agreed sequence is being followed.",
         },
         "cpf_alignment": "Align with the CPF outcome on resilient delivery.",
+        "rra_driver_alignment": "Responds to RRA Driver 2 on land competition.",
         "concise": {
             "project_cycle": {
                 "primary_label": "Legacy concise label",
@@ -112,15 +119,18 @@ def test_docx_renders_canonical_project_cycle_after_actions():
     for expected in (
         "Before appraisal", "Confirm the decision sequence in the current document.",
         "During implementation", "Track whether the agreed sequence is being followed.",
-        "CPF Alignment", "Align with the CPF outcome on resilient delivery.",
     ):
         assert expected in text
+    # CPF / RRA alignment stays in the JSON but is not rendered in Word.
+    assert "CPF Alignment" not in text
+    assert "Align with the CPF outcome on resilient delivery." not in text
+    assert "RRA Driver Alignment" not in text and "RRA Driver 2" not in text
     assert text.index("Set out the decision sequence.") < text.index("PRACTICAL CONSIDERATIONS")
     practical = text[text.index("PRACTICAL CONSIDERATIONS"):]
-    assert practical.index("Before appraisal") < practical.index("During implementation") < practical.index("CPF Alignment")
+    assert practical.index("Before appraisal") < practical.index("During implementation")
     assert "Legacy concise label" not in text
     assert "This must not be used by Detailed exports." not in text
-    for label in ("Before appraisal", "During implementation", "CPF Alignment"):
+    for label in ("Before appraisal", "During implementation"):
         paragraph = next(p for p in paragraphs if p.text.startswith(label + " "))
         assert paragraph.runs[0].text.strip() == label
         assert paragraph.runs[0].bold is True

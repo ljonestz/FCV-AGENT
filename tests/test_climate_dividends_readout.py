@@ -1,7 +1,7 @@
 """Scope-aware Climate rating questions and a short, grounded Summary gap readout."""
 
 import json
-import subprocess
+from pathlib import Path
 from io import BytesIO
 
 from docx import Document
@@ -12,7 +12,7 @@ from sector_lenses.climate_verified_render import (
     render_reader_html,
     write_reader_docx,
 )
-from tests.test_climate_lens_frontend import INDEX, _extract_js_function, _js_escape_helper
+from tests.test_climate_lens_frontend import INDEX, _extract_js_function, _readout_harness, _run_node
 from tests.test_shared_rating_sidebar import render_cards
 
 
@@ -63,55 +63,59 @@ def test_compiler_keeps_gap_language_short_and_qualified():
     assert "optional dividends opportunity is not a required correction" in prompt
 
 
-def _render_gaps(priorities):
-    source = INDEX.read_text(encoding="utf-8")
-    script = (
-        _js_escape_helper()
-        + _extract_js_function(source, "boldEscapedFirstSentence")
-        + _extract_js_function(source, "renderClimateSummaryGaps")
-        + "\nconsole.log(renderClimateSummaryGaps({}," + json.dumps(priorities) + "));"
-    )
-    result = subprocess.run(["node", "-"], input=script, capture_output=True, text=True)
+def _render_gaps(gaps):
+    """Render the verified readout and return only its 'Key gaps at this stage' block."""
+    script = _readout_harness() + "\nconsole.log(renderClimateVerifiedAssessment({summary_gaps:" + json.dumps(gaps) + "}));"
+    result = _run_node(script)
     assert result.returncode == 0, result.stderr
-    return result.stdout.strip()
+    html = result.stdout
+    start = html.find("Key gaps at this stage")
+    if start < 0:
+        return ""
+    return html[start:html.index("</section>", start)]
 
 
-def test_legacy_summary_gaps_reuses_up_to_five_distinct_complete_limitations():
+def test_readout_gaps_show_up_to_five_complete_findings():
     first = "Flood performance is addressed, but upkeep arrangements are not documented."
     second = "A wider livelihoods dividend remains an optional opportunity within the project's scope."
     html = _render_gaps([
-        {"limitation": first, "narrative": "Do not copy the action narrative."},
-        {"limitation": "  " + first.upper() + "  "},
-        {"limitation": second},
-        {"limitation": "A distinct operational limitation remains unresolved."},
+        {"text": first},
+        {"text": second},
+        {"text": "A distinct operational limitation remains unresolved."},
+        {"text": "Fourth finding."},
+        {"text": "Fifth finding."},
+        {"text": "Sixth finding must not appear."},
     ])
-    assert "Potential gaps" in html
-    assert first in html
+    assert "Key gaps at this stage" in html
+    assert "upkeep arrangements are not documented." in html
     assert "optional opportunity" in html
-    assert "Do not copy" not in html and "distinct operational limitation" in html
-    assert html.count("<li") == 3 and "<ul" in html
+    assert "distinct operational limitation" in html
+    assert "Sixth finding" not in html
+    assert html.count('<p dir="auto" class="fr-p">') == 5
 
 
-def test_summary_gaps_preserves_qualifications_and_never_slices_long_fields():
+def test_readout_gaps_preserve_qualifications_and_never_slice_long_fields():
     qualified = "The upload does not show <maintenance> arrangements; this is missing evidence, not proof of an omission."
     html = _render_gaps([
-        {"limitation": "Long " * 81 + "qualification."},
-        {"limitation": qualified},
+        {"text": "Long " * 81 + "qualification."},
+        {"text": qualified},
     ])
-    assert "Long" not in html
+    assert html.count("Long") == 81
+    assert "qualification." in html
     assert "missing evidence, not proof of an omission." in html
     assert "&lt;maintenance&gt;" in html and "<maintenance>" not in html
     assert _render_gaps([]) == ""
     assert _render_gaps([{"narrative": "An unsupported gap must not be inferred."}]) == ""
 
 
-def test_summary_gap_section_uses_reader_findings_without_candidate_diagnostics():
-    source = INDEX.read_text(encoding="utf-8")
-    summary = _extract_js_function(source, "renderClimateVerifiedSummary")
-    assert "renderClimateSummaryGaps(r,priorities)" in summary
-    assert "diagnostic_trace" not in summary and "recommendation_candidates" not in summary
-    assert summary.index("${strengthsHtml}") < summary.index("${gapsHtml||bridge}")
-    assert summary.index("${gapsHtml||bridge}") < summary.index("Priority actions for the task team")
+def test_readout_gap_section_uses_reader_findings_without_candidate_diagnostics():
+    module = (Path(INDEX).parent / "static" / "fcv_readout.js").read_text(encoding="utf-8")
+    start = module.index("function renderClimate(")
+    body = module[start:]
+    assert "r.summary_gaps" in body
+    assert "diagnostic_trace" not in body and "recommendation_candidates" not in body
+    assert body.index("What the design already provides") < body.index("Key gaps at this stage")
+    assert body.index("Key gaps at this stage") < body.index("Priority Actions for the Task Team")
 
 
 def test_shared_caveat_respects_project_scope():
@@ -122,27 +126,14 @@ def test_shared_caveat_respects_project_scope():
     assert "Responsiveness is not expected for every project" in caveat
 
 
-def test_detailed_question_preserves_server_text_and_migrates_known_legacy_wording():
-    source = INDEX.read_text(encoding="utf-8")
-    helpers = "\n".join(_extract_js_function(source, name) for name in (
-        "climateAccessibleRouteValue", "climateDraftingRouteGate",
-        "renderPriorityProjectCycle", "climateSummaryWatchItems",
-        "renderClimateVerifiedAssessment",
-    ))
-    script = _js_escape_helper() + helpers + """
-const renderClimateRelevantGuidance=()=>'';
-const questions=[
-  'How sensitive is this project to climate and FCV considerations?',
-  'An authoritative server question?',
-  ''
-];
-for(const question of questions){
-  const html=renderClimateVerifiedAssessment({climate_sensitivity_rating:{question,label:'Strong',level:4,scale:['Very limited','Limited','Moderate','Strong','Very strong']}});
-  const expected=question==='An authoritative server question?'?question:
-    'How well does the project recognize and address interacting climate and FCV risks?';
-  if(!html.includes(expected))throw new Error('question field or legacy migration lost');
-  if(!html.includes('>Strong<'))throw new Error('saved score changed');
+def test_readout_uses_the_canonical_rating_question_and_preserves_the_saved_score():
+    script = _readout_harness() + """
+for (const question of ['How sensitive is this project to climate and FCV considerations?', 'An authoritative server question?', '']) {
+  const html = renderClimateVerifiedAssessment({climate_sensitivity_rating:{question, value:'strong', label:'Strong', level:4}});
+  if (!html.includes('How well does the design recognize and manage interacting climate and FCV risks, and avoid doing harm?')) throw new Error('canonical rating question missing');
+  if (html.includes('How sensitive is this project to climate and FCV considerations?')) throw new Error('legacy wording leaked');
+  if (!html.includes('>Strong<')) throw new Error('saved score changed');
 }
 """
-    result = subprocess.run(["node", "-"], input=script, capture_output=True, text=True)
+    result = _run_node(script)
     assert result.returncode == 0, result.stderr

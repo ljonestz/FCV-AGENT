@@ -21,9 +21,9 @@ from sector_lenses.climate_review_admission import core_verification_issue
 
 from sector_lenses.climate_final_reader import (
     valid_reader_revision as _valid_reader_revision,
-    apply_reader_corrections, bind_same_passage_project_references, reader_support_records,
-    reader_correction_allowed_numeric_date_tokens, validate_final_reader,
-    reviewed_final_reader, normalize_reader_paragraphs,
+    apply_reader_corrections, bind_same_passage_project_references,
+    bind_same_summary_number_references, reader_support_records,
+    reader_correction_allowed_numeric_date_tokens, reader_records, validate_final_reader_records, reviewed_final_reader, normalize_reader_paragraphs,
 )
 
 from sector_lenses.climate_analysis import (
@@ -105,6 +105,16 @@ PROMPT_VERSIONS = {
     "reader_correction": "climate-reader-correction-v1.8",
     "reader_review": "climate-reader-review-v1.16",
 }
+
+
+# Output tokens of the shared repair allowance held back from recommendation
+# repairs for the final-reader correction and its fresh review. The run's total
+# allowance is unchanged; this only partitions it. 3,000 covers a correction
+# (452 tokens in the 2026-11-07 Afghanistan run) plus a re-review (1,240-1,276
+# observed; 2,500 budget) and leaves 6,000 for recommendation repairs, above
+# the drafting correction budget (5,000) and about three times the observed
+# repair spend (1,670 + 408).
+READER_CORRECTION_RESERVE_TOKENS = 3_000
 
 
 class JsonClient(Protocol):
@@ -881,7 +891,11 @@ def run_verified_climate_pipeline(
     metric_starts = {role: len(getattr(client, 'call_metrics', []))
                      for role, client in (('assessment', clients.assessment), ('reviewer', clients.reviewer))}
     latency_ms: dict[str, int] = {}
-    repair_allowance = {"remaining": CALL_BUDGETS["recommendation_compiler"].output_tokens}
+    repair_allowance_total = CALL_BUDGETS["recommendation_compiler"].output_tokens
+    reader_reserve = min(READER_CORRECTION_RESERVE_TOKENS, repair_allowance_total)
+    # Recommendation repairs draw on the allowance less the reader reserve; the
+    # reserve is returned before the final reader runs.
+    repair_allowance = {"remaining": repair_allowance_total - reader_reserve}
     reasons: list[str] = []
     repairs: list[str] = []
     suppressed = {
@@ -1841,6 +1855,7 @@ def run_verified_climate_pipeline(
         reasons.append("READINESS_FLAGS_NOT_ACCEPTED")
     readiness = accepted_readiness
 
+    repair_allowance["remaining"] += reader_reserve
     final_reader = {}
     reader_review = {}
     reader_trace = {'prechecks': [], 'meaning_reviews': []}
@@ -1876,19 +1891,27 @@ def run_verified_climate_pipeline(
             final_reader, reference_repairs = bind_same_passage_project_references(final_reader, reader_assessment)
             if reference_repairs:
                 repairs.append(f'FINAL_READER_SAME_PASSAGE_REFERENCES:{reference_repairs}')
+            final_reader, number_repairs = bind_same_summary_number_references(final_reader, reader_assessment)
+            if number_repairs:
+                repairs.append(f'FINAL_READER_SAME_SUMMARY_NUMBER_REFERENCES:{number_repairs}')
             review_input_reader = reader_input
+            # Reviewed state before the single correction. It is restored when the
+            # correction or its re-review cannot complete, so the saved reader and
+            # review always reproduce the admitted prose.
+            reviewed_before_correction = None
             for attempt in range(2):
                 precheck_issues = []
-                proposed_summary, _ = validate_final_reader(final_reader, reader_assessment, issues=precheck_issues)
+                precheck = validate_final_reader_records(final_reader, reader_assessment, issues=precheck_issues)
                 reader_trace['prechecks'].append({'attempt': attempt, 'issues': precheck_issues})
                 reader_review = {}
                 # Repairable text defects must not hide meaning defects from the
                 # one available correction. Invalid evidence/structure still blocks.
-                records_list = (final_reader.get('summary_paragraphs', [])
-                                + final_reader.get('assessment_narratives', []))
+                # Malformed findings are withheld by the precheck (a
+                # READER_STRUCTURE_INVALID issue keeps this unreviewable); only
+                # object records can be reviewed or corrected.
+                records_list = reader_records(final_reader)
                 reviewable = all(
-                    isinstance(record, dict)
-                    and isinstance(record.get('evidence_ids'), list)
+                    isinstance(record.get('evidence_ids'), list)
                     and record['evidence_ids']
                     and all(isinstance(ref, str) and ref in support_records
                             for ref in record['evidence_ids'])
@@ -1900,18 +1923,43 @@ def run_verified_climate_pipeline(
                 reviewable = reviewable and all(
                     set(issue.get('reason_codes', [])) <= repairable_codes
                     for issue in precheck_issues)
-                if proposed_summary or (not attempt and reviewable):
-                    reader_review = _call(clients.reviewer, 'reader_review',
-                        {**review_input_reader, 'final_reader': final_reader}, latency_ms,
-                        cancel_event=cancel_event, deadline=deadline,
-                        repair_allowance=repair_allowance if attempt else None)
+                # Records are admitted one by one: a Summary that passes earns its
+                # (already budgeted) review whatever the narratives' precheck says.
+                if precheck['summary'] or (not attempt and reviewable):
+                    try:
+                        reader_review = _call(clients.reviewer, 'reader_review',
+                            {**review_input_reader, 'final_reader': final_reader}, latency_ms,
+                            cancel_event=cancel_event, deadline=deadline,
+                            repair_allowance=repair_allowance if attempt else None)
+                    except PipelineCancelled:
+                        raise
+                    except Exception as error:
+                        if not attempt:
+                            raise
+                        reader_trace['correction_review_failure'] = type(error).__name__
+                        reasons.append('FINAL_READER_CORRECTION_REVIEW_UNAVAILABLE')
+                        (final_reader, reader_review, summary_overview_paragraphs,
+                         assessment_narratives) = reviewed_before_correction
+                        break
                     reader_trace['meaning_reviews'].append(_diagnostic_snapshot(reader_review))
                     summary_overview_paragraphs, assessment_narratives = reviewed_final_reader(
                         final_reader, reader_review, reader_assessment)
+                elif attempt:
+                    # The corrected Summary still fails; keep the reviewed
+                    # pre-correction reader instead of an unreviewed one.
+                    reader_trace['correction_not_reviewed'] = True
+                    (final_reader, reader_review, summary_overview_paragraphs,
+                     assessment_narratives) = reviewed_before_correction
+                    break
+                else:
+                    summary_overview_paragraphs, assessment_narratives = [], []
                 minor_only = (bool(summary_overview_paragraphs) and bool(assessment_narratives)
                               and reader_review.get('verdict') == 'revise'
                               and all(issue.get('severity') == 'minor' for issue in reader_review.get('issues', [])))
-                if (summary_overview_paragraphs and reader_review.get('verdict') == 'pass') or minor_only or attempt:
+                # A precheck failure still deserves the one correction even when
+                # the reviewed records are admissible.
+                if attempt or (not precheck_issues and (
+                        (summary_overview_paragraphs and reader_review.get('verdict') == 'pass') or minor_only)):
                     break
                 # One targeted repair shares the existing correction allowance and
                 # deadline. A block, unknown target or provider failure stays withheld.
@@ -1926,13 +1974,21 @@ def run_verified_climate_pipeline(
                     reasons.extend(code for issue in precheck_issues for code in issue['reason_codes'])
                     break
                 correction_issues = precheck_issues + (semantic_issues if valid_revision else [])
-                records = {record['object_id']: record for record in records_list}
+                records = {record['object_id']: record for record in records_list
+                           if isinstance(record.get('object_id'), str)}
+                # Text edits cannot repair invalid evidence or structure. Those
+                # records stay withheld; the rest still get the one correction.
+                unrepairable = [issue for issue in correction_issues
+                                if issue.get('object_id') not in records
+                                or set(issue.get('reason_codes', [])) & {'READER_EVIDENCE_INVALID', 'READER_STRUCTURE_INVALID'}]
+                blocked_ids = {issue.get('object_id') for issue in unrepairable}
+                correction_issues = [issue for issue in correction_issues
+                                     if issue.get('object_id') not in blocked_ids]
                 issue_ids = {issue.get('object_id') for issue in correction_issues}
-                if (not correction_issues or not issue_ids <= records.keys()
-                        or any(set(issue.get('reason_codes', [])) & {'READER_EVIDENCE_INVALID', 'READER_STRUCTURE_INVALID'}
-                               for issue in correction_issues)):
-                    reader_trace['unrepairable_issues'] = correction_issues
-                    reasons.extend(code for issue in correction_issues for code in issue.get('reason_codes', []))
+                if unrepairable or not correction_issues:
+                    reader_trace['unrepairable_issues'] = unrepairable
+                    reasons.extend(code for issue in unrepairable for code in issue.get('reason_codes', []))
+                if not correction_issues:
                     break
                 target_records = [records[key] for key in sorted(issue_ids)]
                 refs = {ref for record in target_records for ref in record['evidence_ids']}
@@ -1962,17 +2018,31 @@ def run_verified_climate_pipeline(
                 correction = {'target_ids': sorted(issue_ids), 'issues': []}
                 reader_trace['correction'] = correction
                 repairs.append('FINAL_READER_TARGETED_CORRECTION_ATTEMPTED')
-                response = _call(clients.assessment, 'reader_correction', correction_input, latency_ms,
-                                 cancel_event=cancel_event, deadline=deadline, repair_allowance=repair_allowance)
+                reviewed_before_correction = (final_reader, reader_review,
+                                              summary_overview_paragraphs, assessment_narratives)
+                try:
+                    response = _call(clients.assessment, 'reader_correction', correction_input, latency_ms,
+                                     cancel_event=cancel_event, deadline=deadline, repair_allowance=repair_allowance)
+                except PipelineCancelled:
+                    raise
+                except Exception as error:
+                    # The reviewed records above stay admitted.
+                    correction['failure'] = type(error).__name__
+                    reasons.append('FINAL_READER_CORRECTION_UNAVAILABLE')
+                    break
                 correction['response'] = _diagnostic_snapshot(response)
-                merged = apply_reader_corrections(final_reader, response, issue_ids, issues=correction['issues'])
+                # Valid patches merge per record; numbers may come from cited evidence.
+                merged = apply_reader_corrections(final_reader, response, issue_ids, issues=correction['issues'],
+                                                  assessment=reader_assessment)
                 if merged is None:
                     reasons.append('FINAL_READER_CORRECTION_SCOPE_INVALID')
-                    reasons.extend(code for issue in correction['issues'] for code in issue['reason_codes'])
+                reasons.extend(code for issue in correction['issues'] for code in issue['reason_codes'])
+                if merged is None:
                     break
                 final_reader = merged
                 review_input_reader = {**reader_input, 'correction_originals': target_records}
-            if reader_review.get('verdict') == 'revise':
+            # A block confined to findings still admits a clean Summary.
+            if reader_review.get('verdict') in ('revise', 'block'):
                 reasons.append('FINAL_READER_REVIEW_REQUIRED')
             if summary_overview_paragraphs:
                 summary_overview_status = 'generated'
@@ -2017,7 +2087,7 @@ def run_verified_climate_pipeline(
         model_aliases=model_aliases,
         sampling={"max_transient_retries": 1,
                   "correction_transient_retries": 0,
-                  "correction_output_token_allowance": CALL_BUDGETS["recommendation_compiler"].output_tokens,
+                  "correction_output_token_allowance": repair_allowance_total,
                   "correction_output_token_remaining": repair_allowance["remaining"]},
         source_fingerprints=tuple(item.sha256 for item in source_documents),
         applicability_fingerprint=applicability,

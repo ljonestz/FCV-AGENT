@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>FCV Project Screener · WBG FCV Analytics Unit</title>
+  <title>FCV Screener</title>
+  <link rel="icon" id="tab-icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20fill%3D%22%23002244%22%2F%3E%3Ctext%20x%3D%2216%22%20y%3D%2223%22%20font-family%3D%22Arial%2Csans-serif%22%20font-size%3D%2220%22%20font-weight%3D%22700%22%20fill%3D%22%23fff%22%20text-anchor%3D%22middle%22%3EF%3C%2Ftext%3E%3C%2Fsvg%3E"/>
   <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -430,12 +431,6 @@
     .climate-operation-context dt{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#64748b}
     .climate-operation-context dd{font-weight:600;color:#243244;margin:1px 0 0}
     .climate-operation-context p{font-size:12px;color:#8a4b00;margin:9px 0 0}
-    .climate-summary-context{margin:0 0 20px;padding:10px 12px;background:#f8fafc;border:1px solid var(--border);border-radius:8px}
-    .climate-summary-context-line{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
-    .climate-summary-context-line span{font-size:10px;text-transform:uppercase;letter-spacing:.07em;font-weight:700;color:var(--muted)}
-    .climate-summary-context-line strong{color:var(--wbg-navy)}
-    .climate-summary-route-warning{font-size:12px;color:#8a4b00;margin:9px 0 0}
-    .climate-summary-priority-count{font-size:12px;color:var(--muted);margin:5px 0 10px}
     .climate-verified-assessment .climate-rating-question{font-size:13px;font-weight:600;color:#4b5563;margin:0 0 3px}
     .climate-verified-assessment .climate-rating-label{font-family:'Open Sans',sans-serif;font-size:22px;font-weight:700;color:var(--climate-rating-color);margin:0}
     .climate-verified-assessment .climate-rating-scale{display:flex;gap:4px;max-width:420px;margin:10px 0 13px}
@@ -499,24 +494,6 @@
     .climate-purpose-icon{display:inline-grid;place-items:center;width:22px;height:22px;flex:0 0 22px;border-radius:50%;font-weight:800;font-size:13px;border:1px solid currentColor}
     .climate-decision-preparation{background:#fff8e8;border:1px solid #f1d28b;color:#9a6500}
     .climate-further-guidance{background:#eaf8f7;border:1px solid #94d6d1;color:#08756f}
-    .climate-verified-summary .climate-summary-watch-disclosure,.climate-verified-summary .climate-summary-guidance-disclosure{border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-top:14px}
-    .climate-verified-summary .climate-summary-watch-disclosure>summary,.climate-verified-summary .climate-summary-guidance-disclosure>summary{cursor:pointer;list-style:none;padding:13px 0;font-family:'Open Sans',sans-serif;font-size:14px;font-weight:700;color:var(--wbg-navy)}
-    .climate-verified-summary .climate-summary-watch-disclosure>summary::-webkit-details-marker,.climate-verified-summary .climate-summary-guidance-disclosure>summary::-webkit-details-marker{display:none}
-    .climate-verified-summary .climate-summary-watch-disclosure>summary::before,.climate-verified-summary .climate-summary-guidance-disclosure>summary::before{content:"\25B8";display:inline-block;margin-right:8px;color:var(--wbg-blue);transition:transform .15s}
-    .climate-verified-summary .climate-summary-watch-disclosure[open]>summary::before,.climate-verified-summary .climate-summary-guidance-disclosure[open]>summary::before{transform:rotate(90deg)}
-    .climate-verified-summary .climate-summary-watch-disclosure>summary:focus-visible,.climate-verified-summary .climate-summary-guidance-disclosure>summary:focus-visible{outline:3px solid #f2a900;outline-offset:2px}
-    .climate-verified-summary .climate-summary-watch-body,.climate-verified-summary .climate-guidance-body{padding:0 0 6px}
-    .normal-fcv-summary .normal-fcv-watch-disclosure{border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-top:14px}
-    .normal-fcv-summary .normal-fcv-watch-disclosure>summary{cursor:pointer;list-style:none;padding:13px 0;font-family:'Open Sans',sans-serif;font-size:14px;font-weight:700;color:var(--wbg-navy)}
-    .normal-fcv-summary .normal-fcv-watch-disclosure>summary::-webkit-details-marker{display:none}
-    .normal-fcv-summary .normal-fcv-watch-disclosure>summary::before{content:"\25B8";display:inline-block;margin-right:8px;color:var(--wbg-blue);transition:transform .15s}
-    .normal-fcv-summary .normal-fcv-watch-disclosure[open]>summary::before{transform:rotate(90deg)}
-    .normal-fcv-summary .normal-fcv-watch-disclosure>summary:focus-visible{outline:3px solid #f2a900;outline-offset:2px}
-    .normal-fcv-summary .normal-fcv-watch-body{padding:0 0 6px}
-    .normal-fcv-summary .normal-fcv-watch-group{margin:0 0 12px}
-    .normal-fcv-summary .normal-fcv-watch-group:last-child{margin-bottom:0}
-    .normal-fcv-summary .normal-fcv-watch-group h3{margin:0 0 5px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--wbg-navy)}
-    .normal-fcv-summary .normal-fcv-watch-group ul{margin:0;padding-left:20px;color:var(--text);line-height:1.6}
     .climate-verified-assessment .climate-guidance{background:transparent;padding:0}
     .climate-verified-assessment .climate-guidance-disclosure{border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
     .climate-verified-assessment .climate-guidance-disclosure>summary{cursor:pointer;list-style:none;padding:13px 0;font-family:'Open Sans',sans-serif;font-size:15px;font-weight:700;color:var(--wbg-navy)}
@@ -592,6 +569,7 @@
     .report-download-menu>summary::-webkit-details-marker{display:none}
     .report-download-options{position:absolute;top:calc(100% + 4px);right:0;z-index:50;min-width:160px;display:grid;gap:4px;padding:6px;background:var(--white);border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:var(--shadow-md)}
     .report-download-options button{text-align:left;width:100%}
+    .report-download-help{margin:4px 6px 0;font-size:11px;line-height:1.4;color:var(--muted);max-width:240px}
     .btn-danger{background:#fff;color:#b91c1c;border:1.5px solid #fca5a5;padding:10px 18px}
     .btn-danger:hover:not(:disabled){background:#fef2f2}
     .btn-sm{padding:7px 14px!important;font-size:13px!important}
@@ -814,9 +792,13 @@
     .session-bar{display:flex;align-items:center;gap:8px;padding:0 32px;height:40px;background:#fff;border-bottom:1px solid var(--color-border);font-size:12px;color:var(--color-text-muted);position:sticky;top:56px;z-index:99}
     .session-bar svg{flex-shrink:0}
     .session-bar-btns{margin-left:auto;display:flex;gap:4px}
+    /* Phones: one row of icon-only buttons (labels stay as aria-label/title); the bar scrolls away. */
     @media(max-width:640px){
-      .session-bar{height:auto;min-height:40px;padding:6px 16px;align-items:flex-start;flex-wrap:wrap}
-      .session-bar-btns{flex:1 1 100%;min-width:0;margin-left:0;flex-wrap:wrap;justify-content:flex-end}
+      .session-bar{height:auto;min-height:40px;padding:4px 16px;align-items:center;flex-wrap:wrap;position:static}
+      .session-bar #session-status{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      .session-bar-btns{flex:none;margin-left:auto;flex-wrap:nowrap}
+      .session-bar-btns .btn{padding:6px 9px}
+      .session-bar-btns .sb-lbl{display:none}
     }
     /* Utility bar doc-type badge */
     .util-doc-type-badge{display:inline-flex;align-items:center;gap:6px;background:var(--color-blue-soft);color:var(--color-blue);border:1px solid #BFDBFE;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:600}
@@ -964,12 +946,10 @@
     .stage3-mobile-ratings summary::after{content:'+';font-size:18px;font-weight:400;line-height:1}
     .stage3-mobile-ratings[open] summary::after{content:'−'}
     .stage3-mobile-ratings .stage3-rating-card{border:0;border-top:1px solid var(--border);border-radius:0;box-shadow:none}
-    .ps-step:focus-visible{outline:3px solid #f2a900;outline-offset:-3px;position:relative;z-index:1}
     @media(max-width:860px){
       .stage3-reading-shell{grid-template-columns:1fr;gap:12px}
       .stage3-rating-rail{display:none}
       .stage3-mobile-ratings{display:block}
-      .priority-stepper{overflow-x:auto}
     }
 
     /* Sidebar risk matrix */
@@ -984,39 +964,6 @@
     .rpill-l{background:#d1fae5;color:#065f46;}
     .rpill-na{background:#f3f4f6;color:#9ca3af;}
     .risk-matrix-legend{font-size:9px;color:var(--muted);margin-top:6px;text-align:right;}
-
-    /* Sidebar priority nav */
-    /* Priority step indicator bar */
-    .priority-stepper{
-      display:flex;background:#fff;border:1px solid var(--border);
-      border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-sm);
-      margin-bottom:16px;
-    }
-    .ps-step{
-      flex:1;padding:9px 6px;text-align:center;cursor:pointer;
-      border:0;border-right:1px solid var(--border);transition:all .15s;
-      font-family:inherit;min-width:0;
-    }
-    .ps-step:last-child{border-right:none;}
-    .ps-num{
-      width:20px;height:20px;border-radius:50%;background:var(--border);
-      display:flex;align-items:center;justify-content:center;
-      font-size:10px;font-weight:700;color:var(--muted);margin:0 auto 3px;transition:all .15s;
-    }
-    .ps-label{font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.02em;line-height:1.35;max-height:3.9em;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;word-break:break-word;white-space:normal;}
-    .ps-step.active{background:var(--wbg-navy);}
-    .ps-step.active .ps-num{background:var(--wbg-blue);color:#fff;}
-    .ps-step.active .ps-label{color:rgba(255,255,255,.8);}
-    .ps-step.done .ps-num{background:var(--s4);color:#fff;font-size:9px;}
-    .ps-step.done .ps-label{color:var(--s4);}
-    .ps-risk{font-size:8px;font-weight:700;border-radius:3px;padding:1px 4px;margin:3px auto 0;display:inline-block;letter-spacing:.03em;}
-    .ps-risk-h{background:#fee2e2;color:#b91c1c;}
-    .ps-risk-m{background:#dbeafe;color:#1d4ed8;}
-    .ps-risk-l{background:#d1fae5;color:#065f46;}
-    .ps-step.active .ps-risk{opacity:.85;}
-    .ps-step.active .ps-risk-h{background:#fca5a540;color:#fca5a5;}
-    .ps-step.active .ps-risk-m{background:#93c5fd40;color:#93c5fd;}
-    .ps-step.active .ps-risk-l{background:#6ee7b740;color:#6ee7b7;}
 
     /* Priority card */
     .priority-card{
@@ -1095,10 +1042,10 @@
     .priority-project-cycle p{margin:3px 0 0;font-size:14px;line-height:1.7;}
     /* Above and beyond <details> */
     .zone-act-beyond{border-top:1px solid var(--border);margin-top:14px;}
-    .zone-act-beyond summary{padding:12px 0 4px;cursor:pointer;font-size:13px;font-weight:600;color:#6b21a8;display:flex;align-items:center;gap:7px;list-style:none;user-select:none;}
+    .zone-act-beyond summary{padding:12px 0 4px;cursor:pointer;font-size:13px;font-weight:600;color:#002244;display:flex;align-items:center;gap:7px;list-style:none;user-select:none;}
     .zone-act-beyond summary::-webkit-details-marker{display:none;}
-    .zone-act-beyond summary .beyond-badge{background:#f3e8ff;color:#6b21a8;font-size:10px;font-weight:600;padding:1px 8px;border-radius:10px;margin-left:4px;}
-    .zone-act-beyond summary .beyond-arrow{margin-left:auto;font-size:11px;color:#6b21a8;transition:transform .2s;}
+    .zone-act-beyond summary .beyond-badge{background:#E8F5FC;color:#002244;font-size:10px;font-weight:600;padding:1px 8px;border-radius:10px;margin-left:4px;}
+    .zone-act-beyond summary .beyond-arrow{margin-left:auto;font-size:11px;color:#002244;transition:transform .2s;}
     .zone-act-beyond[open] summary .beyond-arrow{transform:rotate(180deg);}
     .beyond-content{padding:10px 0 4px;}
     .beyond-intro{font-size:13px;color:var(--muted);margin:0 0 12px;line-height:1.6;}
@@ -1112,10 +1059,10 @@
     .beyond-loading{font-size:13px;color:var(--muted);padding:10px 0;display:flex;align-items:center;gap:8px;}
     /* Go Deeper 3-tab section */
     .go-deeper{border-top:1px solid var(--border);margin-top:14px;}
-    .go-deeper > summary{padding:12px 0 4px;cursor:pointer;font-size:13px;font-weight:600;color:#6b21a8;display:flex;align-items:center;gap:7px;list-style:none;user-select:none;}
+    .go-deeper > summary{padding:12px 0 4px;cursor:pointer;font-size:13px;font-weight:600;color:#002244;display:flex;align-items:center;gap:7px;list-style:none;user-select:none;}
     .go-deeper > summary::-webkit-details-marker{display:none;}
-    .go-deeper > summary .beyond-badge{background:#f3e8ff;color:#6b21a8;font-size:10px;font-weight:600;padding:1px 8px;border-radius:10px;margin-left:4px;}
-    .go-deeper > summary .beyond-arrow{margin-left:auto;font-size:11px;color:#6b21a8;transition:transform .2s;}
+    .go-deeper > summary .beyond-badge{background:#E8F5FC;color:#002244;font-size:10px;font-weight:600;padding:1px 8px;border-radius:10px;margin-left:4px;}
+    .go-deeper > summary .beyond-arrow{margin-left:auto;display:flex;align-items:center;color:#002244;transition:transform .15s;}
     .go-deeper[open] > summary .beyond-arrow{transform:rotate(180deg);}
     .deeper-content{padding:10px 0 4px;}
     .deeper-tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
@@ -1126,95 +1073,12 @@
     .deeper-trail,.deeper-playbook{font-size:14px;line-height:1.6;}
     .deeper-loading{font-size:13px;color:var(--muted);padding:10px 0;display:flex;align-items:center;gap:8px;}
 
-    .horizon-panel{background:#fafbfc;border:1px dashed #c0c8d0;border-radius:8px;margin:24px 0 16px 0;padding:0;}
-    .horizon-panel summary{padding:12px 16px;font-size:14px;font-weight:600;color:#5a6a7a;cursor:pointer;list-style:none;}
-    .horizon-panel summary::-webkit-details-marker{display:none;}
-    .horizon-panel summary::before{content:'\25B6';display:inline-block;margin-right:8px;font-size:10px;transition:transform 0.2s;}
-    .horizon-panel[open] summary::before{transform:rotate(90deg);}
-    .horizon-panel .horizon-body{padding:4px 16px 16px 16px;font-size:13px;color:#444;line-height:1.6;}
-    .horizon-panel .horizon-body p{margin:8px 0;}
-    .horizon-panel .horizon-disclaimer{font-size:11px;font-style:italic;color:#888;margin-bottom:8px;}
-
-    .priorities-intro{margin-bottom:14px;padding:12px 15px;background:#eef7fb;border:1px solid #cfe9f4;border-left:4px solid var(--wbg-blue);border-radius:var(--radius-sm);}
-    .priorities-intro .stage3-advisory-transition{margin:10px 0 0;padding:0;background:transparent;border:0;color:var(--text);}
-    .stage3-viewbar{display:flex;justify-content:space-between;align-items:center;gap:14px;margin:0 0 16px;padding:10px 12px;background:#fafbfd;border:1px solid var(--border);border-radius:8px}
-    .stage3-view-tabs{display:flex;gap:3px;padding:3px;background:#e8edf1;border-radius:7px}
-    .stage3-view-tab{border:0;background:transparent;padding:7px 14px;border-radius:5px;color:var(--muted);font-weight:600;cursor:pointer}
-    .stage3-view-tab.active{background:#fff;color:var(--wbg-navy);box-shadow:0 1px 4px rgba(0,34,68,.15)}
-    .stage3-view-tab:focus-visible{outline:3px solid #f2a900;outline-offset:2px}
-    .stage3-download-note{font-size:11px;color:var(--muted)}
-    .concise-readout{font-size:14px;line-height:1.65}
-    .concise-read-time,.concise-section-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;color:var(--wbg-blue)}
-    .concise-headline{font-size:22px;line-height:1.3;color:var(--wbg-navy);margin:7px 0 9px}
-    .concise-overview{font-size:15px;line-height:1.7;color:var(--text);margin:0 0 15px}
-    .concise-interpretation{margin:0 0 18px;padding:10px 13px;background:#f6f9fb;border-left:3px solid var(--wbg-blue);color:var(--muted);font-size:13px;line-height:1.6}
-    .concise-rating-indicators{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 22px}
-    .concise-rating-indicator{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 13px;background:#f6f9fb;border:1px solid var(--border);border-radius:7px}
-    .concise-rating-indicator span{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
-    .concise-rating-indicator strong{color:var(--wbg-navy)}
-    .stage3-advisory-transition{margin:4px 0 18px;padding:12px 14px;background:#f6f9fb;border-left:3px solid var(--wbg-blue);color:var(--text);line-height:1.6}
-    .concise-transition{margin:0 0 12px;color:var(--muted);line-height:1.6}
-    .concise-closing{margin:18px 0 0;padding-top:12px;border-top:1px solid var(--border);color:var(--muted);font-size:13px;line-height:1.6}
-    #summary-priority-accordion{display:flex;flex-direction:column;gap:10px;margin-top:10px}
-    .summary-priority-item{background:#fff;border:1px solid var(--border);border-radius:9px;overflow:hidden}
-    .summary-priority-item h3{margin:0;font-size:inherit}
-    .summary-priority-toggle{width:100%;display:grid;grid-template-columns:30px 1fr auto;align-items:center;gap:11px;padding:14px 16px;border:0;background:#fff;color:var(--wbg-navy);font:inherit;font-weight:700;text-align:left;cursor:pointer}
-    .summary-priority-toggle:hover{background:#f7f9fb}
-    .summary-priority-toggle:focus-visible{outline:3px solid #f2a900;outline-offset:-3px}
-    .summary-priority-rank{width:27px;height:27px;border-radius:50%;display:grid;place-items:center;background:var(--wbg-navy);color:#fff;font-size:12px}
-    .summary-priority-chevron{font-size:18px;transition:transform .2s}
-    .summary-priority-toggle[aria-expanded="true"] .summary-priority-chevron{transform:rotate(180deg)}
-    .summary-priority-panel[hidden]{display:none}
-    .summary-priority-panel{border-top:1px solid var(--border)}
-    .summary-priority-panel>section,.summary-priority-panel>.concise-cycle{padding:14px 16px;border-bottom:1px solid var(--border)}
-    .summary-priority-panel h4{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--wbg-navy);margin:0 0 6px}
-    .concise-strengths{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:10px 0 22px}
-    .concise-strength{padding:12px;background:#edf8f2;border:1px solid #cae4d5;border-radius:7px}
-    .concise-strength strong{display:block;color:#176a42;margin-bottom:6px;white-space:normal;overflow:visible}
-    .concise-strength-text{display:block;line-height:1.55}
-    .concise-priority-card{background:#fff;border:1px solid var(--border);border-radius:9px;overflow:hidden;margin-bottom:14px}
-    .concise-priority-head{display:grid;grid-template-columns:34px 1fr auto;gap:12px;padding:16px 18px;border-bottom:1px solid var(--border)}
-    .concise-priority-num{width:29px;height:29px;border-radius:50%;display:grid;place-items:center;background:var(--wbg-navy);color:#fff;font-weight:700}
-    .concise-priority-card section,.concise-cycle{padding:15px 18px;border-bottom:1px solid var(--border)}
-    .concise-priority-card h4{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--wbg-navy);margin:0 0 6px}
-    .concise-how{background:#f6f9fb;border-left:4px solid var(--wbg-blue)}
-    .concise-wording{background:#fff8e9}
-    .concise-cycle{background:#fafbfd;display:grid;grid-template-columns:1fr 1fr;gap:14px}
-    .concise-cycle-items{grid-column:2;display:flex;flex-direction:column;gap:14px}
-    .concise-specialist summary{padding:12px 18px;color:var(--wbg-blue);font-weight:600;cursor:pointer}
-    .normal-summary-priorities{display:flex;flex-direction:column;gap:10px;margin-top:10px}
-    .normal-summary-gaps{margin:18px 0;padding:14px 16px;background:#fff4e5;border:1px solid #f0d5ad;border-left:4px solid #d98c34;border-radius:8px}
-    .normal-summary-gaps .concise-section-label{margin-top:0;color:#885315}
-    .normal-summary-gap-list{margin:0;padding-left:22px;list-style:disc}
-    .normal-summary-gap{margin:10px 0;line-height:1.6}
-    .normal-summary-gap:last-child{margin-bottom:0}
-    .concise-strength-text strong{display:inline;color:inherit;margin:0}
-    .normal-summary-priority{padding:14px 16px;background:#fff;border:1px solid var(--border);border-radius:9px}
-    .normal-summary-priority-head{display:flex;align-items:flex-start;gap:10px;margin-bottom:9px}
-    .normal-summary-priority-rank{width:27px;height:27px;border-radius:50%;display:grid;place-items:center;background:var(--wbg-navy);color:#fff;font-size:12px;font-weight:700;flex-shrink:0}
-    .normal-summary-priority h3{margin:2px 0 0;color:var(--wbg-navy);font-size:15px;line-height:1.35}
-    .normal-summary-priority p{margin:7px 0 0;line-height:1.6}
-    .normal-summary-priority-label{display:block;margin-bottom:2px;color:var(--wbg-navy);font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
-    .normal-summary-priority-action{padding-top:9px;border-top:1px solid var(--border)}
-    .normal-summary-priority-link{display:inline-flex;align-items:center;min-height:40px;margin-top:11px;color:var(--wbg-blue);font-weight:700;text-decoration:underline;text-underline-offset:2px}
     .brief-download-actions{display:inline-flex;align-items:center;gap:6px;margin-right:2px}
     .brief-download-actions .btn{white-space:nowrap}
-    .priority-context-disclosure{border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-top:0}
-    .priority-context-disclosure>summary{cursor:pointer;list-style:none;padding:12px 22px;color:var(--wbg-blue);font-size:12px;font-weight:700}
-    .priority-context-disclosure>summary::-webkit-details-marker{display:none}
-    .priority-context-disclosure>summary::before{content:"\25B8";display:inline-block;margin-right:7px;transition:transform .15s}
-    .priority-context-disclosure[open]>summary::before{transform:rotate(90deg)}
-    .priority-context-body{padding:0 22px 12px}
-    .priority-context-item{margin:0 0 10px;line-height:1.6}
-    .priority-context-item:last-child{margin-bottom:0}
-    .priority-context-item strong{display:block;color:var(--wbg-navy);font-size:11px;text-transform:uppercase;letter-spacing:.05em}
     .normal-fcv-watch-narrative{line-height:1.65}
     .normal-fcv-watch-narrative h1,.normal-fcv-watch-narrative h2,.normal-fcv-watch-narrative h3{margin:8px 0 5px;font-size:12px;color:var(--wbg-navy)}
     .normal-fcv-watch-narrative p{margin:0 0 8px}
     .normal-fcv-watch-narrative p:last-child{margin-bottom:0}
-    @media(max-width:760px){.stage3-viewbar{align-items:flex-start;flex-direction:column}.concise-strengths,.concise-cycle,.concise-rating-indicators{grid-template-columns:1fr}.concise-cycle-items{grid-column:1}}
-    .priorities-section-hdr{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--s4);margin:20px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--s4);}
-    .pi-lead{font-size:15px;color:var(--text);line-height:1.6;margin:0 0 10px;}
     .sr-legend{display:flex;flex-direction:column;gap:5px;margin:0 0 12px;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;}
     .sr-legend-item{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text);line-height:1.5;}
 
@@ -1647,6 +1511,7 @@
     .refine-card{background:transparent!important;border:none!important;box-shadow:none!important;padding:0!important}
     .refine-row{border:1px solid var(--color-border)!important;border-radius:10px!important;background:#fff!important;display:flex!important;align-items:flex-end!important;padding:8px 12px!important;gap:8px!important;box-shadow:0 1px 4px rgba(0,0,0,.06)!important;transition:border-color 0.15s!important}
     .refine-row:focus-within{border-color:var(--color-blue)!important;box-shadow:0 0 0 3px rgba(0,80,160,.08)!important}
+    .refine-in,.refine-in::placeholder{text-align:left!important}
     .refine-in{border:none!important;outline:none!important;flex:1!important;font-size:14px!important;font-family:'Open Sans',sans-serif!important;resize:none!important;min-height:40px!important;max-height:120px!important;background:transparent!important;padding:0!important}
     .refine-in:focus{outline:none!important}
 
@@ -1834,7 +1699,7 @@
   .pq-note{ font-size:11px; color:#888; font-style:italic; margin-top:4px; }
   .followon-desc{ font-size:12px; color:var(--muted); margin:4px 0 8px; }
   .followon-chips{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
-  .followon-chip{ background:#f0f4f8; border:1px solid var(--border); border-radius:14px; padding:4px 12px; font-size:12px; color:var(--text); cursor:pointer; white-space:nowrap; transition:background .15s,border-color .15s; }
+  .followon-chip{ background:#f0f4f8; border:1px solid var(--border); border-radius:0; padding:4px 12px; font-size:12px; color:var(--text); cursor:pointer; white-space:nowrap; transition:background .15s,border-color .15s; }
   .followon-chip:hover{ background:#e2e8f0; border-color:#94a3b8; }
   .followon-result-card{ background:#fff; border:1px solid var(--border); border-radius:8px; margin-top:12px; overflow:hidden; }
 
@@ -2000,13 +1865,18 @@
     border-radius: 6px;
     font-size: 12px;
     line-height: 1.4;
-    max-width: 320px;
+    max-width: min(320px, 90vw);
     min-width: 200px;
+    text-transform: none;
+    letter-spacing: normal;
+    font-style: normal;
+    font-weight: 400;
     z-index: 1000;
     box-shadow: 0 2px 8px rgba(0,0,0,0.2);
     pointer-events: none;
   }
-  .glossary-term:hover .glossary-tooltip { display: block; }
+  .glossary-term:hover .glossary-tooltip,
+  .glossary-term:focus-within .glossary-tooltip { display: block; }
 
   /* ── How It Works — 3-stage flow (onboarding modal) ──────────────── */
   .hiw-lead { font-size:13.5px; color:var(--text); line-height:1.72; margin-bottom:20px; }
@@ -2077,6 +1947,121 @@
     .hiw-strip { grid-template-columns:1fr; }
     .hiw-strip-div { display:none; }
   }
+</style>
+<style id="fcv-readout-style">
+.fr-readout{--fr-navy:#002244;--fr-blue:#009FDA;--fr-blue-text:#0071A6;--fr-tint:#E8F5FC;--fr-tint2:#F3F6F9;--fr-surface:#F7F8FA;--fr-body:#111827;--fr-grey:#5F6B7A;--fr-border:#D9DDE3;overflow-wrap:anywhere;font-family:Arial,sans-serif;color:var(--fr-body);font-size:14px;line-height:1.6}
+.fr-readout h2,.fr-readout h3,.fr-readout h4{font-family:Arial,sans-serif!important;letter-spacing:normal!important;text-transform:none!important;margin-top:0!important}
+.fr-readout .fr-p,.fr-readout .fr-md{font-size:14px;line-height:1.6;margin:0 0 9px}
+.fr-readout{max-width:1040px}
+.fr-readout a{color:var(--fr-blue-text)}
+.fr-readout summary:focus-visible,.fr-readout a:focus-visible,.fr-readout button:focus-visible{outline:2px solid #002244;outline-offset:2px}
+.fr-readout .fr-scorecard{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 170px;border:1px solid var(--fr-border);margin:4px 0 4px}
+.fr-readout .fr-sc-tile{padding:14px 16px 12px;border-right:1px solid var(--fr-border);display:flex;flex-direction:column}
+.fr-readout .fr-sc-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--fr-grey);margin-bottom:5px}
+.fr-readout .fr-sc-value{font-size:22px;font-weight:700;color:var(--fr-navy);line-height:1.25;margin-bottom:9px}
+.fr-readout .fr-meter{display:flex;gap:2px;margin-bottom:5px}
+.fr-readout .fr-ms{flex:1;height:8px;background:#E5E7EB;border-radius:1px}
+.fr-readout .fr-ms.fr-c1{background:#cfe9f5}.fr-readout .fr-ms.fr-c2{background:#9fd0ea}.fr-readout .fr-ms.fr-c3{background:#5fb8e2}.fr-readout .fr-ms.fr-c4{background:#009FDA}.fr-readout .fr-ms.fr-c5{background:#0072BB}.fr-readout .fr-ms.fr-c6{background:#005f99}
+.fr-readout .fr-sc-scale{display:flex;justify-content:space-between;gap:8px;font-size:11px;color:var(--fr-grey)}
+.fr-readout .fr-sc-of{font-size:11px;color:var(--fr-grey);white-space:nowrap}
+.fr-readout .fr-sc-def{font-size:11px;color:var(--fr-grey);font-style:italic;line-height:1.45;margin-top:auto;padding-top:7px;border-top:1px solid var(--fr-border)}
+.fr-readout .fr-sc-scale+.fr-sc-def,.fr-readout .fr-sc-value+.fr-sc-def{margin-top:auto}
+.fr-readout .fr-sc-count{background:var(--fr-navy);padding:14px 16px;display:flex;flex-direction:column;justify-content:center;gap:4px}
+.fr-readout .fr-sc-count-lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.8)}
+.fr-readout .fr-sc-count-num{font-size:28px;font-weight:700;color:#fff;line-height:1.1}
+.fr-readout .fr-sc-pills{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.fr-readout .fr-toc .sr-term,.fr-readout .fr-h1 .sr-term,.fr-readout summary .sr-term,.fr-readout .fr-sc-label .sr-term,.fr-readout .fr-rating-dim .sr-term{border-bottom:0;cursor:inherit}
+.fr-readout .fr-sc-count-def{font-size:11px;font-style:italic;line-height:1.45;color:rgba(255,255,255,.88);margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.25)}
+.fr-readout .fr-sc-lead{font-size:12px;line-height:1.5;color:var(--fr-grey,#555);font-style:italic;margin:4px 0 8px}
+.fr-readout .fr-note{font-size:11px;color:var(--fr-grey);margin:4px 0 20px}
+.fr-readout .fr-closing{margin:24px 0 4px;padding-top:10px;border-top:1px solid var(--fr-border)}
+.fr-readout .fr-toc{display:flex;flex-wrap:wrap;column-gap:20px;row-gap:6px;margin:14px 0 4px;font-size:12px}
+.fr-readout .fr-toc a{color:var(--fr-blue-text);text-decoration:none}.fr-readout .fr-toc a:hover{text-decoration:underline}
+.fr-readout .fr-h1,.fr-readout .fr-pc{scroll-margin-top:110px}
+.fr-readout .fr-pill{display:inline-block;padding:1px 7px;font-size:11px;font-weight:700;line-height:1.4;border:1px solid transparent;border-radius:3px;width:fit-content}
+.fr-readout .fr-pill-high{background:#FDE4E1;color:#B42318}.fr-readout .fr-pill-medium{background:#FEF0C7;color:#8A4B08}.fr-readout .fr-pill-low{background:#E3F4E8;color:#1E6B3A}
+.fr-readout .fr-pill-conf{background:transparent;border-color:currentColor}
+.fr-readout .fr-pill-sep{color:rgba(255,255,255,.7);font-size:11px;line-height:1.4;padding:1px 0}
+.fr-readout .fr-pill-conf-high{color:#1E6B3A}.fr-readout .fr-pill-conf-medium{color:#8A4B08}.fr-readout .fr-pill-conf-low{color:#4B5563}
+.fr-readout .fr-sc-count .fr-pill-conf{color:#fff}
+.fr-readout .fr-h1{display:flex;align-items:baseline;gap:14px;border-bottom:2px solid var(--fr-blue);margin:26px 0 14px;padding-bottom:8px}
+.fr-readout .fr-h1-num{font-size:12px;font-weight:700;color:var(--fr-blue-text);flex:none;white-space:nowrap}
+.fr-readout .fr-h1-txt{font-size:19px!important;font-weight:700!important;color:var(--fr-navy);margin:0!important;border:0!important;padding:0!important;text-transform:none!important;letter-spacing:0!important}
+.fr-readout .fr-h2c{font-size:12px!important;font-weight:700!important;text-transform:uppercase!important;letter-spacing:.08em!important;color:var(--fr-navy)!important;margin:18px 0 8px!important;border:0!important;padding:0!important}
+.fr-readout .fr-intro{font-size:13px;line-height:1.6;color:var(--fr-grey);font-style:italic;margin:0 0 14px}
+.fr-readout .fr-info{background:var(--fr-tint);border-left:4px solid var(--fr-blue);padding:12px 15px;margin:0 0 14px;font-size:14px;line-height:1.6;color:var(--fr-navy)}
+.fr-readout .fr-info .fr-advisory{margin:10px 0 0;font-size:13px;line-height:1.6;color:var(--fr-navy)}
+.fr-readout .fr-info-lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--fr-blue-text);margin-bottom:6px}
+.fr-readout .fr-pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);border-top:1px solid var(--fr-border);border-bottom:1px solid var(--fr-border)}
+.fr-readout .fr-col{min-width:0;padding:14px 16px}.fr-readout .fr-col+.fr-col{border-left:1px solid var(--fr-border)}.fr-readout .fr-col .fr-h2c{margin-top:0!important}
+.fr-readout .fr-ratings{border-top:1px solid var(--fr-border);border-bottom:1px solid var(--fr-border)}
+.fr-readout .fr-rating-row{display:flex;align-items:flex-start;padding:16px 0}.fr-readout .fr-rating-row+.fr-rating-row{border-top:1px solid var(--fr-border)}
+.fr-readout .fr-rating-meta{width:210px;flex:none;padding-right:20px;border-right:1px solid var(--fr-border)}
+.fr-readout .fr-rating-dim{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--fr-grey);margin-bottom:6px}
+.fr-readout .fr-rating-val{display:inline-block;background:#fff;border:1.5px solid #002244;color:#002244;font-size:13px;font-weight:700;padding:2px 10px;margin-bottom:8px}
+.fr-readout .fr-rating-def{font-size:11px;color:var(--fr-grey);font-style:italic;line-height:1.45}
+.fr-readout .fr-rating-why{flex:1;min-width:0;padding-left:20px}
+.fr-readout .fr-ops-note{margin-top:12px;padding:10px 14px;background:var(--fr-surface);border-left:3px solid var(--fr-border);font-size:13px;line-height:1.6;color:var(--fr-grey)}
+.fr-readout .fr-ops-lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--fr-grey);margin-bottom:6px}
+.fr-readout .fr-ops-note p{margin:0 0 6px}.fr-readout .fr-ops-note strong{color:var(--fr-navy)}
+.fr-readout .fr-themes-stack{border-top:1px solid var(--fr-border);border-bottom:1px solid var(--fr-border)}
+.fr-readout .fr-theme{padding:16px 0}.fr-readout .fr-theme+.fr-theme{border-top:1px solid var(--fr-border)}
+.fr-readout .fr-theme-q{font-size:15px!important;font-weight:700!important;color:var(--fr-navy)!important;margin:0 0 10px!important;padding:0 0 0 12px!important;border:0!important;border-left:3px solid var(--fr-blue)!important;text-transform:none!important}
+.fr-readout .fr-theme-links{font-size:12px;color:var(--fr-grey)}.fr-readout .fr-theme-links a{color:var(--fr-blue-text)}
+.fr-readout .fr-cards-tools{display:flex;justify-content:flex-end;margin:0 0 6px}
+.fr-readout .fr-expand,.fr-readout .fr-copy{background:none;border:0;padding:2px 0;font:inherit;font-size:12px;font-weight:700;color:var(--fr-blue-text);cursor:pointer}
+.fr-readout .fr-expand:hover,.fr-readout .fr-copy:hover{text-decoration:underline}
+.fr-readout .fr-cards{border-top:1px solid var(--fr-border)}
+.fr-readout .fr-pc{border:1px solid var(--fr-border);border-top:0}
+.fr-readout .fr-pc-hdr{display:grid;grid-template-columns:46px minmax(0,1fr) 44px;align-items:stretch;cursor:pointer;list-style:none;background:#fff}
+.fr-readout .fr-pc-hdr::-webkit-details-marker{display:none}
+.fr-readout .fr-pc-hdr:hover,.fr-readout .fr-pc[open] > .fr-pc-hdr{background:var(--fr-tint)}
+.fr-readout .fr-pc-hdr:focus-visible{outline:2px solid #002244;outline-offset:2px}
+.fr-readout .fr-pc-rank{display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:var(--fr-blue-text);border-right:3px solid var(--fr-blue);min-height:54px}
+.fr-readout .fr-pc-title{padding:10px 14px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.fr-readout .fr-pc-meta{font-size:12px;line-height:1.5;color:#5F6B7A}
+.fr-readout .fr-pc-title-txt{font-size:15px!important;font-weight:700!important;color:var(--fr-navy)!important;line-height:1.4;margin:0!important;padding:0!important;border:0!important;text-transform:none!important}
+.fr-readout .fr-pc-chev{display:flex;align-items:center;justify-content:center;color:var(--fr-navy)}
+.fr-readout .fr-pc-chev svg{transition:transform .15s}
+.fr-readout .fr-pc[open] .fr-pc-chev svg{transform:rotate(180deg)}
+.fr-readout .fr-pc-body{padding:16px 18px 18px 64px}
+.fr-readout .fr-lbl{font-size:11px!important;font-weight:700!important;text-transform:uppercase!important;letter-spacing:.08em!important;color:var(--fr-blue-text)!important;margin:14px 0 5px!important;border:0!important;padding:0!important}
+.fr-readout .fr-zone:first-child .fr-lbl{margin-top:0!important}
+.fr-readout .fr-actions{padding-left:18px;margin:3px 0 8px;font-size:14px;line-height:1.6}.fr-readout .fr-actions li{margin-bottom:4px}
+.fr-readout .fr-draft{background:#fff;border:1px solid #D9DDE3;border-left:3px solid #009FDA;padding:11px 14px;margin:12px 0 0 16px}
+.fr-readout .fr-draft-hd{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.fr-readout .fr-draft-lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--fr-blue-text)}
+.fr-readout .fr-draft-for{font-size:11px;color:var(--fr-grey);margin:2px 0 7px}
+.fr-readout .fr-draft p{font-size:13.5px;color:#111827;font-style:normal;line-height:1.6;margin:0}
+.fr-readout .fr-cycle{font-size:12px;color:var(--fr-grey);margin:12px 0 0;padding-top:10px;border-top:1px solid var(--fr-border);line-height:1.5}.fr-readout .fr-cycle strong{color:var(--fr-navy)}
+.fr-readout .fr-disc{margin-top:4px}
+.fr-readout .fr-disc-sum{display:flex;align-items:center;gap:9px;padding:11px 14px;cursor:pointer;border:1px solid var(--fr-border);background:var(--fr-surface);font-size:14px;font-weight:700;color:var(--fr-navy);list-style:none}
+.fr-readout .fr-disc-sum::-webkit-details-marker{display:none}.fr-readout .fr-disc-sum::before{content:none}
+.fr-readout .fr-disc-chev{margin-left:auto;display:flex;color:var(--fr-navy);transition:transform .15s}.fr-readout .fr-disc[open] .fr-disc-chev{transform:rotate(180deg)}
+.fr-readout a.fr-sc-count-link{text-decoration:none;color:inherit;cursor:pointer}.fr-readout a.fr-sc-count-link:hover{background:#0B2F57}.fr-readout a.fr-sc-count-link:focus-visible{outline:2px solid #009FDA;outline-offset:2px}
+.fr-readout .fr-disc-body{border:1px solid var(--fr-border);border-top:0;padding:16px}
+.fr-readout .fr-check{display:grid;grid-template-columns:30px minmax(0,1fr);gap:10px;padding:12px 0;border-bottom:1px solid var(--fr-border)}.fr-readout .fr-check:last-child{border-bottom:0}
+.fr-readout .fr-check-num{font-size:13px;font-weight:700;color:var(--fr-blue-text)}
+.fr-readout .fr-check-title{font-size:14px!important;font-weight:700!important;color:var(--fr-navy)!important;margin:0 0 4px!important;border:0!important;padding:0!important;text-transform:none!important}
+.fr-readout .fr-check-how{font-size:12px;color:var(--fr-grey)}.fr-readout .fr-check-how strong{color:var(--fr-blue-text)}
+.fr-readout .fr-guide{padding:10px 0;border-bottom:1px solid var(--fr-border)}.fr-readout .fr-guide:last-child{border-bottom:0}
+.fr-readout .fr-guide-title{font-weight:700;color:var(--fr-blue-text)}
+.fr-readout .fr-guide-rel{font-size:12px;line-height:1.5;color:#5F6B7A;margin:4px 0 0}
+.fr-readout .fr-see{font-size:12px;margin:0 0 9px}
+.fr-readout .fr-limits{background:var(--fr-surface);border:1px solid var(--fr-border);border-left:3px solid #009FDA;padding:12px 15px;color:var(--fr-grey);font-weight:400}
+.fr-readout .fr-limits .fr-p,.fr-readout .fr-limits li{font-weight:400}.fr-readout .fr-limits .fr-p strong{font-weight:700}
+.fr-readout .fr-verify{margin-top:10px;padding-top:10px;border-top:1px solid var(--fr-border)}
+.fr-readout .fr-verify-lbl{font-size:11px!important;font-weight:700!important;text-transform:uppercase!important;letter-spacing:.08em!important;color:var(--fr-navy)!important;margin:0 0 6px!important;border:0!important;padding:0!important}
+.fr-readout .fr-verify-list{margin:0;padding-left:18px;font-size:13px;line-height:1.6}.fr-readout .fr-verify-list li{margin-bottom:4px}
+.fr-readout .fr-research-intro{font-style:italic;color:var(--fr-grey)}
+.fr-readout .fr-research-list{margin:0;padding-left:18px}.fr-readout .fr-research-list li{margin-bottom:8px;line-height:1.5}
+.fr-readout .fr-research-ex{display:block;font-size:12px;color:var(--fr-grey)}
+@media(max-width:760px){.fr-readout .fr-pc-meta .fr-meta-dim{display:none}.fr-readout .fr-scorecard{grid-template-columns:minmax(0,1fr)}.fr-readout .fr-sc-tile{border-right:0;border-bottom:1px solid var(--fr-border)}.fr-readout .fr-pair{grid-template-columns:minmax(0,1fr)}.fr-readout .fr-col+.fr-col{border-left:0;border-top:1px solid var(--fr-border)}.fr-readout .fr-rating-row{flex-direction:column}.fr-readout .fr-rating-meta{width:auto;border-right:0;padding:0 0 10px}.fr-readout .fr-rating-why{padding-left:0}.fr-readout .fr-pc-body{padding:14px}.fr-readout .fr-draft{margin-left:0}}
+/* Phones: the session bar is static, so only the 56px top bar is sticky. */
+@media(max-width:640px){.fr-readout .fr-h1,.fr-readout .fr-pc{scroll-margin-top:72px}}
+/* Full width: 15px body text. */
+@media(min-width:1024px){.fr-readout,.fr-readout .fr-p,.fr-readout .fr-md,.fr-readout .fr-info,.fr-readout .fr-actions{font-size:15px;line-height:1.6}}
+@media print{.fr-readout *{-webkit-print-color-adjust:exact;print-color-adjust:exact}.fr-readout .fr-pc-hdr,.fr-readout .fr-zone,.fr-readout .fr-check,.fr-readout .fr-rating-row{break-inside:avoid}.fr-readout details.fr-pc::details-content,.fr-readout details.fr-disc::details-content{content-visibility:visible;display:block}.fr-readout details.fr-pc:not([open]) > :not(summary),.fr-readout details.fr-disc:not([open]) > :not(summary){display:block}.fr-readout .fr-toc,.fr-readout .fr-cards-tools,.fr-readout .fr-copy,.fr-readout .fr-expand{display:none!important}}
 </style>
 </head>
 <body>
@@ -2394,17 +2379,17 @@
     <span id="util-doc-type-badge" class="util-doc-type-badge">—</span>
   </div>
   <div class="session-bar-btns">
-    <button class="btn btn-ghost btn-sm" id="prompt-bar-btn" onclick="openPromptModal()" title="View and edit analysis prompts">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
-      View / Edit Prompts
+    <button class="btn btn-ghost btn-sm" id="prompt-bar-btn" onclick="openPromptModal()" title="View and edit analysis prompts" aria-label="View and edit analysis prompts">
+      <svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+      <span class="sb-lbl">View / Edit Prompts</span>
     </button>
-    <button class="btn btn-ghost btn-sm" onclick="saveSession()" id="save-session-btn" style="display:none">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-      Save session
+    <button class="btn btn-ghost btn-sm" onclick="saveSession()" id="save-session-btn" style="display:none" title="Save session" aria-label="Save session">
+      <svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <span class="sb-lbl">Save session</span>
     </button>
-    <button class="btn btn-ghost btn-sm" onclick="document.getElementById('load-session-inp').click()">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      Load session
+    <button class="btn btn-ghost btn-sm" onclick="document.getElementById('load-session-inp').click()" title="Load session" aria-label="Load session">
+      <svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <span class="sb-lbl">Load session</span>
     </button>
     <input type="file" id="load-session-inp" accept=".json" style="display:none" onchange="loadSession(this)">
   </div>
@@ -2698,6 +2683,7 @@
 </footer>
 
 <script src="/static/fcv_storage.js"></script>
+<script src="/static/fcv_readout.js"></script>
 <script>
   // ── State ──────────────────────────────────────────────────────────────────
   let pF=[],pkF=[],cF=[],hist=[],curS=0,busy=false;
@@ -3296,8 +3282,7 @@
       instrumentType=savedLensState.instrumentType||instrumentType;
       countryScope=savedLensState.countryScope||countryScope;
       if(supportsClimateVerifiedStage3View())stageThreePriorities=Array.isArray(climateVerifiedReader&&climateVerifiedReader.priorities)?climateVerifiedReader.priorities:[];
-      stage3View=supportsAnyStage3Summary()?'summary':'detailed';
-      // Restore any usable Detailed result; Summary is an optional enhancement.
+            // Restore any usable Detailed result; Summary is an optional enhancement.
       if(hasSavedStage3Output&&isRestorableExpressStage3Output(outputs[3])){
         stageOutputs=outputs;
         stageHists=JSON.parse(localStorage.getItem('fcv_express_stageHists')||'{}');
@@ -3308,6 +3293,7 @@
         document.getElementById('landing-hero').style.display='none';
         document.getElementById('stepper-wrap').style.display='';
         setStepper(4,'done');renderOut(3,outputs[3],false);if(stageThreePriorities.length)initStage3UI();enableClickableStepper();
+        refreshRestoredClimateReader();
         return;
       }
       if(hasSavedStage3Output){localStorage.removeItem('fcv_express_stageOutputs');localStorage.removeItem('fcv_express_stageHists');localStorage.removeItem('fcv_express_lensState');return;}
@@ -3532,8 +3518,7 @@
         regionalWatch = Array.isArray(state.regionalWatch) ? state.regionalWatch : (Array.isArray(state.regional_watch) ? state.regional_watch : []);
         horizonConsiderations = typeof state.horizonConsiderations === 'string' ? state.horizonConsiderations : (typeof state.horizon_considerations === 'string' ? state.horizon_considerations : '');
         if(supportsClimateVerifiedStage3View())stageThreePriorities=Array.isArray(climateVerifiedReader&&climateVerifiedReader.priorities)?climateVerifiedReader.priorities:[];
-        stage3View=supportsAnyStage3Summary()?'summary':'detailed';
-        const currentVersions=Object.fromEntries(lensCatalogue.map(l=>[l.id,l.version]));
+                const currentVersions=Object.fromEntries(lensCatalogue.map(l=>[l.id,l.version]));
         const staleLens=state.version>=3&&state.currentStage<3&&activeLenses.some(id=>!state.lensVersions||!state.lensVersions[id]||currentVersions[id]!==state.lensVersions[id]);
         if(staleLens){hist=[];curS=0;stageOutputs={};stageHists={};activeLenses=[];resolvedLensVersions={};lensDiagnostic={};lensContextSources=[];climateResearch={};climateGrounding={};lensSelectionLocked=false;renderLensSelector();document.getElementById('upload-panel').style.display='block';document.getElementById('analysis-panel').style.display='none';alert('A selected sector lens is unavailable or has been updated. Re-upload the project document and rerun from Stage 1 to avoid mixing module versions.');return;}
         lensSelectionLocked=curS>0;renderLensSelector();
@@ -3547,10 +3532,12 @@
         const _ss2 = document.getElementById('session-status');
         _ss2.textContent = 'Resumed: ' + file.name + ' (saved ' + savedAt + ') — Stage ' + curS + ' complete';
         _ss2.style.display = 'inline';
+        if(typeof setTabStatus==='function')setTabStatus(stageOutputs&&stageOutputs[3]?'loaded':'idle');
         if(isRestorableExpressStage3Output(stageOutputs[3])){
           enableClickableStepper();
           navigateToStage(3);
           input.value='';
+          refreshRestoredClimateReader();
           return;
         }
         setStepper(curS+1, 'active');
@@ -3947,7 +3934,7 @@
     document.getElementById('analysis-panel').style.display='block';
     document.getElementById('stepper-wrap').style.display='none';
     document.getElementById('main').style.display='none';
-    showExpressProgress();updateExpressStage(1,'active',null);
+    showExpressProgress();updateExpressStage(1,'active',null);setTabStatus('running',1);
 
     // Read files for upload payload
     const readF=(file,isCtx,role)=>new Promise((res,rej)=>{
@@ -4045,7 +4032,7 @@
           }
           if(p.stage_start){
             currentStage=p.stage_start;
-            updateExpressStage(currentStage,'active',null);
+            updateExpressStage(currentStage,'active',null);setTabStatus('running',currentStage);
             // Re-arm the abort timer at the start of every stage so each stage gets its
             // own budget, regardless of how long earlier stages took.
             armExpressTimeout(currentStage);
@@ -4145,6 +4132,7 @@
             }
 
             else if(sn===3){
+              resetStage3State();
               stageOutputs[3]=p.result;
               hist=p.history||hist;stageHists[3]=hist.slice();
               if(p.parse_error)stage3ParseError=p.parse_error_message||'Stage 3 output could not be parsed. The Recommendations Note is incomplete.';
@@ -4153,13 +4141,11 @@
               stageSensitivitySummary=p.sensitivity_summary||'';
               stageResponsivenessSummary=p.responsiveness_summary||'';
               stageConciseReadout=p.concise_readout||null;
-              openSummaryPriority=0;
-              if(p.fcv_rating)fcvRating=p.fcv_rating;
+                            if(p.fcv_rating)fcvRating=p.fcv_rating;
               if(p.fcv_responsiveness_rating)fcvResponsivenessRating=p.fcv_responsiveness_rating;
               if(p.priorities)stageThreePriorities=p.priorities;
               if(supportsClimateVerifiedStage3View())stageThreePriorities=Array.isArray(climateVerifiedReader&&climateVerifiedReader.priorities)?climateVerifiedReader.priorities:[];
-              stage3View=supportsAnyStage3Summary()?'summary':'detailed';
-              if(p.climate_unlinked!==undefined)climatePriorityUnlinked=p.climate_unlinked;
+                            if(p.climate_unlinked!==undefined)climatePriorityUnlinked=p.climate_unlinked;
               if(p.climate_total!==undefined)climatePriorityTotal=p.climate_total;
               if(p.wider_fcv_context!==undefined)stageWiderFcvContext=p.wider_fcv_context||null;
               midCycleWatch=Array.isArray(p.mid_cycle_watch)?p.mid_cycle_watch:[];
@@ -4195,6 +4181,7 @@
             curS=3;setStepper(3,'done');
             updateSessionBar();
             renderOut(3,stageOutputs[3],false);
+            setTabStatus('complete',3);
             if(supportsClimateVerifiedStage3View()&&stageThreePriorities&&stageThreePriorities.length)initStage3UI();
             else if(!climateVerifiedAssessment&&stageThreePriorities&&stageThreePriorities.length)initStage3UI();
             // stage2_under_hood already written by the stage_done handler for stage 2 — no redundant write needed here
@@ -4287,10 +4274,42 @@
     sbsStartTime=null;
   }
 
+  // Browser tab title mirrors run status so users can watch it from other tabs.
+  const TAB_TITLE_BASE='FCV Screener';
+  const TAB_STAGE_VERBS={1:'Reading',2:'Assessing',3:'Drafting'};
+  let tabTitleDot=false;
+  // Inline SVG favicons (no external assets); 'done' and 'loaded' reuse the tick.
+  const TAB_ICONS={
+    idle:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" fill="#002244"/><text x="16" y="23" font-family="Arial,sans-serif" font-size="20" font-weight="700" fill="#fff" text-anchor="middle">F</text></svg>',
+    running:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="15" fill="#002244"/><path d="M16 6a10 10 0 0 1 10 10" fill="none" stroke="#009FDA" stroke-width="4" stroke-linecap="round"/></svg>',
+    complete:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="15" fill="#002244"/><path d="M9 16.5l5 5 9-10" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    error:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="15" fill="#F2A900"/><rect x="14" y="7" width="4" height="12" rx="2" fill="#002244"/><circle cx="16" cy="24" r="2.5" fill="#002244"/></svg>'
+  };
+  function setTabIcon(state){
+    const key=state==='running'?'running':(state==='complete'||state==='done'||state==='loaded')?'complete':state==='error'?'error':'idle';
+    const link=document.getElementById('tab-icon');
+    if(link)link.setAttribute('href','data:image/svg+xml,'+encodeURIComponent(TAB_ICONS[key]));
+    return key;
+  }
+  function setTabStatus(state,stage){
+    let label='';
+    if(state==='running')label='[Stage '+stage+' of 3 \u00B7 '+(TAB_STAGE_VERBS[stage]||'Analysing')+'] ';
+    else if(state==='done')label='[Stage '+stage+' of 3 \u00B7 Done] ';
+    else if(state==='complete'||state==='loaded')label='[Complete] ';
+    else if(state==='error')label='[Needs attention] ';
+    tabTitleDot=(state==='complete'||state==='done'||state==='error')&&!!document.hidden;
+    document.title=(tabTitleDot?'\u25CF ':'')+label+TAB_TITLE_BASE;
+    setTabIcon(state);
+  }
+  document.addEventListener('visibilitychange',()=>{
+    if(!document.hidden&&tabTitleDot){tabTitleDot=false;document.title=document.title.replace(/^\u25CF /,'');}
+  });
+
   async function runStage(stage,followOn=null){
     if(busy)return;
     if(stage===1&&!followOn){researchBrief='';researchCountry='';}
     busy=true;curS=stage;
+    setTabStatus('running',stage);
     setStepper(stage,'active');clearUI();
 
     document.getElementById('stage-disp').innerHTML=`
@@ -4441,19 +4460,21 @@
                 if(p.climate_integration!==undefined)climateIntegration=p.climate_integration;
               }
               if(stage===3){
+                resetStage3State();
                 stageGapTable=p.gap_table||null;
                 stageRiskExposure=p.risk_exposure||null;
                 stageSensitivitySummary=p.sensitivity_summary||'';
                 stageResponsivenessSummary=p.responsiveness_summary||'';
                 stageConciseReadout=p.concise_readout||null;
-                openSummaryPriority=0;
-                midCycleWatch=Array.isArray(p.mid_cycle_watch)?p.mid_cycle_watch:[];dpfWatch=Array.isArray(p.dpf_watch)?p.dpf_watch:[];p4rWatch=Array.isArray(p.p4r_watch)?p.p4r_watch:[];regionalWatch=Array.isArray(p.regional_watch)?p.regional_watch:[];
+                                midCycleWatch=Array.isArray(p.mid_cycle_watch)?p.mid_cycle_watch:[];dpfWatch=Array.isArray(p.dpf_watch)?p.dpf_watch:[];p4rWatch=Array.isArray(p.p4r_watch)?p.p4r_watch:[];regionalWatch=Array.isArray(p.regional_watch)?p.regional_watch:[];
                 horizonConsiderations=typeof p.horizon_considerations==='string'?p.horizon_considerations:'';
                 if(p.fcv_rating)fcvRating=p.fcv_rating;
                 if(p.fcv_responsiveness_rating)fcvResponsivenessRating=p.fcv_responsiveness_rating;
                 if(p.priorities)stageThreePriorities=p.priorities;
                 if(supportsClimateVerifiedStage3View())stageThreePriorities=Array.isArray(climateVerifiedReader&&climateVerifiedReader.priorities)?climateVerifiedReader.priorities:[];
-                stage3View=supportsAnyStage3Summary()?'summary':'detailed';
+                if(p.climate_unlinked!==undefined)climatePriorityUnlinked=p.climate_unlinked;
+                if(p.climate_total!==undefined)climatePriorityTotal=p.climate_total;
+                if(p.wider_fcv_context!==undefined)stageWiderFcvContext=p.wider_fcv_context||null;
                 if(p.applied_snippets)stageAppliedSnippets=p.applied_snippets;
               }
               // Write timestamps BEFORE renderOut so the consistency check inside renderOut reads the current run's value
@@ -4479,6 +4500,7 @@
                 if(Array.isArray(p.doc_checks))docChecks=p.doc_checks;
               }
               renderOut(stage,renderResult,followOn);setStepper(stage,'done');
+              setTabStatus(stage===3?(p.parse_error?'error':'complete'):'done',stage);
               enableClickableStepper();
               // Research brief panel (step-by-step only — express skips rendering)
               if(stage===1&&researchBrief) injectResearchBriefPanel(researchBrief,researchCountry);
@@ -4506,9 +4528,6 @@
               // Priority cards + sidebar for Stage 3 (Recommendations)
               if(stage===3 && p.priorities && p.priorities.length){
                 stageThreePriorities=p.priorities;
-                if(p.climate_unlinked!==undefined)climatePriorityUnlinked=p.climate_unlinked;
-                if(p.climate_total!==undefined)climatePriorityTotal=p.climate_total;
-                if(p.wider_fcv_context!==undefined)stageWiderFcvContext=p.wider_fcv_context||null;
                 // Clear Go Deeper caches so stale results don't reappear for new Stage 3 run
                 currentDeeperTab = {};
                 for(var i=0;i<10;i++){
@@ -4810,6 +4829,7 @@
   }
 
   // ── Glossary term annotation ──────────────────────────────────────────────
+  const GLOSSARY_SKIP_SELECTOR='summary, h1, h2, h3, h4, .fr-sc-label, .fr-lbl, .fr-rating-dim, .fr-pc-meta, .fr-h1, .fr-h1-txt, .fr-toc a';
   function annotateGlossaryTerms(containerEl){
     if(!containerEl || !Object.keys(fcvGlossary).length) return;
     // Build a map of display terms to definitions
@@ -4831,6 +4851,7 @@
         if(!parent) return NodeFilter.FILTER_REJECT;
         if(parent.classList && parent.classList.contains('glossary-term')) return NodeFilter.FILTER_REJECT;
         if(parent.closest('.glossary-term, code, pre, .glossary-tooltip')) return NodeFilter.FILTER_REJECT;
+        if(parent.closest(GLOSSARY_SKIP_SELECTOR)) return NodeFilter.FILTER_REJECT;
         return NodeFilter.FILTER_ACCEPT;
       }
     });
@@ -4851,6 +4872,7 @@
         const after = text.substring(idx + term.length);
         const span = document.createElement('span');
         span.className = 'glossary-term';
+        span.tabIndex = 0;
         span.textContent = match;
         const tooltip = document.createElement('span');
         tooltip.className = 'glossary-tooltip';
@@ -5112,7 +5134,7 @@
     const scope=root&&typeof root.querySelectorAll==='function'?root:null;
     const eventTarget=scope&&scope.defaultView?scope.defaultView:(typeof window!=='undefined'?window:null);
     if(!scope||!eventTarget||typeof eventTarget.addEventListener!=='function')return null;
-    const selector='details.climate-priority-card, details.climate-priority-detail, details.climate-fold, details.climate-guidance-disclosure, details.climate-summary-watch-disclosure, details.climate-summary-guidance-disclosure, details.stage3-rating-explanation';
+    const selector='details.climate-priority-card, details.climate-priority-detail, details.climate-fold, details.climate-guidance-disclosure, details.climate-summary-watch-disclosure, details.climate-summary-guidance-disclosure, details.stage3-rating-explanation, details.fr-pc, details.fr-disc';
     let priorStates=null;
     const beforePrint=()=>{
       if(priorStates!==null)return;
@@ -5135,135 +5157,24 @@
 
   installClimatePrintDisclosureHandler(document);
 
-  function renderClimateVerifiedAssessment(reader,ratingsInSidebar=false){
+  function renderClimateVerifiedAssessment(reader){
     const r=reader&&typeof reader==='object'?reader:{};
-    const analysisHtml=r.analysis_status==='partial'&&r.analysis_message?`<div class="finalized-pad-notice"><div class="fpn-body"><strong>Assessment evidence is incomplete.</strong><p>${esc(r.analysis_message)}</p></div></div>`:'';
-    const draftingRoute=climateDraftingRouteGate(r);
-    const relevantGuidanceHtml=renderClimateRelevantGuidance(r);
-    const runtimeMode=String(r.runtime_mode||'quality').toLowerCase();
-    const smokeHtml=runtimeMode==='smoke'?`<div class="finalized-pad-notice"><div class="fpn-body"><strong>Smoke test: validates workflow completion only; not a quality benchmark.</strong></div></div>`:'';
-    const previewHtml=String(r.evidence_status||'').toLowerCase()==='preview; not approved'?`<div class="finalized-pad-notice"><div class="fpn-body"><strong>Candidate country evidence: preview; not approved.</strong></div></div>`:'';
-    const operationContextHtml=(()=>{
-      const context=r.operation_context&&typeof r.operation_context==='object'?r.operation_context:null;
-      if(!context)return '';
-      const warning=!climateDraftingRouteGate(r).confirmed?'<p class="climate-route-warning">Suggested document wording is not shown because the document type or financing route could not be confirmed reliably.</p>':'';
-      return warning?'<section class="climate-operation-context">'+warning+'</section>':'';
-    })();
-    const executive=esc(r.executive_readout||'The verified assessment did not return an executive readout.');
-    const boldFirstSentence=p=>{const m=p.match(/^(.*?[.!?])(\s+)([\s\S]*)$/);return m?`<strong>${esc(m[1])}</strong>${esc(m[2]+m[3])}`:`<strong>${esc(p)}</strong>`;};
-    const execHtml=(String(r.executive_readout||'').split(/\n\s*\n+/).map(p=>p.trim()).filter(Boolean).map(p=>`<p>${boldFirstSentence(p)}</p>`).join(''))||`<p>${executive}</p>`;
-    let climateSectionNumber=0;
-    const nextClimateSectionHeading=title=>{
-      climateSectionNumber+=1;
-      const number=String(climateSectionNumber).padStart(2,'0');
-      return `<header class="climate-section-heading"><span class="climate-section-number">${number}</span><h2>${esc(title)}</h2></header>`;
-    };
-    const climateReportSection=(title,className,body)=>{
-      const descriptions={
-        'climate-points-to-check':'Smaller checks to resolve alongside the main operational priorities.',
-        'climate-guidance':'Selected WBG resources to help the team take the findings forward.',
-        'climate-methodology-section':'Understand the method, source coverage and limits of this assessment.'
-      };
-      const description=descriptions[className];
-      return `<section class="climate-report-section ${className}${description?' climate-reference-panel':''}">${nextClimateSectionHeading(title)}${description?`<p class="climate-section-description">${description}</p>`:''}${body}</section>`;
-    };
-    const csr=r.climate_sensitivity_rating&&typeof r.climate_sensitivity_rating==='object'?r.climate_sensitivity_rating:null;
-    const ratingHtml=`<div class="climate-paired-ratings" style="display:flex;flex-wrap:wrap;gap:16px">${climateVerifiedRatingCards(r)}</div><p class="stage3-rating-description">Advisory judgments, not official WBG ratings.</p>`;
-    const supportingGaps=(Array.isArray(r.summary_gaps)?r.summary_gaps:[]).map(item=>String(item&&item.text||'').trim()).filter(text=>text&&text.split(/\s+/).length<=75).slice(0,5);
-    const gapScopeHtml=/\b(?:peace|social|dividends?)\b/i.test(supportingGaps.join(' '))?`<p>Optional wider dividends depend on the project's scope; they are not required in every project.</p>`:'';
-    const supportingGapsHtml=supportingGaps.length?`<section class="climate-supporting-gaps"><h3 class="climate-subheading">Supporting gap findings</h3><ul>${supportingGaps.map(text=>`<li>${esc(text)}</li>`).join('')}</ul>${gapScopeHtml}</section>`:'';
-    const draftingBlock=(label,block)=>{
-      if(!block||typeof block!=='object')return '';
-      const destination=[block.target_document,block.target_section].filter(Boolean).map(esc).join(' - ');
-      const destinationHtml=destination?`<p class="climate-drafting-destination">For: ${destination}</p>`:'';
-      const text=block.text?`<div class="climate-drafting-text">${esc(block.text)}</div>`:'';
-      if(!destinationHtml&&!text)return '';
-      return `<section class="climate-drafting-block"><h4>${esc(label)}</h4>${destinationHtml}${text}</section>`;
-    };
-    const recommendationsIncomplete=r.recommendation_status==='incomplete';
-    const noPriorityMessage=recommendationsIncomplete
-      ?(r.recommendation_message||'The recommendation stage could not be completed. Do not treat this Recommendations Note as complete; rerun the analysis or contact support.')
-      :'No operational priorities were identified in this assessment. Review the assessment findings and points to check below.';
-    const priorities=Array.isArray(r.priorities)?r.priorities.slice().sort((a,b)=>(Number(a.rank)||999)-(Number(b.rank)||999)).slice(0,5):[];
-    const priorityNoun=priorities.length===1?'priority':'priorities';
-    const prioritySummary=r.priority_summary&&typeof r.priority_summary==='object'?r.priority_summary:{};
-    const prioritySummaryHtml=priorities.length?`<div class="climate-priority-summary"><p>${esc(prioritySummary.statement||`Drawing on the assessment findings, the analysis identifies ${priorities.length} main operational ${priorityNoun} for strengthening climate resilience, conflict sensitivity and implementation readiness in this project. These are followed by secondary points to check before the applicable review and issues to keep under review as preparation advances.`)}</p>${renderStage3AdvisoryTransition('climate')}</div>`:'';
-    const priorityHtml=priorities.length?priorities.map((priority,index)=>{
-      const currentDraft=draftingRoute.confirmed&&priority.current_document_drafting&&typeof priority.current_document_drafting==='object'?priority.current_document_drafting:null;
-      const operationalDraft=draftingRoute.confirmed&&priority.operational_instrument_drafting&&typeof priority.operational_instrument_drafting==='object'?priority.operational_instrument_drafting:null;
-      const draftHtml=draftingBlock('Suggested Text',currentDraft)+draftingBlock('Suggested Text for an operational instrument',operationalDraft);
-      const paragraphs=String(priority.narrative||'').split(/\n\s*\n+/).map(p=>p.trim()).filter(Boolean);
-      const why=paragraphs.length?paragraphs.slice(0,1):[priority.limitation||''];
-      const action=paragraphs.length>1?paragraphs.slice(1):[priority.minimum_action||priority.decision||''];
-      const zone=(title,items,style)=>items.filter(Boolean).length?`<section class="pc-zone ${style}"><h4 class="pc-zone-title">${title}</h4>${items.filter(Boolean).map(p=>`<p class="pc-narr">${esc(p)}</p>`).join('')}</section>`:'';
-      const bodyHtml=zone('Why this matters',why,'zone-why')+zone('What the team could do',action,'zone-act');
-      const normalize=text=>String(text||'').trim().replace(/\s+/g,' ').toLowerCase();
-      const visibleParagraphs=[...why,...action].map(normalize);
-      const visible=visibleParagraphs.join(' ');
-      const seen=new Set();
-      const detailProse=['limitation','caution'].map(key=>String(priority[key]||'').trim()).filter(text=>{
-        const normalized=normalize(text);
-        if(!text||visibleParagraphs.includes(normalized)||seen.has(normalized))return false;
-        seen.add(normalized);return true;
-      }).map(text=>`<p class="climate-priority-detail-prose">${esc(text)}</p>`).join('');
-      const further=[priority.enhanced_action,priority.enhanced_activation].map(text=>String(text||'').trim());
-      const followup=further[0]&&further.some(text=>text&&!visible.includes(normalize(text)))?`<p class="climate-priority-detail-followup"><strong>Optional further work:</strong> ${esc(further.filter(Boolean).join(' '))}</p>`:'';
-      const notes=[['Suggested lead','responsible_function'],['Confidence','confidence']].filter(([,key])=>priority[key]).map(([label,key])=>esc(`${label}: ${priority[key]}`)).join(' | ');
-      const noteHtml=notes?`<p class="climate-priority-detail-note"><small>${notes}</small></p>`:'';
-      const cycle=priority.project_cycle||{};
-      const known=normalize([...why,...action,priority.minimum_action,priority.completion_evidence].filter(Boolean).join(' '));
-      const timing=['primary','secondary'].filter(prefix=>cycle[`${prefix}_label`]&&cycle[`${prefix}_text`]&&!known.includes(normalize(cycle[`${prefix}_text`]))).map(prefix=>`<p><strong>${esc(cycle[`${prefix}_label`])}:</strong> ${esc(cycle[`${prefix}_text`])}</p>`).join('');
-      const timingHtml=timing?`<div class="climate-priority-detail-timing">${timing}</div>`:'';
-      const detailHtml=`<details class="climate-priority-detail"><summary>Practical considerations and Suggested Text</summary>${detailProse}${followup}${noteHtml}${timingHtml}${draftHtml}</details>`;
-      return `<details id="climate-priority-${Number(priority.rank)||index+1}" class="climate-priority-card" open><summary><h3 class="pc-title"><span class="pc-rank">${esc(priority.rank||index+1)}</span><span class="pc-title-text">${esc(priority.title||'Untitled action')}</span></h3></summary><div class="climate-priority-body">${bodyHtml}${detailHtml}</div></details>`;
-    }).join(''):`<p>${esc(noPriorityMessage)}</p>`;
-    const flags=Array.isArray(r.review_readiness_flags)?r.review_readiness_flags.slice(0,4):[];
-    const minorPoints=Array.isArray(r.minor_climate_points)?r.minor_climate_points.slice(0,3):[];
-    const flagsIntro='<p class="climate-check-intro">These are smaller things for the team to confirm or consider at the applicable review. They are not the main recommendations above, and none is a reason to stop the project - think of them as a checklist.</p>';
-    const numberedCheckItem=(title,body,check,index)=>`<section class="climate-check-item climate-numbered-item"><span class="climate-item-number">${String(index+1).padStart(2,'0')}</span><div class="climate-numbered-content"><h4>${esc(title)}</h4><p>${esc(body)}</p><p class="climate-check-action"><strong>How to address:</strong> ${esc(check)}</p></div></section>`;
-    const minorPointsHtml=minorPoints.length?`<section class="climate-check-group"><h3>Smaller climate and fragility points to consider</h3><p class="climate-check-intro">These are smaller, climate- and fragility-specific points that were not large enough to become a recommendation above, but are still worth a look.</p>${minorPoints.map((point,index)=>numberedCheckItem(point.point||'',point.why||'',point.how_to_check||'',index)).join('')}</section>`:'';
-    const docFlagsHtml=flags.length?`<section class="climate-check-group"><h3>Document points to confirm</h3>${flags.map((flag,index)=>numberedCheckItem(flag.flag||'Point to verify',flag.why_it_matters||'',flag.suggested_verification||'',index)).join('')}</section>`:'';
-    const pointsToCheckBodyHtml=(flags.length||minorPoints.length)?`<details class="climate-fold"><summary>Checks for the project team</summary><div class="climate-purpose-band climate-decision-preparation"><span class="climate-purpose-icon" aria-hidden="true">!</span><div><strong>Climate decision preparation</strong><p>Points to check at the next applicable review.</p></div></div>${flagsIntro}${minorPointsHtml}${docFlagsHtml}</details>`:'';
-    let limitationsHtml='';
-    const trail=r.evidence_trail&&typeof r.evidence_trail==='object'?r.evidence_trail:null;
-    if(trail){
-      const raw=trail.limitations;
-      const limitations=Array.isArray(raw)?raw.filter(Boolean).join(' '):String(raw||'').trim();
-      limitationsHtml=`<p>${esc(limitations||'This automated screening is advisory and is limited by the coverage and detail of the uploaded documents. The team should confirm material findings through project and country expertise.')}</p>`;
-    }
-    const overviewParagraphs=Array.isArray(r.summary_overview)&&r.summary_overview.length?r.summary_overview:[r.overview_summary||csr&&csr.overview_summary||''];
-    const overviewHtml=overviewParagraphs.filter(Boolean).map(text=>`<p>${esc(text)}</p>`).join('');
-    const overviewBodyHtml=`${ratingsInSidebar?'':ratingHtml}${overviewHtml}${r.reader_contract==='final-reader-v1'?'':`<h3 class="climate-subheading">Operational context</h3><div class="climate-exec">${execHtml}</div>`}`;
-    const themes=Array.isArray(r.assessment_themes)?r.assessment_themes:[];
-    const themesHtml=themes.map(theme=>{
-      const question=theme.question||{
-        'Climate risks, design and delivery':'Does the project address interacting climate and FCV risks in design and delivery?',
-        'Wider peace and social dividends':'Could the project generate wider peace and social benefits, and how could these be strengthened?',
-        'Access, inclusion and potential harm':'Will people benefit fairly, and could delivery create exclusion or harm?'
-      }[theme.title]||theme.title||'';
-      const findings=Array.isArray(theme.findings)?theme.findings:[];
-      const paragraphs=Array.isArray(theme.paragraphs)&&theme.paragraphs.length?theme.paragraphs:[findings.map(f=>f.text||'').join(' ')];
-      const ranks=Array.isArray(theme.priority_ranks)?theme.priority_ranks:[...new Set(findings.flatMap(f=>f.priority_ranks||[]))];
-      const links=ranks.filter(Number.isInteger).map(rank=>`<a href="#climate-priority-${rank}">Priority ${rank}</a>`).join(' · ');
-      return `<section class="climate-assessment-answer"><h3>${esc(question)}</h3>${paragraphs.filter(Boolean).map(p=>`<p>${esc(p)}</p>`).join('')}${links?`<p class="climate-assessment-links">Related operational priorities: ${links}</p>`:''}</section>`;
-    }).join('');
-    const prioritiesBodyHtml=`${prioritySummaryHtml}${priorityHtml}`;
-    const numberedSections=
-      climateReportSection('Overview','climate-overview',overviewBodyHtml)+
-      ((themesHtml||supportingGapsHtml)?climateReportSection('Assessment findings','climate-assessment-findings',themesHtml||supportingGapsHtml):'')+
-      climateReportSection('Ranked operational priorities','climate-priorities',prioritiesBodyHtml)+
-      (pointsToCheckBodyHtml?climateReportSection('Points to check before the applicable review','climate-points-to-check',pointsToCheckBodyHtml):'')+
-      (relevantGuidanceHtml?climateReportSection('Relevant WBG guidance for this project','climate-guidance',relevantGuidanceHtml):'')+
-      (limitationsHtml?climateReportSection('Limitations','climate-limitations-section',limitationsHtml):'');
-    const advisoryHtml=r.advisory_notice?`<p class="climate-advisory">${esc(r.advisory_notice)}</p>`:'';
-    const needsReview=recommendationsIncomplete||r.recommendation_status==='partial';
-    const incompleteHtml=needsReview&&!ratingsInSidebar?`<p><strong>${recommendationsIncomplete?'Recommendations stage incomplete':'Recommendations need review'}:</strong> ${esc(r.recommendation_message||'Do not rely on this note as a completed assessment.')}</p>`:'';
-    return `<article class="climate-verified-assessment">${analysisHtml}${incompleteHtml}${smokeHtml}${previewHtml}${operationContextHtml}${numberedSections}${advisoryHtml}</article>`;
+    const route=climateDraftingRouteGate(r);
+    const notices=[];
+    const _evidencePartial=r.analysis_status==='partial'&&!!r.analysis_message;
+    const _recsPartial=r.recommendation_status==='partial';
+    if(_evidencePartial&&_recsPartial)notices.push('<div class="finalized-pad-notice"><div class="fpn-body"><strong>This run is partial.</strong><p>Some findings and proposed actions were withheld because their evidence could not be validated. A shorter list does not mean fewer risks or gaps. Read the Limitations before sharing.</p></div></div>');
+    else if(_evidencePartial)notices.push(`<div class="finalized-pad-notice"><div class="fpn-body"><strong>Assessment evidence is incomplete.</strong><p>${esc(r.analysis_message)}</p></div></div>`);
+    if(r.recommendation_status==='incomplete'||(_recsPartial&&!_evidencePartial))notices.push(`<div class="finalized-pad-notice"><div class="fpn-body"><strong>${r.recommendation_status==='incomplete'?'Recommendations stage incomplete':'Recommendations need review'}:</strong> ${esc(r.recommendation_message||'Do not rely on this note as a completed assessment.')}</div></div>`);
+    if(String(r.runtime_mode||'').toLowerCase()==='smoke')notices.push('<div class="finalized-pad-notice"><div class="fpn-body"><strong>Smoke test: validates workflow completion only; not a quality benchmark.</strong></div></div>');
+    if(String(r.evidence_status||'').toLowerCase()==='preview; not approved')notices.push('<div class="finalized-pad-notice"><div class="fpn-body"><strong>Candidate country evidence: preview; not approved.</strong></div></div>');
+    if(!route.confirmed)notices.push('<p class="climate-route-warning">Suggested document wording is not shown because the document type or financing route could not be confirmed reliably.</p>');
+    const hasPriorities=Array.isArray(r.priorities)&&r.priorities.length>0;
+    return frApi().renderClimate(r,{noticesHtml:notices.join(''),draftingAllowed:route.confirmed,advisoryText:hasPriorities?stage3AdvisoryText('climate'):'',fileNames:readoutFileNames(),researchBrief});
   }
 
-  // Blunt, upfront caveat shown above the Stage 3 Summary and Detailed readouts.
-  // Sits in the #stage-disp template outside #out-txt, so it persists when the user
-  // toggles between Summary and Detailed (setStage3View only rewrites #out-txt).
+  // Blunt, upfront caveat shown above the Stage 3 readout. Sits in the #stage-disp
+  // template outside #out-txt.
   function screenerCaveatHtml(){
     return '<div class="screener-caveat" role="note" aria-label="Important caveat about this output">'
       +'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
@@ -5278,13 +5189,51 @@
     if(scope==='single'||scope==='multi')countryScope=scope;
   }
 
+  // Shared by the on-screen Stage 3 readout and the Share .html export so both carry
+  // the same notices, tail sections and S/R term wrapping.
+  function stripStage3DoNoHarmHeader(text){
+    return String(text||'').replace(/^\s*---\s*\n[\s\S]*?Generated by WBG FCV Sensitivity Project Screener[\s\S]*?---\s*\n+/, '');
+  }
+
+  function stage3ClimateLensState(){
+    const active=isClimateLensActive();
+    const entry=climateLensEntry(lensDiagnostic);
+    const error=active&&(!lensDiagnostic||lensDiagnostic.error||!entry);
+    return {active,entry,error,valid:active&&!error,notice:active?renderClimateModuleNotice(entry,error,climateGrounding):''};
+  }
+
+  function stage3NoticesHtml(climate){
+    const state=climate||stage3ClimateLensState();
+    // Dual-regime: for new-model operations the appraisal document is a Project/Program Paper,
+    // not a legacy PAD, so the stage-awareness badge names the regime document rather than "PAD stage".
+    const isNewModel=regimeContext&&regimeContext.preparation_regime==='new_model';
+    const stageInner=isNewModel
+      ?`the <strong>${esc(newModelDocLabel(instrumentType))}</strong> (new-model preparation)`
+      :`<strong>${esc(docType)}</strong> stage`;
+    const stageBadge=docType&&docType!=='Unknown'?`<div class="stage-awareness-badge">Recommendations tailored for ${stageInner}</div>`:'';
+    const padNotice=isFinalizedPAD()?`<div class="finalized-pad-notice"><div class="fpn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><div class="fpn-body"><strong>Retrospective review.</strong> These recommendations assess the supplied PAD at preparation, not current implementation status.</div></div>`:'';
+    const closedProjectNotice=isClosedOrCompletedProject()?`<div class="finalized-pad-notice">
+        <div class="fpn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+        <div class="fpn-body"><strong>This document appears to describe a closed or completed project</strong>${esc(closedProjectStatusReason())}. The recommendations below are framed as design-stage guidance and may not be actionable for a closed project. Use them for retrospective review, lessons-learned, or as input to a follow-on operation rather than as live implementation guidance.</div>
+      </div>`:'';
+    return closedProjectNotice+padNotice+stageBadge+state.notice;
+  }
+
+  function stage3DocChecksHtml(){
+    return (Array.isArray(docChecks)&&docChecks.length)?`<details id="document-checks" style="margin-top:18px;border:1px solid #E2E6EC;border-radius:8px;padding:8px 14px;background:#F7F8FA"><summary style="cursor:pointer;font-weight:700;color:#002244">Points to check in the document</summary><p style="color:#4b5563;margin:8px 0 10px">A light automated check of the uploaded document for things worth confirming - placeholders, empty fields, or values that do not match. This is not the main analysis, just a checklist.</p>${docChecks.map(dc=>`<section style="margin:0 0 11px"><p style="font-weight:700;color:#002244;margin:0 0 3px">${esc(dc.finding||'')}</p>${dc.why_it_matters?`<p style="margin:0 0 3px">${esc(dc.why_it_matters)}</p>`:''}${dc.where?`<p style="margin:0;color:#6b7280;font-size:12px">Where: ${esc(dc.where)}</p>`:''}</section>`).join('')}</details>`:'';
+  }
+
+  function buildNormalReadout(markdownText,forExport=false,researchHtml=''){
+    const climate=stage3ClimateLensState();
+    const tail=(climate.active?renderClimateGroundingSources(climateGrounding):'')+stage3DocChecksHtml();
+    return wrapSRTerms(renderNormalReadoutHtml(stripStage3DoNoHarmHeader(markdownText),stage3NoticesHtml(climate),tail,forExport,researchHtml,climate));
+  }
+
   function renderOut(stage,result,isFollowOn){
     const isLast=stage===3;
     if(isLast)syncClimateCountryScope();
     const c=CALLS[stage];
     const _verifiedV2=!!(isLast&&climateVerifiedAssessment&&climateVerifiedAssessment.schema_version==='climate-verified-v2.1'&&climateVerifiedReader);
-    const _supportsClimateStage3=isLast&&supportsClimateVerifiedStage3View();
-    const _supportsStage3Tabs=isLast&&supportsAnyStage3Summary();
     const _recommendationsIncomplete=!!(
       _verifiedV2&&climateVerifiedReader&&
       climateVerifiedReader.recommendation_status==='incomplete'
@@ -5301,59 +5250,31 @@
       :`<strong>${c.t}</strong>${c.b}`;
     let _outBodyContent;
     if(_verifiedV2){
-      _outBodyContent=renderClimateVerifiedAssessment(climateVerifiedReader,true);
+      _outBodyContent=renderClimateVerifiedAssessment(climateVerifiedReader);
     }else if(isLast){
       // On-screen dedupe: screenerCaveatHtml() is now the single on-screen advisory
       // banner, so strip the legacy in-body DO_NO_HARM_HEADER block from the displayed
       // text. stageOutputs[3] is left untouched, so downloads and the HTML/DOCX exports
       // are unaffected.
-      result = result.replace(/^\s*---\s*\n[\s\S]*?Generated by WBG FCV Sensitivity Project Screener[\s\S]*?---\s*\n+/, '');
-      const _sp=result.split(/(?=###\s*Strengths\b)/i);
-      const _pre=_sp[0]||result;
-      const _rest=_sp[1]||'';
-      // Dual-regime: for new-model operations the appraisal document is a Project/Program Paper,
-      // not a legacy PAD, so the stage-awareness badge names the regime document rather than "PAD stage".
-      const _isNewModel = regimeContext && regimeContext.preparation_regime === 'new_model';
-      const _stageInner = _isNewModel
-        ? `the <strong>${esc(newModelDocLabel(instrumentType))}</strong> (new-model preparation)`
-        : `<strong>${esc(docType)}</strong> stage`;
-      const _stageBadge = docType && docType !== 'Unknown' ? `<div class="stage-awareness-badge">Recommendations tailored for ${_stageInner}</div>` : '';
-      const _padNotice = isFinalizedPAD() ? `<div class="finalized-pad-notice"><div class="fpn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><div class="fpn-body"><strong>Retrospective review.</strong> These recommendations assess the supplied PAD at preparation, not current implementation status.</div></div>` : '';
-      const _closedProjectNotice = isClosedOrCompletedProject() ? `<div class="finalized-pad-notice">
-        <div class="fpn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
-        <div class="fpn-body"><strong>This document appears to describe a closed or completed project</strong>${esc(closedProjectStatusReason())}. The recommendations below are framed as design-stage guidance and may not be actionable for a closed project. Use them for retrospective review, lessons-learned, or as input to a follow-on operation rather than as live implementation guidance.</div>
-      </div>` : '';
-      function styleClassificationFraming(html){
-        return html.replace(/(<p>)((?:Based on|This analysis places)[^<]*<\/p>)/,'<div class="classification-framing-para">$1$2</div>');
-      }
-      const _preHtml = styleClassificationFraming(md(bulletFindingSections(_pre)));
-      const _climateActive=isClimateLensActive();
-      const _climateEntry=climateLensEntry(lensDiagnostic);
-      const _climateError=_climateActive&&(
-        !lensDiagnostic||lensDiagnostic.error||!_climateEntry
-      );
-      const _climateNotice=_climateActive
-        ?renderClimateModuleNotice(_climateEntry,_climateError,climateGrounding):'';
-      const _climateValid=_climateActive&&!_climateError;
-      const docChecksHtml=(Array.isArray(docChecks)&&docChecks.length)?`<details id="document-checks" style="margin-top:18px;border:1px solid #E2E6EC;border-radius:8px;padding:8px 14px;background:#F7F8FA"><summary style="cursor:pointer;font-weight:700;color:#002244">Points to check in the document</summary><p style="color:#4b5563;margin:8px 0 10px">A light automated check of the uploaded document for things worth confirming - placeholders, empty fields, or values that do not match. This is not the main analysis, just a checklist.</p>${docChecks.map(dc=>`<section style="margin:0 0 11px"><p style="font-weight:700;color:#002244;margin:0 0 3px">${esc(dc.finding||'')}</p>${dc.why_it_matters?`<p style="margin:0 0 3px">${esc(dc.why_it_matters)}</p>`:''}${dc.where?`<p style="margin:0;color:#6b7280;font-size:12px">Where: ${esc(dc.where)}</p>`:''}</section>`).join('')}</details>`:'';
-      if(_climateValid){
+      result = stripStage3DoNoHarmHeader(result);
+      const _climate=stage3ClimateLensState();
+      if(_climate.valid){
         // Climate readout redesign order: notice/gauge -> model context prose ->
         // full-detail strengths & weaknesses -> core-questions (interactions + theme
         // answers). Dividends fold into cq3; wider-FCV is dropped in module mode.
+        const _sp=result.split(/(?=###\s*Strengths\b)/i);
+        const _pre=_sp[0]||result;
+        const _rest=_sp[1]||'';
+        const _preHtml=md(bulletFindingSections(_pre)).replace(/(<p>)((?:Based on|This analysis places)[^<]*<\/p>)/,'<div class="classification-framing-para">$1$2</div>');
         _outBodyContent=wrapSRTerms(
-          _closedProjectNotice+_padNotice+_stageBadge+_climateNotice+
+          stage3NoticesHtml(_climate)+
           _preHtml+md(bulletFindingSections(_rest))+
-          renderClimateStrengthsWeaknesses(_climateEntry)+
-          renderClimateCoreQuestions(_climateEntry)+
+          renderClimateStrengthsWeaknesses(_climate.entry)+
+          renderClimateCoreQuestions(_climate.entry)+
           renderClimateGroundingSources(climateGrounding)
-        )+'<div id="priorities-intro"></div>'+docChecksHtml;
+        )+renderLegacyClimatePrioritiesHtml()+stage3DocChecksHtml();
       }else{
-        _outBodyContent=wrapSRTerms(
-          _closedProjectNotice+_padNotice+_stageBadge+_climateNotice+
-          _preHtml+renderRiskExposure(stageRiskExposure)+md(bulletFindingSections(_rest))+
-          renderSRCards(stageSensitivitySummary,stageResponsivenessSummary)+
-          (_climateActive?renderClimateGroundingSources(climateGrounding):'')
-        )+'<div id="priorities-intro"></div>'+docChecksHtml;
+        _outBodyContent=buildNormalReadout(result);
       }
     }else{
       const cleanResult = stage===1 ? result.replace(/\n*%%%DOC_TYPE:[^%\n]*%%%\n*/g,'') : result;
@@ -5369,15 +5290,8 @@
         _outBodyContent = wrapSRTerms(catBadge + srDefPrefix + md(cleanResult));
       }
     }
-    if(isLast){
-      stage3DetailedHtml=_outBodyContent;
-      if(_supportsStage3Tabs&&stage3View==='summary')_outBodyContent=renderStage3Summary();
-      else if(!_supportsStage3Tabs)_outBodyContent=conciseUnavailableHtml()+_outBodyContent;
-    }
-    const _showDetailedRail=isLast;
-    const _outPanelAttrs=isLast&&_supportsStage3Tabs
-      ?` role="tabpanel" aria-labelledby="${stage3View==='summary'?'stage3-summary-tab':'stage3-detailed-tab'}" data-stage3-view="${stage3View}"`
-      :'';
+    if(isLast)stage3DetailedHtml=_outBodyContent;
+    const _showDetailedRail=isLast&&isClimateLensActive()&&!_verifiedV2;
     document.getElementById('stage-disp').innerHTML=`
       <div class="stage-hdr ani">
         <div class="stage-badge ${COL[stage]}">${stage}</div>
@@ -5388,32 +5302,25 @@
           <div class="stage-sub">${_stageSubtitle}</div>
         </div>
       </div>
-      <div class="callout ${_calloutTone} ani">
+      ${isLast?'':`<div class="callout ${_calloutTone} ani">
         <div class="callout-icon">${isLast&&!_recommendationsIncomplete
           ?'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>'
           :'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
         }</div>
         <div class="callout-body">${_calloutContent}</div>
-      </div>
+      </div>`}
       ${isLast?screenerCaveatHtml():''}
-      ${_showDetailedRail?`<div class="stage3-reading-shell ${stage3View==='summary'?'is-summary':'is-detailed'}" data-stage3-view="${stage3View}">${stage3OverviewHtml()}<div class="stage3-reading-main">`:'<div>'}
+      ${_showDetailedRail?`<div class="stage3-reading-shell is-detailed" data-stage3-view="detailed">${stage3OverviewHtml()}<div class="stage3-reading-main">`:'<div>'}
           <div class="out-card ani">
             <div class="out-hdr">
               <div class="out-hdr-l"><span class="dot done"></span>${NAMES[stage]}</div>
               <div class="out-hdr-actions" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
-                ${isLast?`<details class="report-download-menu"><summary class="btn btn-ghost btn-sm" aria-label="Download full report as Word or HTML">Download report</summary><div class="report-download-options" role="group" aria-label="Full Detailed report formats"><button type="button" class="btn btn-ghost btn-sm" onclick="downloadReport(this)" title="Download the full Detailed report as Word">Word (.docx)</button><button type="button" class="btn btn-ghost btn-sm" onclick="downloadHTML()" title="Download the full Detailed report as HTML">HTML (.html)</button></div></details>`:''}
-                ${isLast?`<button type="button" class="copy-btn" id="copy-active-view" onclick="copyActiveView()" aria-label="Copy the active Summary or Detailed report" title="Copy the active report view">Copy</button>`:`<button class="copy-btn" id="copy-btn" onclick="copyOut()">Copy all</button>`}
+                ${isLast?`<details class="report-download-menu"><summary class="btn btn-ghost btn-sm" aria-label="Download full report as Word or HTML">Download report</summary><div class="report-download-options" role="group" aria-label="Full Detailed report formats"><button type="button" class="btn btn-ghost btn-sm" onclick="downloadReport(this)" title="Download the full Detailed report as Word">Word (.docx)</button><button type="button" class="btn btn-ghost btn-sm" onclick="downloadHTML()" title="Download the full Detailed report as HTML">HTML (.html)</button><p class="report-download-help">Word (.docx): priorities and suggested text for the PAD team.</p><p class="report-download-help">HTML: adds the research briefing and Stage 2 annex, for FCV review.</p></div></details>`:''}
+                ${isLast?`<button type="button" class="copy-btn" id="copy-active-view" onclick="copyActiveView()" aria-label="Copy the report" title="Copy the report as plain text">Copy</button>`:`<button class="copy-btn" id="copy-btn" onclick="copyOut()">Copy all</button>`}
               </div>
             </div>
-            ${isLast?`<p style="font-size:12px;color:var(--muted);padding:0 20px">Full report includes all priority actions and drafting. HTML also includes the research briefing and Stage 2 Annex; Word export omits these supplements. Optional Playbook exploration is separate.</p>`:''}
-            <div class="out-body" id="out-txt"${_outPanelAttrs}>${isLast&&_supportsStage3Tabs?stage3ViewToggleHtml():''}${_outBodyContent}</div>
+            <div class="out-body" id="out-txt">${_outBodyContent}</div>
           </div>
-          ${isLast&&!_verifiedV2?`
-          <!-- ── PRIORITY STEPPER ── -->
-          <div class="priority-stepper" id="priority-stepper"></div>
-          <!-- ── PRIORITY CARD ── -->
-          <div id="priority-card-area"></div>
-          `:''}
       </div>${_showDetailedRail?'</div>':''}
       `;
 
@@ -5453,7 +5360,7 @@
           </div>
           <p class="followon-desc">Use the analysis to generate a follow-on output, or provide new context to refine a specific section.</p>
           <div class="followon-chips">
-            <button class="followon-chip" onclick="prefillFollowon(&quot;Draft a peer review note for this ${docType||'project'} summarising key insights and recommended actions for the Task Team. Bear in mind that the note needs to have sufficient detail to assist the Task Team in making necessary changes. Ensure that any issues raised are accompanied by suggestions for how to help address shortfalls, based on insights from the earlier analysis.&quot;)">Draft peer review note</button>
+            <button class="followon-chip" onclick="prefillFollowon(followonPeerReviewText())">Draft peer review note</button>
             <button class="followon-chip" onclick="prefillFollowon('Please expand on how to implement the highest-priority recommendation — what are the specific first steps, who should lead, and what should the TTL do in the first 30 days of implementation?')">Expand top recommendation</button>
             <button class="followon-chip" onclick="prefillFollowon('I have revised the following section of the PAD. Please review it against the FCV recommendations and suggest specific language improvements:\\n\\n[Paste your revised text here]')">Review my revised text</button>
             <button class="followon-chip" onclick="prefillFollowon('Summarise the key FCV risks and the 3 most important actions in plain language suitable for a 5-minute project brief or management presentation')">Summarise for brief</button>
@@ -5524,6 +5431,7 @@
 
 
   function showErr(msg,stage){
+    setTabStatus('error',stage);
     setStepper(stage,'err');
     document.getElementById('err-area').innerHTML=`
       <div class="err-card ani" role="alert">
@@ -5584,7 +5492,7 @@
   function reportPlainText(html){
     const container=document.createElement('div');
     container.innerHTML=html;
-    container.querySelectorAll('button,script,style').forEach(el=>el.remove());
+    container.querySelectorAll('button,script,style,details.go-deeper,.warn-badge,[data-copy-skip],.fr-sc-scale,.fr-h1-num,.fr-pc-rank,.fr-meter,.fr-toc').forEach(el=>el.remove());
     container.querySelectorAll('details').forEach(el=>el.open=true);
     container.querySelectorAll('a[href]').forEach(el=>{const url=el.getAttribute('href');if(/^https?:\/\//i.test(url))el.append(' ('+url+')');});
     container.style.cssText='position:fixed;left:-10000px;width:800px';
@@ -5592,30 +5500,6 @@
     const text=container.innerText;
     container.remove();
     return text;
-  }
-
-  function buildFullReportText(){
-    if(supportsClimateVerifiedStage3View())return reportPlainText(renderClimateVerifiedAssessment(climateVerifiedReader));
-    let stage3Text=String(stageOutputs[3]||'');
-    stage3Text=stage3Text.replace(/^\s*---\s*\n[\s\S]*?Generated by WBG FCV Sensitivity Project Screener[\s\S]*?---\s*\n+/, '');
-    let html=md(stage3Text);
-    html+=renderRiskExposure(stageRiskExposure)+renderSRCards(stageSensitivitySummary,stageResponsivenessSummary);
-    html+='<h2>Ratings</h2><p>Sensitivity: '+esc(fcvRating||'Unavailable')+'</p><p>Responsiveness: '+esc(fcvResponsivenessRating||'Unavailable')+'</p>';
-    if(stageThreePriorities.length)html+=renderStage3AdvisoryTransition(isClimateLensActive()?'climate':'normal');
-    const reportDocumentChecks=typeof document!=='undefined'&&document.getElementById?document.getElementById('document-checks'):null;
-    const climateUnlinkedNotice=typeof document!=='undefined'&&document.querySelector?document.querySelector('#priorities-intro .climate-partial-notice'):null;
-    if(climateUnlinkedNotice)html+=climateUnlinkedNotice.outerHTML||'';
-    if(reportDocumentChecks)html+=reportDocumentChecks.outerHTML||'';
-    stageThreePriorities.forEach((priority,index)=>{html+=_buildExportPriorityCard(priority,index,stageThreePriorities.length);});
-    if(focusQuestionsResult){
-      html+='<h2>Responses to your priority points</h2>'+md(focusQuestionsResult.overview||'');
-      (focusQuestionsResult.responses||[]).forEach(r=>{html+='<h3>'+esc(r.question||'')+'</h3>'+md(r.direct_answer||'')+md(r.confidence_gap_note||'');});
-    }
-    [[midCycleWatch,'Mid-Cycle FCV Watch'],[dpfWatch,'DPF FCV Watch'],[p4rWatch,'P4R FCV Watch'],[regionalWatch,'Regional FCV Watch']].forEach(([items,title])=>{
-      if(items&&items.length)html+='<h2>'+title+'</h2><ul>'+items.map(item=>'<li>'+esc(item)+'</li>').join('')+'</ul>';
-    });
-    if(horizonConsiderations)html+='<h2>Watch List for Supervision</h2>'+md(stripWatchHeading(horizonConsiderations));
-    return reportPlainText(html);
   }
 
   async function copyReportText(text,button){
@@ -5647,19 +5531,18 @@
     }
     return copied;
   }
+  // One Copy control: copies the unified readout as plain text (same content as the on-screen report).
   function copyActiveView(){
     const button=document.getElementById('copy-active-view');
-    if(stage3View==='detailed')return copyReportText(buildFullReportText(),button);
-    const output=document.getElementById('out-txt');if(!output)return;
-    const content=output.cloneNode(true);
-    content.querySelectorAll('.stage3-viewbar,button,a[href^="#"]').forEach(element=>element.remove());
-    content.querySelectorAll('details:not([open])').forEach(element=>element.remove());
-    return copyReportText(reportPlainText(content.innerHTML),button);
-  }
-    function copyFullReport(){return copyReportText(buildFullReportText());}
-  function copySummary(){
-    const notice=supportsClimateVerifiedStage3View()&&climateVerifiedReader.recommendation_status==='partial'?climateVerifiedReader.recommendation_message+'\n\n':'';
-    return copyReportText(notice+reportPlainText(supportsAnyStage3Summary()?renderStage3Summary():md(stageOutputs[3]||'')));
+    let html;
+    if(supportsClimateVerifiedStage3View())html=renderClimateVerifiedAssessment(climateVerifiedReader);
+    else if(stageOutputs[3]&&!stage3ClimateLensState().valid)html=buildNormalReadout(stageOutputs[3]||'',true);
+    else html=stage3DetailedHtml||md(stageOutputs[3]||'');
+    if(focusQuestionsResult&&(focusQuestionsResult.responses||[]).length){
+      html+='<h2>Responses to your priority points</h2>'+md(focusQuestionsResult.overview||'');
+      (focusQuestionsResult.responses||[]).forEach(r=>{html+='<h3>'+esc(r.question||'')+'</h3>'+md(r.direct_answer||'')+md(r.confidence_gap_note||'');});
+    }
+    return copyReportText(reportPlainText(html),button);
   }
 
   function copyOut(){
@@ -5675,6 +5558,11 @@
     if(!msg||busy)return;el.value='';
     document.getElementById('refine-area').innerHTML='';document.getElementById('act-area').innerHTML='';
     runStage(curS,msg);
+  }
+
+  // Built in script so the detected document type never lands inside an inline handler.
+  function followonPeerReviewText(){
+    return 'Draft a peer review note for this '+(docType||'project')+' summarising key insights and recommended actions for the Task Team. Bear in mind that the note needs to have sufficient detail to assist the Task Team in making necessary changes. Ensure that any issues raised are accompanied by suggestions for how to help address shortfalls, based on insights from the earlier analysis.';
   }
 
   function prefillFollowon(text){
@@ -5820,6 +5708,13 @@
     if(stagedisp){stagedisp.prepend(badge);stagedisp.prepend(banner);}
   }
 
+  // Stage 3-only state. Stage 2 ratings and the climate reader are owned by other stages.
+  function resetStage3State(){
+    stageThreePriorities=[];stageConciseReadout=null;stageRiskExposure=null;stageSensitivitySummary='';stageResponsivenessSummary='';stageGapTable=null;
+    stageWiderFcvContext=null;climatePriorityUnlinked=0;climatePriorityTotal=0;stage3DetailedHtml='';
+    midCycleWatch=[];dpfWatch=[];p4rWatch=[];regionalWatch=[];horizonConsiderations='';
+  }
+
   function startRerun(stage){
     analysisMode='stepbystep';localStorage.setItem('fcv_analysis_mode','stepbystep');
     disableClickableStepper();
@@ -5829,7 +5724,7 @@
     if(stageHists[stage])hist=stageHists[stage].slice();
     curS=stage;
     for(let i=stage+1;i<=3;i++){delete stageOutputs[i];delete stageHists[i];}
-    stageThreePriorities=[];stageConciseReadout=null;stageRiskExposure=null;stageSensitivitySummary='';stageResponsivenessSummary='';openSummaryPriority=0;fcvRating='';fcvResponsivenessRating='';stageWiderFcvContext=null;climatePriorityUnlinked=0;climatePriorityTotal=0;climateVerifiedAssessment=null;climateVerifiedFailure=null;climateVerifiedReader=null;stage3View='detailed';stage3DetailedHtml='';
+    stageThreePriorities=[];stageConciseReadout=null;stageRiskExposure=null;stageSensitivitySummary='';stageResponsivenessSummary='';fcvRating='';fcvResponsivenessRating='';stageWiderFcvContext=null;climatePriorityUnlinked=0;climatePriorityTotal=0;climateVerifiedAssessment=null;climateVerifiedFailure=null;climateVerifiedReader=null;stage3DetailedHtml='';
     midCycleWatch=[];dpfWatch=[];p4rWatch=[];regionalWatch=[];horizonConsiderations='';
     clearUI();renderOut(stage,stageOutputs[stage],false);
     if(stage===2&&stage2UnderHood){buildUnderHoodPanels(stage2UnderHood);updateSidebar();}
@@ -5840,7 +5735,7 @@
     document.getElementById('stage-nav-arrows')&&document.getElementById('stage-nav-arrows').remove();
     const names={1:'Context',2:'Assessment',3:'Recommendations'};
     const nav=document.createElement('div');nav.id='stage-nav-arrows';nav.className='stage-nav-arrows';
-    const left=stage>1&&stageOutputs[stage-1]
+    const left=stage>1&&stage<3&&stageOutputs[stage-1]
       ?'<button class="stage-nav-btn" onclick="navigateToStage('+(stage-1)+')">\u2190 Stage '+(stage-1)+': '+names[stage-1]+'</button>'
       :'<div></div>';
     const right=stage<3&&stageOutputs[stage+1]
@@ -5993,6 +5888,7 @@
   }
 
   function showExpressError(stage,errorMsg){
+    setTabStatus('error',stage);
     updateExpressStage(stage,'error',null);
     const sum=document.getElementById('ep-summary-'+stage);
     sum.innerHTML='<div style="color:#DC2626;font-size:13px;margin-top:6px">'+esc(errorMsg)+'</div>'+
@@ -6007,7 +5903,7 @@
 
 
   function renderManagementBriefControls(){
-    if(stage3View!=='summary'||!supportsConciseStage3View())return '';
+    if(!supportsConciseStage3View())return '';
     return `<span class="brief-download-actions" aria-label="Management brief downloads">
       <button type="button" class="btn btn-ghost btn-sm" onclick="downloadManagementBrief('html',this)" title="Download the concise management brief as print-ready HTML">Brief HTML</button>
       <button type="button" class="btn btn-ghost btn-sm" onclick="downloadManagementBrief('docx',this)" title="Download the concise management brief as a Word document">Brief Word</button>
@@ -6015,8 +5911,8 @@
   }
 
   async function downloadManagementBrief(format,btn){
-    if(!['html','docx'].includes(format)||stage3View!=='summary'||!supportsConciseStage3View()){
-      alert('The management brief is available only when a complete standard FCV Summary is shown.');
+    if(!['html','docx'].includes(format)||!supportsConciseStage3View()){
+      alert('The management brief is available only when a complete standard FCV summary was generated for this run.');
       return;
     }
     const original=btn?btn.innerHTML:'';
@@ -6157,6 +6053,12 @@
 
   // ── HTML Export ─────────────────────────────────────────────────────────────
 
+  // Export-only briefing: intro line plus provider-cited source links with a one-line excerpt.
+  // Headings, empty quotes, "N days ago" fragments and duplicate URLs are dropped; the stored text is unchanged.
+  function exportResearchBriefHtml(brief){
+    return frApi().researchBriefing(brief);
+  }
+
   async function downloadHTML(){
     if(!stageOutputs[3] && !stageThreePriorities.length){
       alert('No Stage 3 output available to export.');
@@ -6172,9 +6074,9 @@
         if(!response.ok) throw new Error(snapshot.error||'Report consistency check failed.');
         if(snapshotPayload!==JSON.stringify({climate_assessment:climateVerifiedAssessment,climate_reader:climateVerifiedReader})) throw new Error('The report changed during export. Please export again.');
       }catch(error){alert('Could not export HTML. '+error.message);return;}
-      const body=renderClimateVerifiedAssessment(climateVerifiedReader);
+      const body=screenerCaveatHtml()+renderClimateVerifiedAssessment(climateVerifiedReader);
       const printBehavior=climatePrintDisclosureScript();
-      const documentHtml='<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Verified Climate-FCV Assessment</title><style>'+css+'</style></head><body><main style="max-width:960px;margin:32px auto;padding:0 24px">'+body+'</main>'+printBehavior+'</body></html>';
+      const documentHtml='<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Climate-FCV Screening Note</title><style>'+css+'</style></head><body><main style="max-width:960px;margin:32px auto;padding:0 24px">'+body+'</main>'+printBehavior+'</body></html>';
       const blob=new Blob([documentHtml],{type:'text/html;charset=utf-8'});
       const url=URL.createObjectURL(blob);
       const link=document.createElement('a');
@@ -6209,75 +6111,18 @@
       <p class="exp-disc">AI-assisted analytical output. Analytical framework: WBG FCV Strategy 2026-2030, FCV Operational Manual, FCV Playbook, Good Practice Notes. Verify before operational use.</p>
     </div>`;
 
-    // ── Finalized PAD notice ──
-
-    if(isFinalizedPAD()){
-      body += `<div class="finalized-pad-notice"><div class="fpn-body"><strong>Retrospective review.</strong> These recommendations assess the supplied PAD at preparation, not current implementation status.</div></div>`;
-    }
-
-    // ── Narrative (exec summary, operational context, strengths, gaps) ──
-    // The LLM narrative opens with "This analysis places [country]..." — no duplicate block needed.
-    const _exportClimateActive=isClimateLensActive();
-    const _exportClimateEntry=climateLensEntry(lensDiagnostic);
-    const _exportClimateError=_exportClimateActive&&(
-      !lensDiagnostic||lensDiagnostic.error||!_exportClimateEntry
-    );
-    const _exportClimateValid=_exportClimateActive&&!_exportClimateError;
-    if(_exportClimateActive){
-      body+=renderClimateModuleNotice(_exportClimateEntry,_exportClimateError,climateGrounding);
-    }
-
-    if(summarybody){
-      body += `<div class="out-body exp-narrative">${wrapSRTerms(md(bulletFindingSections(summarybody)))}</div>`;
-      body += `<p style="font-size:11px;color:#666;font-style:italic;margin-top:0;margin-bottom:16px;padding:0 4px">This is a subjective judgement on the part of this AI tool and does not constitute an official WBG classification.</p>`;
-    }
-
-    // ── Risk Exposure ──
-    if(_exportClimateValid){
-      // Shared-HTML export parity with the live redesign order: strengths & weaknesses,
-      // then the core-questions section (interactions + theme answers). Dividends fold
-      // into cq3; wider-FCV is dropped in module mode.
-      body+=renderClimateStrengthsWeaknesses(_exportClimateEntry);
-      body+=renderClimateCoreQuestions(_exportClimateEntry);
+    const _exportClimate=stage3ClimateLensState();
+    const _briefHtml=researchBrief?exportResearchBriefHtml(researchBrief):'';
+    if(_exportClimate.valid){
+      // Legacy climate-lens route keeps its own narrative; priorities use the readout cards.
+      body += screenerCaveatHtml()+wrapSRTerms(stage3NoticesHtml(_exportClimate));
+      if(summarybody)body += `<div class="out-body exp-narrative">${wrapSRTerms(md(bulletFindingSections(summarybody)))}</div>`;
+      body += wrapSRTerms(renderClimateStrengthsWeaknesses(_exportClimate.entry)+renderClimateCoreQuestions(_exportClimate.entry)+renderClimateGroundingSources(climateGrounding))+renderLegacyClimatePrioritiesHtml(true)+stage3DocChecksHtml();
+      // Legacy climate-lens route has no Limitations section; the briefing closes the readout body.
+      if(_briefHtml)body += '<div class="fr-readout"><details class="fr-disc fr-research"><summary class="fr-disc-sum"><span>Background research and sources</span><span class="fr-disc-chev" aria-hidden="true">'+frApi().CHEVRON_SVG+'</span></summary><div class="fr-disc-body out-body">'+_briefHtml+'</div></details></div>';
     }else{
-      body += renderRiskExposure(stageRiskExposure);
-
-    // ── S/R Cards ──
-      body += renderSRCards(stageSensitivitySummary, stageResponsivenessSummary);
-
-    // ── Ratings (text labels) ──
-      if(fcvRating || fcvResponsivenessRating){
-        body += `<div class="exp-ratings-row">
-          ${fcvRating ? `<div class="exp-rating-pill exp-rating-s"><strong>Sensitivity:</strong> ${esc(fcvRating)}</div>` : ''}
-          ${fcvResponsivenessRating ? `<div class="exp-rating-pill exp-rating-r"><strong>Responsiveness:</strong> ${esc(fcvResponsivenessRating)}</div>` : ''}
-        </div>`;
-      }
-    }
-
-    // ── Priority Summary Table ──
-    if(_exportClimateActive){
-      body += renderClimateGroundingSources(climateGrounding);
-    }
-
-    if(stageThreePriorities.length){
-      body += renderStage3AdvisoryTransition(_exportClimateActive?'climate':'normal');
-      const timingMap={'flag-for-preparation':'Flag for preparation','required-before-appraisal':'Required before Decision Review (DM/ROC)','required-before-board':'Required before Board','next-series':'Next in series','supervision':'Supervision / monitoring','pre-appraisal':'Required before Decision Review (DM/ROC)','shortly-after-OIS':'Shortly after OIS decision','before-TD-review':'Before Technical Design review','at-TD-review':'At Technical Design review','between-TD-and-IR':'Between TD and IR review','before-IR':'Before Implementation Readiness review','at-IR':'At Implementation Readiness review','before-One-Review':'Before One Review','at-One-Review':'At One Review','before-negotiations':'Before negotiations','before-Board':'Before Board','during-implementation-support':'During implementation support'};
-      const tagLabels={'[S]':'Sensitivity','[R]':'Responsiveness','[S+R]':'Sensitivity + Responsiveness'};
-      const pRows=stageThreePriorities.map((pr,i)=>{
-        const title=(pr.title||'').replace(/^Priority\s+\d+\s*[·•]\s*/i,'');
-        return `<tr><td style="text-align:center;font-weight:700">${i+1}</td><td>${esc(title)}</td><td>${esc(pr.risk_level||'')}</td><td>${esc(tagLabels[pr.tag||'']||pr.tag||'')}</td><td>${esc(timingMap[pr.action_timing||'']||pr.action_timing||'')}</td></tr>`;
-      }).join('');
-      body += `<h2 class="exp-section-hdr">Priority Actions for the Task Team</h2>
-        <p style="font-size:13px;color:#444;margin-bottom:12px">Based on a three-stage assessment, ${stageThreePriorities.length} priority action${stageThreePriorities.length!==1?'s have':' has'} been identified.</p>
-        <table class="exp-table"><thead><tr><th style="width:32px">#</th><th>Priority Action</th><th style="width:90px">Priority</th><th style="width:110px">FCV Focus</th><th style="width:160px">Timing</th></tr></thead><tbody>${pRows}</tbody></table>`;
-    }
-
-    // ── All priority cards (all shown, no carousel) ──
-    if(stageThreePriorities.length){
-      body += `<h2 class="exp-section-hdr">Strategic Priorities</h2>`;
-      stageThreePriorities.forEach((pr,i)=>{
-        body += _buildExportPriorityCard(pr, i, stageThreePriorities.length);
-      });
+      // The research briefing renders inside the readout, after Limitations.
+      body+=screenerCaveatHtml()+buildNormalReadout(stageOutputs[3]||'',true,_briefHtml);
     }
     // ── Responses to your priority points ──
     if(focusQuestionsResult && (focusQuestionsResult.responses||[]).length){
@@ -6299,37 +6144,7 @@
       body += `</div>`;
     }
 
-    // ── Mid-Cycle FCV Watch (AF / Restructuring) ──
-    if(Array.isArray(midCycleWatch) && midCycleWatch.length){
-      body += `<h2 class="exp-section-hdr">Mid-Cycle FCV Watch</h2>
-        <ul class="horizon-body">${midCycleWatch.map(w=>`<li>${esc(w)}</li>`).join('')}</ul>`;
-    }
-
-    // DPF FCV Watch (Development Policy Financing)
-    if(Array.isArray(dpfWatch) && dpfWatch.length){
-      body += `<h2 class="exp-section-hdr">DPF FCV Watch</h2>
-        <ul class="horizon-body">${dpfWatch.map(w=>`<li>${esc(w)}</li>`).join('')}</ul>`;
-    }
-
-    // P4R FCV Watch (Program-for-Results)
-    if(Array.isArray(p4rWatch) && p4rWatch.length){
-      body += `<h2 class="exp-section-hdr">P4R FCV Watch</h2>
-        <ul class="horizon-body">${p4rWatch.map(w=>`<li>${esc(w)}</li>`).join('')}</ul>`;
-    }
-
-    // Regional FCV Watch (multi-country / regional)
-    if(Array.isArray(regionalWatch) && regionalWatch.length){
-      body += `<h2 class="exp-section-hdr">Regional FCV Watch</h2>
-        <ul class="horizon-body">${regionalWatch.map(w=>`<li>${esc(w)}</li>`).join('')}</ul>`;
-    }
-
-    // ── Watch List ──
-    if(typeof horizonConsiderations==='string' && horizonConsiderations.trim()){
-      body += `<h2 class="exp-section-hdr">Watch List for Supervision</h2>
-        <div class="horizon-body">${wrapSRTerms(md(stripWatchHeading(horizonConsiderations)))}</div>`;
-    }
-
-    if(researchBrief)body += '<h2 class="exp-section-hdr">Research briefing</h2><div class="out-body">'+md(researchBrief)+'</div>';
+    // Watch lists (mid-cycle, DPF, PforR, regional, longer-term) are rendered inside the readout.
 
     // ── Annex: Stage 2 tables ──
     // Reviewed structural sources are distinct from accepted live country context.
@@ -6351,17 +6166,8 @@
       .exp-disc{font-size:11px;color:#888;font-style:italic;margin:4px 0 0 0}
       .exp-section-hdr{font-size:16px;font-weight:700;color:#1a3a5c;margin:32px 0 12px;padding-bottom:6px;border-bottom:1px solid #e2e8f0}
       .exp-narrative{margin-bottom:24px}
-      .exp-ratings-row{display:flex;gap:12px;margin:16px 0;flex-wrap:wrap}
-      .exp-rating-pill{padding:6px 14px;border-radius:20px;font-size:13px}
-      .exp-rating-s{background:#e8f4fd;color:#1a3a5c;border:1px solid #b8d4e8}
-      .exp-rating-r{background:#edf7ee;color:#1a5c2e;border:1px solid #b8d8bc}
-      .exp-table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px}
-      .exp-table th{background:#1a3a5c;color:#fff;padding:8px;text-align:left;font-weight:600}
-      .exp-table td{padding:7px 8px;border-bottom:1px solid #e2e8f0;vertical-align:top}
-      .exp-table tr:hover td{background:#f7f8fa}
-      .exp-pcard{margin-bottom:32px;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden}
       .exp-annex-break{border-top:2px dashed #c0c8d0;margin:40px 0 32px;padding-top:8px}
-      @media print{.exp-page{padding:16px}.exp-pcard{page-break-inside:avoid}}
+      @media print{.exp-page{padding:16px}}
     `;
 
     const fullHtml = `<!DOCTYPE html>
@@ -6379,6 +6185,7 @@ ${body}
   FCV Project Screener | WBG FCV Analytics Unit · Generated ${esc(dateStr)} · AI-assisted output for expert review only
 </div>
 </div>
+${climatePrintDisclosureScript()}
 </body>
 </html>`;
 
@@ -6393,58 +6200,14 @@ ${body}
     URL.revokeObjectURL(url);
   }
 
-  function _buildExportPriorityCard(pr, idx, total){
-    const riskCls = pr.risk_level==='High'?'pc-chip-risk-h':pr.risk_level==='Medium'?'pc-chip-risk-m':'pc-chip-risk-l';
-    const timingMap={'flag-for-preparation':{l:'Flag for preparation',c:'timing-flag-for-preparation'},'required-before-appraisal':{l:'Required before Decision Review (DM/ROC)',c:'timing-required-before-appraisal'},'required-before-board':{l:'Required before Board',c:'timing-required-before-board'},'next-series':{l:'Next in series',c:'timing-next-series'},'supervision':{l:'Supervision / monitoring',c:'timing-supervision'},'pre-appraisal':{l:'Required before Decision Review (DM/ROC)',c:'timing-required-before-appraisal'},'shortly-after-OIS':{l:'Shortly after OIS decision',c:'timing-flag-for-preparation'},'before-TD-review':{l:'Before Technical Design review',c:'timing-required-before-appraisal'},'at-TD-review':{l:'At Technical Design review',c:'timing-required-before-appraisal'},'between-TD-and-IR':{l:'Between TD and IR review',c:'timing-required-before-appraisal'},'before-IR':{l:'Before Implementation Readiness review',c:'timing-required-before-board'},'at-IR':{l:'At Implementation Readiness review',c:'timing-required-before-board'},'before-One-Review':{l:'Before One Review',c:'timing-required-before-appraisal'},'at-One-Review':{l:'At One Review',c:'timing-required-before-appraisal'},'before-negotiations':{l:'Before negotiations',c:'timing-required-before-board'},'before-Board':{l:'Before Board',c:'timing-required-before-board'},'during-implementation-support':{l:'During implementation support',c:'timing-supervision'}};
-    const tEntry = timingMap[pr.action_timing||''] || null;
-    const cleanTitle = (pr.title||'').replace(/^Priority\s+\d+\s*[·•]\s*/i,'');
-    const actionsHtml = (pr.actions||[]).map(act=>`
-      <div class="zone-act-action">
-        ${act.document_element?`<div class="zone-act-action-title">${esc(act.document_element)}</div>`:''}
-        ${act.guidance?`<div class="zone-act-action-guidance">${esc(act.guidance)}</div>`:''}
-        ${act.suggested_language?`<div class="zone-act-action-lang"><div class="zone-act-draft-text"><span class="zone-act-lang-label">Suggested text:</span> ${esc(act.suggested_language)}</div></div>`:''}
-      </div>`).join('');
-    return `
-    <div class="priority-card exp-pcard">
-      <div class="priority-card-hdr">
-        <div class="pc-num-badge">${idx+1}</div>
-        <div style="flex:1">
-          <div class="pc-hdr-eyebrow">Priority ${idx+1} of ${total} · ${esc(pr.fcv_dimension||'')}${renderSRTagBadge(pr.tag||'')}</div>
-          <div class="pc-hdr-title">${md(cleanTitle)}</div>
-          <div class="pc-hdr-chips">
-            <span class="pc-chip ${riskCls}">Priority: ${esc(pr.risk_level||'—')}</span>
-            ${pr.refresh_shift?`<span class="shift-badge">${esc('FCV Strategy 2026-2030 '+pr.refresh_shift)}</span>`:''}
-            ${tEntry?`<span class="timing-pill ${tEntry.c}">${esc(tEntry.l)}</span>`:''}
-            ${pr.change_type?`<span class="pc-chip">Change: ${esc(pr.change_type)}</span>`:''}
-            ${pr.restructuring_level?`<span class="pc-chip">${esc(pr.restructuring_level)}</span>`:''}
-            ${pr.priority_scope?`<span class="pc-chip">Scope: ${esc(pr.priority_scope)}</span>`:''}
-            ${pr.authority_basis?`<span class="pc-chip" title="Strength of the underlying OPCS source">Basis: ${esc(String(pr.authority_basis).replace(/_/g,' '))}</span>`:''}
-            ${(pr.lens_ids||[]).map(id=>`<span class="lens-badge" title="${esc(pr.lens_relevance||'Sector-lens finding')}">${esc(lensDisplayName(id))}</span>`).join('')}
-          </div>
-          ${(pr.who_acts||pr.when||pr.resources)?`<div class="pc-meta-row">
-            ${pr.who_acts?`<span class="pc-meta-chip"><strong>Who:</strong> ${esc(pr.who_acts)}</span>`:''}
-            ${pr.when?`<span class="pc-meta-chip"><strong>When:</strong> ${esc(pr.when)}</span>`:''}
-            ${pr.resources?`<span class="pc-meta-chip"><strong>Resources:</strong> ${esc(pr.resources)}</span>`:''}
-          </div>`:''}
-        </div>
-      </div>
-      <div class="pc-zone zone-gap"><div class="pc-zone-title">The Gap</div><div class="pc-zone-body">${esc(pr.the_gap||'')}</div></div>
-      <div class="pc-zone zone-why"><div class="pc-zone-title">Why it matters</div><div class="pc-zone-body">${esc(pr.why_it_matters||'')}</div></div>
-      ${pr.cpf_alignment?`<div class="pc-zone"><div class="pc-zone-title">CPF Alignment</div><div class="pc-zone-body">${esc(pr.cpf_alignment)}</div></div>`:''}
-      ${actionsHtml?`<div class="pc-zone zone-act"><div class="pc-zone-title">How to act</div><div class="zone-act-primary"><div class="zone-act-section"><div class="zone-act-label">Essential action${(pr.actions||[]).length>1?'s':''}</div>${actionsHtml}</div>${pr.implementation_note?`<div class="zone-act-section zone-act-impl"><div class="zone-act-label">Implementation consideration</div><div class="pc-zone-body">${esc(pr.implementation_note)}</div></div>`:''}</div></div>`:''}
-      ${renderPriorityProjectCycle(pr)}
-            ${isClimateLensActive()?renderPriorityClimateContribution(pr):renderStandardPriorityContext(pr)}
-      ${renderPriorityCompliance(pr)}
-    </div>`;
-  }
-
   function reset(){
+    if(typeof setTabStatus==='function')setTabStatus('idle');
     restoredFileNames={project:[],context:[]};
     pF=[];pkF=[];cF=[];fileMetadata={};hist=[];curS=0;sessionName='';busy=false;stageOutputs={};stageHists={};researchBrief='';researchCountry='';priorityQuestions=[];focusQuestionsResult=null;pqPanelEnabled=true;
     ['ip','ipack','ic'].forEach(id=>{document.getElementById(id).value='';});
     activeLenses=[];resolvedLensVersions={};lensSuggestions=[];lensDiagnostic={};lensContextSources=[];climateResearch={};climateGrounding={};climateIntegration=null;climateVerifiedAssessment=null;climateVerifiedFailure=null;climateVerifiedReader=null;lensSelectionTouched=false;lensSelectionLocked=false;renderLensSelector();
     midCycleWatch=[];dpfWatch=[];p4rWatch=[];regionalWatch=[];horizonConsiderations='';
-    stageThreePriorities=[];stageConciseReadout=null;stageRiskExposure=null;stageSensitivitySummary='';stageResponsivenessSummary='';openSummaryPriority=0;fcvRating='';fcvResponsivenessRating='';stage3View='detailed';stage3DetailedHtml='';
+    stageThreePriorities=[];stageConciseReadout=null;stageRiskExposure=null;stageSensitivitySummary='';stageResponsivenessSummary='';fcvRating='';fcvResponsivenessRating='';stage3DetailedHtml='';
     { const _pc=document.getElementById('pq-confirm'); if(_pc){_pc.innerHTML='';_pc.style.display='none';} }
     ['stage2_timestamp','stage3_timestamp','stage3_consistency_dismissed'].forEach(k=>localStorage.removeItem(k));
     localStorage.removeItem('fcv_express_stageOutputs');
@@ -6597,11 +6360,15 @@ ${body}
     if(hasAny){
       btn.style.borderColor = '#f59e0b';
       btn.style.color = '#d97706';
-      btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg> ⚑ Prompts (modified)`;
+      btn.setAttribute('aria-label','View and edit analysis prompts (modified)');
+      btn.title='View and edit analysis prompts (modified)';
+      btn.innerHTML = `<svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg> <span class="sb-lbl">⚑ Prompts (modified)</span>`;
     } else {
       btn.style.borderColor = '';
       btn.style.color = '';
-      btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg> View / Edit Prompts`;
+      btn.setAttribute('aria-label','View and edit analysis prompts');
+      btn.title='View and edit analysis prompts';
+      btn.innerHTML = `<svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg> <span class="sb-lbl">View / Edit Prompts</span>`;
     }
   }
 
@@ -6633,7 +6400,6 @@ ${body}
   // ── Stage 3 (Recommendations) state ───────────────────────────────────────
   let stageThreePriorities = [];
   let stageConciseReadout = null;
-  let openSummaryPriority = 0;
   let climatePriorityUnlinked = 0, climatePriorityTotal = 0;
   let currentPriority = 0;  // 0-indexed
   let currentDeeperTab = {};  // {priorityIndex: 'alternatives'|'trail'|'playbook'}
@@ -6646,7 +6412,6 @@ ${body}
   let climateVerifiedFailure=null; // inspection only; never a reader or follow-on input
   let climateVerifiedAssessment=null; // climate-verified-v2.1 structured assessment
   let climateVerifiedReader=null; // server-validated canonical reader/export model
-  let stage3View='detailed';
   let stage3DetailedHtml='';
   let stageWiderFcvContext=null; // wider_fcv_context string from Stage 3 JSON (climate path)
   function integrationGaugeFraction(level){
@@ -6804,26 +6569,6 @@ ${body}
     return activeLenses.length===0&&!!readout&&text(readout.headline)&&text(readout.overview)&&text(readout.strengths_transition)&&text(readout.priorities_transition)&&text(readout.closing)&&validStrengths&&validPriorities;
   }
 
-  function supportsAnyStage3Summary(){
-    return supportsConciseStage3View()||supportsClimateVerifiedStage3View();
-  }
-
-  function conciseUnavailableHtml(){
-    return activeLenses.length===0&&!supportsConciseStage3View()
-      ?'<div class="callout info" data-diagnostic="concise_readout_unavailable">The summary was unavailable for this run; the full analysis is shown.</div>'
-      :'';
-  }
-
-  function renderStage3AdvisoryTransition(route){
-    const subject=typeof reviewMode!=='undefined'&&reviewMode==='implementation'?"project's design and implementation arrangements":"project's design";
-    const context=route==='climate'?'climate and FCV':'FCV';
-    return `<p class="summary-priority-advisory stage3-advisory-transition">The following priorities are suggestions to strengthen the ${subject} in its ${context} context. They are not mandatory requirements, nor may they all be relevant. The task team may wish to focus on those they believe to be more pertinent based on their own sectoral expertise and knowledge of the context within which the project will be applied. For more complex or difficult issues raised, the team are encouraged to reach out and discuss them with the FCV Country Coordinator or relevant Global Practice experts as needed.</p>`;
-  }
-
-  function renderFcvRatingIndicators(){
-    return `<div class="concise-rating-indicators" aria-label="FCV assessment indicators"><div class="concise-rating-indicator"><span>FCV sensitivity</span><strong>${esc(fcvRating||'Not available')}</strong></div><div class="concise-rating-indicator"><span>FCV responsiveness</span><strong>${esc(fcvResponsivenessRating||'Not available')}</strong></div></div>`;
-  }
-
   function normalFcvWatchGroups(context){
     const hasContext=!!(context&&typeof context==='object');
     const source=hasContext?context:{};
@@ -6868,325 +6613,118 @@ ${body}
     return groups;
   }
 
-  function renderNormalFcvWatchDisclosure(context){
+  function renderNormalFcvWatchBody(context){
     const groups=normalFcvWatchGroups(context);if(!groups.length)return '';
-    const body=groups.map(group=>{
-      const content=group.narrative
-        ?'<div class="normal-fcv-watch-narrative">'+md(group.narrative)+'</div>'
-        :'<ul>'+group.items.map(item=>'<li>'+esc(item)+'</li>').join('')+'</ul>';
-      return '<section class="normal-fcv-watch-group"><h3>'+esc(group.label)+'</h3>'+content+'</section>';
+    const showLabels=groups.length>1;
+    return groups.map(group=>{
+      const content=group.narrative?'<div class="normal-fcv-watch-narrative">'+md(stripWatchHeading(group.narrative))+'</div>':'<ul>'+group.items.map(item=>'<li>'+esc(item)+'</li>').join('')+'</ul>';
+      return (showLabels?'<h4 class="fr-lbl">'+esc(group.label)+'</h4>':'')+content;
     }).join('');
-    return '<details class="normal-fcv-watch-disclosure"><summary>What to keep an eye on</summary><div class="normal-fcv-watch-body">'+body+'</div></details>';
   }
 
-  function renderNormalSummaryGaps(priorities=stageThreePriorities){
-    const items=(Array.isArray(priorities)?priorities:[]).slice(0,5).map((priority,idx)=>{
-      const concise=getConcisePriority(priority);
-      const gap=String(concise.gap||concise.why||'').trim();
-      return `<li class="normal-summary-gap" data-priority-index="${idx}">${boldVisibleFirstSentence(gap)}</li>`;
+  function renderNormalPriorityExtras(pr,idx){
+    return renderPriorityWarningsHtml(pr,idx)+renderPriorityCompliance(pr)+renderGoDeeperHtml(idx);
+  }
+
+  // Share .html export: no interactive Go Deeper or dismissible warnings (their handlers do not exist in the exported file).
+  function renderNormalExportPriorityExtras(pr){
+    return renderPriorityCompliance(pr);
+  }
+
+  // Advisory sentence shown with the priorities (normal readout, verified climate and legacy climate-lens routes).
+  function stage3AdvisoryText(route){
+    const subject=typeof reviewMode!=='undefined'&&reviewMode==='implementation'?"project's design and implementation arrangements":"project's design";
+    const context=route==='climate'?'climate and FCV':'FCV';
+    return `The following priorities are suggestions to strengthen the ${subject} in its ${context} context. They are not mandatory requirements, nor may they all be relevant. The task team may wish to focus on those they believe to be more pertinent based on their own sectoral expertise and knowledge of the context within which the project will be applied. For more complex or difficult issues raised, the team are encouraged to reach out and discuss them with the FCV Country Coordinator or relevant Global Practice experts as needed.`;
+  }
+
+  // Uploaded file names for the Limitations section (live upload or restored session).
+  function readoutFileNames(){
+    const project=pF.length?pF.map(f=>f.name):restoredFileNames.project;
+    const context=cF.length?cF.map(f=>f.name):restoredFileNames.context;
+    return [...(project||[]),...(context||[])].filter(n=>typeof n==='string'&&n.trim());
+  }
+
+  // Reuses the existing stage and climate-readout completeness checks.
+  function normalReadoutIsPartial(climate){
+    const state=climate||stage3ClimateLensState();
+    return !stageOutputs[1]||!stageOutputs[2]||(state.active&&(!!state.error||!climateReadoutComplete(state.entry)));
+  }
+
+  function renderNormalReadoutHtml(markdownText,noticesHtml,tailHtml,forExport=false,researchHtml='',climate=null){
+    const hasPriorities=Array.isArray(stageThreePriorities)&&stageThreePriorities.length>0;
+    return frApi().renderNormal({
+      advisoryText:hasPriorities?stage3AdvisoryText('normal'):'',
+      stage3Markdown:markdownText,fcvRating,fcvResponsivenessRating,
+      sensitivitySummary:stageSensitivitySummary,responsivenessSummary:stageResponsivenessSummary,
+      riskExposure:stageRiskExposure,priorities:stageThreePriorities,
+      watchHtml:renderNormalFcvWatchBody(),noticesHtml,tailHtml,
+      smallerPoints:window.FcvReadout.parseSupplementaryPoints(stageOutputs[2]||''),
+      fileNames:readoutFileNames(),researchBrief,partial:normalReadoutIsPartial(climate),researchHtml,
+      priorityExtras:forExport?renderNormalExportPriorityExtras:renderNormalPriorityExtras
+    });
+  }
+
+  // Legacy climate-lens route (no verified v2 reader): the stepper is gone, so its
+  // priorities render as readout cards appended after the legacy climate prose.
+  function renderLegacyClimatePrioritiesHtml(forExport=false){
+    const priorities=(Array.isArray(stageThreePriorities)?stageThreePriorities:[]).slice(0,5);
+    const k=frApi();
+    const watch=renderNormalFcvWatchBody();
+    const watchHtml=watch?k.disclosure('Watch List for Supervision: Risks to Monitor During Implementation','<p class="fr-intro">These are FCV risks or dynamics the team cannot act on now but should monitor during implementation. They do not affect the FCV ratings above.</p>'+watch):'';
+    if(!priorities.length)return watchHtml?`<div class="fr-readout fr-route-legacy-climate">${watchHtml}</div>`:'';
+    const n=priorities.length;
+    const linkNotice=climatePriorityUnlinked>0?`<div class="climate-partial-notice">Climate provenance could not be validated for ${Number(climatePriorityUnlinked)} of ${Number(climatePriorityTotal)} priorities. Those recommendations are shown but not tagged to a specific climate-FCV pathway.</div>`:'';
+    const cards=priorities.map((p,i)=>{
+      const actions=Array.isArray(p.actions)?p.actions:[];
+      const actionsHtml=actions.length?`<ol class="fr-actions">${actions.map(a=>`<li>${a.document_element?`<strong>${esc(a.document_element)}:</strong> `:''}${esc(a.guidance||'')}</li>`).join('')}</ol>`:(p.recommendation?k.prose(p.recommendation):'');
+      const title=String(p.title||'Priority action').replace(/^\s*Priority\s+\d+\s*(?:[·•:.\-–]\s*)?/i,'').trim()||'Priority action';
+      const sup=k.metaSegments([[k.levelPill(p.risk_level)],[esc(p.fcv_dimension||p.dimension||''),'fr-meta-dim'],[esc(k.timingLabel(p.action_timing)),'fr-meta-time']]);
+      return k.priorityCard({
+        id:`fr-priority-${i+1}`,rank:i+1,open:i===0,supHtml:sup,title,
+        zones:[{label:'The gap',html:k.prose(p.the_gap||p.body||'')},{label:'Why it matters',html:k.prose(p.why_it_matters||'')},{label:'Suggested actions',html:actionsHtml}],
+        drafts:actions.map(a=>({label:'Suggested Text',forText:a.document_element||'',text:a.suggested_language||''})),
+        cycle:{label:'Implementation note',text:p.implementation_note||''},
+        extraHtml:forExport?renderPriorityClimateContribution(p)+renderPriorityCompliance(p):renderPriorityWarningsHtml(p,i)+renderPriorityClimateContribution(p)+renderPriorityCompliance(p)+renderGoDeeperHtml(i)
+      });
     }).join('');
-    return items?`<section class="normal-summary-gaps"><div class="concise-section-label">Potential gaps</div><ul class="normal-summary-gap-list">${items}</ul></section>`:'';
-  }
-
-  function renderNormalFcvSummary(){
-    const readout=stageConciseReadout&&typeof stageConciseReadout==='object'?stageConciseReadout:{};
-    const strengths=(Array.isArray(readout.strengths)?readout.strengths:[]).map(strength=>`<div class="concise-strength"><strong>${esc(normalizeVisibleText(strength.title||'Project strength'))}</strong><span class="concise-strength-text">${boldVisibleFirstSentence(strength.text||'')}</span></div>`).join('');
-    const interpretation='<p class="concise-interpretation"><strong>How to read the FCV assessment:</strong> sensitivity describes whether the design fits its FCV context. Responsiveness describes whether the project contributes directly to FCV drivers, and is not expected for every project.</p>';
-    return `<div class="concise-readout normal-fcv-summary"><div class="concise-read-time">Five-minute readout</div><div class="concise-section-label">Overall assessment</div><h2 class="concise-headline">${esc(normalizeVisibleText(readout.headline||'FCV assessment summary'))}</h2><p class="concise-overview">${boldVisibleFirstSentence(readout.overview||'')}</p>${interpretation}${strengths.length?'<div class="concise-section-label">What the project does well</div><div class="concise-strengths">'+strengths+'</div>':''}${renderNormalSummaryGaps()}${renderStage3AdvisoryTransition('normal')}<div class="concise-section-label">Priority actions for the task team</div><div id="summary-priority-list" class="normal-summary-priorities">${renderNormalSummaryPriorities()}</div></div>`;
-  }
-
-  function renderStage3Summary(){
-    if(supportsClimateVerifiedStage3View())return renderClimateVerifiedSummary(climateVerifiedReader);
-    if(supportsConciseStage3View())return renderNormalFcvSummary();
-    return '';
+    return `<div class="fr-readout fr-route-legacy-climate">${linkNotice}<section class="fr-section fr-cards-sec"><header class="fr-h1"><h2 class="fr-h1-txt">Priority Actions for the Task Team</h2></header>${k.infoBox('',`<strong>Based on a three-stage assessment of the project documents, ${n} priority ${n===1?'action has':'actions have'} been identified</strong> to strengthen FCV sensitivity and responsiveness in the design and delivery of this project.`+k.advisory(stage3AdvisoryText('climate')))}${k.cards(cards,n)}</section>${watchHtml}</div>`;
   }
 
   function supportsClimateVerifiedStage3View(){
     return reviewMode==='design' && !!(climateVerifiedAssessment && climateVerifiedAssessment.schema_version==='climate-verified-v2.1' && climateVerifiedReader);
   }
 
-  function climateSummaryStrengths(reader){
-    const r=reader&&typeof reader==='object'?reader:{};
-    const strengths=[];
-    const seen=new Set();
-    const add=(title,text,keyText)=>{
-      const body=String(text||'').trim();
-      const key=String(keyText||body).trim().toLowerCase().replace(/\s+/g,' ');
-      if(!body||seen.has(key)||strengths.length>=3)return;
-      seen.add(key);
-      strengths.push({title:String(title||'What is already working').trim(),text:body});
-    };
-    (Array.isArray(r.existing_responses)?r.existing_responses:[]).forEach(response=>{
-      const description=String(response&&response.description||'').trim();
-      if(!description)return;
-      const suppliedTitle=String(response&&response.title||'').trim();
-      const sentenceMatch=!suppliedTitle&&description.match(/^(.+?[.!?](?:["')\]]+)?)(?:\s+)([\s\S]+)$/);
-      const title=suppliedTitle||(sentenceMatch?sentenceMatch[1].trim():description)||'Existing project response';
-      const body=sentenceMatch?sentenceMatch[2].trim():description;
-      add(title,body,description);
-    });
-    (Array.isArray(r.judgments)?r.judgments:[]).forEach(judgment=>{
-      const value=String(judgment&&judgment.value||'').toLowerCase();
-      const dimension=String(judgment&&judgment.dimension||'').toLowerCase();
-      const positive=(dimension==='responsiveness'&&['strong','very_strong'].includes(value))||(dimension==='operationalization'&&value==='embedded');
-      if(positive)add(judgment.title||judgment.dimension||'Assessment strength',judgment.rationale||judgment.description||'');
-    });
-    return strengths;
-  }
-
-  function climateSummaryPriorityItems(reader){
-    const r=reader&&typeof reader==='object'?reader:{};
-    const draftingRoute=climateDraftingRouteGate(r);
-    return (Array.isArray(r.priorities)?r.priorities:[]).slice().sort((a,b)=>(Number(a.rank)||999)-(Number(b.rank)||999)).slice(0,5).map((priority,index)=>{
-      const draft=draftingRoute.canRender&&priority.current_document_drafting&&typeof priority.current_document_drafting==='object'?priority.current_document_drafting:{};
-      const target=[draft.target_document,draft.target_section].filter(Boolean).join(' - ');
-      const rawTitle=String(priority.title||'Untitled action').trim();
-      const normalizedTitle=rawTitle.replace(/^\s*Priority\s+\d+\s*(?:[-:.\u00b7\u2013\u2014\u2022]\s*)?/i,'').trim()||rawTitle;
-      const cycle=priority.project_cycle&&typeof priority.project_cycle==='object'?priority.project_cycle:{};
-      return {...priority,rank:Number(priority.rank)||index+1,title:normalizedTitle,risk_level:'',the_gap:String(priority.limitation||''),concise:{title:normalizedTitle,why:String(priority.narrative||priority.decision||priority.minimum_action||''),how:[priority.minimum_action,priority.enhanced_action,priority.completion_evidence].filter(Boolean).slice(0,4),suggested_wording:{document_element:target,text:String(draft.text||'')},project_cycle:{...cycle}}};
-    });
-  }
-
-  function stage3ViewToggleHtml(){
-    return `<div class="stage3-viewbar"><div class="stage3-view-tabs" role="tablist" aria-label="Recommendations detail level" onkeydown="handleStage3ViewKeydown(event)"><button id="stage3-summary-tab" class="stage3-view-tab ${stage3View==='summary'?'active':''}" role="tab" aria-controls="out-txt" aria-selected="${stage3View==='summary'}" tabindex="${stage3View==='summary'?'0':'-1'}" onclick="setStage3View('summary',true,'stage3-summary-tab')">Summary</button><button id="stage3-detailed-tab" class="stage3-view-tab ${stage3View==='detailed'?'active':''}" role="tab" aria-controls="out-txt" aria-selected="${stage3View==='detailed'}" tabindex="${stage3View==='detailed'?'0':'-1'}" onclick="setStage3View('detailed',true,'stage3-detailed-tab')">Detailed analysis</button></div><div class="stage3-download-note">Word and HTML downloads include the complete analysis.</div></div>`;
-  }
-
-  function getConcisePriority(priority){
-    if(priority&&priority.concise)return priority.concise;
-    const firstAction=(priority&&priority.actions||[])[0]||{};
-    const rawTitle=String(priority&&priority.title||'Untitled action');
-    return {title:rawTitle.replace(/^Priority\s+\d+\s*(?:[-:\u2022]\s*)?/i,'')||rawTitle,why:priority&&priority.why_it_matters||priority&&priority.the_gap||'',how:(priority&&priority.actions||[]).slice(0,4).map(action=>action.guidance).filter(Boolean),suggested_wording:{document_element:firstAction.document_element||'',text:firstAction.suggested_language||''},project_cycle:{primary_label:'When to address',primary_text:priority&&priority.implementation_note||'',secondary_label:'',secondary_text:''}};
-  }
-
-
-
-  function renderNormalSummaryPriorities(priorities=stageThreePriorities,route='normal'){
-    return (Array.isArray(priorities)?priorities:[]).slice(0,5).map((priority,idx)=>{
-      const concise=getConcisePriority(priority);
-      const rank=Number(priority.rank)||idx+1;
-      const leadingAction=route==='climate'?String(priority.minimum_action||'').trim():(Array.isArray(concise.how)?concise.how[0]:priority.minimum_action||'');
-      const detailHref=route==='climate'?`#climate-priority-${rank}`:'#priority-card-area';
-      const detailClick=route==='climate'?`openClimateDetailedPriority(${rank})`:`openDetailedPriority(${idx})`;
-      const actionHtml=esc(leadingAction);
-      return `<article class="normal-summary-priority" data-priority-index="${idx}">
-        <div class="normal-summary-priority-head"><span class="normal-summary-priority-rank" aria-hidden="true">${rank}</span><h3>${esc(normalizeVisibleText(concise.title||priority.title||'Priority action'))}</h3></div>
-        <p class="normal-summary-priority-action"><span class="normal-summary-priority-label">Suggested action</span>${actionHtml}</p>
-        <a class="normal-summary-priority-link${route==='climate'?' climate-summary-priority-link':''}" href="${detailHref}" onclick="${detailClick};return false;">See Priority ${rank} in Detailed analysis</a>
-      </article>`;
-    }).join('');
-  }
-
-  function renderSummaryPriorityAccordion(priorities=stageThreePriorities){
-    return priorities.map((priority,idx)=>{
-      const concise=getConcisePriority(priority);
-      const wording=concise.suggested_wording||{};
-      const cycle=concise.project_cycle||{};
-      const expanded=supportsClimateVerifiedStage3View()||idx===openSummaryPriority;
-      const how=(Array.isArray(concise.how)?concise.how:[]).map(item=>`<li>${esc(item)}</li>`).join('');
-      const specialist=String(priority.the_gap||priority.why_it_matters||'').trim();
-      return `<article class="summary-priority-item"><h3><button type="button" id="summary-priority-toggle-${idx}" class="summary-priority-toggle" aria-expanded="${expanded}" aria-controls="summary-priority-panel-${idx}" onclick="toggleSummaryPriority(${idx})"><span class="summary-priority-rank">${idx+1}</span><span>${esc(concise.title||priority.title||'Priority action')}</span><span class="summary-priority-chevron" aria-hidden="true">⌄</span></button></h3><div id="summary-priority-panel-${idx}" class="summary-priority-panel" role="region" aria-labelledby="summary-priority-toggle-${idx}"${expanded?'':' hidden'}><section><h4>Why this is suggested</h4><p>${esc(concise.why||'')}</p></section><section class="concise-how"><h4>How it can be addressed</h4><ul>${how}</ul></section>${wording.text?`<section class="concise-wording"><h4>Suggested wording for the current document</h4><p>${esc(wording.text)}</p>${wording.document_element?`<div class="concise-wording-target">For: ${esc(wording.document_element)}</div>`:''}</section>`:''}<aside class="concise-cycle"><h4>Where this fits in the project cycle</h4><div class="concise-cycle-items"><div><strong>${esc(cycle.primary_label||'When to address')}</strong><p>${esc(cycle.primary_text||'')}</p></div>${cycle.secondary_label||cycle.secondary_text?`<div><strong>${esc(cycle.secondary_label||'Next step')}</strong><p>${esc(cycle.secondary_text||'')}</p></div>`:''}</div></aside>${specialist?`<details class="concise-specialist"><summary>Specialist reasoning, evidence and operational references</summary><p>${esc(specialist)}</p></details>`:''}</div></article>`;
-    }).join('');
-  }
-
-  function toggleSummaryPriority(idx,forceOpen=false){
-    const summaryPriorities=supportsClimateVerifiedStage3View()?climateSummaryPriorityItems(climateVerifiedReader):stageThreePriorities;
-    if(!Number.isInteger(idx)||idx<0||idx>=summaryPriorities.length)return;
-    openSummaryPriority=idx;
-    currentPriority=idx;
-    if(supportsClimateVerifiedStage3View()){
-      // Climate starts with every priority visible; toggles affect only this panel.
-      const panel=document.getElementById(`summary-priority-panel-${idx}`);
-      const button=document.getElementById(`summary-priority-toggle-${idx}`);
-      if(panel&&button){
-        panel.hidden=forceOpen?false:!panel.hidden;
-        button.setAttribute('aria-expanded',String(!panel.hidden));
-        button.focus();
+  // A restored session carries the reader saved at run time. Ask the server for the
+  // canonical reader built from the saved assessment so later admission rules and
+  // exports agree. Any failure keeps the stored reader silently; loading never waits.
+  async function refreshRestoredClimateReader(){
+    const assessment=climateVerifiedAssessment;
+    const stored=climateVerifiedReader;
+    if(!assessment||typeof assessment!=='object'||assessment.schema_version!=='climate-verified-v2.1')return false;
+    try{
+      const response=await fetch('/api/climate-report-snapshot',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({climate_assessment:assessment})});
+      if(!response||!response.ok)return false;
+      const data=await response.json();
+      const reader=data&&data.reader;
+      if(!reader||typeof reader!=='object'||Array.isArray(reader))return false;
+      // Another load, reset or run replaced the state while the check was in flight.
+      if(climateVerifiedAssessment!==assessment||climateVerifiedReader!==stored)return false;
+      // Identical reader: keep the current render instead of redrawing it.
+      if(stored&&JSON.stringify(reader)===JSON.stringify(stored))return false;
+      climateVerifiedReader=reader;
+      if(supportsClimateVerifiedStage3View())stageThreePriorities=Array.isArray(reader.priorities)?reader.priorities:[];
+      if(curS===3&&stageOutputs&&stageOutputs[3]&&!busy){
+        const scrollY=window.scrollY;
+        navigateToStage(3);
+        window.scrollTo(0,scrollY);
       }
-      return;
-    }
-    const host=document.getElementById('summary-priority-accordion');
-    if(host)host.innerHTML=renderSummaryPriorityAccordion(summaryPriorities);
-    const button=document.getElementById(`summary-priority-toggle-${idx}`);
-    if(button)button.focus();
-  }
-  function climateSummaryWatchItems(reader){
-    const r=reader&&typeof reader==='object'?reader:{};
-    const seen=new Set();
-    const items=[];
-    const normalize=value=>String(value??'').replace(/\s+/g,' ').trim().replace(/[.!?]+$/,'').toLowerCase();
-    (Array.isArray(r.core_questions)?r.core_questions:[]).forEach(question=>{
-      const watch=String(question&&question.watch||'').trim().replace(/\s+/g,' ');
-      const key=normalize(watch);
-      if(!watch||seen.has(key))return;
-      seen.add(key);
-      items.push({question:String(question&&question.question||'').trim().replace(/\s+/g,' '),watch});
-    });
-    return items;
-  }
-
-  function renderClimateWatchDisclosure(reader){
-    const items=climateSummaryWatchItems(reader);
-    if(!items.length)return '';
-    return `<details class="climate-summary-watch-disclosure"><summary>What to keep an eye on</summary><div class="climate-summary-watch-body"><p>Supporting follow-up cues from the question analysis. Check these against the priorities and evidence limitations.</p><ul>${items.map(item=>`<li>${esc(item.watch)}</li>`).join('')}</ul></div></details>`;
-  }
-
-  function renderClimateSummaryGaps(reader,priorities){
-    const r=reader&&typeof reader==='object'?reader:{};
-    const source=Array.isArray(r.summary_gaps)?r.summary_gaps:
-      (Array.isArray(priorities)?priorities:[]).map(priority=>({text:priority.limitation}));
-    const gaps=[];const seen=new Set();
-    for(const item of source){
-      const text=String(item&&item.text||'').replace(/\s+/g,' ').trim();
-      // Keep complete qualifications; oversized saved prose stays in Detailed.
-      const key=text.toLowerCase().replace(/[.!?]+$/,'');
-      if(!text||text.split(' ').length>75||seen.has(key))continue;
-      seen.add(key);gaps.push(text);
-      if(gaps.length===5)break;
-    }
-    const scopeHtml=/\b(?:peace|social|dividends?)\b/i.test(gaps.join(' '))?`<p class="concise-transition">Optional wider dividends depend on the project's scope; they are not required in every project.</p>`:'';
-    return gaps.length?`<section class="normal-summary-gaps"><div class="concise-section-label">Potential gaps</div><ul class="normal-summary-gap-list">${gaps.map(text=>{
-      const finding=(Array.isArray(r.assessment_themes)?r.assessment_themes:[]).flatMap(theme=>Array.isArray(theme.findings)?theme.findings:[]).find(item=>item.text===text);
-      const links=finding?(finding.priority_ranks||[]).filter(Number.isInteger).map(rank=>`<a href="#climate-priority-${rank}" onclick="openClimateDetailedPriority(${rank});return false;">Priority ${rank}</a>`).join(' · '):'';
-      const followUp=finding&&!links?`<p>${esc(finding.follow_up||'')}</p>`:'';
-      return `<li class="normal-summary-gap">${boldEscapedFirstSentence(text)}${links?`<p>${links}</p>`:followUp}</li>`;
-    }).join('')}</ul>${scopeHtml}</section>`:'';
-  }
-
-  function renderClimateVerifiedSummary(reader){
-    const r=reader&&typeof reader==='object'?reader:{};
-    const analysisHtml=r.analysis_status==='partial'&&r.analysis_message?`<div class="finalized-pad-notice"><div class="fpn-body"><strong>Assessment evidence is incomplete.</strong><p>${esc(r.analysis_message)}</p></div></div>`:'';
-    const operationContextHtml=(()=>{
-      const context=r.operation_context&&typeof r.operation_context==='object'?r.operation_context:null;
-      if(!context)return '';
-      const warning=!climateDraftingRouteGate(r).confirmed?'<p class="climate-summary-route-warning">Suggested document wording is not shown because the document type or financing route could not be confirmed reliably.</p>':'';
-      return warning?'<section class="climate-summary-context">'+warning+'</section>':'';
-    })();
-    const summaryRecord=r.summary_overview&&typeof r.summary_overview==='object'?r.summary_overview:{};
-    const overviewParagraphs=(Array.isArray(r.summary_overview)?r.summary_overview:Array.isArray(summaryRecord.paragraphs)?summaryRecord.paragraphs:[]).map(item=>String(item||'').trim()).filter(Boolean);
-    const overviewHtml=overviewParagraphs.length?overviewParagraphs.map(item=>`<p class="climate-summary-overview-paragraph">${boldEscapedFirstSentence(item)}</p>`).join(''):'<p class="climate-summary-overview-paragraph"><strong>No standalone summary was returned for this run.</strong></p>';
-    const strengths=climateSummaryStrengths(r);
-    const strengthsHtml=strengths.length?strengths.map(strength=>`<div class="concise-strength climate-strength-card"><strong>${esc(strength.title)}</strong><span class="concise-strength-text">${esc(strength.text)}</span></div>`).join(''):'<p class="concise-priority-intro">No distinct strengths were evidenced in the verified reader for this run.</p>';
-    const priorities=climateSummaryPriorityItems(r);
-    const gapsHtml=renderClimateSummaryGaps(r,priorities);
-    const recommendationsIncomplete=r.recommendation_status==='incomplete';
-    const emptyPriorityMessage=recommendationsIncomplete
-      ?(r.recommendation_message||'The recommendation stage could not be completed. Do not treat this Recommendations Note as complete; rerun the analysis or contact support.')
-      :'No ranked operational priorities were returned for this run.';
-    const prioritiesHtml=priorities.length?`<div id="summary-priority-list" class="normal-summary-priorities">${renderNormalSummaryPriorities(priorities,'climate')}</div>`:`<p class="concise-priority-intro">${esc(emptyPriorityMessage)}</p>`;
-    const prioritySummary=r.priority_summary&&typeof r.priority_summary==='object'?r.priority_summary:{};
-    const bridge=!recommendationsIncomplete&&String(prioritySummary.statement||'').trim()?`<p class="concise-transition">${esc(String(prioritySummary.statement).trim())}</p>`:'';
-    const totalPriorities=Array.isArray(r.priorities)?r.priorities.length:0;
-    const shownPriorities=priorities.length;
-    const countHtml=totalPriorities>shownPriorities?`<p class="climate-summary-priority-count">Showing the ${shownPriorities} highest-ranked of ${totalPriorities} priorities. See Detailed analysis for all ${totalPriorities}.</p>`:'';
-    const guidanceHtml=renderClimateRelevantGuidance(r,'Relevant WBG guidance for this project','climate-summary-guidance-disclosure');
-    const closingText=recommendationsIncomplete
-      ?'Recommendations are incomplete. Review the Detailed analysis and rerun the assessment or contact support before relying on this note.'
-      :(priorities.length?'For supporting evidence and completion signals behind each priority, continue to Detailed analysis.':'Continue to Detailed analysis for the supporting evidence and points to check from this assessment.');
-    return `<div class="concise-readout climate-verified-summary"><div class="concise-read-time">Five-minute readout</div>${analysisHtml}${operationContextHtml}<div class="concise-section-label">Overall assessment</div><div class="climate-summary-overview">${overviewHtml}</div><div class="concise-section-label">What is already working</div><div class="concise-strengths">${strengthsHtml}</div>${gapsHtml||bridge}${priorities.length?renderStage3AdvisoryTransition('climate'):''}<div class="concise-section-label">Priority actions for the task team</div>${countHtml}${prioritiesHtml}${guidanceHtml}<p class="concise-closing">${esc(closingText)}</p></div>`;
-  }
-
-  function handleStage3ViewKeydown(event){
-    const tabs=Array.from(document.querySelectorAll('.stage3-view-tab:not([disabled])'));
-    const current=tabs.indexOf(document.activeElement);
-    if(current<0||!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
-    event.preventDefault();
-    const next=event.key==='Home'?0:event.key==='End'?tabs.length-1:(current+(event.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;
-    const nextId=tabs[next].id;
-    setStage3View(nextId==='stage3-summary-tab'?'summary':'detailed',true,nextId);
-  }
-
-  function setStage3View(view,preservePriority=true,focusTabId=''){
-    if(!supportsAnyStage3Summary())return;
-    if(view!=='summary'&&view!=='detailed')view='summary';
-    stage3View=view;
-    const summaryTab=document.getElementById('stage3-summary-tab'), detailedTab=document.getElementById('stage3-detailed-tab');
-    [summaryTab,detailedTab].forEach(tab=>{if(tab)tab.classList.remove('active')});
-    if(summaryTab){summaryTab.classList.toggle('active',view==='summary');summaryTab.setAttribute('aria-selected',String(view==='summary'));summaryTab.tabIndex=view==='summary'?0:-1;}
-    if(detailedTab){detailedTab.classList.toggle('active',view==='detailed');detailedTab.setAttribute('aria-selected',String(view==='detailed'));detailedTab.tabIndex=view==='detailed'?0:-1;}
-    const showSummary=view==='summary';
-    const readingShell=document.querySelector('.stage3-reading-shell');
-    if(readingShell){
-      readingShell.dataset.stage3View=view;
-      readingShell.setAttribute('data-stage3-view',view);
-      readingShell.classList.toggle('is-summary',showSummary);
-      readingShell.classList.toggle('is-detailed',!showSummary);
-    }
-    const stageDisplay=document.getElementById('stage-disp');
-    if(stageDisplay){
-      stageDisplay.dataset.stage3View=view;
-      stageDisplay.setAttribute('data-stage3-view',view);
-      stageDisplay.classList.toggle('stage3-summary-active',showSummary);
-    }
-    const out=document.getElementById('out-txt');
-    if(out){out.setAttribute('aria-labelledby',view==='summary'?'stage3-summary-tab':'stage3-detailed-tab');out.dataset.stage3View=view;out.setAttribute('data-stage3-view',view);out.innerHTML=stage3ViewToggleHtml()+(view==='summary'?renderStage3Summary():stage3DetailedHtml);}
-    ['priority-stepper','priority-card-area'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=showSummary||supportsClimateVerifiedStage3View()?'none':'';});
-    if(showSummary){
-      if(!preservePriority)openSummaryPriority=0;
-      if(supportsClimateVerifiedStage3View()){
-        const summaryPriorities=climateSummaryPriorityItems(climateVerifiedReader);
-        const host=document.getElementById('summary-priority-list');if(host)host.innerHTML=renderNormalSummaryPriorities(summaryPriorities,'climate');
-      }else{
-        const host=document.getElementById('summary-priority-list');if(host)host.innerHTML=renderNormalSummaryPriorities();
-      }
-    }else if(!supportsClimateVerifiedStage3View()){
-      renderPrioritiesIntro();renderPriorityStepper();showPriority(preservePriority?currentPriority:0);
-      if(typeof horizonConsiderations==='string'&&horizonConsiderations.trim()){
-        renderHorizonPanel(horizonConsiderations);
-      }
-    }
-    if(focusTabId){
-      const focusTab=document.getElementById(focusTabId);
-      if(focusTab)focusTab.focus();
-    }
-  }
-
-  function openDetailedPriority(idx){
-    if(!Number.isInteger(idx)||idx<0||idx>=stageThreePriorities.length)return;
-    currentPriority=idx;
-    setStage3View('detailed',true,'stage3-detailed-tab');
-    const cardArea=typeof document!=='undefined'?document.getElementById('priority-card-area'):null;
-    if(cardArea&&typeof cardArea.scrollIntoView==='function')cardArea.scrollIntoView({behavior:'smooth',block:'start'});
-  }
-
-  function openClimateDetailedPriority(rank){
-    if(!Number.isInteger(rank)||rank<1)return;
-    setStage3View('detailed',true,'stage3-detailed-tab');
-    const card=typeof document!=='undefined'?document.getElementById(`climate-priority-${rank}`):null;
-    if(card&&typeof card.scrollIntoView==='function')card.scrollIntoView({behavior:'smooth',block:'start'});
-  }
-
-  function showConcisePriority(idx){
-    const priority=stageThreePriorities[idx];if(!priority)return;
-    const concise=getConcisePriority(priority), wording=concise.suggested_wording||{}, cycle=concise.project_cycle||{};
-    const how=(concise.how||[]).map(item=>`<li>${esc(item)}</li>`).join('');
-    const cardArea=document.getElementById('priority-card-area');if(!cardArea)return;
-    cardArea.innerHTML=`<article class="concise-priority-card ani"><header class="concise-priority-head"><span class="concise-priority-num">${idx+1}</span><div><div class="concise-priority-kicker">Priority ${idx+1} of ${stageThreePriorities.length}</div><h3>${esc(concise.title)}</h3></div></header><section><h4>Why this is suggested</h4><p>${esc(concise.why)}</p></section><section class="concise-how"><h4>How it can be addressed</h4><ul>${how}</ul></section>${wording.text?`<section class="concise-wording"><h4>Suggested wording for the current document</h4><p>${esc(wording.text)}</p><div class="concise-wording-target">For: ${esc(wording.document_element)}</div></section>`:''}<aside class="concise-cycle"><h4>Where this fits in the project cycle</h4><div class="concise-cycle-items"><div><strong>${esc(cycle.primary_label||'When to address')}</strong><p>${esc(cycle.primary_text||'')}</p></div>${cycle.secondary_label||cycle.secondary_text?`<div><strong>${esc(cycle.secondary_label||'Next step')}</strong><p>${esc(cycle.secondary_text||'')}</p></div>`:''}</div></aside><details class="concise-specialist"><summary>Specialist reasoning, evidence and operational references</summary><p>${esc(priority.the_gap||'')}</p></details></article>`;
+      return true;
+    }catch(e){return false;}
   }
 
   function initStage3UI(){
     maybeRunPriorityQuestions();
-    if(!stageThreePriorities.length) return;
-    const summaryActive=supportsAnyStage3Summary()&&stage3View==='summary';
-    ['priority-stepper','priority-card-area'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=summaryActive||supportsClimateVerifiedStage3View()?'none':'';});
-    if(summaryActive){
-      openSummaryPriority=0;
-      if(supportsClimateVerifiedStage3View()){
-        const summaryPriorities=climateSummaryPriorityItems(climateVerifiedReader);
-        const host=document.getElementById('summary-priority-list');
-        if(host)host.innerHTML=renderNormalSummaryPriorities(summaryPriorities,'climate');
-      }else{
-        const host=document.getElementById('summary-priority-list');
-        if(host)host.innerHTML=renderNormalSummaryPriorities();
-      }
-    }else if(!supportsClimateVerifiedStage3View()){
-      currentPriority=0;
-      renderPrioritiesIntro();
-      renderPriorityStepper();
-      showPriority(0);
-      if(typeof horizonConsiderations==='string'&&horizonConsiderations.trim()){
-        renderHorizonPanel(horizonConsiderations);
-      }
-    }
     updateSidebar();
   }
 
@@ -7280,65 +6818,15 @@ ${body}
     </div>`;
   }
 
-  function renderHorizonPanel(text){
-    const container=document.getElementById('out-txt');
-    if(!container)return;
-    const existing=document.getElementById('horizon-panel');
-    if(existing)existing.remove();
-    const panel=document.createElement('details');
-    panel.id='horizon-panel';
-    panel.className='horizon-panel ani';
-    const watch=stripWatchHeading(text);
-    const rendered=typeof md==='function'?md(watch):esc(watch).replace(/\n/g,'<br>');
-    panel.innerHTML='<summary>Watch List for Supervision: Risks to Monitor During Implementation</summary>'
-      +'<div class="horizon-body">'
-      +'<p class="horizon-disclaimer">These are FCV risks or dynamics the team cannot act on now but should monitor during implementation. They do not affect the FCV ratings above.</p>'
-      +rendered
-      +'</div>';
-    container.appendChild(panel);
-  }
-
-  function renderPrioritiesIntro(){
-    const el = document.getElementById('priorities-intro');
-    if(!el || !stageThreePriorities.length) return;
-    const n = stageThreePriorities.length;
-    const climateSummary=supportsClimateVerifiedStage3View()&&stage3View==='summary';
-    const _linkNotice = (isClimateLensActive() && climatePriorityUnlinked > 0)
-      ? `<div class="climate-partial-notice">Climate provenance could not be validated for ${climatePriorityUnlinked} of ${climatePriorityTotal} priorities. Those recommendations are shown but not tagged to a specific climate-FCV pathway.</div>`
-      : '';
-    const lead=climateSummary
-      ?`Based on the verified Climate-FCV assessment, <strong>${n} priority ${n === 1 ? 'action has' : 'actions have'} been identified</strong> for the project team to address at the appropriate preparation stage.`
-      :`Based on a three-stage assessment of the project documents, <strong>${n} priority ${n === 1 ? 'action has' : 'actions have'} been identified</strong> to strengthen FCV sensitivity and responsiveness in the design and delivery of this project.`;
-    const advisory=stageThreePriorities.length?renderStage3AdvisoryTransition(isClimateLensActive()?'climate':'normal'):'';
-    el.innerHTML = _linkNotice + `<div class="priorities-section-hdr">Priority Actions for the Task Team</div><div class="priorities-intro ani"><p class="pi-lead">${lead}</p>${advisory}</div>`;
-  }
-
-  function renderPriorityStepper(){
-    const el = document.getElementById('priority-stepper');
-    if(!el) return;
-    el.innerHTML = stageThreePriorities.map((pr, i) => {
-      const fullTitle = pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i,'');
-      const riskCls = pr.risk_level==='High'?'ps-risk-h':pr.risk_level==='Medium'?'ps-risk-m':'ps-risk-l';
-      const riskLbl = pr.risk_level==='High'?'Priority: High':pr.risk_level==='Medium'?'Priority: Medium':pr.risk_level==='Low'?'Priority: Low':'';
-      return `<button type="button" class="ps-step ${i===currentPriority?'active':''}" id="ps-${i}" onclick="showPriority(${i})" title="${esc(pr.title)}" aria-pressed="${i===currentPriority?'true':'false'}" aria-label="Show priority ${i+1} of ${stageThreePriorities.length}: ${esc(fullTitle)}">
-        <div class="ps-num">${i+1}</div>
-        <div class="ps-label">${esc(fullTitle)}</div>
-        <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:center">
-          ${riskLbl?`<div class="ps-risk ${riskCls}">${riskLbl}</div>`:''}
-        </div>
-      </button>`;
-    }).join('');
-  }
-
 
   function renderPriorityTiming(value){
     const timing={
-      'flag-for-preparation':{standard:'Consider in preparation',climate:'Flag for preparation',cls:'timing-flag-for-preparation'},
-      'required-before-appraisal':{standard:'Consider before appraisal',climate:'Required before Decision Review (DM/ROC)',cls:'timing-required-before-appraisal'},
-      'required-before-board':{standard:'Consider before Board',climate:'Required before Board',cls:'timing-required-before-board'},
-      'next-series':{standard:'Consider for next series',climate:'Next in series',cls:'timing-next-series'},
-      'supervision':{standard:'Consider during supervision',climate:'Supervision / monitoring',cls:'timing-supervision'},
-      'pre-appraisal':{standard:'Consider before appraisal',climate:'Required before Decision Review (DM/ROC)',cls:'timing-required-before-appraisal'},
+      'flag-for-preparation':{standard:'Consider in preparation',climate:'Consider during preparation',cls:'timing-flag-for-preparation'},
+      'required-before-appraisal':{standard:'Consider before appraisal',climate:'Address before Decision Review (DM/ROC)',cls:'timing-required-before-appraisal'},
+      'required-before-board':{standard:'Consider before Board',climate:'Address before Board',cls:'timing-required-before-board'},
+      'next-series':{standard:'Consider for next series',climate:'Consider for next series',cls:'timing-next-series'},
+      'supervision':{standard:'Consider during supervision',climate:'Consider during supervision',cls:'timing-supervision'},
+      'pre-appraisal':{standard:'Consider before appraisal',climate:'Address before Decision Review (DM/ROC)',cls:'timing-required-before-appraisal'},
       'shortly-after-OIS':{standard:'Consider after OIS decision',climate:'Shortly after OIS decision',cls:'timing-flag-for-preparation'},
       'before-TD-review':{standard:'Consider before Technical Design review',climate:'Before Technical Design review',cls:'timing-required-before-appraisal'},
       'at-TD-review':{standard:'Consider at Technical Design review',climate:'At Technical Design review',cls:'timing-required-before-appraisal'},
@@ -7357,41 +6845,9 @@ ${body}
     return `<span class="timing-pill ${item.cls}">${item[mode]}</span>`;
   }
 
-  function renderStandardPriorityContext(priority){
-    if(isClimateLensActive()||activeLenses.length!==0)return '';
-    const fields=[
-      ['CPF alignment',priority&&priority.cpf_alignment],
-      ['RRA driver alignment',priority&&priority.rra_driver_alignment],
-      ['Strategy alignment',priority&&priority.refresh_shift]
-    ].filter(([,value])=>typeof value==='string'&&value.trim());
-    if(!fields.length)return '';
-    const body=fields.map(([label,value])=>'<p class="priority-context-item"><strong>'+esc(label)+'</strong>'+esc(value)+'</p>').join('');
-    return `<details class="priority-context-disclosure"><summary>Context and strategic alignment</summary><div class="priority-context-body">${body}</div></details>`;
-  }
-
-  function showPriority(idx){
-    const pr = stageThreePriorities[idx];
-    if(!pr) return;
-    if(supportsAnyStage3Summary()&&stage3View==='summary'){
-      toggleSummaryPriority(idx);
-      return;
-    }
-    currentPriority = idx;
-    const n = stageThreePriorities.length;
-
-    // Update stepper
-    stageThreePriorities.forEach((p2, i) => {
-      const el = document.getElementById(`ps-${i}`);
-      if(el) el.className = `ps-step ${i < idx ? 'done' : i === idx ? 'active' : ''}`;
-      if(el) el.setAttribute('aria-pressed', i === idx ? 'true' : 'false');
-      const numEl = el ? el.querySelector('.ps-num') : null;
-      if(numEl){ if(i < idx){ numEl.textContent = '✓'; } else { numEl.textContent = String(i+1); } }
-    });
-
-    // Determine risk chip class
-    const riskClass = pr.risk_level === 'High' ? 'pc-chip-risk-h' : pr.risk_level === 'Medium' ? 'pc-chip-risk-m' : 'pc-chip-risk-l';
-
-    // Build warning badges
+  // Per-priority quality warnings (moved out of the removed stepper card).
+  function renderPriorityWarningsHtml(pr,idx){
+    if(!pr)return '';
     const specKey = `specificity_dismissed_${idx}`;
     const citeKey = `citation_dismissed_${idx}`;
     const specDismissed = localStorage.getItem(specKey) === 'true';
@@ -7411,110 +6867,17 @@ ${body}
         <button class="warn-dismiss" onclick="localStorage.setItem('${citeKey}','true');document.getElementById('warn-cite-${idx}').remove()" title="Dismiss">✕</button>
       </div>`;
     }
+    return warningBadges;
+  }
 
-    // Render card
-    const cardArea = document.getElementById('priority-card-area');
-    if(!cardArea) return;
-
-    cardArea.innerHTML = `
-      <div class="priority-card ani">
-        <div class="priority-card-hdr">
-          <div class="pc-num-badge">${idx+1}</div>
-          <div>
-            <div class="pc-hdr-eyebrow">Priority ${idx+1} of ${n} · ${esc(pr.dimension||'')}${renderSRTagBadge(pr.tag||'')}</div>
-            <div class="pc-hdr-title">${md(pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i,''))}</div>
-            <div class="pc-hdr-chips">
-              <span class="pc-chip ${riskClass}">Priority: ${esc(pr.risk_level||'—')}</span>
-              ${pr.dimension ? `<span class="pc-chip">${esc(pr.dimension)}</span>` : ''}
-              ${(isClimateLensActive() || activeLenses.length>0) && pr.refresh_shift ? `<span class="shift-badge" title="${esc(shiftTooltips[pr.refresh_shift] || pr.refresh_shift)}">${esc('FCV Strategy 2026-2030 ' + pr.refresh_shift)}</span>` : ''}
-              ${renderPriorityTiming(pr.action_timing)}
-              ${pr.change_type ? `<span class="pc-chip">Change: ${esc(pr.change_type)}</span>` : ''}
-              ${pr.restructuring_level ? `<span class="pc-chip">${esc(pr.restructuring_level)}</span>` : ''}
-              ${pr.priority_scope ? `<span class="pc-chip">Scope: ${esc(pr.priority_scope)}</span>` : ''}
-              ${pr.governance_level ? `<span class="pc-chip" title="MPA governance level — where this priority should be decided">${esc(pr.governance_level)}</span>` : ''}
-              ${pr.authority_basis ? `<span class="pc-chip" title="Strength of the underlying OPCS source">Basis: ${esc(String(pr.authority_basis).replace(/_/g,' '))}</span>` : ''}
-              ${(pr.lens_ids||[]).map(id=>`<span class="lens-badge" title="${esc(pr.lens_relevance||'Sector-lens finding')}">${esc(lensDisplayName(id))}</span>`).join('')}
-            </div>
-            ${(pr.who_acts||pr.when||pr.resources) ? `<div class="pc-meta-row">
-              ${pr.who_acts ? `<span class="pc-meta-chip"><strong>Who:</strong> ${(pr.who_acts||'').split(';').map(w=>w.trim()).filter(Boolean).map(w=>'<span class="who-chip">'+esc(w)+'</span>').join(' ')}</span>` : ''}
-              ${pr.when ? `<span class="pc-meta-chip"><strong>When:</strong> ${esc(pr.when)}</span>` : ''}
-              ${(()=>{const resTooltips={'Minimal':'Existing budget — no additional allocation needed','Moderate':'Dedicated allocation — requires budget line','Significant':'Requires restructuring or additional financing'};const baseRes=(pr.resources||'').split('(')[0].trim();const tip=resTooltips[baseRes]||'';return pr.resources?`<span class="pc-meta-chip"${tip?' title="'+esc(tip)+'"':''}><strong>Resources:</strong> ${esc(pr.resources)}</span>`:'';})()}
-            </div>` : ''}
-            ${warningBadges}
-          </div>
-        </div>
-        <!-- Zone 1: The Gap -->
-        <div class="pc-zone zone-gap">
-          <div class="pc-zone-title">
-            <div class="pc-zone-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
-            The Gap
-          </div>
-          <div class="pc-zone-body">${esc(pr.the_gap||pr.body||'')}</div>
-        </div>
-        <!-- Zone 2: Why it matters -->
-        <div class="pc-zone zone-why">
-          <div class="pc-zone-title">
-            <div class="pc-zone-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/></svg></div>
-            Why it matters
-          </div>
-          <div class="pc-zone-body">${esc((pr.why_it_matters||'') + (pr.why_fcv_matters ? ' ' + pr.why_fcv_matters : ''))}</div>
-        </div>
-        <!-- Zone: CPF Alignment (conditional — only shown when cpf_alignment is non-null) -->
-        ${pr.cpf_alignment && (isClimateLensActive() || activeLenses.length>0) ? `<div class="pc-zone zone-cpf">
-          <div class="pc-zone-title">
-            <div class="pc-zone-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>
-            CPF Alignment
-          </div>
-          <div class="pc-zone-body">${esc(pr.cpf_alignment)}</div>
-        </div>` : ''}
-        <!-- Zone 3: How to act (from JSON — always available) -->
-        <div class="pc-zone zone-act" id="zone-act-${idx}">
-          <div class="pc-zone-title">
-            <div class="pc-zone-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
-            How to act
-          </div>
-          <div class="zone-act-primary">
-            <!-- Essential actions -->
-            ${(pr.actions && pr.actions.length > 0) ? `<div class="zone-act-section">
-              <div class="zone-act-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Essential action${pr.actions.length > 1 ? 's' : ''}</div>
-              <div class="zone-act-intro">${pr.actions.length > 1 ? 'Below are proposed actions to help address this priority.' : 'Below is a proposed action to help address this priority.'}</div>
-              ${pr.actions.map(act => `<div class="zone-act-action">
-                <div class="zone-act-action-title">${esc(act.document_element||'')}</div>
-                <div class="zone-act-action-guidance">${esc(act.guidance||'')}</div>
-                ${act.suggested_language ? `<div class="zone-act-action-lang"><div class="zone-act-draft-text"><span class="zone-act-lang-label">Suggested text:</span> ${esc(act.suggested_language)}</div></div>` : ''}
-              </div>`).join('')}
-            </div>` : (pr.recommendation ? `<div class="zone-act-section">
-              <div class="zone-act-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Essential action</div>
-              <div class="zone-act-essential">${esc(pr.recommendation)}</div>
-            </div>` : '')}
-            <!-- Where in the PAD (legacy only — action titles already identify document elements) -->
-            ${(!pr.actions || pr.actions.length === 0) && pr.pad_sections ? `<div class="zone-act-section">
-              <div class="zone-act-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Where in the PAD</div>
-              <div class="zone-act-pad-chips">${pr.pad_sections.split(';').map(s=>s.trim()).filter(Boolean).map(s=>`<span class="pad-chip">${esc(s)}</span>`).join('')}</div>
-            </div>` : ''}
-            <!-- Suggested language (legacy fallback — only shown if no actions array) -->
-            ${(!pr.actions || pr.actions.length === 0) && pr.suggested_language ? `<div class="zone-act-section zone-act-draft">
-              <div class="zone-act-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Suggested PAD language</div>
-              <div class="zone-act-draft-text">${esc(pr.suggested_language)}</div>
-            </div>` : ''}
-            <!-- Implementation note -->
-            ${pr.implementation_note ? `<div class="zone-act-section zone-act-impl">
-              <div class="zone-act-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Implementation consideration</div>
-              <div class="pc-zone-body">${esc(pr.implementation_note)}</div>
-            </div>` : ''}
-          </div>
-        </div>
-        ${renderPriorityProjectCycle(pr)}
-        <!-- Climate contribution context remains available when the climate lens is active -->
-        ${isClimateLensActive()?renderPriorityClimateContribution(pr):renderStandardPriorityContext(pr)}
-        ${renderPriorityCompliance(pr)}
-          <!-- Go Deeper 3-tab section (lazy-loaded on expand) -->
+  function renderGoDeeperHtml(idx){
+    return `<!-- Go Deeper 3-tab section (lazy-loaded on expand) -->
           <details class="go-deeper" id="deeper-details-${idx}" ontoggle="handleDeeperToggle(this,${idx})">
             <summary>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
               Go Deeper
               <span class="beyond-badge">Optional</span>
-              <span class="beyond-arrow">▾</span>
+              <span class="beyond-arrow" aria-hidden="true">${window.FcvReadout.CHEVRON_SVG}</span>
             </summary>
             <div class="deeper-content">
               <p style="font-size:12px;color:var(--muted);line-height:1.55;margin:4px 0 12px;padding:0 2px;">Explore the evidence behind this recommendation and relevant resources from the FCV Playbook.</p>
@@ -7531,14 +6894,7 @@ ${body}
                 <div id="deeper-result-${idx}"></div>
               </div>
             </div>
-          </details>
-        </div>
-      </div>`;
-
-    // Go Deeper is lazy-loaded — only fires when user opens the <details> section
-
-    updateSidebar();
-    cardArea.scrollIntoView({behavior:'smooth', block:'nearest'});
+          </details>`;
   }
 
 
@@ -8126,8 +7482,13 @@ ${body}
   }
 
   function selectPrioritySb(title){
-    const idx = stageThreePriorities.findIndex(p=>p.title===title);
-    if(idx >= 0) showPriority(idx);
+    const list=supportsClimateVerifiedStage3View()
+      ?stageThreePriorities.slice().sort((a,b)=>(Number(a.rank)||999)-(Number(b.rank)||999))
+      :stageThreePriorities;
+    const idx = list.findIndex(p=>p.title===title);
+    if(idx<0)return;
+    // Normal cards are displayed High, Medium, Low; each carries its stored index.
+    const d=document.querySelector('details.fr-pc[data-fr-src-index="'+idx+'"]')||document.getElementById('fr-priority-'+(idx+1));if(d){d.open=true;d.scrollIntoView({block:'start'});}
   }
 
 
@@ -8136,6 +7497,10 @@ ${body}
     if(!s)return'';
     const value=typeof normalizeVisibleText==='function'?normalizeVisibleText(s):String(s);
     return value.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  const TIMING_LABELS={'flag-for-preparation':'Consider during preparation','required-before-appraisal':'Address before Decision Review (DM/ROC)','required-before-board':'Address before Board','next-series':'Consider for next series','supervision':'Consider during supervision','pre-appraisal':'Address before Decision Review (DM/ROC)','shortly-after-OIS':'Shortly after OIS decision','before-TD-review':'Before Technical Design review','at-TD-review':'At Technical Design review','between-TD-and-IR':'Between TD and IR review','before-IR':'Before Implementation Readiness review','at-IR':'At Implementation Readiness review','before-One-Review':'Before One Review','at-One-Review':'At One Review','before-negotiations':'Before negotiations','before-Board':'Before Board','during-implementation-support':'During implementation support'};
+  function frApi(){
+    return window.FcvReadout.create({esc,md,boldFirst:boldVisibleFirstSentence,sentenceEnd:findVisibleSentenceEnd,timingLabel:value=>TIMING_LABELS[value||'']||value||''});
   }
 
 </script>

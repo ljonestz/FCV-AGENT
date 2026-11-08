@@ -56,10 +56,12 @@ def test_dividends_calibration_and_provider_schema_are_aligned():
     assert 'assessment_narratives' in stage_output_schema('reader_compiler')['properties']
 
 def test_supporting_sections_have_distinct_panels_and_question_prose():
-    source = (Path(__file__).resolve().parents[1]/"index.html").read_text(encoding="utf-8")
-    assert "const question=theme.question||" in source
-    assert "climate-reference-panel" in source
-    assert "climate-section-description" in source
+    root = Path(__file__).resolve().parents[1]
+    module = (root / "static" / "fcv_readout.js").read_text(encoding="utf-8")
+    assert "const question = t.question || THEME_QUESTIONS[t.title]" in module
+    assert 'class="fr-theme-q"' in module
+    assert "Assessment Findings" in module
+    assert "fr-theme-links" in module
 
 
 def test_paraphrase_permission_does_not_relax_existing_summary_contract():

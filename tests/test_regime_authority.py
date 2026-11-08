@@ -34,8 +34,9 @@ def test_authority_basis_valid_preserved_and_normalised():
 def test_authority_basis_in_schema_ui_and_docx():
     assert "authority_basis" in app_module.DEFAULT_PROMPTS["3"]
     root = Path(__file__).resolve().parent.parent
-    html = (root / "index.html").read_text(encoding="utf-8")
-    assert "authority_basis" in html            # UI chip + downloadHTML export
+    # The browser readout (screen, Copy and Share .html) renders it from the shared renderer.
+    readout = (root / "static" / "fcv_readout.js").read_text(encoding="utf-8")
+    assert "p.authority_basis" in readout and "Source basis" in readout
     appsrc = (root / "app.py").read_text(encoding="utf-8")
     # validation + Stage 3 schema + DOCX export = at least 3 references
     assert appsrc.count("authority_basis") >= 3

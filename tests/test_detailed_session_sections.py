@@ -118,7 +118,7 @@ if(saved.stageResponsivenessSummary !== 'responsiveness') throw new Error('check
     _run_node(script)
 
 
-def test_reset_clears_detailed_sections_and_summary_link_explains_detail_target():
+def test_reset_clears_detailed_sections():
     source = INDEX.read_text(encoding="utf-8")
     reset_start = source.index("function reset()")
     reset_end = source.index("// Markdown renderer", reset_start)
@@ -129,7 +129,3 @@ def test_reset_clears_detailed_sections_and_summary_link_explains_detail_target(
         ("stageResponsivenessSummary", "''"),
     ):
         assert f"{field}={value}" in reset
-    assert (
-        "See Priority ${rank} in Detailed analysis"
-        in source
-    )

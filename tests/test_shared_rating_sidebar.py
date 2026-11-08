@@ -68,23 +68,9 @@ def test_responsiveness_contract_has_five_levels_and_unscored_exceptions():
     }
 
 
-def test_summary_keeps_shared_sidebar_and_verified_climate_uses_it():
-    source = INDEX.read_text(encoding="utf-8")
-    assert '.stage3-reading-shell[data-stage3-view="summary"]{grid-template-columns:1fr}' not in source
-    assert '.stage3-reading-shell[data-stage3-view="summary"] .stage3-rating-rail' not in source
-    assert 'const _showDetailedRail=isLast;' in source
-    assert 'climateVerifiedRatingCards(climateVerifiedReader)' in source
-
-
 def test_mobile_utility_bar_height_override_follows_desktop_rule():
     source = INDEX.read_text(encoding="utf-8")
     assert source.index('.session-bar{height:auto;') > source.index('.session-bar{display:flex;')
-
-
-def test_live_detailed_avoids_duplicate_old_sensitivity_panel():
-    source = INDEX.read_text(encoding="utf-8")
-    assert 'renderClimateVerifiedAssessment(climateVerifiedReader,true)' in source
-    assert "ratingsInSidebar?'':" in _extract_js_function(source, "renderClimateVerifiedAssessment")
 
 
 def test_exports_include_responsiveness_contribution_and_scope(tmp_path):

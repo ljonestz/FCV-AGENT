@@ -76,52 +76,9 @@ def _readout(*, strengths=None) -> dict:
     return readout
 
 
-def test_standard_summary_is_compact_and_shows_all_ranked_priorities_without_ratings():
-    source = INDEX.read_text(encoding="utf-8")
-    helpers = "\n".join(
-        _extract_js_function(source, name)
-        for name in (
-            "supportsConciseStage3View",
-            "normalizeVisibleText",
-            "findVisibleSentenceEnd",
-            "boldVisibleFirstSentence",
-            "getConcisePriority",
-            "renderNormalSummaryGaps",
-            "renderNormalSummaryPriorities",
-            "renderNormalFcvSummary",
-        )
-    )
-    priorities = [_priority(index) for index in range(1, 4)]
-    script = f"""
-{_esc_js()}
-let activeLenses=[];
-let stageThreePriorities={json.dumps(priorities)};
-let stageConciseReadout={json.dumps(_readout())};
-let stage3View='summary';
-let openSummaryPriority=0;
-let reviewMode='design';
-const renderStage3AdvisoryTransition=()=>'<p>Suggestions for the team.</p>';
-const renderNormalFcvWatchDisclosure=()=>'';
-{helpers}
-const html=renderNormalFcvSummary();
-for(const expected of ['Overall assessment','What the project does well','Potential gaps','Priority actions for the task team','Protect access in Bentiu 1','Protect access in Bentiu 2','Protect access in Bentiu 3','Clear access decisions help keep delivery inclusive in Bentiu.','Set an access trigger for Bentiu.']){{
-  if(!html.includes(expected))throw new Error('missing '+expected+' | '+html);
-}}
-for(const forbidden of ['FCV sensitivity','FCV responsiveness','summary-priority-toggle','Where this fits in the project cycle','Suggested wording for the current document']){{
-  if(html.includes(forbidden))throw new Error('summary exposed '+forbidden+' | '+html);
-}}
-if((html.match(/class="normal-summary-priority"/g)||[]).length!==3)throw new Error('wrong priority count');
-"""
-    result = subprocess.run(["node", "-e", script], capture_output=True, text=True, check=False)
-    assert result.returncode == 0, result.stderr
-
-
-def test_standard_summary_accepts_short_readout_with_zero_strengths_and_valid_priority_bundle():
+def test_standard_readout_gate_accepts_short_readout_with_zero_strengths_and_valid_priority_bundle():
     source = INDEX.read_text(encoding="utf-8")
     supports = _extract_js_function(source, "supportsConciseStage3View")
-    normalize = _extract_js_function(source, "normalizeVisibleText")
-    bold = "\n".join(_extract_js_function(source, name) for name in ("findVisibleSentenceEnd", "boldVisibleFirstSentence"))
-    render = _extract_js_function(source, "renderNormalFcvSummary")
     priorities = [_priority(index) for index in range(1, 6)]
     script = f"""
 {_esc_js()}
@@ -130,45 +87,6 @@ let stageThreePriorities={json.dumps(priorities)};
 let stageConciseReadout={json.dumps(_readout(strengths=[]))};
 {supports}
 if(!supportsConciseStage3View())throw new Error('short valid readout was rejected');
-const renderStage3AdvisoryTransition=()=>'';
-const renderNormalFcvWatchDisclosure=()=>'';
-{normalize}
-{bold}
-const getConcisePriority=priority=>priority.concise;
-const renderNormalSummaryGaps=()=>'';
-const renderNormalSummaryPriorities=()=>'';
-{render}
-const html=renderNormalFcvSummary();
-if(html.includes('Project strength'))throw new Error('empty strengths created a placeholder');
-"""
-    result = subprocess.run(["node", "-e", script], capture_output=True, text=True, check=False)
-    assert result.returncode == 0, result.stderr
-
-
-def test_summary_priority_link_sets_exact_detailed_identity_and_persists_tab_selection():
-    source = INDEX.read_text(encoding="utf-8")
-    renderer = "\n".join(_extract_js_function(source, name) for name in ("normalizeVisibleText", "findVisibleSentenceEnd", "boldVisibleFirstSentence", "renderNormalSummaryPriorities"))
-    opener = _extract_js_function(source, "openDetailedPriority")
-    priorities = [_priority(index) for index in range(1, 3)]
-    script = f"""
-{_esc_js()}
-let stageThreePriorities={json.dumps(priorities)};
-let currentPriority=0;
-let stage3View='summary';
-let called=[];
-const setStage3View=(view,preserve,focus)=>{{called.push([view,preserve,focus]);stage3View=view;}};
-{opener}
-const links=(()=>{{
-  const getConcisePriority=priority=>priority.concise;
-  {renderer}
-  return renderNormalSummaryPriorities();
-}})();
-if(!links.includes('href="#priority-card-area"'))throw new Error('missing detailed anchor');
-if(!links.includes('openDetailedPriority(1)'))throw new Error('second priority link is not identity-specific');
-if(!links.includes('See Priority 2 in Detailed analysis'))throw new Error('detailed link does not explain the destination');
-openDetailedPriority(1);
-if(currentPriority!==1)throw new Error('detailed priority identity was not preserved');
-if(called.length!==1||called[0][0]!=='detailed'||called[0][1]!==true)throw new Error('tab selection was not persisted');
 """
     result = subprocess.run(["node", "-e", script], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
@@ -177,7 +95,6 @@ if(called.length!==1||called[0][0]!=='detailed'||called[0][1]!==true)throw new E
 def test_standard_detailed_timing_is_advisory_and_differentiated_context_is_removed():
     source = INDEX.read_text(encoding="utf-8")
     timing = _extract_js_function(source, "renderPriorityTiming")
-    context = _extract_js_function(source, "renderStandardPriorityContext")
     script = f"""
 {_esc_js()}
 let activeLenses=[];
@@ -186,80 +103,12 @@ const isClimateLensActive=()=>false;
 const standard=renderPriorityTiming('required-before-appraisal');
 if(!standard.includes('Consider before appraisal'))throw new Error('standard timing is mandatory');
 if(standard.includes('Required before'))throw new Error('standard timing retained mandatory label');
-{context}
-const disclosure=renderStandardPriorityContext({{cpf_alignment:'CPF & <Outcome>',rra_driver_alignment:'RRA driver',refresh_shift:'Strategy contribution'}});
-for(const expected of ['<details','CPF &amp; &lt;Outcome&gt;','RRA driver','Strategy contribution']){{if(!disclosure.includes(expected))throw new Error('missing alignment '+expected);}}
-if(disclosure.includes(' open'))throw new Error('alignment should be closed by default');
-
 """
     result = subprocess.run(["node", "-e", script], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
-    for forbidden in ("renderSpecialistPriorityContext", "Differentiated approach note", "country_category_relevance"):
+    for forbidden in ("renderSpecialistPriorityContext", "renderStandardPriorityContext", "Context and strategic alignment",
+                      "Differentiated approach note", "country_category_relevance"):
         assert forbidden not in source
-
-
-def test_summary_gaps_bold_safe_first_sentences_but_actions_are_regular_weight():
-    source = INDEX.read_text(encoding="utf-8")
-    helpers = "\n".join(
-        _extract_js_function(source, name)
-        for name in (
-            "normalizeVisibleText",
-            "findVisibleSentenceEnd",
-            "boldVisibleFirstSentence",
-            "getConcisePriority",
-            "renderNormalSummaryGaps",
-            "renderNormalSummaryPriorities",
-            "renderNormalFcvSummary",
-        )
-    )
-    priorities = [_priority(index) for index in range(1, 4)]
-    priorities[0]["minimum_action"] = "Set an access trigger for Bentiu."
-    priorities[0]["concise"]["gap"] = (
-        "US$158.5 million is exposed. Dr. Ada reviews https://example.org/a.b?x=1.2. "
-        "FCV. Next step is to confirm ownership. <script>alert(1)</script>"
-    )
-    priorities[1]["concise"]["gap"] = "Second gap " + chr(0x2014) + " needs a decision. Follow-up evidence is available."
-    priorities[2]["concise"]["gap"] = "Third gap. Confirm the delivery trigger."
-    readout = _readout(
-        strengths=[
-            {
-                "title": "Local reach",
-                "text": "The design reaches local partners. <script>alert(2)</script> Next sentence.",
-            }
-        ]
-    )
-    readout["overview"] = "US$158.5 million is in scope. Dr. Ada leads. See https://example.org/a.b. Next sentence."
-    script = f"""
-{_esc_js()}
-let activeLenses=[];
-let stageThreePriorities={json.dumps(priorities)};
-let stageConciseReadout={json.dumps(readout)};
-let stage3View='summary';
-let openSummaryPriority=0;
-let reviewMode='design';
-const renderStage3AdvisoryTransition=()=>'<p>Suggestions for the team.</p>';
-const renderNormalFcvWatchDisclosure=()=>'';
-{helpers}
-const html=renderNormalFcvSummary();
-const normalCards=renderNormalSummaryPriorities(stageThreePriorities,'normal');
-const climateCards=renderNormalSummaryPriorities(stageThreePriorities,'climate');
-const gaps=html.indexOf('normal-summary-gaps');
-const prioritiesStart=html.indexOf('summary-priority-list');
-if(gaps<0||prioritiesStart<0||gaps>=prioritiesStart)throw new Error('gaps are not before priorities');
-if((html.match(/class="normal-summary-gap"/g)||[]).length!==3)throw new Error('wrong gap count');
-if(!html.includes('<strong>US$158.5 million is exposed.</strong>'))throw new Error('robust gap boundary failed');
-if(!html.includes('<strong>Second gap - needs a decision.</strong>'))throw new Error('emdash normalization or gap bolding failed');
-for(const [route,cards] of [['normal',normalCards],['climate',climateCards]]){{
-  const action=cards.match(/<p class="normal-summary-priority-action">([\\s\\S]*?)<\\/p>/);
-  if(!action||!action[1].includes('Set an access trigger for Bentiu.'))throw new Error(route+' Suggested action is missing');
-  if(action[1].includes('<strong>'))throw new Error(route+' Suggested action should use regular weight');
-}}
-if(html.includes('normal-summary-priority-label">Why it matters'))throw new Error('summary priority repeats why');
-if(html.includes('<script>')||!html.includes('&lt;script&gt;alert(1)&lt;/script&gt;'))throw new Error('plain text was not safely escaped');
-if(html.includes(String.fromCharCode(0x2014)))throw new Error('visible em dash remains');
-"""
-    result = subprocess.run(["node", "-e", script], capture_output=True, text=True, check=False)
-    assert result.returncode == 0, result.stderr
 
 
 def test_reader_cleanup_removes_visible_metadata_panels_and_attribution_but_keeps_route_warnings():
@@ -274,7 +123,6 @@ def test_reader_cleanup_removes_visible_metadata_panels_and_attribution_but_keep
     ):
         assert forbidden not in source, f"removed reader/export content remains: {forbidden}"
     assert "temporalContext" in source
-    assert "climate-summary-route-warning" in source
     assert "climate-route-warning" in source
 
 
@@ -314,12 +162,11 @@ downloadManagementBrief('html',button).then(()=>{{
     assert result.returncode == 0, result.stderr
 
 
-
 def test_standard_watch_narrative_preserves_markdown_prose_and_escapes_html():
     source = INDEX.read_text(encoding="utf-8")
     helpers = "\n".join(
         _extract_js_function(source, name)
-        for name in ("md", "normalFcvWatchGroups", "renderNormalFcvWatchDisclosure")
+        for name in ("normalizeVisibleText", "md", "stripWatchHeading", "normalFcvWatchGroups", "renderNormalFcvWatchBody")
     )
     script = f"""
 {_esc_js()}
@@ -332,10 +179,11 @@ let p4rWatch=[];
 let regionalWatch=[];
 let horizonConsiderations='### Watch List for Supervision\\n\\n**1. Access**\\nTrack access conditions. <script>alert(1)</script>\\n\\n**2. Delivery**\\nReview delivery signals.';
 {helpers}
-const html=renderNormalFcvWatchDisclosure();
+const html=renderNormalFcvWatchBody();
 if(!html.includes('<div class="normal-fcv-watch-narrative">'))throw new Error('horizon narrative was not rendered as prose');
 if((html.match(/<li>/g)||[]).length)throw new Error('horizon narrative was flattened into a list item');
-if(!html.includes('<h3>Watch List for Supervision</h3>'))throw new Error('markdown heading was not rendered');
+if(html.includes('Watch List for Supervision'))throw new Error('duplicate watch heading was not stripped');
+if(!html.includes('Track access conditions.')||!html.includes('Review delivery signals.'))throw new Error('watch prose was lost');
 if(!html.includes('&lt;script&gt;alert(1)&lt;/script&gt;'))throw new Error('watch narrative was not escaped');
 if(html.includes('<script>'))throw new Error('raw script reached watch markup');
 """
@@ -343,50 +191,29 @@ if(html.includes('<script>'))throw new Error('raw script reached watch markup');
     assert result.returncode == 0, result.stderr
 
 
-def test_stage3_full_report_download_menu_is_available_across_summary_and_detailed_tabs():
+def test_stage3_full_report_download_menu_replaces_brief_controls_in_toolbar():
     source = INDEX.read_text(encoding="utf-8")
-    toggle = _extract_js_function(source, "stage3ViewToggleHtml")
+    controls = _extract_js_function(source, "renderManagementBriefControls")
+    assert "stage3View" not in controls
     script = f"""
-let stage3View='summary';
-{toggle}
-for(const view of ['summary','detailed']){{
-  stage3View=view;
-  const tabs=stage3ViewToggleHtml();
-  if(!tabs.includes('Word and HTML downloads include the complete analysis.'))throw new Error(view+' lost the full-report download note');
-  if(tabs.includes('Brief downloads'))throw new Error(view+' advertises a brief download');
-}}
+let valid=true;
+const supportsConciseStage3View=()=>valid;
+{controls}
+const shown=renderManagementBriefControls();
+if(!shown.includes('Brief Word')||!shown.includes('Brief HTML'))throw new Error('brief helper broken for a valid readout');
+valid=false;
+if(renderManagementBriefControls()!=='')throw new Error('unusable brief controls remain');
 """
     result = subprocess.run(["node", "-e", script], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
-    menu_start = source.index('class="report-download-menu"')
-    output_start = source.index('id="out-txt"', menu_start)
-    menu_and_toolbar = source[menu_start:output_start]
-    assert source.count('class="report-download-menu"') == 1
-    assert "Full Detailed report formats" in menu_and_toolbar
-    assert "Word (.docx)" in menu_and_toolbar and "HTML (.html)" in menu_and_toolbar
-
-
-def test_summary_detailed_tab_switches_do_not_reinsert_management_brief_controls():
-    source = INDEX.read_text(encoding="utf-8")
-    set_view = _extract_js_function(source, "setStage3View")
-    script = """
-let stage3View='detailed', currentPriority=0, openSummaryPriority=0;
-let horizonConsiderations='';
-const host={innerHTML:''};
-const document={getElementById:id=>id==='management-brief-controls'?host:null,querySelector:()=>null};
-const supportsAnyStage3Summary=()=>true;
-const supportsClimateVerifiedStage3View=()=>false;
-const renderPrioritiesIntro=()=>{}, renderPriorityStepper=()=>{}, showPriority=()=>{};
-""" + set_view + """
-setStage3View('summary');
-if(host.innerHTML)throw new Error('management brief controls were inserted in Summary');
-setStage3View('detailed');
-if(host.innerHTML)throw new Error('management brief controls were inserted in Detailed');
-setStage3View('summary');
-if(host.innerHTML)throw new Error('management brief controls were reinserted after switching back to Summary');
-"""
-    result = subprocess.run(["node", "-e", script], capture_output=True, text=True, check=False)
-    assert result.returncode == 0, result.stderr
+    render_out = _extract_js_function(source, "renderOut")
+    # Upstream (approved 2026-10-28): the toolbar offers one Download report menu; the
+    # management brief and review packet buttons are removed but their helpers remain.
+    assert "renderManagementBriefControls()" not in render_out
+    assert "downloadClimateReviewPacket(this)" not in render_out
+    assert render_out.count('class="report-download-menu"') == 1
+    assert "Full Detailed report formats" in render_out
+    assert "Word (.docx)" in render_out and "HTML (.html)" in render_out
 
 
 def test_manual_session_load_restores_completed_stage3_without_rerun_and_keeps_partial_resume():
@@ -416,6 +243,7 @@ const renderLensSelector=()=>{{}};
 const setStepper=()=>{{}};
 const enableClickableStepper=()=>{{calls.push('enableClickableStepper')}};
 const navigateToStage=stage=>{{calls.push('navigateToStage:'+stage)}};
+const refreshRestoredClimateReader=()=>{{}};
 const alert=message=>{{calls.push('alert:'+String(message))}};
 const elements={{}};
 const document={{getElementById(id){{
@@ -424,7 +252,7 @@ const document={{getElementById(id){{
 }}}};
 class FileReader{{readAsText(file){{this.onload({{target:{{result:file.contents}}}})}}}}
 {helpers}
-const completed={{version:3,savedAt:'2026-09-20T00:00:00Z',currentStage:3,history:[],stageOutputs:{{3:'completed recommendations'}},stageHists:{{}},fileNames:{{project:['project.docx'],context:['reference.pdf']}}}};
+const completed={{version:3,savedAt:'2026-09-20T00:00:00Z',currentStage:3,history:[],stageOutputs:{{3:'completed recommendations'}},stageThreePriorities:[{{title:'Priority 1'}}],stageHists:{{}},fileNames:{{project:['project.docx'],context:['reference.pdf']}}}};
 const partial={{version:3,savedAt:'2026-09-20T00:00:00Z',currentStage:2,history:[],stageOutputs:{{2:'assessment'}},stageHists:{{}},fileNames:['<legacy>.docx',null,42]}};
 const input={{files:[{{name:'completed.json',contents:JSON.stringify(completed)}}],value:'selected'}};
 loadSession(input);

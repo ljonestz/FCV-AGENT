@@ -1,0 +1,1026 @@
+{
+ "_provenance": "Trimmed from a saved success_20261027 climate session: cited support records, facts sharing a number with reader prose, judgments, and the final-reader trace. No source documents.",
+ "reader_assessment": {
+  "facts": [
+   {
+    "claim_id": "PF-011",
+    "claim_type": "climate_hazard_context",
+    "subject": "Road links connecting Somali urban centers",
+    "predicate": "are described as",
+    "object_value": "underdeveloped, insecure, and highly vulnerable to climate hazards",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-91939b7e32843c82-B-3e3e8fcf9fad"
+    ],
+    "supporting_excerpt": "The road links c onnecting these urban centers remain underdeveloped, insecure, and highly vulnerable to climate hazards",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-012",
+    "claim_type": "climate_hazard_context",
+    "subject": "Recurrent flooding and other disasters in Somali urban nodes",
+    "predicate": "are described as",
+    "object_value": "continuing to displace hundreds of thousands",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-91939b7e32843c82-B-46ab9ca6aba6"
+    ],
+    "supporting_excerpt": "recurrent flooding and other disasters continue to displace hundreds of thousands, creating a vicious cycle",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-014",
+    "claim_type": "selection_criteria",
+    "subject": "Phase 1 activity prioritization",
+    "predicate": "is based on",
+    "object_value": "agreed criteria: criticality for safe and resilient connectivity, addressing bottlenecks in urban service delivery in regional hubs, and maximizing sustainable job creation",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-91939b7e32843c82-B-88dfcbd53ba6"
+    ],
+    "supporting_excerpt": "Activities will be prioritized based on agreed criteria, including criticality in ensuring safe and resilient connectivity throughout the country",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-015",
+    "claim_type": "activity_status",
+    "subject": "Pillar 1 final list of activities",
+    "predicate": "has status",
+    "object_value": "under discussion and to be established during preparation; interventions only expected",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-91939b7e32843c82-B-88dfcbd53ba6"
+    ],
+    "supporting_excerpt": "The final list of activities is under discussion and will be established during preparation, however interventions are expected to include:",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-016",
+    "claim_type": "activity",
+    "subject": "Pillar 1 resilient airports and airspace",
+    "predicate": "is expected to upgrade",
+    "object_value": "facilities at Mogadishu and regional hubs to international standards, including airfield lighting, power and water supply, rescue and firefighting, and an Automated Weather System linked to national early warning services",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-91939b7e32843c82-B-28ef88b92d85"
+    ],
+    "supporting_excerpt": "Upgrade facilities at Mogadishu and regional hubs 9 to meet international standards",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-017",
+    "claim_type": "activity",
+    "subject": "Pillar 1 local priority airstrips",
+    "predicate": "are expected to be upgraded to",
+    "object_value": "ICAO Aerodrome Code 3C standards for safe domestic operations and connectivity for humanitarian assistance, socio-economic development and commercial trade",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-91939b7e32843c82-B-28ef88b92d85"
+    ],
+    "supporting_excerpt": "upgrade select local priority airstrips to ICAO Aerodrome Code 3C standards",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-018",
+    "claim_type": "site_activity_relationship",
+    "subject": "This phase",
+    "predicate": "will upgrade to ICAO Aerodrome Code 3C",
+    "object_value": "five of nine selected airstrips: Barawe, Dhoobley, Dhusamareeb, Galkacyo, Jowhar; others in subsequent phases",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-91939b7e32843c82-B-bb0ab9b0aefe"
+    ],
+    "supporting_excerpt": "This phase will upgrade five of nine selected airstrips (Barawe, Dhoobley, Dhusamareeb, Galkacyo, Jowhar) to ICAO Aerodrome Code 3C standards",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-019",
+    "claim_type": "selection_criteria",
+    "subject": "FGS and FMS selection of priority airstrips",
+    "predicate": "used criteria including",
+    "object_value": "demand, climate resilience, proximity to higher-code airstrips, maintenance capacity, population served, and humanitarian access",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-91939b7e32843c82-B-bb0ab9b0aefe"
+    ],
+    "supporting_excerpt": "technical and socio -economic criteria —such as demand, climate resilience, proximity to higher -code airstrips, maintenance capacity, population served, and humanitarian access",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-020",
+    "claim_type": "activity",
+    "subject": "Pillar 1 urban resilience and connectivity",
+    "predicate": "is expected to include",
+    "object_value": "robust drainage systems, climate-resilient access roads in and around urban areas including residential and commercial zones, and integration with national early warning and response mechanisms",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-91939b7e32843c82-B-28ef88b92d85"
+    ],
+    "supporting_excerpt": "i) robust drainage systems ; ii) climate-resilient access roads in and around urban areas",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-021",
+    "claim_type": "location_status",
+    "subject": "List of cities for urban resilience investments",
+    "predicate": "has status",
+    "object_value": "under discussion, potentially including Garowe, Baidoa, Kismayo and Mogadishu",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-91939b7e32843c82-B-bb0ab9b0aefe"
+    ],
+    "supporting_excerpt": "The list of cities to be included is under discussion, but potentially to include Garowe, Baidoa, Kismayo and Mogadishu",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-023",
+    "claim_type": "activity",
+    "subject": "Pillar 2 institutional component",
+    "predicate": "will include",
+    "object_value": "high-level coordination platforms chaired by the MOF, economic basin assessments including risk mapping and emergency preparedness, and support for feasibility or design studies for future phases",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-91939b7e32843c82-B-afe8c242b86f"
+    ],
+    "supporting_excerpt": "support preparation of any required feasibility or design studies for future phases",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-025",
+    "claim_type": "activity",
+    "subject": "Pillar 2 skills training",
+    "predicate": "will take",
+    "object_value": "a targeted approach to skills training in the construction sector, building on SURP II",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-91939b7e32843c82-B-afe8c242b86f"
+    ],
+    "supporting_excerpt": "Building on the success of SURP II, 12 it will also take a targeted approach to skills training in the construction sector.",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-026",
+    "claim_type": "precedent_evidence",
+    "subject": "SURP-II",
+    "predicate": "is reported to have created",
+    "object_value": "nearly 13,000 construction jobs (24% women, 49% IDPs, 80% youth) with gender-inclusive local hiring requirements in bidding documents",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-91939b7e32843c82-B-bb0ab9b0aefe"
+    ],
+    "supporting_excerpt": "SURP-II created nearly 13,000 construction jobs (24% women, 49% IDPs, 80% youth)",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-027",
+    "claim_type": "activity",
+    "subject": "Pillar 3 sustainable operations",
+    "predicate": "will develop",
+    "object_value": "legal, governance and financial frameworks for sector revenues for operations and maintenance while embedding climate and disaster risk considerations",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-91939b7e32843c82-B-2e452cb7f0aa",
+     "DOC-91939b7e32843c82-B-1a9b386e4fc7"
+    ],
+    "supporting_excerpt": "sector revenues for sustainable operations and maintenance, while embedding climate and disaster risk considerations",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-032",
+    "claim_type": "design_response",
+    "subject": "Project design",
+    "predicate": "is stated to incorporate",
+    "object_value": "climate adaptation and disaster risk reduction measures including resilient infrastructure design and early warning systems, plus conflict sensitivity, inclusive stakeholder engagement and emergency preparedness",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-91939b7e32843c82-B-889dd7a463bf"
+    ],
+    "supporting_excerpt": "The project integrates climate adaptation and disaster risk reduction measures, including resilient infrastructure design and early warning systems.",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-033",
+    "claim_type": "es_screening",
+    "subject": "Footprint and biodiversity risk",
+    "predicate": "is described as",
+    "object_value": "mostly within existing infrastructure footprints, though some rural airstrips and corridors may be near sensitive ecosystems requiring screening, and connector roads and flood mitigation infrastructure may have indirect impacts",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-91939b7e32843c82-B-889dd7a463bf"
+    ],
+    "supporting_excerpt": "some rural airstrips and corridors may be near sensitive ecosystems, requiring careful screening and mitigation",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-035",
+    "claim_type": "governance_context",
+    "subject": "Roads and aviation governance in Somalia",
+    "predicate": "is described as",
+    "object_value": "fragmented, with MoPWRH mandate overlapping MoTCA and Federal Member States, and operations and maintenance underfunded",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-91939b7e32843c82-B-f2be94a051ab"
+    ],
+    "supporting_excerpt": "Across all sectors, operations and maintenance are underfunded",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-036",
+    "claim_type": "climate_instrument",
+    "subject": "Documented climate risk assessment or adaptation design standard for Phase 1 sites",
+    "predicate": "is",
+    "object_value": "not stated in the document beyond reference to the 2023 Somalia Climate Risk Review as country evidence",
+    "epistemic_status": "not_found",
+    "source_block_ids": [
+     "DOC-91939b7e32843c82-B-889dd7a463bf"
+    ],
+    "supporting_excerpt": null,
+    "confidence": "medium"
+   }
+  ],
+  "derived_assertions": [],
+  "analysis": {
+   "existing_responses": [
+    {
+     "response_id": "ER-001",
+     "project_fact_ids": [
+      "PF-014",
+      "PF-019",
+      "PF-018"
+     ],
+     "pathway_ids": [
+      "PW-001",
+      "PW-003"
+     ],
+     "description": "Phase 1 activities and airstrips are chosen using stated criteria. Airstrip criteria explicitly include climate resilience, population served and humanitarian access, and this phase covers five of nine selected airstrips. This gives a documented, structured basis for prioritizing climate-exposed connectivity.",
+     "limitation": "Criteria for urban and corridor sites are described only generally, and the final activity list remains under discussion."
+    },
+    {
+     "response_id": "ER-002",
+     "project_fact_ids": [
+      "PF-016",
+      "PF-017",
+      "PF-032"
+     ],
+     "pathway_ids": [
+      "PW-001"
+     ],
+     "description": "Airport and airstrip upgrades include climate-informed design and warning features. Planned works include an Automated Weather System linked to national early warning services and ICAO Code 3C standards for airstrips used for humanitarian assistance and trade. This supports reliable access during climate shocks.",
+     "limitation": "Concept-stage expectations only; no site-level climate design standard is documented."
+    },
+    {
+     "response_id": "ER-003",
+     "project_fact_ids": [
+      "PF-020",
+      "PF-032"
+     ],
+     "pathway_ids": [
+      "PW-002"
+     ],
+     "description": "Urban investments are expected to combine drainage, climate-resilient access roads and links to national early warning and response mechanisms. These target recurrent flooding that displaces hundreds of thousands in urban nodes, and could keep services and workplaces accessible.",
+     "limitation": "City list is under discussion and drainage designs are not specified."
+    },
+    {
+     "response_id": "ER-004",
+     "project_fact_ids": [
+      "PF-032",
+      "PF-031",
+      "PF-008"
+     ],
+     "pathway_ids": [
+      "PW-002",
+      "PW-003"
+     ],
+     "description": "The concept note states the design incorporates conflict sensitivity, inclusive stakeholder engagement and emergency preparedness. Environmental and social risk is rated Substantial and preparation was authorized to continue. This gives a stated safeguard orientation for work in fragile, displacement-affected locations.",
+     "limitation": "Specific instruments, procedures and grievance arrangements are not described at concept stage."
+    },
+    {
+     "response_id": "ER-005",
+     "project_fact_ids": [
+      "PF-023",
+      "PF-035"
+     ],
+     "pathway_ids": [
+      "PW-003"
+     ],
+     "description": "Pillar 2 creates high-level coordination and technical platforms chaired by the Ministry of Finance (MOF). They aim to align phases and resolve overlaps with sectoral mechanisms such as MoPWRH, disaster management agencies and cities. This addresses fragmented mandates over roads, aviation and emergency response.",
+     "limitation": "Membership, decision rules and federal-state-city dispute handling are not specified."
+    },
+    {
+     "response_id": "ER-006",
+     "project_fact_ids": [
+      "PF-023"
+     ],
+     "pathway_ids": [
+      "PW-002"
+     ],
+     "description": "Economic basin assessments will include risk mapping and emergency preparedness alongside jobs, urban planning, housing and land. This can inform where investments are located and who is exposed to flooding.",
+     "limitation": "Timing relative to Phase 1 siting decisions is not stated."
+    },
+    {
+     "response_id": "ER-008",
+     "project_fact_ids": [
+      "PF-025",
+      "PF-026",
+      "PF-014"
+     ],
+     "pathway_ids": [
+      "PW-002"
+     ],
+     "description": "Targeted construction skills training builds on SURP II, which reported nearly 13,000 jobs (24% women, 49% IDPs, 80% youth) and gender-inclusive local hiring requirements. Job creation is also a Phase 1 prioritization criterion, offering livelihood coping capacity for displaced and young people.",
+     "limitation": "SURP II results are precedent; Phase 1 targeting and hiring rules are not yet specified."
+    },
+    {
+     "response_id": "ER-009",
+     "project_fact_ids": [
+      "PF-027",
+      "PF-028",
+      "PF-035"
+     ],
+     "pathway_ids": [
+      "PW-001"
+     ],
+     "description": "Pillar 3 will develop legal, governance and financial frameworks for sector revenues to fund operations and maintenance, embedding climate and disaster risk considerations. A roadmap for a Somalia Airport Authority and overflight fee reform address underfunded maintenance that undermines infrastructure durability.",
+     "limitation": "Revenue retention and allocation for climate-exposed assets remain to be designed."
+    },
+    {
+     "response_id": "ER-011",
+     "project_fact_ids": [
+      "PF-033"
+     ],
+     "pathway_ids": [],
+     "description": "Most activities are expected within existing infrastructure footprints, and rural airstrips and corridors near sensitive ecosystems are flagged for screening and mitigation. Indirect impacts of connector roads and flood mitigation works are also acknowledged. This limits new land take and downstream exposure transfer.",
+     "limitation": "Screening method and treatment of indirect impacts on neighbouring communities are not specified."
+    }
+   ],
+   "pathways": [],
+   "residual_gaps": [
+    {
+     "gap_id": "RG-001",
+     "gap_type": "not_yet_specified",
+     "statement": "The final Pillar 1 activity and city lists are still under discussion. How exposure to flooding and drought will be assessed when selecting urban and corridor sites is not yet described, so it is unclear whether the most climate-exposed and displacement-affected areas are reached. This is a concept-stage status, not a confirmed omission.",
+     "pathway_ids": [
+      "PW-002"
+     ],
+     "project_anchor_ids": [
+      "PF-015",
+      "PF-021",
+      "PF-014"
+     ],
+     "existing_response_ids": [
+      "ER-001",
+      "ER-006"
+     ],
+     "evidence_ids": [
+      "PF-015",
+      "PF-021"
+     ],
+     "confidence": "medium"
+    },
+    {
+     "gap_id": "RG-002",
+     "gap_type": "not_yet_specified",
+     "statement": "The document does not state a climate risk assessment or adaptation design standard for Phase 1 sites beyond country evidence. How design assumptions will reflect intensifying floods and droughts over asset life is therefore unspecified, which matters because airstrips, roads and drainage are exposed. Specific design practice may exist outside this document.",
+     "pathway_ids": [
+      "PW-001"
+     ],
+     "project_anchor_ids": [
+      "PF-036",
+      "PF-016",
+      "PF-010"
+     ],
+     "existing_response_ids": [
+      "ER-002",
+      "ER-003"
+     ],
+     "evidence_ids": [
+      "PF-036"
+     ],
+     "confidence": "medium"
+    },
+    {
+     "gap_id": "RG-003",
+     "gap_type": "not_yet_specified",
+     "statement": "Drainage and flood mitigation works may have indirect effects beyond their footprint, and settlement on marginal land is noted. How downstream or neighbouring informal settlements will be protected from shifted flood exposure, and how land and resettlement risks will be handled, is not described. This is a risk to examine, not evidence of harm.",
+     "pathway_ids": [
+      "PW-002"
+     ],
+     "project_anchor_ids": [
+      "PF-033",
+      "PF-020",
+      "PF-012"
+     ],
+     "existing_response_ids": [
+      "ER-004",
+      "ER-011"
+     ],
+     "evidence_ids": [
+      "PF-033",
+      "PF-012"
+     ],
+     "confidence": "low"
+    },
+    {
+     "gap_id": "RG-004",
+     "gap_type": "partial_response",
+     "statement": "Construction skills training and job creation build on SURP II precedent, but eligibility and local hiring arrangements for Phase 1 are not yet defined. Whether IDPs, women, youth and host residents can fairly access jobs and training, and whether gains feed trust and livelihood security, depends on this. Beneficiary groups are not established beyond precedent.",
+     "pathway_ids": [
+      "PW-002"
+     ],
+     "project_anchor_ids": [
+      "PF-025",
+      "PF-026",
+      "PF-014"
+     ],
+     "existing_response_ids": [
+      "ER-008",
+      "ER-004"
+     ],
+     "evidence_ids": [
+      "PF-026"
+     ],
+     "confidence": "medium"
+    },
+    {
+     "gap_id": "RG-006",
+     "gap_type": "not_yet_specified",
+     "statement": "The coordination platforms are meant to resolve overlaps among federal, state and city bodies, but how they will handle disputes over mandates and sequencing of works is not described. Given documented disputes and overlapping roles, unresolved mandates could delay or weaken resilient assets that communities rely on during floods.",
+     "pathway_ids": [
+      "PW-003"
+     ],
+     "project_anchor_ids": [
+      "PF-023",
+      "PF-035"
+     ],
+     "existing_response_ids": [
+      "ER-005"
+     ],
+     "evidence_ids": [
+      "PF-035"
+     ],
+     "confidence": "medium"
+    },
+    {
+     "gap_id": "RG-007",
+     "gap_type": "not_yet_specified",
+     "statement": "Pillar 3 will build revenue frameworks for operations and maintenance, but how revenues will be retained and used for climate-exposed assets is not described. Where maintenance stays underfunded, flood and drought damage could recur and reduce access for communities and humanitarian actors. The frameworks are planned work, not yet designed.",
+     "pathway_ids": [
+      "PW-001",
+      "PW-003"
+     ],
+     "project_anchor_ids": [
+      "PF-027",
+      "PF-028",
+      "PF-035"
+     ],
+     "existing_response_ids": [
+      "ER-009"
+     ],
+     "evidence_ids": [
+      "PF-035"
+     ],
+     "confidence": "medium"
+    },
+    {
+     "gap_id": "RG-008",
+     "gap_type": "evidence_gap",
+     "statement": "Early warning is linked to airport and urban works, but the documents do not show how warnings reach displaced and informal settlement residents or how local feedback will shape the design of works. Without this, climate-related services may be unevenly experienced. This is an evidence gap at concept stage.",
+     "pathway_ids": [
+      "PW-002"
+     ],
+     "project_anchor_ids": [
+      "PF-020",
+      "PF-016",
+      "PF-032"
+     ],
+     "existing_response_ids": [
+      "ER-003",
+      "ER-004",
+      "ER-002"
+     ],
+     "evidence_ids": [
+      "PF-032"
+     ],
+     "confidence": "low"
+    }
+   ]
+  },
+  "context_evidence": [],
+  "judgments": {
+   "relevance": {
+    "value": "high",
+    "evidence_ids": [
+     "PF-010",
+     "PF-011",
+     "PF-012",
+     "PF-031"
+    ],
+    "rationale": "Floods and droughts are expected to intensify, and road links are described as insecure and highly vulnerable to climate hazards. Recurrent flooding displaces hundreds of thousands in urban nodes that also host large displaced populations, and governance is fragmented. Climate resilience is written into the development objective, so the climate and fragility intersection is central to what the project builds and where it works."
+   },
+   "sensitivity": {
+    "value": "moderate",
+    "evidence_ids": [
+     "ER-001",
+     "ER-002",
+     "ER-003",
+     "ER-004",
+     "RG-002",
+     "RG-003"
+    ],
+    "rationale": "The design addresses main hazards through climate-informed airstrip criteria, drainage and resilient roads, weather and early warning links, and stated conflict sensitivity. The Substantial risk rating and screening of sensitive footprints are also credited. Material gaps remain at this concept stage: no site-level climate design standard is stated, and the risk of shifting flood exposure onto neighbours is not described. This supports a moderate view, with some treatment of both directions of risk."
+   },
+   "responsiveness": {
+    "value": "moderate",
+    "evidence_ids": [
+     "ER-005",
+     "ER-008",
+     "ER-010",
+     "RG-004",
+     "RG-005"
+    ],
+    "rationale": "Concrete features could support wider benefits. Construction skills training builds on SURP II jobs for women, IDPs and youth. Coordination platforms and basin assessments could strengthen cooperation across federal, state and city bodies. Reliable drainage and access could build confidence in institutions if fairly reachable. These are conditional pathways, since Phase 1 hiring rules and the exploratory Challenge Fund are unspecified. The contribution is credible but bounded."
+   },
+   "operationalization": {
+    "value": "early",
+    "evidence_ids": [
+     "PF-015",
+     "PF-030",
+     "PF-036",
+     "ER-007",
+     "RG-001"
+    ],
+    "rationale": "Several arrangements exist in outline, including the Ministry of Finance coordination platforms, digital risk monitoring where feasible, and indicators on climate-resilience beneficiaries and jobs. The activity list is still under discussion, and no climate design standard, verification arrangement or adaptation trigger is described. This fits a concept-stage document, so translation into requirements, responsibilities and resources is early rather than absent."
+   }
+  },
+  "executive_readout": "The project already ties its infrastructure choices to climate exposure. Airstrips were selected using criteria that include climate resilience, population served and humanitarian access, and airport upgrades are expected to link an Automated Weather System to national early warning services. Urban works are expected to pair drainage and climate-resilient access roads with early warning and response links, aimed at recurrent flooding that continues to displace hundreds of thousands. Conflict sensitivity, inclusive stakeholder engagement and emergency preparedness are stated as part of the design, and environmental and social risk is recorded as Substantial.\n\nThe main delivery challenge is that the setting is fragmented as well as hazard-prone. Roads, aviation and emergency response are split across federal, state and city bodies with overlapping mandates, and operations and maintenance are underfunded. Resilient assets can therefore lose their value if coordination stalls or upkeep is not financed. Pillar 2 coordination platforms and Pillar 3 revenue frameworks are the stated answers, but how disputes will be settled and how revenues will reach climate-exposed assets is not yet described.\n\nMost remaining questions reflect concept-stage status rather than omission. The final activity list and the cities are still under discussion, and no site-level climate design standard is stated in this document, though practice may exist elsewhere. The more practical concern is distribution: whether displaced and informal-settlement residents receive warnings, jobs and training, and whether flood works shift exposure to neighbours. The construction jobs record from SURP II is useful precedent, but Phase 1 hiring and targeting arrangements are not yet defined.",
+  "priorities": [
+   {
+    "recommendation_id": "REC-001",
+    "title": "Specify a site-level climate design basis for airstrip, drainage and access road works",
+    "pathway_ids": [
+     "PW-001"
+    ],
+    "existing_response_ids": [
+     "ER-002",
+     "ER-003"
+    ],
+    "residual_gap_ids": [
+     "RG-002"
+    ],
+    "project_anchor_ids": [
+     "PF-036",
+     "PF-016",
+     "PF-017",
+     "PF-010",
+     "PF-018"
+    ],
+    "decision": "Whether the concept description should state how climate hazard information will set design assumptions for selected airstrips, drainage and access roads before design work proceeds.",
+    "minimum_action": "In the PID concept description, state how flood and drought hazard information will inform design assumptions for the selected airstrips at Barawe, Dhoobley, Dhusamareeb, Galkacyo and Jowhar and for drainage and access roads, and which design question remains open.",
+    "enhanced_action": "Agree a short climate design basis for each selected airstrip and urban works package, recording hazard inputs, design life assumptions and who confirms them.",
+    "enhanced_activation": "Use once site designs or hazard data for the selected airstrips or confirmed cities become available during preparation.",
+    "routing_status": "standard_document_advisory",
+    "instrument_claim_ids": [],
+    "responsible_function": "Task team, working with the implementing ministries named in the document",
+    "authority_basis": "none_verified",
+    "recommendation_basis": "project_evidence",
+    "completion_evidence": "Updated concept description section naming the hazard inputs and design question for airstrips, drainage and access roads.",
+    "completion_evidence_status": "updated_section",
+    "confidence": "medium",
+    "limitation": "The document does not state a site-level climate design standard, although such practice may exist outside the uploaded concept note, so the actual gap is unconfirmed.",
+    "caution": "Concept stage does not need completed engineering detail. The team should keep this as a stated design question and confirm what technical guidance the ministries already use before proposing any new standard.",
+    "score": {
+     "materiality": 4,
+     "gap_strength": 3,
+     "leverage_urgency": 4,
+     "evidence": 3,
+     "feasibility": 4
+    },
+    "gate_results": {
+     "connection": true,
+     "residuality": true,
+     "materiality": true,
+     "actionability": true,
+     "timing": true,
+     "distinctiveness": true
+    },
+    "rank": 1,
+    "supported_numeric_tokens": [
+     "1",
+     "2023",
+     "9"
+    ],
+    "narrative": "The concept note already builds climate thinking into the airport and airstrip package. It plans an Automated Weather System linked to national early warning services, upgrades local airstrips to ICAO Aerodrome Code 3C standards, and pairs drainage with climate-resilient access roads. It also selected airstrips partly on climate resilience. These are real strengths, and they match a country where floods and droughts are expected to intensify and road links are described as highly vulnerable to climate hazards.\n\nWhat the document does not say is how hazard information will translate into design assumptions for the assets themselves. Airstrips, drainage channels and access roads are long-lived, and the climate they were designed for may differ from the climate they will operate in. If design assumptions are unclear, the same works that are meant to keep humanitarian, trade and urban access open could fail in the next severe flood or drought, with the heaviest consequences for communities who depend on a single air or road link.\n\nIn the PID concept description, the team should add a short statement on the design basis for the five airstrips already selected, and for the drainage and access road works once cities are confirmed. The statement should say which hazards the designs will respond to, what information will be used, and which design question stays open until technical work begins. For the selected airstrips this is a matter of design and implementation, not reselecting sites. For the cities still under discussion, the same statement can be written generally and made specific once the list is settled.\n\nThe team should also check what climate design guidance the Ministry of Transport and Civil Aviation and the Ministry of Public Works, Reconstruction and Housing already apply, so that the text credits existing practice rather than implying a gap that may not exist. If designs or hazard data become available before appraisal, the task team could record the agreed assumptions per site so that the later design work has a clear reference point."
+   },
+   {
+    "recommendation_id": "REC-002",
+    "title": "Add climate exposure and displacement-affected access to urban and corridor site selection criteria",
+    "pathway_ids": [
+     "PW-002"
+    ],
+    "existing_response_ids": [
+     "ER-001",
+     "ER-006"
+    ],
+    "residual_gap_ids": [
+     "RG-001"
+    ],
+    "project_anchor_ids": [
+     "PF-014",
+     "PF-015",
+     "PF-021",
+     "PF-012",
+     "PF-023"
+    ],
+    "decision": "How the open choices on urban investment cities and corridor segments will weigh flood and drought exposure and reach to displacement-affected areas.",
+    "minimum_action": "In the PID concept description, extend the stated activity prioritization criteria with flood and drought exposure and reach to displacement-affected neighbourhoods for the open urban city list and corridor segments, and state that economic basin risk mapping will inform the comparison.",
+    "enhanced_action": "Record a brief comparison of candidate cities and corridor segments against the agreed criteria, with the reasons for the final choices.",
+    "enhanced_activation": "Use when the final city list and corridor segments are being narrowed during preparation.",
+    "routing_status": "standard_document_advisory",
+    "instrument_claim_ids": [],
+    "responsible_function": "Task team, working with the Ministry of Finance coordination platform described in the document",
+    "authority_basis": "none_verified",
+    "recommendation_basis": "project_evidence",
+    "completion_evidence": "Revised concept description setting out the selection criteria and the role of risk mapping for cities and corridors.",
+    "completion_evidence_status": "updated_section",
+    "confidence": "medium",
+    "limitation": "It is unclear when the basin risk mapping will be available relative to Phase 1 siting decisions, and criteria for urban and corridor sites are described only generally in the document.",
+    "caution": "The five selected airstrips are already chosen and should not be reopened by this criterion. The proposal applies only to the open urban and corridor choices, and the final list may legitimately weigh other factors.",
+    "score": {
+     "materiality": 4,
+     "gap_strength": 3,
+     "leverage_urgency": 4,
+     "evidence": 3,
+     "feasibility": 4
+    },
+    "gate_results": {
+     "connection": true,
+     "residuality": true,
+     "materiality": true,
+     "actionability": true,
+     "timing": true,
+     "distinctiveness": true
+    },
+    "rank": 2,
+    "supported_numeric_tokens": [
+     "1",
+     "2"
+    ],
+    "narrative": "The document gives a sound starting point for prioritization. Activities are to be chosen on agreed criteria covering criticality for safe and resilient connectivity, urban service bottlenecks in regional hubs and job creation, and the airstrips were chosen with explicit criteria including climate resilience, population served and humanitarian access. At the same time, the final list of Pillar 1 activities is under discussion, and the cities for urban resilience investments, potentially Garowe, Baidoa, Kismayo and Mogadishu, are not yet settled.\n\nFor those open choices, the criteria are described only in general terms. Recurrent flooding is described as displacing hundreds of thousands in urban nodes, and the project operates in areas with large internally displaced populations. If drainage and access road investments follow commercial or administrative convenience alone, they may miss the neighbourhoods that are most exposed to flooding or may benefit some residents far more than others, which can feed tension over services and land.\n\nIn the PID concept description, the team should extend the existing criteria for the open urban and corridor choices so that flood and drought exposure and reach to displacement-affected areas are explicit considerations alongside the stated criticality and job creation criteria. The text should also say how the economic basin assessments, which already include risk mapping and emergency preparedness, would feed the comparison of cities, so that the criteria draw on information the project is already producing.\n\nThis proposal concerns only choices that are still open. It leaves the five selected airstrips as they are. Because the basin assessment timing relative to siting decisions is not stated, the task team should confirm the sequence in preparation and, if the risk mapping will arrive late, say what interim information will be used for comparing candidate cities."
+   },
+   {
+    "recommendation_id": "REC-003",
+    "title": "Define Phase 1 access to construction jobs and training for displaced, host, women and youth participants",
+    "pathway_ids": [
+     "PW-002"
+    ],
+    "existing_response_ids": [
+     "ER-008",
+     "ER-004"
+    ],
+    "residual_gap_ids": [
+     "RG-004"
+    ],
+    "project_anchor_ids": [
+     "PF-025",
+     "PF-026",
+     "PF-014"
+    ],
+    "decision": "Whether Phase 1 skills training and local hiring will set out who can access jobs and how access will be kept open to displaced people, host residents, women and youth.",
+    "minimum_action": "In the PID concept description, specify for the construction skills training and local hiring that eligibility and hiring arrangements for displaced people, host residents, women and youth will be defined, and carry forward the SURP II gender-inclusive local hiring practice in bidding documents.",
+    "enhanced_action": "Agree with the implementing agencies a simple way to track who is hired and trained, informing adjustments to outreach.",
+    "enhanced_activation": "Use once contract packages or training providers for Phase 1 works are identified.",
+    "routing_status": "standard_document_advisory",
+    "instrument_claim_ids": [],
+    "responsible_function": "Task team, working with the implementing ministries named in the document",
+    "authority_basis": "none_verified",
+    "recommendation_basis": "project_evidence",
+    "completion_evidence": "Revised concept description setting out eligibility and hiring arrangements for the training and local jobs.",
+    "completion_evidence_status": "updated_section",
+    "confidence": "medium",
+    "limitation": "SURP II results are precedent, and the document does not yet show Phase 1 targeting rules, beneficiary groups or how hiring would be arranged across federal, state and city levels.",
+    "caution": "Hiring arrangements should be proposed as options for the team to confirm with the implementing agencies, not as commitments. Any tracking should fit the data systems the project already plans to use.",
+    "score": {
+     "materiality": 3,
+     "gap_strength": 3,
+     "leverage_urgency": 3,
+     "evidence": 3,
+     "feasibility": 4
+    },
+    "gate_results": {
+     "connection": true,
+     "residuality": true,
+     "materiality": true,
+     "actionability": true,
+     "timing": true,
+     "distinctiveness": true
+    },
+    "rank": 3,
+    "supported_numeric_tokens": [
+     "000",
+     "1",
+     "12",
+     "13",
+     "2",
+     "24",
+     "49",
+     "80"
+    ],
+    "narrative": "Jobs and skills are one of the clearest ways this project could reach beyond infrastructure performance. The document builds on SURP II, which reported nearly 13,000 construction jobs including shares for women, internally displaced people and youth, and embedded gender-inclusive local hiring requirements in bidding documents. Job creation is also one of the stated prioritization criteria for Phase 1, and Pillar 2 plans a targeted approach to construction skills training.\n\nThe open point is how these arrangements will carry into Phase 1. The precedent is encouraging, but the concept note does not yet say who will be eligible, how local hiring will work across the different works, or how access will be kept fair between displaced people and host residents. In places where competition over jobs and services can sharpen tension, unclear arrangements could leave some groups out or create resentment, while clear and visible arrangements could turn construction work into a source of livelihood security and trust.\n\nIn the PID concept description, the team should state that Phase 1 eligibility and local hiring arrangements for displaced people, host residents, women and youth will be defined, and say that the SURP II practice of gender-inclusive local hiring requirements in bidding documents is the starting point. The text should connect the skills training to the construction packages it is meant to serve, so that trained people have a realistic route to the works.\n\nThe task team should discuss with the Ministry of Transport and Civil Aviation and the Ministry of Public Works, Reconstruction and Housing what hiring and outreach arrangements are workable in the fragmented governance setting. If contract packages become clear during preparation, the team could add a light way of recording who is hired and trained, using the monitoring tools the project already plans to build on, so that outreach can be adjusted if some groups are not being reached."
+   },
+   {
+    "recommendation_id": "REC-004",
+    "title": "Specify how coordination platforms will settle mandate overlaps and the sequencing of works",
+    "pathway_ids": [
+     "PW-003"
+    ],
+    "existing_response_ids": [
+     "ER-005"
+    ],
+    "residual_gap_ids": [
+     "RG-006"
+    ],
+    "project_anchor_ids": [
+     "PF-023",
+     "PF-035"
+    ],
+    "decision": "Whether the implementation arrangements should describe how the coordination platforms will handle disputes over federal, state and city mandates and the sequencing of works.",
+    "minimum_action": "In the PID implementation arrangements, describe how the Ministry of Finance chaired coordination and technical platforms would handle overlaps between the two implementing ministries, disaster management bodies, Federal Member States and cities, including how disagreements on mandate and works sequencing would be referred and resolved.",
+    "enhanced_action": null,
+    "enhanced_activation": null,
+    "routing_status": "standard_document_advisory",
+    "instrument_claim_ids": [],
+    "responsible_function": "Task team, working with the Ministry of Finance and the two implementing ministries",
+    "authority_basis": "none_verified",
+    "recommendation_basis": "project_evidence",
+    "completion_evidence": "Revised implementation arrangements section describing the dispute handling and sequencing approach for the platforms.",
+    "completion_evidence_status": "updated_section",
+    "confidence": "medium",
+    "limitation": "Membership, decision rules and how disputes would be raised are not specified, and the source describes disputes at several levels without detailing how the platforms would address them.",
+    "caution": "Mandate questions in this setting are politically sensitive. The proposal should remain a described working arrangement to test with the parties, and should not presume how roles between levels of government will be settled.",
+    "score": {
+     "materiality": 3,
+     "gap_strength": 3,
+     "leverage_urgency": 3,
+     "evidence": 3,
+     "feasibility": 3
+    },
+    "gate_results": {
+     "connection": true,
+     "residuality": true,
+     "materiality": true,
+     "actionability": true,
+     "timing": true,
+     "distinctiveness": true
+    },
+    "rank": 4,
+    "supported_numeric_tokens": [
+     "2"
+    ],
+    "narrative": "The project recognises that governance is fragmented. The document describes overlapping mandates between the Ministry of Public Works, Reconstruction and Housing, the Ministry of Transport and Civil Aviation and the Federal Member States, along with disputes between local, state and federal levels. Pillar 2 responds by creating high-level coordination and technical platforms chaired by the Ministry of Finance to align phases and resolve overlaps with sectoral mechanisms, which is a meaningful response that should be credited.\n\nWhat is not yet described is how those platforms would actually work when parties disagree. Resilient infrastructure depends on timely delivery and on the roads, drainage and airstrips being kept up once built. If mandate disputes delay works or leave ownership unclear, communities that rely on these assets in floods and droughts bear the consequences, and underfunded maintenance becomes more likely.\n\nIn the PID implementation arrangements, the team should describe how the coordination and technical platforms would handle overlaps in practice. The text should say who participates, how a disagreement between levels of government on mandate or sequencing is raised, and who has the role of bringing it to resolution, using the Ministry of Finance chair role the document already provides. The description should be framed as a proposed working arrangement to be agreed in preparation.\n\nBecause these questions touch on sensitive federal-state-city relations, the task team should test the arrangement with the implementing ministries and, where possible, Federal Member State and city counterparts before fixing the wording. The aim is a clear and realistic description that supports delivery continuity, not a new formal structure."
+   },
+   {
+    "recommendation_id": "REC-005",
+    "title": "Clarify how operations and maintenance revenue frameworks will reach climate-exposed assets",
+    "pathway_ids": [
+     "PW-001",
+     "PW-003"
+    ],
+    "existing_response_ids": [
+     "ER-009"
+    ],
+    "residual_gap_ids": [
+     "RG-007"
+    ],
+    "project_anchor_ids": [
+     "PF-027",
+     "PF-028",
+     "PF-035"
+    ],
+    "decision": "Whether the Pillar 3 description should say how revenue frameworks could contribute to maintenance of the climate-exposed assets built under Phase, leaving funding sources and allocations open.",
+    "minimum_action": "In the PID concept description of Pillar 3, state that the revenue frameworks will examine whether and how sector revenues could contribute to maintaining Phase airstrips, drainage and access roads after climate damage, leaving funding sources and allocations to be determined.",
+    "enhanced_action": null,
+    "enhanced_activation": null,
+    "routing_status": "standard_document_advisory",
+    "instrument_claim_ids": [],
+    "responsible_function": "Task team, working with the Ministry of Finance and the implementing ministries",
+    "authority_basis": "none_verified",
+    "recommendation_basis": "project_evidence",
+    "completion_evidence": "Revised Pillar 3 description stating the maintenance questions the revenue frameworks will address for Phase assets.",
+    "completion_evidence_status": "updated_section",
+    "confidence": "medium",
+    "limitation": "It is not known how revenues will be retained or allocated, and the frameworks are planned work, so no particular asset or recipient should be assumed to be funded or excluded.",
+    "caution": "The proposal asks a question about how revenue could contribute and does not assume any asset will receive funding. Retention of revenue is a sensitive fiscal matter that the Ministry of Finance would need to shape.",
+    "score": {
+     "materiality": 3,
+     "gap_strength": 3,
+     "leverage_urgency": 3,
+     "evidence": 3,
+     "feasibility": 3
+    },
+    "gate_results": {
+     "connection": true,
+     "residuality": true,
+     "materiality": true,
+     "actionability": true,
+     "timing": true,
+     "distinctiveness": true
+    },
+    "rank": 5,
+    "supported_numeric_tokens": [
+     "3"
+    ],
+    "narrative": "Pillar 3 already tackles a core durability problem. The document notes that operations and maintenance are underfunded across all sectors and that generated revenues are diverted to general budget needs. In response, the project will develop legal, governance and financial frameworks for sector revenues to support operations and maintenance while embedding climate and disaster risk considerations, and will prepare a roadmap for a Somalia Airport Authority and support reform of overflight fees.\n\nThe remaining question is how this work will connect to the assets the project itself builds. Airstrips, drainage and access roads in a flood and drought prone setting need regular upkeep and prompt repair after damage. If upkeep is not funded, the resilience gains from design can erode, and communities and humanitarian actors lose the access the investment was meant to secure.\n\nIn the PID concept description of Pillar 3, the team should add a sentence stating that the revenue frameworks will examine whether and how sector revenues could contribute to the maintenance and post-damage repair of Phase 1 assets, with the revenue source and any allocation left open. This keeps the proposal as a question the frameworks will answer, rather than an expectation about which asset or agency receives money.\n\nThe task team should discuss with the Ministry of Finance and the implementing ministries what would be realistic to examine during preparation, such as which assets have maintenance capacity today, using the maintenance capacity criterion already applied to airstrip selection as a starting reference. Any further detail can be added as the frameworks take shape in later work."
+   }
+  ]
+ },
+ "initial_final_reader": {
+  "summary_paragraphs": [
+   {
+    "object_id": "SUM-001",
+    "text": "The project already links its infrastructure choices to climate exposure. Airstrips were chosen using criteria that include climate resilience, population served and humanitarian access, and airport upgrades are expected to connect an Automated Weather System to national early warning services. Urban works are expected to pair drainage and climate-resilient access roads with early warning and response links, in cities where recurrent flooding continues to displace hundreds of thousands. Conflict sensitivity, inclusive stakeholder engagement and emergency preparedness are stated design features, and construction skills training builds on the SURP II jobs precedent.",
+    "evidence_ids": [
+     "PF-012",
+     "PF-016",
+     "PF-018",
+     "PF-019",
+     "PF-020",
+     "PF-025",
+     "PF-026",
+     "PF-032",
+     "ER-001",
+     "ER-002",
+     "ER-003",
+     "ER-004",
+     "ER-008"
+    ]
+   },
+   {
+    "object_id": "SUM-002",
+    "text": "The material remaining challenge is delivery in a fragmented setting. Roads, aviation and emergency response are split across federal, state and city bodies with overlapping mandates, and operations and maintenance are underfunded, so resilient assets could lose value if coordination stalls or upkeep is unfunded. The final activity and city lists remain under discussion, and it is not yet clear who will reach the jobs, training and warnings. The accepted priorities focus on a site-level climate design basis, climate and displacement-aware site selection, defined access to jobs and training, clearer dispute handling between coordinating bodies, and how maintenance revenue could reach exposed assets.",
+    "evidence_ids": [
+     "PF-015",
+     "PF-021",
+     "PF-035",
+     "PF-023",
+     "PF-027",
+     "REC-001",
+     "REC-002",
+     "REC-003",
+     "REC-004",
+     "REC-005"
+    ]
+   }
+  ],
+  "assessment_narratives": [
+   {
+    "object_id": "NARR-design",
+    "theme": "design",
+    "paragraphs": [
+     "The project could keep people connected and protected when floods and droughts strike. Airport and airstrip upgrades are expected to include an Automated Weather System linked to national early warning services, and airstrips are expected to meet ICAO Aerodrome Code 3C standards for humanitarian and commercial use. Urban drainage and climate-resilient access roads target recurrent flooding that continues to displace hundreds of thousands. Airstrips were selected using criteria that include climate resilience, population served and humanitarian access.",
+     "Fragility can undermine this delivery. Road links are described as insecure and highly vulnerable to climate hazards, and roads, aviation and emergency response mandates overlap across federal, state and city bodies, with operations and maintenance underfunded. If coordination stalls or upkeep is unfunded, resilient assets could underperform when needed. The Ministry of Finance-chaired coordination platforms are the stated response, though how disputes over mandates and works sequencing would be settled is not yet described.",
+     "Project choices could also create risk. Flood mitigation works and connector roads may have indirect effects beyond their footprint, and settlement on marginal land is noted. If drainage shifts water toward neighbouring informal settlements, that would be maladaptation worth examining, though no such outcome is documented. No site-level climate design standard is stated here. The accepted priorities would set a climate design basis, clarify how coordinating bodies settle overlaps, and ask how maintenance revenue could reach exposed assets."
+    ],
+    "evidence_ids": [
+     "PF-011",
+     "PF-012",
+     "PF-016",
+     "PF-017",
+     "PF-019",
+     "PF-020",
+     "PF-023",
+     "PF-027",
+     "PF-033",
+     "PF-035",
+     "PF-036",
+     "ER-002",
+     "ER-003",
+     "ER-005",
+     "ER-009",
+     "ER-011",
+     "RG-002",
+     "RG-003",
+     "RG-006",
+     "RG-007",
+     "REC-001",
+     "REC-004",
+     "REC-005"
+    ]
+   },
+   {
+    "object_id": "NARR-dividends",
+    "theme": "dividends",
+    "paragraphs": [
+     "The strongest plausible wider contribution comes from reliable services and shared planning. Drainage, climate-resilient access roads and airstrips used for humanitarian access could keep workplaces, markets and aid routes reachable after floods. If these services are dependable and fairly reachable, they could build confidence in public institutions. Coordination platforms chaired by the Ministry of Finance and economic basin assessments that include risk mapping could also give federal, state and city bodies a routine place to align works, which could strengthen cooperation in a setting of overlapping mandates.",
+     "Construction skills training builds on SURP II, which reported nearly 13,000 jobs including women, IDPs and youth. If Phase 1 repeats that reach, more secure livelihoods could improve households' ability to cope with the next shock. This is a possibility rather than a documented result, since Phase 1 hiring arrangements are not yet defined.",
+     "The benefit depends on conditions. Underfunded maintenance and unresolved mandates could erode asset reliability and the trust it might build. The accepted priorities could deepen the contribution by defining who can access jobs and training, setting out how coordinating bodies settle overlaps and sequence works, and examining whether and how maintenance revenue could contribute to climate-exposed assets, leaving funding sources open."
+    ],
+    "evidence_ids": [
+     "PF-012",
+     "PF-017",
+     "PF-020",
+     "PF-023",
+     "PF-025",
+     "PF-026",
+     "PF-035",
+     "PF-027",
+     "ER-005",
+     "ER-006",
+     "ER-008",
+     "RG-004",
+     "RG-006",
+     "RG-007",
+     "REC-003",
+     "REC-004",
+     "REC-005"
+    ]
+   },
+   {
+    "object_id": "NARR-inclusion",
+    "theme": "inclusion",
+    "paragraphs": [
+     "People could gain safer and more reliable access to flights, urban services and jobs. Airstrips used for humanitarian assistance and trade could help remote communities and aid actors, while drainage and access roads could keep neighbourhoods and workplaces reachable during floods. Targeted construction training could open livelihoods, and SURP II reported nearly 13,000 jobs (24% women, 49% IDPs, 80% youth) with gender-inclusive local hiring requirements.",
+     "The design credits inclusion through stated conflict sensitivity, inclusive stakeholder engagement and a Substantial risk rating, though the specific procedures and grievance arrangements are not described at concept stage, which limits visibility rather than showing the protections are ineffective. What remains uncertain is who will actually be reached. The final activity and city lists are under discussion, and Phase 1 hiring and eligibility rules are not defined. It is also unclear how early warnings would reach displaced and informal-settlement residents, and flood works could shift exposure onto neighbours if not examined.",
+     "These matter because the displaced, women and youth could miss out on jobs and warnings that others receive. The accepted priorities would add flood and drought exposure and reach to displacement-affected neighbourhoods to the open city and corridor choices, and define eligibility and hiring arrangements for displaced people, host residents, women and youth."
+    ],
+    "evidence_ids": [
+     "PF-014",
+     "PF-015",
+     "PF-017",
+     "PF-020",
+     "PF-021",
+     "PF-025",
+     "PF-026",
+     "PF-032",
+     "PF-033",
+     "ER-004",
+     "ER-008",
+     "RG-001",
+     "RG-003",
+     "RG-004",
+     "RG-008",
+     "REC-002",
+     "REC-003"
+    ]
+   }
+  ]
+ },
+ "prechecks": [
+  {
+   "attempt": 0,
+   "issues": []
+  }
+ ],
+ "meaning_reviews": [
+  {
+   "verdict": "revise",
+   "reason_codes": [
+    "PROJECT_FACT_UNSUPPORTED",
+    "EXISTING_MITIGATION_MISREPRESENTED"
+   ],
+   "object_ids": [
+    "SUM-001",
+    "NARR-design",
+    "NARR-dividends"
+   ],
+   "issues": [
+    {
+     "object_id": "SUM-001",
+     "reason_codes": [
+      "PROJECT_FACT_UNSUPPORTED"
+     ],
+     "explanation": "Wording says the urban works would be 'in cities where recurrent flooding continues to displace hundreds of thousands', but the source says this about Somali urban nodes generally, while the city list is under discussion.",
+     "quoted_text": "in cities where recurrent flooding continues to displace hundreds of thousands",
+     "disposition": "verify",
+     "verification_note": "Check PF-012 (block 46ab9ca6aba6) and PF-021: the displacement statement describes urban nodes in general; the list of cities for urban resilience investments is still under discussion. Confirm the wording does not imply the displacement occurs in the selected investment cities.",
+     "severity": "minor",
+     "decision_impact": "Does not change a preparation decision, but could imply that sites are already confirmed as flood-displacement locations."
+    },
+    {
+     "object_id": "NARR-design",
+     "reason_codes": [
+      "PROJECT_FACT_UNSUPPORTED"
+     ],
+     "explanation": "The wording attributes the project's urban drainage and access roads as targeting flooding that displaces hundreds of thousands, but the source describes flooding in urban nodes generally and does not state this targeting link or confirm the urban sites.",
+     "quoted_text": "Urban drainage and climate-resilient access roads target recurrent flooding that continues to displace hundreds of thousands.",
+     "disposition": "verify",
+     "verification_note": "Check PF-020 and PF-012 and source blocks 28ef88b92d85 and 46ab9ca6aba6: drainage and roads are expected activities (city list under discussion), while the displacement figure describes urban nodes generally. Confirm whether the source links these activities to that flooding or if this is analytical inference needing qualification.",
+     "severity": "minor",
+     "decision_impact": "Presents an inferred targeting relationship as a project feature; does not alter the proposed actions."
+    },
+    {
+     "object_id": "NARR-dividends",
+     "reason_codes": [
+      "EXISTING_MITIGATION_MISREPRESENTED"
+     ],
+     "explanation": "The wording says airstrips used for humanitarian access could keep aid routes reachable after floods, but the cited support concerns airstrip upgrades to Code 3C for humanitarian and trade connectivity and does not document flood-specific reachability; airstrips are not drainage or road works.",
+     "quoted_text": "Drainage, climate-resilient access roads and airstrips used for humanitarian access could keep workplaces, markets and aid routes reachable after floods.",
+     "disposition": "verify",
+     "verification_note": "Check PF-017 (block 28ef88b92d85) and PF-020: Code 3C upgrades are described for safe operations and humanitarian/trade connectivity; flood-specific access benefit for airstrips is not stated. Confirm this is framed as qualified analytical inference, not a documented design feature, and that 'workplaces, markets' relates only to urban drainage/roads.",
+     "severity": "minor",
+     "decision_impact": "A conditional mechanism that may over-attribute flood-reachability to airstrip upgrades; no change to proposed actions."
+    }
+   ]
+  }
+ ],
+ "saved_summary_overview_status": "generated"
+}

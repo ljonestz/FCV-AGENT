@@ -120,3 +120,16 @@ def test_all_application_clients_use_guard_and_default_is_off(monkeypatch, tmp_p
     for kw in captured:
         assert isinstance(kw["http_client"].event_hooks["request"][0], PilotSpendGuard)
         kw["http_client"].close()
+
+
+def test_refusal_is_logged_with_metadata_only(tmp_path, capsys):
+    guard = PilotSpendGuard(tmp_path / "ledger.sqlite", 5000000)
+    body = {"model": "claude-sonnet-5-5", "max_tokens": 100,
+            "messages": [{"role": "user", "content": "SECRET DOCUMENT TEXT"}],
+            "tools": [{"type": "web_search_20250305", "name": "web_search", "max_uses": 3}]}
+    request = httpx.Request("POST", "https://api.anthropic.com/v1/messages", content=json.dumps(body).encode())
+    with pytest.raises(PilotBudgetExceeded):
+        guard(request)
+    out = capsys.readouterr().out
+    assert "PILOT_REJECTED" in out and "model=claude-sonnet-5-5" in out and "web=True" in out
+    assert "SECRET DOCUMENT TEXT" not in out

@@ -26,6 +26,7 @@ from fcv_core_research import (
 )
 from fcv_distillation import distill_doc_parts_stream
 import regime_router
+import stage3_prose
 from sector_lenses.climate_native import (
     build_climate_repair_prompt,
     climate_missing_fields,
@@ -42,6 +43,7 @@ from sector_lenses.climate_verified_runtime import (
     run_verified_from_doc_parts,
 )
 from sector_lenses.climate_verified_render import (
+    LEGACY_FALLBACK_SUMMARY_OVERVIEWS,
     attach_provenance,
     build_reader_model,
     validate_reader_model,
@@ -198,7 +200,9 @@ STAGE_STREAM_TIMEOUTS = {
 STAGE_MAX_TOKENS = {
     1: 8000,
     2: 32000,
-    3: 32000,
+    # 48k (from 32k, 2026-11-08): the analytical prose layer plus Opus thinking cut the
+    # narrative off at 32k in a benchmark replay; 48k completed every run.
+    3: 48000,
 }
 # Native-climate Stage 3 formerly capped at 9000 (compact climate output); raised
 # for Opus 5.5 thinking headroom while staying below the standard Stage 3 budget.
@@ -3255,6 +3259,123 @@ complete detailed-plus-concise JSON block before the narrative. Close it with
 any earlier instruction that places the JSON block after the narrative.
 '''
 
+# ── Stage 3 analytical prose layer (Render-only; on by default) ────────────────
+# Chosen by the 2026-11-08 blind benchmark (output/20261108_stage3-benchmark/):
+# the detailed narrative is written as connected analytical prose, plain-language
+# targets apply only to the JSON summary fields, and the opening sections follow
+# the qualities of the owner's example notes (described, never quoted, to avoid
+# near-verbatim reuse). Applied at prompt assembly so DEFAULT_PROMPTS["3"], shared
+# in spirit with the ITS build, stays textually unchanged. Set
+# FCV_STAGE3_PROSE_STYLE=legacy to restore the previous management style.
+_STANDARD_STYLE_PARAGRAPH_START = "Write the narrative in a clear technical report style for management."
+_STANDARD_STYLE_PARAGRAPH_END = "repeating the why text of each priority.\n"
+_STAGE3_PROSE_STYLE_PARAGRAPH = """NARRATIVE STYLE FOR THE DETAILED NOTE: Write the Opening Assessment, Operational
+Context, Strengths, Gaps, FCV Risk Exposure and the two Summary paragraphs as connected
+analytical prose for an experienced FCV and operations reader, in the register of a senior
+peer reviewer. Each paragraph opens with a bold first sentence, a topic sentence that states
+an analytical judgment, then develops it through linked sentences that explain mechanisms, causes and
+consequences and show how the points relate to one another. Do not use bullet lists,
+numbered lists or bold lead-in labels in these sections; integrate the points into the
+paragraph. Vary sentence length and do not reduce the analysis to a series of short
+declarative statements. Meet the word range given for each section in the main output
+structure. Define acronyms on first use, use no em-dash punctuation and use semicolons
+sparingly. Use canonical Markdown for the narrative.
+
+SUMMARY LAYER ONLY: The plain-language targets in this contract apply only to the JSON
+fields concise_readout and priority.concise. JSON field values are plain text without
+Markdown and use plain management language. In the overview, each strength text and each
+how action, start with a short plain main-point sentence and add a concise explanatory
+second sentence where the substance supports it; do not add sentences only to satisfy a
+format. The concise brief should be approximately 650-850 words and fit within two A4 pages.
+Keep the concise Summary from repeating the why text of each priority.
+"""
+
+
+# A description (no sample text) of how strong openings are built.
+_STAGE3_PROSE_QUALITIES = """
+HOW A STRONG OPENING IS BUILT (a description of qualities, not text to imitate):
+- Opening Assessment: write it as its own crafted judgment, not a summary of the gaps. In one
+  sentence of 35-60 words and plain words, name the project's single central tension (for
+  instance, what the design depends on that its context may not sustain), then the areas that
+  need strengthening and what is at stake. Spell out any acronym or use the plain term.
+- Operational Context: opens with a thesis about the direction and character of the
+  operating environment, not a list of facts. Each following sentence adds one dynamic and
+  ties it to this project's footprint, components, delivery channels or beneficiaries,
+  with figures where the record supplies them. Explain how at least two of the dynamics
+  compound one another or the project's design assumptions. Close by setting the design's
+  assumptions against that trajectory.
+- Strengths: order strengths by significance. For each, say what the design choice does,
+  why it suits this context, and the condition or limit on which its value depends, within
+  the same sentence or the next.
+- Gaps: state how many material gaps there are and by when they matter, then rank them by
+  consequence. For each, explain the mechanism by which it could cause harm or block
+  delivery, name the project element exposed, and say whether it can be closed within
+  existing instruments. Write the gaps as two or three connected paragraphs, never as a run
+  of one- or two-sentence paragraphs.
+- Sentences in these sections typically run 25 to 45 words and use subordinate clauses to
+  carry cause and consequence. Ordinal ranking ("the most consequential", "the second") is
+  fine; scaffolding that turns a paragraph into a list is not.
+- Write fresh prose for this project. Do not reuse wording from any example sentence that
+  appears elsewhere in these instructions.
+"""
+
+# Section specifications aligned with the target style.
+_STAGE3_SECTION_SPECS = [
+    ("### Opening Assessment (ONE BOLD SENTENCE, 25-35 words)\nA single bolded sentence summarising the project's overall FCV integration status.",
+     "### Opening Assessment (ONE BOLD SENTENCE, 35-60 words)\nA single bolded sentence giving the overall verdict on the project's FCV integration, the areas that need strengthening, and what is at stake."),
+    ("### Operational Context (150-200 words, ONE PARAGRAPH)\nSynthesise 3-4 converging FCV risks creating a uniquely challenging operating environment for THIS project.",
+     "### Operational Context (180-240 words, ONE PARAGRAPH)\nSynthesise 3-4 converging FCV risks creating a uniquely challenging operating environment for THIS project, and explain how they compound one another and the design's assumptions."),
+    ("### Strengths (80-150 words, prose)", "### Strengths (150-220 words, ONE OR TWO PARAGRAPHS of prose)"),
+    ("### Gaps (100-130 words, prose)", "### Gaps (150-220 words, ONE OR TWO PARAGRAPHS of prose)"),
+]
+
+
+def _stage3_prose_layer_enabled() -> bool:
+    return os.environ.get("FCV_STAGE3_PROSE_STYLE", "analytical").strip().lower() != "legacy"
+
+
+def _stage3_contract_text() -> str:
+    """Return the standard contract with the analytical prose style paragraph."""
+    contract = STANDARD_FCV_STAGE3_OUTPUT_CONTRACT
+    if not _stage3_prose_layer_enabled():
+        return contract
+    start = contract.find(_STANDARD_STYLE_PARAGRAPH_START)
+    end = contract.find(_STANDARD_STYLE_PARAGRAPH_END, start)
+    if start < 0 or end < 0:
+        return contract
+    paragraph = _STAGE3_PROSE_STYLE_PARAGRAPH + _STAGE3_PROSE_QUALITIES
+    return contract[:start] + paragraph + contract[end + len(_STANDARD_STYLE_PARAGRAPH_END):]
+
+
+_GUARDRAIL_STYLE_OLD = """Write the management narrative in clear technical report style: start each
+paragraph with a bold first sentence that states its main point, then explain it.
+Use plain management language, define acronyms on first use, use no em-dash
+punctuation and use semicolons sparingly."""
+_GUARDRAIL_STYLE_NEW = """Write the detailed narrative as connected analytical prose that follows the
+narrative style set out in the output contract; plain management language applies
+only to the JSON summary fields. Define acronyms on first use, use no em-dash
+punctuation and use semicolons sparingly."""
+
+
+_STAGE3_FINAL_FORMAT_CHECK = """
+
+FINAL FORMAT CHECK BEFORE WRITING THE NARRATIVE:
+- Under ## EXECUTIVE SUMMARY, use these exact subheadings in this order, each on its own line:
+  ### Opening Assessment, ### Operational Context, ### FCV Risk Exposure, ### Strengths, ### Gaps.
+- Operational Context, Strengths and Gaps are paragraphs of connected prose. They contain no
+  bullet points, no numbered items and no bold lead-in labels; if you find yourself starting a
+  list, write the points as linked sentences instead.
+"""
+
+
+def _stage3_apply_section_specs(stage_prompt: str) -> str:
+    if not _stage3_prose_layer_enabled():
+        return stage_prompt
+    for old, new in _STAGE3_SECTION_SPECS:
+        stage_prompt = stage_prompt.replace(old, new, 1)
+    return stage_prompt
+
+
 _STANDARD_CONCISE_READOUT_SCHEMA = '''  "concise_readout": {
     "headline": "One plain-language sentence stating the overall finding",
     "overview": "An 80-110 word project-specific synthesis of the overall finding, principal exposure, main gap and practical implication; start with a short plain main-point sentence and add a concise explanatory second sentence where the substance supports it",
@@ -3660,14 +3781,17 @@ def append_core_concise_stage3_contract(
     """Append the standard concise contract only on the core Stage 3 route."""
     if active_lenses:
         return stage_prompt
-    stage_prompt = _prepare_standard_stage3_prompt(stage_prompt)
+    stage_prompt = _stage3_apply_section_specs(_prepare_standard_stage3_prompt(stage_prompt))
+    if _stage3_prose_layer_enabled():
+        stage_prompt = stage_prompt.replace(_GUARDRAIL_STYLE_OLD, _GUARDRAIL_STYLE_NEW, 1)
     return (
         _embed_core_concise_stage3_schema(stage_prompt, standard=True)
         + "\n\n--- Concise readout lifecycle framing ---\n"
         + build_concise_lifecycle_context(doc_type, temporal_context, review_mode)
         + "\n\n"
-        + STANDARD_FCV_STAGE3_OUTPUT_CONTRACT
+        + _stage3_contract_text()
         + STANDARD_RESEARCH_EVIDENCE_CONTRACT
+        + (_STAGE3_FINAL_FORMAT_CHECK if _stage3_prose_layer_enabled() else "")
     )
 
 
@@ -10222,6 +10346,7 @@ def run_stage():
                 # Only Stage 2/3 design-review output can carry the ESF/ESCP/ESS
                 # vocabulary that QA flagged; Stage 1 extraction text is not
                 # instrument-prescriptive in the same way.
+                _stage3_prose_report = None
                 if (
                     not is_impl
                     and stage in (2, 3)
@@ -10232,6 +10357,12 @@ def run_stage():
                     if _vocab_violations:
                         full_text = repair_vocabulary_violations(full_text, instrument_type, _vocab_violations, stage)
                         _stream_stage._last_result = full_text
+                    if stage == 3 and not lens_context['active_lenses']:
+                        _prose_holder = {}
+                        yield from _stage3_prose_repair_events(full_text, assessment_id, _prose_holder)
+                        full_text = _prose_holder.get('text', full_text)
+                        _stream_stage._last_result = full_text
+                        _stage3_prose_report = _prose_holder.get('report')
 
                 # Post-processing: extract structured data from delimited blocks
                 priorities = []
@@ -10489,6 +10620,7 @@ def run_stage():
                     'stage': stage,
                     'parse_error': parse_error,
                     'parse_error_message': parse_error_message,
+                    'prose_repair': _stage3_prose_report,
                     'research_brief': research_brief_text if stage == 1 else None,
                     'research_country': research_country if stage == 1 else None,
                     'instrument_type': _instrument_type if stage == 1 else None,
@@ -10701,6 +10833,59 @@ def _stage_model(stage_num):
     """Stage 1 does long-context extraction on the fast standard model; Stages 2
     and 3 (FCV assessment + recommendations) use the reasoning model."""
     return MODEL_REASONING if stage_num in (2, 3) else MODEL_STANDARD
+
+
+STAGE3_PROSE_REPAIR_MAX_TOKENS = 6000
+
+
+def _stage3_prose_repair_events(text, assessment_id, holder):
+    """Rewrite list-formatted Stage 3 opening sections as prose (opt-in).
+
+    Runs the repair call in a thread and yields keepalive events meanwhile, so the
+    SSE stream never sits silent. Puts the (possibly unchanged) text and a report in
+    holder. On by default; FCV_STAGE3_PROSE_REPAIR=0 disables it.
+    """
+    holder['text'] = text
+    if os.environ.get("FCV_STAGE3_PROSE_REPAIR", "1").strip() == "0":
+        return
+    if not stage3_prose.listy_sections(text):
+        missing = stage3_prose.missing_headings(text)
+        holder['report'] = {"listy": [], "repaired": False, "reason": "", "missing_headings": missing}
+        if missing:
+            app.logger.warning(
+                "Stage 3 opening headings missing assessment_id=%s missing=%s",
+                assessment_id or 'unknown', ",".join(missing),
+            )
+        return
+
+    def call_model(prompt):
+        resp = get_client().messages.create(
+            model=_stage_model(3),
+            max_tokens=STAGE3_PROSE_REPAIR_MAX_TOKENS,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return "".join(getattr(block, "text", "") for block in resp.content)
+
+    result = {}
+
+    def _run():
+        try:
+            result['text'], result['report'] = stage3_prose.repair(text, call_model)
+        except Exception as exc:  # noqa: BLE001 - never let the repair break Stage 3
+            result['report'] = {"repaired": False, "reason": f"error:{type(exc).__name__}"}
+
+    worker = threading.Thread(target=_run, daemon=True)
+    worker.start()
+    while worker.is_alive():
+        worker.join(timeout=10)
+        if worker.is_alive():
+            yield f"data: {json.dumps({'keepalive': True})}\n\n"
+    holder['text'] = result.get('text') or text
+    holder['report'] = result.get('report')
+    app.logger.info(
+        "Stage 3 prose repair assessment_id=%s report=%s",
+        assessment_id or 'unknown', json.dumps(holder['report']),
+    )
 
 
 def _stage_output_budget(stage_num):
@@ -11964,6 +12149,10 @@ def run_express():
                 )
                 if _vocab_violations_s3:
                     stage3_output = repair_vocabulary_violations(stage3_output, instrument_type, _vocab_violations_s3, 3)
+                if not _native_climate_s3 and not lens_context_s3['active_lenses']:
+                    _prose_holder_s3 = {}
+                    yield from _stage3_prose_repair_events(stage3_output, assessment_id, _prose_holder_s3)
+                    stage3_output = _prose_holder_s3.get('text', stage3_output)
 
                 # Parse Stage 3 output
                 uploaded_doc_names = [doc.get('name', '') for doc in documents if doc.get('name')]
@@ -12826,7 +13015,15 @@ def _climate_export_snapshot(data):
     attach_provenance(reader, verified)
     # Compare JSON values: Python tuples become arrays in the browser.
     canonical_reader = json.loads(json.dumps(reader, ensure_ascii=False, allow_nan=False))
-    if 'climate_reader' in data and data['climate_reader'] != canonical_reader:
+    shown_reader = data.get('climate_reader')
+    # Only the server-written fallback boilerplate may differ (wording updated after
+    # the session was saved); every assessment-derived field must still match exactly.
+    if (isinstance(shown_reader, dict)
+            and canonical_reader.get('summary_overview_status') == 'fallback'
+            and shown_reader.get('summary_overview_status') == 'fallback'
+            and shown_reader.get('summary_overview') in LEGACY_FALLBACK_SUMMARY_OVERVIEWS):
+        shown_reader = {**shown_reader, 'summary_overview': canonical_reader['summary_overview']}
+    if 'climate_reader' in data and shown_reader != canonical_reader:
         return None, (jsonify(
             error='The displayed report differs from its assessment. Reload the matching '
                   'assessment and reader before exporting; no content was substituted.',
@@ -12840,9 +13037,15 @@ def _climate_export_snapshot(data):
 
 @app.route('/api/climate-report-snapshot', methods=['POST'])
 def climate_report_snapshot():
-    """No-model consistency check for the browser's standalone HTML export."""
+    """No-model consistency check for the browser's standalone HTML export.
+
+    With ``climate_reader`` the displayed reader must match the canonical one.
+    Without the key, the canonical reader is returned so a restored session can
+    replace a reader saved under older admission rules; nothing is approved.
+    """
     data = request.get_json(force=True)
-    if not isinstance(data, dict) or not isinstance(data.get('climate_reader'), dict):
+    if not isinstance(data, dict) or (
+            'climate_reader' in data and not isinstance(data.get('climate_reader'), dict)):
         return jsonify(error='A complete displayed Climate reader is required.'), 422
     snapshot, error = _climate_export_snapshot(data)
     return error if error is not None else jsonify(snapshot)
@@ -13083,12 +13286,12 @@ def download_report():
     AMBER = RGBColor(0x92, 0x40, 0x00)
 
     timing_map = {
-        'flag-for-preparation': 'Flag for preparation',
-        'required-before-appraisal': 'Required before Decision Review (DM/ROC)',
-        'required-before-board': 'Required before Board',
-        'next-series': 'Feed into next series',
-        'supervision': 'Supervision / monitoring only',
-        'pre-appraisal': 'Required before Decision Review (DM/ROC)',
+        'flag-for-preparation': 'Consider during preparation',
+        'required-before-appraisal': 'Address before Decision Review (DM/ROC)',
+        'required-before-board': 'Address before Board',
+        'next-series': 'Consider for next series',
+        'supervision': 'Consider during supervision',
+        'pre-appraisal': 'Address before Decision Review (DM/ROC)',
         # New-model (OPS5.03-PROC.281/282) preparation-gate timings
         'shortly-after-OIS': 'Shortly after OIS decision',
         'before-TD-review': 'Before Technical Design review',
@@ -13904,7 +14107,7 @@ def download_report():
                 actions = priority.get('actions', [])
                 if actions:
                     report.label(
-                        f'Essential Action{"s" if len(actions) != 1 else ""}'
+                        f'Suggested Action{"s" if len(actions) != 1 else ""}'
                     )
                     for action_index, action in enumerate(actions, start=1):
                         document_element = str(action.get('document_element') or '').strip()
@@ -13928,12 +14131,8 @@ def download_report():
                         str(priority['implementation_note']),
                     ))
                 practical_notes.extend(add_priority_project_cycle(priority))
-                if priority.get('cpf_alignment'):
-                    practical_notes.append(('CPF Alignment', str(priority['cpf_alignment'])))
-                if priority.get('rra_driver_alignment'):
-                    practical_notes.append((
-                        'RRA Driver Alignment', str(priority['rra_driver_alignment'])
-                    ))
+                # cpf_alignment / rra_driver_alignment stay in the Stage 3 JSON (parity
+                # surface) but are no longer shown in Word (user request 2026-11-07).
                 for label, key in (
                     ('FCV Strategy 2026-2030', 'refresh_shift'),
                     ('Change', 'change_type'),

@@ -1777,7 +1777,9 @@ def test_correction_without_usage_consumes_shared_allowance_and_cannot_skip_revi
     client = OpaqueCorrection(responses + [deepcopy(responses[-1])], [])
     result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(client, reviewer))
     assert result["priorities"] == []
-    assert result["manifest"]["sampling"]["correction_output_token_remaining"] == 0
+    # Recommendation repairs exhaust their share; only the unspent reader reserve remains.
+    from sector_lenses.climate_verified_pipeline import READER_CORRECTION_RESERVE_TOKENS
+    assert result["manifest"]["sampling"]["correction_output_token_remaining"] == READER_CORRECTION_RESERVE_TOKENS
     assert len(reviewer.calls) == 1
     assert client.calls[-1]["max_transient_retries"] == 0
 
@@ -1795,7 +1797,7 @@ def test_new_reader_export_rechecks_support_and_never_revives_rating_recap():
     model = build_reader_model(result)
     assert model["summary_overview_status"] == "fallback"
     text = " ".join(model["summary_overview"])
-    assert "could not be independently verified" in text
+    assert "could not be checked against the project documents" in text
     assert "Sensitivity is" not in text and "Operationalization" not in text
     result.pop("final_reader")
     assert build_reader_model(result)["summary_overview_status"] == "fallback"
@@ -2443,8 +2445,12 @@ def test_native_reader_semantic_block_never_publishes_prose(unsupported):
     result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(
         FakeClient(responses + [final], []), reviewer))
     assert reviewer.calls[-1]['stage'] == 'reader_review'
-    assert result['summary_overview_status'] == 'fallback'
-    assert result['assessment_narratives'] == []
+    # The block names only NARR-inclusion: that finding is withheld, the clean
+    # Summary and the other findings are admitted.
+    assert result['summary_overview_status'] == 'generated'
+    assert [r['object_id'] for r in result['assessment_narratives']] == ['NARR-design', 'NARR-dividends']
+    assert unsupported not in json.dumps(result['assessment_narratives'])
+    assert unsupported not in json.dumps(result['summary_overview'])
     assert len(result['priorities']) == 1
 
 
@@ -2490,7 +2496,12 @@ def test_reader_correction_exhausted_allowance_cannot_skip_fresh_review(monkeypa
     assert assessment.calls[-1]['max_output_tokens'] == 1
     assert assessment.calls[-1]['max_transient_retries'] == 0
     assert result['manifest']['sampling']['correction_output_token_remaining'] == 0
-    assert result['summary_overview_status'] == 'fallback'
+    # The unreviewed correction is never published; the reviewed original stands,
+    # with its consequential finding still withheld.
+    assert result['final_reader'] == final
+    assert result['summary_overview_status'] == 'generated'
+    assert 'NARR-dividends' not in [r['object_id'] for r in result['assessment_narratives']]
+    assert 'FINAL_READER_CORRECTION_REVIEW_UNAVAILABLE' in result['validation']['reason_codes']
     assert len(result['priorities']) == 1
     assert len(reviewer.calls) == 2
 
@@ -2513,8 +2524,11 @@ def test_reader_correction_provider_failure_preserves_initial_and_actions():
     result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(
         FailedCorrection(responses + [final], []), reviewer))
     assert result['final_reader'] == final
-    assert result['summary_overview_status'] == 'fallback'
-    assert result['diagnostic_trace']['final_reader']['failure'] == 'ConnectionError'
+    # The reviewed records stay admitted when the correction provider fails.
+    assert result['summary_overview_status'] == 'generated'
+    assert 'NARR-dividends' not in [r['object_id'] for r in result['assessment_narratives']]
+    assert result['diagnostic_trace']['final_reader']['correction']['failure'] == 'ConnectionError'
+    assert 'FINAL_READER_CORRECTION_UNAVAILABLE' in result['validation']['reason_codes']
     assert len(result['priorities']) == 1
 
 
@@ -2666,16 +2680,20 @@ def test_reader_reports_unknown_evidence_even_with_length_defects(words):
     final = _final_reader()
     final['assessment_narratives'][0]['paragraphs'] = [' '.join(['Supported'] * words) + '.']
     final['assessment_narratives'][0]['evidence_ids'] = ['PF-invented']
-    reviewer = FakeClient([_native_pass_review], [])
+    reviewer = FakeClient([_native_pass_review] * 2, [])
+    assessment = FakeClient(responses + [final], [])
     result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(
-        FakeClient(responses + [final], []), reviewer))
-    assert result['summary_overview_status'] == 'fallback'
+        assessment, reviewer))
+    # The finding with unknown evidence is dropped; the clean Summary is reviewed and kept.
+    assert result['summary_overview_status'] == 'generated'
+    assert 'NARR-design' not in [r['object_id'] for r in result['assessment_narratives']]
     assert 'READER_EVIDENCE_INVALID' in result['validation']['reason_codes']
     codes = {code for issue in result['diagnostic_trace']['final_reader']['prechecks'][0]['issues']
              for code in issue['reason_codes']}
     assert 'READER_EVIDENCE_INVALID' in codes
     assert ('READER_WORD_COUNT' in codes) == (words > 400)
-    assert not any(call['stage'] == 'reader_review' for call in reviewer.calls)
+    assert sum(call['stage'] == 'reader_review' for call in reviewer.calls) == 1
+    assert not any(call['stage'] == 'reader_correction' for call in assessment.calls)
 
 
 @pytest.mark.parametrize('verdict', ['pass', 'block'])
@@ -2695,7 +2713,9 @@ def test_minor_reader_length_overrun_still_requires_meaning_review(verdict, word
     result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(
         FakeClient(responses + [final], []), reviewer))
     assert reviewer.calls[-1]['stage'] == 'reader_review'
-    assert result['summary_overview_status'] == ('generated' if verdict == 'pass' else 'fallback')
+    # A block naming only NARR-design withholds that finding, not the Summary.
+    assert result['summary_overview_status'] == 'generated'
+    assert ('NARR-design' in [r['object_id'] for r in result['assessment_narratives']]) == (verdict == 'pass')
 
 
 @pytest.mark.parametrize('verdict', ['pass', 'block'])
@@ -2717,4 +2737,6 @@ def test_reader_paragraph_cleanup_preserves_text_and_requires_meaning_review(ver
     reviewed = reviewer.calls[-1]['payload']['final_reader']['assessment_narratives'][0]
     assert ' '.join(reviewed['paragraphs']) == original
     assert len(reviewed['paragraphs']) <= 3
-    assert result['summary_overview_status'] == ('generated' if verdict == 'pass' else 'fallback')
+    # A block naming only NARR-design withholds that finding, not the Summary.
+    assert result['summary_overview_status'] == 'generated'
+    assert ('NARR-design' in [r['object_id'] for r in result['assessment_narratives']]) == (verdict == 'pass')

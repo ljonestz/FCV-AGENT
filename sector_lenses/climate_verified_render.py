@@ -748,6 +748,19 @@ def _themes_html(model: dict[str, object]) -> str:
     return ''.join(parts)
 
 
+FALLBACK_SUMMARY_OVERVIEW = (
+    'A short summary is not shown for this run because it could not be checked against the project documents. The findings and priorities below remain available; read them alongside the limitations at the end of this note.',
+)
+# Earlier boilerplate for the same fallback. Sessions saved before the wording change
+# still carry it; export treats it as equivalent so those sessions stay exportable.
+LEGACY_FALLBACK_SUMMARY_OVERVIEWS = (
+    [
+        'The automated Summary could not be independently verified. The operational context and assessment findings provide the available analysis.',
+        'Use the ranked operational priorities and points to check as the basis for review. Confirm the stated evidence limitations before relying on the brief.',
+    ],
+)
+
+
 def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
     """Project a verified assessment into the only reader-facing structure."""
 
@@ -839,10 +852,7 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
             assessment.get('final_reader'), assessment.get('reader_review'), assessment)
     summary_overview_generated = bool(summary_overview)
     if not summary_overview and assessment.get('reader_contract') == 'final-reader-v1':
-        summary_overview = [
-            'The automated Summary could not be independently verified. The operational context and assessment findings provide the available analysis.',
-            'Use the ranked operational priorities and points to check as the basis for review. Confirm the stated evidence limitations before relying on the brief.',
-        ]
+        summary_overview = list(FALLBACK_SUMMARY_OVERVIEW)
     elif not summary_overview:
         summary_overview = _legacy_summary_overview(
             overview_summary,
@@ -854,6 +864,10 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
     summary_overview_status = _text(assessment.get("summary_overview_status"))
     if not summary_overview_generated:
         summary_overview_status = "fallback"
+    elif assessment.get('reader_contract') == 'final-reader-v1':
+        # Admission is recomputed from the saved reader and review, so a session
+        # saved under older admission rules shows the Summary those rules withheld.
+        summary_overview_status = "generated"
     elif summary_overview_status not in {"generated", "fallback"}:
         summary_overview_status = "generated" if summary_overview else "fallback"
     climate_sensitivity_rating = {

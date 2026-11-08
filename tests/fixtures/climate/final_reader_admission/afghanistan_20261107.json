@@ -1,0 +1,785 @@
+{
+ "_provenance": "Trimmed from a saved afghanistan_20261107 climate session: cited support records, facts sharing a number with reader prose, judgments, and the final-reader trace. No source documents.",
+ "reader_assessment": {
+  "facts": [
+   {
+    "claim_id": "PF-010",
+    "claim_type": "site_selection_criteria",
+    "subject": "BPHS facilities supported under Subcomponent 1.1",
+    "predicate": "are selected from 1,200 facilities in 17 provinces",
+    "object_value": "About half selected based on service readiness, utilization, and equity",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-ab8bd9d95c49cd4e-B-2b600271bdd8"
+    ],
+    "supporting_excerpt": "Of 1,200 facilities, about half are selected based on service readiness, utilization, and equity.",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-012",
+    "claim_type": "activity_conditional",
+    "subject": "Health emergency preparedness and climate resilience strengthening of a subset of facilities",
+    "predicate": "is conditional on",
+    "object_value": "Pandemic Fund Round 4 support, building on the ongoing Climate and Health Vulnerability Assessment",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-ab8bd9d95c49cd4e-B-434df53f2304"
+    ],
+    "supporting_excerpt": "Subject to Pandemic Fund Round 4 support, a subset of facilities will be strengthened for health emergency preparedness and climate resilience",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-013",
+    "claim_type": "delivery_arrangement",
+    "subject": "BPHS service delivery under Subcomponent 1.1",
+    "predicate": "continues through",
+    "object_value": "UNICEF-managed NGO contracting with performance payments tied to a simplified, digitalized Quantified Quality Matrix",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-ab8bd9d95c49cd4e-B-434df53f2304"
+    ],
+    "supporting_excerpt": "Service delivery will continue through UNICEF-managed NGO contracting, with a stronger emphasis on quality-based performance payments.",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-014",
+    "claim_type": "activity",
+    "subject": "Private contracting pilot under Subcomponent 1.1",
+    "predicate": "targets",
+    "object_value": "Underserved areas, potentially AKDN-supported provinces; IFC-supported SANA Hospital to expand preventive services in Kabul",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-ab8bd9d95c49cd4e-B-1846b5b8e125"
+    ],
+    "supporting_excerpt": "HCJ will pilot private contracting in underserved areas to complement BPHS",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-017",
+    "claim_type": "activity_financing",
+    "subject": "Subcomponent 1.3 Strengthening Demand for Basic Services",
+    "predicate": "is allocated",
+    "object_value": "US$17 million: ECD US$4m, Maternal and Child Benefit Program US$10m, Unified Beneficiary Database US$3m",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-ab8bd9d95c49cd4e-B-33b2a52a3294",
+     "DOC-ab8bd9d95c49cd4e-B-fc52430e47da",
+     "DOC-ab8bd9d95c49cd4e-B-485874dda22d",
+     "DOC-ab8bd9d95c49cd4e-B-79b59d428fe2"
+    ],
+    "supporting_excerpt": "Maternal and Child Benefit Program (US$10 million).",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-018",
+    "claim_type": "targeting_criteria",
+    "subject": "MCBP district geographic targeting for SOP1",
+    "predicate": "prioritizes",
+    "object_value": "Selected districts in the 17 supported provinces, informed by malnutrition/stunting burden, service readiness, climate vulnerability and equity",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-ab8bd9d95c49cd4e-B-485874dda22d"
+    ],
+    "supporting_excerpt": "district selection informed by the burden of malnutrition and stunting, service readiness, climate vulnerability and equity considerations",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-020",
+    "claim_type": "activity_financing",
+    "subject": "Component 2 Improving Youth Skills and Employment",
+    "predicate": "targets and is split",
+    "object_value": "Youth 15-25; US$35m total: Subcomponent 2.1 US$33m (self-employment 22, wage 7, access to finance 1)",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-ab8bd9d95c49cd4e-B-c84e86ba36c4",
+     "DOC-ab8bd9d95c49cd4e-B-016d9364efb2",
+     "DOC-ab8bd9d95c49cd4e-B-57963f2ce4fa",
+     "DOC-ab8bd9d95c49cd4e-B-fff812217c57",
+     "DOC-ab8bd9d95c49cd4e-B-341833d49072"
+    ],
+    "supporting_excerpt": "Subcomponent 2.1: Delivering Integrated Skills and Employment Packages for Vulnerable Youth Including Women (US$ 33 million)",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-022",
+    "claim_type": "activity",
+    "subject": "JSDF grant under Component 2",
+    "predicate": "finances",
+    "object_value": "Skills pathways for returning youth and support for hosting communities",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-ab8bd9d95c49cd4e-B-c84e86ba36c4"
+    ],
+    "supporting_excerpt": "a dedicated Japan Social Development Fund (JSDF) grant financing skills pathways for returning youth",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-024",
+    "claim_type": "component_status",
+    "subject": "CERC under Component 4",
+    "predicate": "is allocated and requires before activation",
+    "object_value": "US$0; activation needs formal determination, Bank acceptance, and prior adoption of a CERC Manual and Emergency Action Plan; manual not yet prepared",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-ab8bd9d95c49cd4e-B-2e42f43e65b7"
+    ],
+    "supporting_excerpt": "The CERC Manual, which will set out detailed implementation arrangements, will be prepared by the designated implementing partner prior to any disbursement under this component.",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-027",
+    "claim_type": "climate_risk_response",
+    "subject": "Health and nutrition supplies and equipment (subcomponent 1.2)",
+    "predicate": "are protected by",
+    "object_value": "Climate-resilient storage: raised water-resilient, temperature-regulated, flood-proofed raised work surfaces",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-ab8bd9d95c49cd4e-B-efa7487efb15"
+    ],
+    "supporting_excerpt": "climate-resilient storage will be used (raised water-resilient, temperature-regulated) and flood-proofed raised work surfaces",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-029",
+    "claim_type": "climate_risk_response",
+    "subject": "Community-based training activities and payments (subcomponents 2.1, 2.2)",
+    "predicate": "are planned using",
+    "object_value": "Real-time climate shock data; moving training to less hazard-prone locations or online",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-ab8bd9d95c49cd4e-B-efa7487efb15"
+    ],
+    "supporting_excerpt": "Real-time climate shock data will be used to inform planning for community-based training activities and payments",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-030",
+    "claim_type": "climate_risk_response",
+    "subject": "Subcomponent 1.1 climate measures",
+    "predicate": "include",
+    "object_value": "CHVA-based district prioritization, facility contingency plans, climate measures in QQM checklist, supply chain vulnerability assessment and stockpiling plans, climate data in HMIS",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-ab8bd9d95c49cd4e-B-fbab589b5eef"
+    ],
+    "supporting_excerpt": "include specific climate resilience measures in quality of care matrix checklist (e.g. ventilation, drainage, etc.)",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-031",
+    "claim_type": "climate_risk_response",
+    "subject": "Subcomponent 1.2 climate measures",
+    "predicate": "include",
+    "object_value": "Climate risks in One Health guidelines, surveillance linked to climate early warning, specimen transport contingency plans, Emergency Operations Centers, stockpiles",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-ab8bd9d95c49cd4e-B-489827231cf5"
+    ],
+    "supporting_excerpt": "link disease surveillance to climate early warning systems",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-032",
+    "claim_type": "climate_risk_response",
+    "subject": "Subcomponent 1.3 climate measures",
+    "predicate": "include",
+    "object_value": "ECD hub contingency plans, tele-consultation, cash transfers as early response to climate shocks, CHVA data in profiling and eligibility",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-ab8bd9d95c49cd4e-B-7b587122edc1"
+    ],
+    "supporting_excerpt": "provision of cash transfers as an early response mechanism for climate-related shocks",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-033",
+    "claim_type": "climate_risk_response",
+    "subject": "Subcomponent 2.1 climate measures",
+    "predicate": "include",
+    "object_value": "CHVA-based targeting of vulnerable regions, e-learning, climate-relevant skills curricula, group savings and microfinance linkages",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-ab8bd9d95c49cd4e-B-33b08a567a10"
+    ],
+    "supporting_excerpt": "target climate vulnerable regions for training delivery and employment packages using CHVA data",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-036",
+    "claim_type": "climate_indicator",
+    "subject": "Results framework indicators with climate relevance",
+    "predicate": "include",
+    "object_value": "Growth monitoring visits, 7-1-7 outbreak response, cash-linked growth monitoring, cash-based beneficiaries, distance learning reach, QQM score",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-ab8bd9d95c49cd4e-B-ed8de4caedd6",
+     "DOC-ab8bd9d95c49cd4e-B-dc772de3fa45",
+     "DOC-ab8bd9d95c49cd4e-B-e664234b6164",
+     "DOC-ab8bd9d95c49cd4e-B-057af59f5ba3",
+     "DOC-ab8bd9d95c49cd4e-B-f7bba8f05e52",
+     "DOC-ab8bd9d95c49cd4e-B-9c2abaf2608d"
+    ],
+    "supporting_excerpt": "This indicator is climate-relevant because climate change is a primary driver of malnutrition in Afghanistan",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-039",
+    "claim_type": "gender_climate_context",
+    "subject": "Afghan women and girls",
+    "predicate": "bear disproportionate climate burden because of",
+    "object_value": "Restrictions on mobility, financial independence and access to aid",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-ab8bd9d95c49cd4e-B-c1f32ff52c8d"
+    ],
+    "supporting_excerpt": "systemic restrictions on their mobility, financial independence, and access to aid",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-040",
+    "claim_type": "beneficiaries",
+    "subject": "Component 2 target groups",
+    "predicate": "include",
+    "object_value": "Male and female youth 15-25, women, returnees and persons with disabilities; returnees and host communities receive psychosocial and language assistance",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-ab8bd9d95c49cd4e-B-0b26e1133e2c"
+    ],
+    "supporting_excerpt": "Returnees and their hosting communities will be provided with specific support, including psychosocial and language assistance.",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-041",
+    "claim_type": "beneficiaries",
+    "subject": "Component 1 recipients",
+    "predicate": "are",
+    "object_value": "Women, children and vulnerable households incl. PLW, children under two and food-insecure Afghans, via BPHS facilities across 17 provinces",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-ab8bd9d95c49cd4e-B-c42983348d59"
+    ],
+    "supporting_excerpt": "delivered through BPHS facilities across 17 provinces under Component 1",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-042",
+    "claim_type": "es_risk",
+    "subject": "Environmental and social risk rating and SEA/SH risk",
+    "predicate": "are",
+    "object_value": "Overall E&S risk Substantial; SEA/SH risk High",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-ab8bd9d95c49cd4e-B-cf2231980a2d"
+    ],
+    "supporting_excerpt": "SEA/SH risk is rated High given contextual constraints on women’s participation",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-043",
+    "claim_type": "es_instruments",
+    "subject": "Combined SEP and agency ESCPs",
+    "predicate": "are planned to be",
+    "object_value": "Prepared and disclosed at appraisal; status of completion not evidenced",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-ab8bd9d95c49cd4e-B-5235461e4c0b"
+    ],
+    "supporting_excerpt": "A suite of E&S instruments will be prepared and disclosed at appraisal, including a combined Stakeholder Engagement Plan (SEP)",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-044",
+    "claim_type": "es_instruments",
+    "subject": "ESMF, LMP, Security Risk Management Plans and Healthcare Waste Management Plan",
+    "predicate": "are planned to be finalized",
+    "object_value": "After effectiveness but prior to SOP1 initiation; SEA/SH Action Plans prepared by each agency prior to implementation",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-ab8bd9d95c49cd4e-B-5235461e4c0b"
+    ],
+    "supporting_excerpt": "will be finalized after effectiveness but prior to SOP1 initiation",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-046",
+    "claim_type": "citizen_engagement",
+    "subject": "Citizen engagement and grievance arrangements",
+    "predicate": "are",
+    "object_value": "Implemented by PIAs under SEP and GRM protocols; citizen engagement indicator measures grievances addressed within POM timeframe",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-ab8bd9d95c49cd4e-B-f760f7df88d1"
+    ],
+    "supporting_excerpt": "The Results Framework includes a citizen engagement indicator measuring the percentage of grievances, complaints, and inquiries addressed within the timeframe outlined in the POM.",
+    "confidence": "high"
+   },
+   {
+    "claim_id": "PF-047",
+    "claim_type": "risk_response",
+    "subject": "Political and governance risk (High)",
+    "predicate": "is mitigated by",
+    "object_value": "Proactive ITA engagement, community involvement, third-party monitoring, ongoing monitoring; UN partners and ARTF MA monitor ECAs",
+    "epistemic_status": "explicit",
+    "source_block_ids": [
+     "DOC-ab8bd9d95c49cd4e-B-e385cc8b6b40"
+    ],
+    "supporting_excerpt": "Mitigation includes proactive ITA engagement, strong community involvement, TPM, and ongoing monitoring.",
+    "confidence": "high"
+   }
+  ],
+  "derived_assertions": [],
+  "analysis": {
+   "existing_responses": [],
+   "pathways": [],
+   "residual_gaps": []
+  },
+  "context_evidence": [],
+  "judgments": {
+   "relevance": {
+    "value": "high",
+    "evidence_ids": [
+     "PF-026",
+     "PF-037",
+     "PF-038",
+     "PF-047",
+     "PF-039"
+    ],
+    "rationale": "Afghanistan is described as highly exposed to floods, heat and drought, and the project operates under High political and governance risk, restrictions on women, and returnee pressures. Climate shocks affect health, nutrition and livelihoods, while conflict and access limits affect delivery. The intersection is material to how services reach people."
+   },
+   "sensitivity": {
+    "value": "moderate",
+    "evidence_ids": [
+     "PF-025",
+     "PF-027",
+     "PF-029",
+     "PF-030",
+     "PF-047",
+     "RG-003",
+     "RG-007"
+    ],
+    "rationale": "The project addresses climate hazards across components through vulnerability-based targeting, resilient storage, contingency plans, early warning links and shock-aware training delivery. It also names political, access and women's participation risks with third-party monitoring. Gaps remain: selection weighting, monitoring of women's access, and unexamined risks from selective targeting and private contracting. Several safeguards are planned rather than completed."
+   },
+   "responsiveness": {
+    "value": "moderate",
+    "evidence_ids": [
+     "PF-018",
+     "PF-032",
+     "PF-033",
+     "PF-040",
+     "PF-022",
+     "RG-001",
+     "RG-004"
+    ],
+    "rationale": "Cash transfers to women as early response, climate-vulnerability targeting, livelihood packages with savings and capital, and returnee and host support offer credible pathways to livelihood security and institutional confidence. These are bounded because shared-benefit mechanisms for returnees and hosts are general, and access rules for grants are unspecified. This is conditional potential, not demonstrated peace impact."
+   },
+   "operationalization": {
+    "value": "partial",
+    "evidence_ids": [
+     "PF-036",
+     "PF-043",
+     "PF-044",
+     "PF-046",
+     "PF-052",
+     "PF-024",
+     "RG-002"
+    ],
+    "rationale": "Several climate measures are tied to indicators, a quality matrix, a grievance indicator and a planned mid-term review. However, environmental and social instruments and the emergency manual are planned rather than completed, shock-responsive payment triggers and financing are unspecified, and some preparedness work depends on Pandemic Fund approval. Responsibilities and resources are only partly set out."
+   }
+  },
+  "executive_readout": "The project already builds climate thinking into most of its health, nutrition and cash support. District and facility choices draw on a climate and health vulnerability assessment, clinics get contingency plans and drainage and ventilation checks in quality scoring, supplies are stored against floods and heat, and surveillance is linked to climate early warning. Youth skills delivery uses real-time shock data to move training to safer places or online. Cash transfers are framed as an early response to climate shocks and are paid mainly to women. Third-party monitoring and a grievance indicator back this up in a setting rated High for political and governance risk.\n\nThe main delivery challenge is that climate vulnerability is one input among several, and the weighting is left to the Operations Manual. Only about half of the 1,200 facilities are supported, so how selection is explained matters for trust between neighbouring communities. Women's restricted mobility and access is described as a core climate burden, yet the way monitoring would catch a loss of women's access to climate-linked services, or diversion of site selection, is not shown. Competitive skills grants and online delivery may favour better-connected applicants unless outreach rules are set.\n\nSome items are simply not yet specified rather than missing. Trigger rules and funding for shock-responsive cash, the environmental and social instruments finalised after effectiveness, and the emergency response manual are planned but not shown. Pandemic Fund approval conditions part of the preparedness work, so its reach is uncertain. Returnee and host support is described only in general terms. These matter because they determine whether climate-linked help arrives on time, fairly and in contested places.",
+  "priorities": [
+   {
+    "recommendation_id": "REC-001",
+    "title": "Specify in the Project Description how Skills Fund and start-up grant access will reach climate-exposed, rural and mobility-restricted women and youth",
+    "pathway_ids": [
+     "PW-003",
+     "PW-005"
+    ],
+    "existing_response_ids": [
+     "ER-005",
+     "ER-007",
+     "ER-008"
+    ],
+    "residual_gap_ids": [
+     "RG-001"
+    ],
+    "project_anchor_ids": [
+     "PF-020",
+     "PF-029",
+     "PF-021",
+     "PF-039"
+    ],
+    "decision": "Decide how competitive Skills Fund and start-up grant eligibility and outreach will favor climate-vulnerable, rural and mobility-restricted women and youth rather than better-connected applicants.",
+    "minimum_action": "Revise the Project Description in the PAD, Component 2 text for Subcomponent 2.1, to state how outreach, eligibility and application support for the Skills Fund and start-up grants will reach climate-vulnerable rural and mobility-restricted women and youth, including offline alternatives to online delivery.",
+    "enhanced_action": "Add a disaggregated results indicator in the Results Framework tracking participation by climate-vulnerable and rural women and youth, for the team to define.",
+    "enhanced_activation": "Use if the team finds in design work that online or competitive channels are likely to screen out target women and youth.",
+    "routing_status": "standard_document_advisory",
+    "instrument_claim_ids": [],
+    "responsible_function": "Task team, working with the Component 2 implementing partners.",
+    "authority_basis": "none_verified",
+    "recommendation_basis": "project_evidence",
+    "completion_evidence": "Updated Component 2 description stating outreach channels, eligibility treatment and offline access arrangements for climate-vulnerable and mobility-restricted applicants.",
+    "completion_evidence_status": "updated_section",
+    "confidence": "medium",
+    "limitation": "The Skills Fund rules, outreach design and connectivity conditions for rural and mobility-restricted women and youth are not shown in the available text, so the size of any access gap is unconfirmed.",
+    "caution": "Any outreach or eligibility design should stay consistent with the restrictions on women's participation that the project already names as a risk, and should be framed as a proposal for the team to test with implementing partners.",
+    "score": {
+     "materiality": 4,
+     "gap_strength": 3,
+     "leverage_urgency": 4,
+     "evidence": 4,
+     "feasibility": 5
+    },
+    "gate_results": {
+     "connection": true,
+     "residuality": true,
+     "materiality": true,
+     "actionability": true,
+     "timing": true,
+     "distinctiveness": true
+    },
+    "rank": 1,
+    "supported_numeric_tokens": [
+     "15",
+     "2",
+     "2.1",
+     "22",
+     "25",
+     "33",
+     "7"
+    ],
+    "narrative": "Component 2 already steers support toward climate-exposed people. Geographic targeting uses labor market needs, climate vulnerability and budget availability, and climate vulnerability data feed beneficiary profiling and case management. Subcomponent 2.1 combines start-up grants, productive capital, group savings and microfinance linkages with climate-relevant skills, and training can move to safer locations or online when climate shocks hit. What the text leaves open is how a young woman in a rural or mobility-restricted household would actually apply for, qualify for and use these benefits. The wage pathway is financed through a competitive Skills Fund, and several delivery modalities depend on connectivity and devices. Without stated access arrangements, competitive and online channels may favor applicants who are already well connected, rather than those most exposed to climate shocks.\n\nThe recommended edit is to revise the Project Description in the PAD, in the Component 2 text for Subcomponent 2.1, so that it explains how the packages will reach the intended groups. The task team could settle which outreach channels will be used for female youth, how eligibility and selection under the Skills Fund and start-up grants will treat climate vulnerability alongside labor market demand, and what offline or facilitated alternatives sit beside online delivery when connectivity or mobility is a constraint. These are proposals for the team to develop with the implementing partners and are not existing project commitments.\n\nThe work can start now using what the project has already stated. The climate vulnerability data used for geographic targeting and the existing outreach emphasis on female youth give the team a basis for describing the selection logic without waiting for final design. Where the Operations Manual or partner agreements will carry detailed rules, the PAD text can say what the rules must achieve and leave the procedures to those documents. It would help to check with the implementing partners which channels they already use to reach rural women and youth, since the existing pilots under HER and EERA may show what has worked.\n\nThe resulting description would let reviewers and implementing partners see how the competitive features and the climate-vulnerability targeting fit together. It would also give the team a clear basis for deciding later whether a disaggregated participation measure is warranted, if early design work shows that the competitive or online channels are screening out the very groups the component is meant to serve."
+   },
+   {
+    "recommendation_id": "REC-002",
+    "title": "Define activation arrangements for shock-responsive cash transfers in the Maternal and Child Benefit Program description",
+    "pathway_ids": [
+     "PW-002"
+    ],
+    "existing_response_ids": [
+     "ER-004",
+     "ER-012"
+    ],
+    "residual_gap_ids": [
+     "RG-002"
+    ],
+    "project_anchor_ids": [
+     "PF-032",
+     "PF-017",
+     "PF-024"
+    ],
+    "decision": "Decide how and when cash transfers would be used as an early response to climate shocks, what would trigger them and where funding would come from.",
+    "minimum_action": "Specify in the PAD Project Description, Subcomponent 1.3 Maternal and Child Benefit Program text, what would prompt an early cash response to a climate shock, who would decide, and whether and how existing transfer funds could contribute, leaving any new funding source open.",
+    "enhanced_action": "Describe in the PAD implementation arrangements how a shock-responsive payment would be coordinated with the zero-cost CERC and with sister projects' referral pathways.",
+    "enhanced_activation": "Use if the team concludes that early payments cannot be financed within the existing allocation and an emergency or partner channel is needed.",
+    "routing_status": "standard_document_advisory",
+    "instrument_claim_ids": [],
+    "responsible_function": "Task team, with UNICEF and WFP as implementing agencies.",
+    "authority_basis": "none_verified",
+    "recommendation_basis": "project_evidence",
+    "completion_evidence": "Updated Subcomponent 1.3 text or a decision record stating the proposed trigger logic, decision responsibility and open funding question for early cash response.",
+    "completion_evidence_status": "updated_section",
+    "confidence": "medium",
+    "limitation": "The available text describes cash as an early response mechanism but does not show triggers, timing, decision responsibility or funding, so how a payment would actually be released remains unconfirmed.",
+    "caution": "The Maternal and Child Benefit Program is soft-conditioned on service use, and the emergency component carries no allocation, so the team should keep the funding question open until it is checked with the agencies.",
+    "score": {
+     "materiality": 4,
+     "gap_strength": 4,
+     "leverage_urgency": 4,
+     "evidence": 4,
+     "feasibility": 4
+    },
+    "gate_results": {
+     "connection": true,
+     "residuality": true,
+     "materiality": true,
+     "actionability": true,
+     "timing": true,
+     "distinctiveness": true
+    },
+    "rank": 2,
+    "supported_numeric_tokens": [
+     "0",
+     "1.3",
+     "10",
+     "17",
+     "4"
+    ],
+    "narrative": "The Maternal and Child Benefit Program is one of the project's clearest links between climate shocks and household stability. Quarterly transfers during the first thousand days of a child's life go primarily to women, eligibility is verified through community-based identification, and enrollment protocols are flexible enough to cover mobile and returnee populations. The climate measures for Subcomponent 1.3 add that cash transfers will serve as an early response mechanism for climate-related shocks, and the results framework treats the cash-based indicator as climate-relevant because the transfers are meant to reach climate-vulnerable households or support resilience to shocks. This is a credible design intent, but the text does not say what would make an early payment happen.\n\nThe recommended edit is to specify, in the PAD Project Description for Subcomponent 1.3, the arrangement the team proposes for early cash response. The task team could set out what kind of shock evidence would prompt a payment, using the real-time climate data and the climate vulnerability assessment data the project already plans to use, who would make the call between the implementing agency and the Bank, and whether the response would use existing households on the program roster or extend to new ones. Because transfers are soft-conditioned on service use, the description should also say whether the condition would be relaxed during a shock, since households cut off from clinics by floods or heat would otherwise risk missing the payment.\n\nFunding needs to be treated as an open question. The allocation for the program is stated, the emergency component carries no allocation and requires a formal determination, Bank acceptance and a prior-adopted manual before activation, and no source in the available text shows that early payments are funded. The team should therefore ask whether and how existing transfer funds could contribute to an early response, and whether an emergency or partner channel would be needed, without assuming either answer. The manual for the emergency component is not yet prepared, so the description can say what that manual would need to cover if the team decides to use it for this purpose.\n\nAgreeing this logic during preparation gives reviewers and the agencies a shared picture of how shock response would work. It also keeps the early-response promise from remaining aspirational, so that households facing food insecurity or loss of income after a climate shock have a predictable expectation of support."
+   },
+   {
+    "recommendation_id": "REC-004",
+    "title": "Describe in the implementation arrangements how monitoring will detect and correct loss of women's access and misdirected climate-linked services",
+    "pathway_ids": [
+     "PW-005",
+     "PW-006"
+    ],
+    "existing_response_ids": [
+     "ER-002",
+     "ER-011"
+    ],
+    "residual_gap_ids": [
+     "RG-007"
+    ],
+    "project_anchor_ids": [
+     "PF-047",
+     "PF-046",
+     "PF-039",
+     "PF-042"
+    ],
+    "decision": "Decide what signals third-party and grievance monitoring should track to detect loss of women's access or diversion of climate-linked services, and what corrective steps would follow.",
+    "minimum_action": "Specify in the PAD implementation arrangements, under monitoring, which signals third-party monitoring and grievance data should track on women's access and beneficiary or site selection integrity for climate-linked services, who reviews them and what corrective steps follow.",
+    "enhanced_action": null,
+    "enhanced_activation": null,
+    "routing_status": "standard_document_advisory",
+    "instrument_claim_ids": [],
+    "responsible_function": "Task team, with the implementing agencies and the ARTF Monitoring Agent.",
+    "authority_basis": "none_verified",
+    "recommendation_basis": "project_evidence",
+    "completion_evidence": "Updated implementation arrangements text naming the access and selection-integrity signals, the review responsibility and the corrective steps for climate-linked services.",
+    "completion_evidence_status": "updated_section",
+    "confidence": "medium",
+    "limitation": "The monitoring signals, review responsibilities and corrective steps are not described in the available text, so how well current arrangements would catch an access loss is unconfirmed.",
+    "caution": "Monitoring design must respect security and confidentiality constraints in the operating context, and the signals proposed here should be tested with the agencies before being treated as workable.",
+    "score": {
+     "materiality": 4,
+     "gap_strength": 3,
+     "leverage_urgency": 3,
+     "evidence": 4,
+     "feasibility": 4
+    },
+    "gate_results": {
+     "connection": true,
+     "residuality": true,
+     "materiality": true,
+     "actionability": true,
+     "timing": true,
+     "distinctiveness": true
+    },
+    "rank": 4,
+    "supported_numeric_tokens": [],
+    "narrative": "The project is open about the political and governance risks it faces. These include restrictions on access, limits on women's participation and on female staff, interference in project activities, and pressure to misalign beneficiary and site selection with project criteria. The stated mitigation is proactive engagement, strong community involvement, third-party monitoring and ongoing monitoring, with the UN partners and the ARTF Monitoring Agent watching the implementing agencies to protect the approach of services for women delivered by women. The project also includes a citizen engagement indicator on grievances addressed within the timeframe in the operations manual. This is a solid base. What the text does not show is how these tools would notice that a climate-linked service has stopped reaching women or has been redirected.\n\nThis matters for climate outcomes because the services most tied to adaptation, such as nutrition counseling on heat and flood protection, cash transfers as an early response and livelihood packages in climate-vulnerable regions, depend on women being able to reach them. Where restrictions on mobility and access to aid already leave women absorbing the shocks of environmental disasters, a quiet loss of access would weaken household adaptation without showing up in headline service numbers.\n\nThe recommended edit is to specify, in the PAD implementation arrangements under monitoring, what the existing monitoring channels should look for. The task team could agree with the agencies a short list of signals, for example changes in the share of female users or staff at supported facilities and delivery points, patterns in grievances about access or selection, and deviations between the selected districts or beneficiaries and the stated criteria. The text could name who reviews these signals, and what corrective steps the agencies and the Bank would consider, such as adjusting delivery modalities or raising the matter with the relevant authorities.\n\nThe aim is a proportionate arrangement that uses what is already planned rather than a new structure. The signals and responsibilities proposed here are a starting point for the team and agencies to test, and the detailed procedures can sit in the operations manual or the stakeholder engagement and grievance protocols once those are prepared."
+   }
+  ]
+ },
+ "initial_final_reader": {
+  "summary_paragraphs": [
+   {
+    "object_id": "SUM-001",
+    "text": "The project already builds climate thinking into much of its health, nutrition and livelihoods support. Facilities and districts are chosen using readiness, utilization, equity and climate vulnerability data, clinics get contingency plans and drainage and ventilation checks in quality scoring, supplies are stored against floods and heat, and cash transfers to women are framed as an early response to climate shocks. These choices could help people keep using services and cope with shocks, which may in turn support confidence in providers. Third-party monitoring and a grievance indicator back this up in a setting rated High for political and governance risk.",
+    "evidence_ids": [
+     "PF-010",
+     "PF-018",
+     "PF-027",
+     "PF-030",
+     "PF-032",
+     "PF-046",
+     "PF-047"
+    ]
+   },
+   {
+    "object_id": "SUM-002",
+    "text": "The main remaining challenge is turning these design choices into fair, timely access. Skills grants are competitive and some delivery moves online, so better-connected applicants could be favoured over exposed or mobility-restricted women and youth. Triggers and funding for shock-responsive cash are not specified, and the emergency component carries no allocation. Monitoring does not yet show how a loss of women's access or misdirected site selection would be detected and corrected. The accepted priorities address these points by specifying grant outreach and eligibility, cash activation arrangements, and monitoring signals with corrective steps.",
+    "evidence_ids": [
+     "PF-020",
+     "PF-024",
+     "PF-029",
+     "PF-032",
+     "PF-039",
+     "PF-047",
+     "REC-001",
+     "REC-002",
+     "REC-004"
+    ]
+   }
+  ],
+  "assessment_narratives": [
+   {
+    "object_id": "NARR-design",
+    "theme": "design",
+    "paragraphs": [
+     "The design could keep basic services running when floods, heat and disease shocks hit. Districts are prioritized with climate and health vulnerability data, facilities carry contingency plans, quality scoring includes drainage and ventilation, supplies sit in water-resilient and temperature-regulated storage, and disease surveillance is linked to climate early warning. Training for community-based youth activities uses real-time shock data to move delivery to safer places or online. Delivery continues through UNICEF-managed NGO contracting outside government systems, with third-party monitoring against the High political and governance risk. If these measures work, people keep reaching care and support, which protects confidence in providers.",
+     "Conflict and fragility can still undercut delivery. The project itself names restrictions on access and on women's participation, interference in activities and pressure to misalign beneficiary or site selection. Only about half of 1,200 facilities are selected, and a pilot of private contracting in underserved areas could, if poorly handled, shift access or cost pressures between communities. This is a risk to examine, not evidence of harm. Part of the preparedness work also depends on Pandemic Fund approval.",
+     "Practically, the design would benefit from monitoring signals that show whether women lose access or whether site and beneficiary selection drifts, with agreed corrective steps, as the accepted monitoring priority proposes."
+    ],
+    "evidence_ids": [
+     "PF-010",
+     "PF-014",
+     "PF-012",
+     "PF-013",
+     "PF-027",
+     "PF-029",
+     "PF-030",
+     "PF-031",
+     "PF-047",
+     "REC-004"
+    ]
+   },
+   {
+    "object_id": "NARR-dividends",
+    "theme": "dividends",
+    "paragraphs": [
+     "The strongest plausible contribution is stronger household and institutional resilience through services and income support that keep working under climate stress. Cash transfers paid mainly to women are designed as an early response to climate shocks and tied to growth monitoring, while skills, capital transfers, group savings and microfinance linkages aim at income security for vulnerable youth and women. Where climate-exposed households can rely on clinics and predictable support, they may be less pushed toward negative coping, and trust in the delivery system could grow. These are analytical possibilities, not automatic outcomes.",
+     "Returnee and host support adds a further opening for shared benefit. A dedicated grant finances skills pathways for returning youth, with psychosocial and language assistance for hosting communities. How this would ease competition over local livelihoods is not described, so the effect remains uncertain.",
+     "The accepted priorities could deepen the contribution. Specifying what would trigger an early cash response, who decides, and whether existing transfer funds could contribute, leaving any new funding source open, would make timely help more credible. Clearer outreach and eligibility for skills grants would help livelihood gains reach the most exposed women and youth rather than the best connected."
+    ],
+    "evidence_ids": [
+     "PF-017",
+     "PF-020",
+     "PF-022",
+     "PF-032",
+     "PF-033",
+     "PF-036",
+     "PF-040",
+     "REC-001",
+     "REC-002"
+    ]
+   },
+   {
+    "object_id": "NARR-inclusion",
+    "theme": "inclusion",
+    "paragraphs": [
+     "People could gain access to maternal and child health and nutrition services, regular cash support in a child's first 1,000 days, and skills and employment packages. Component 1 reaches women, children and vulnerable households, including pregnant and lactating women, children under two and food-insecure Afghans. Component 2 explicitly names male and female youth aged 15 to 25, women, returnees and persons with disabilities. Cash eligibility uses community-based identification, with flexible enrollment for mobile and returnee populations, and facility choice considers equity. These are real protections.",
+     "Barriers remain. Afghan women face restrictions on mobility, financial independence and access to aid, which can limit their use of services and recovery from shocks. Skills grants are competitive and some training moves online, which may favor better-connected applicants. Communities outside the roughly half of facilities supported could feel overlooked. The project rates sexual exploitation and abuse and sexual harassment risk as High. The stakeholder engagement plan, agency commitment plans and a grievance indicator offer channels for complaints, but several of these instruments are planned rather than finalized, so their effectiveness is not yet visible.",
+     "Accepted priorities on grant outreach and eligibility and on monitoring women's access would turn these protections into practical checks."
+    ],
+    "evidence_ids": [
+     "PF-010",
+     "PF-020",
+     "PF-029",
+     "PF-039",
+     "PF-040",
+     "PF-041",
+     "PF-042",
+     "PF-043",
+     "PF-044",
+     "PF-046",
+     "REC-001",
+     "REC-004"
+    ]
+   }
+  ]
+ },
+ "prechecks": [
+  {
+   "attempt": 0,
+   "issues": [
+    {
+     "object_id": "NARR-inclusion",
+     "reason_codes": [
+      "SUMMARY_NUMBER_UNSUPPORTED"
+     ],
+     "explanation": "{'reason': 'SUMMARY_NUMBER_UNSUPPORTED', 'detail': '1,000'}"
+    }
+   ]
+  }
+ ],
+ "meaning_reviews": [
+  {
+   "verdict": "revise",
+   "reason_codes": [
+    "PROJECT_FACT_UNSUPPORTED",
+    "RESIDUAL_GAP_UNSUPPORTED"
+   ],
+   "object_ids": [
+    "NARR-design",
+    "NARR-dividends",
+    "NARR-inclusion"
+   ],
+   "issues": [
+    {
+     "object_id": "NARR-design",
+     "reason_codes": [
+      "PROJECT_FACT_UNSUPPORTED"
+     ],
+     "explanation": "The sentence says the project 'names' interference in activities and pressure to misalign selection as risks, and implies a pilot of private contracting could shift access; PF-047 supports the first, but linking 'misalign selection' to the project's own broader site selection is fine while the claim that supplies sit in 'temperature-regulated storage' and training 'moves to safer places' is attributed to the whole project.",
+     "quoted_text": "Training for community-based youth activities uses real-time shock data to move delivery to safer places or online.",
+     "disposition": "verify",
+     "verification_note": "Check PF-029 and the climate risk paragraph (DOC-ab8bd9d95c49cd4e-B-efa7487efb15): real-time data will inform planning, with training moved to less hazard-prone locations or online 'whenever possible'. Confirm wording does not present relocation as a settled commitment.",
+     "severity": "minor",
+     "decision_impact": "Does not change the preparation decision; it only softens a delivery-certainty nuance."
+    },
+    {
+     "object_id": "NARR-dividends",
+     "reason_codes": [
+      "PROJECT_FACT_UNSUPPORTED"
+     ],
+     "explanation": "The narrative says cash transfers are 'paid mainly to women' and framed as an early response to climate shocks; the early-response mechanism is documented, but it is documented as a Subcomponent 1.3 activity not specified for the MCBP's soft-conditioned transfers, so linking the two as the same design may overstate how MCBP transfers act as shock response.",
+     "quoted_text": "Cash transfers paid mainly to women are designed as an early response to climate shocks and tied to growth monitoring",
+     "disposition": "verify",
+     "verification_note": "Check PF-032 and PF-017/PF-036 against Annex 3 (DOC-ab8bd9d95c49cd4e-B-7b587122edc1) and the MCBP description (DOC-ab8bd9d95c49cd4e-B-485874dda22d): confirm that the early-response cash mechanism and the MCBP growth-monitoring-linked transfers are the same instrument, or reword to keep them distinct.",
+     "severity": "consequential",
+     "decision_impact": "If the early-response mechanism is not the MCBP, readers would overstate existing shock-responsive design, affecting how the proposed activation-arrangement action is framed."
+    },
+    {
+     "object_id": "NARR-inclusion",
+     "reason_codes": [
+      "RESIDUAL_GAP_UNSUPPORTED"
+     ],
+     "explanation": "The paragraph says communities outside the supported facilities 'could feel overlooked' and describes unseen grievance content as not yet effective; the fairness concern is plausible, but the claim that protections' 'effectiveness is not yet visible' treats unseen/planned instruments as unproven rather than unseen.",
+     "quoted_text": "so their effectiveness is not yet visible",
+     "disposition": "verify",
+     "verification_note": "Check PF-043/PF-044: instruments are planned for disclosure at appraisal and finalization after effectiveness. Confirm whether the appraisal-stage SEP and ESCPs were actually disclosed (package does not show), and reword as 'content not supplied' rather than implying weak protection.",
+     "severity": "minor",
+     "decision_impact": "Wording only; does not change which preparation decision is informed, but avoids treating unseen instrument content as failed protection."
+    }
+   ]
+  }
+ ],
+ "saved_summary_overview_status": "fallback",
+ "correction": {
+  "target_ids": [
+   "NARR-design",
+   "NARR-dividends",
+   "NARR-inclusion"
+  ],
+  "recorded_issues": [
+   {
+    "object_id": "NARR-dividends",
+    "reason_codes": [
+     "READER_CORRECTION_SUMMARY_NUMBER_UNSUPPORTED"
+    ],
+    "explanation": "READER_CORRECTION_SUMMARY_NUMBER_UNSUPPORTED"
+   }
+  ],
+  "response": {
+   "corrections": [
+    {
+     "object_id": "NARR-design",
+     "edits": [
+      {
+       "paragraph_index": 0,
+       "old_text": "Training for community-based youth activities uses real-time shock data to move delivery to safer places or online.",
+       "new_text": "Planning for community-based youth training activities and payments is to use real-time shock data, with training moved to less hazard-prone locations or online whenever possible."
+      }
+     ]
+    },
+    {
+     "object_id": "NARR-dividends",
+     "edits": [
+      {
+       "paragraph_index": 0,
+       "old_text": "Cash transfers paid mainly to women are designed as an early response to climate shocks and tied to growth monitoring, while skills",
+       "new_text": "Subcomponent 1.3 includes cash transfers as an early response mechanism for climate-related shocks, and the project's cash-based interventions are paid mainly to women and linked to growth monitoring and counseling, though the documents do not state that these are the same instrument, while skills"
+      }
+     ]
+    },
+    {
+     "object_id": "NARR-inclusion",
+     "edits": [
+      {
+       "paragraph_index": 0,
+       "old_text": "regular cash support in a child's first 1,000 days",
+       "new_text": "regular cash support for pregnant and lactating women and mothers of children under two"
+      },
+      {
+       "paragraph_index": 1,
+       "old_text": "so their effectiveness is not yet visible",
+       "new_text": "and the content of the instruments finalized after effectiveness was not supplied for review"
+      }
+     ]
+    }
+   ]
+  }
+ }
+}
