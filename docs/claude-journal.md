@@ -2238,3 +2238,21 @@ which the second Stage 2 prompt variant produces; failed research is a plain
 limitation, not a sources box (4579165). Blocker restored 08:04 UTC (web 0,
 budget 1 microUSD, /tmp/fcv-readout-20261108-finished-blocked.sqlite). Both
 slots consumed; do not repeat. Production unchanged; no merge.
+
+### 2026-11-08 Stage 3 prose investigation (paid replay)
+
+User reported clipped, bulleted, matter-of-fact Stage 3 prose. The Stage 3 prompt and
+STANDARD_FCV_STAGE3_OUTPUT_CONTRACT have been unchanged since 2026-09-25. Stage 3 moved
+from Sonnet 4.6 to Opus 5.5 on 2026-10-09 (a7cd29c). Average sentence length was 25-38
+words in Sept and 13-21 since then. Replayed Stage 3 only on Guinea's saved Stage 1-2
+history via env-gated switches (4f8292b; default off). Three arms: control (Opus,
+current), Sonnet 5.5 (current) and Opus with a revised style paragraph. Reserved
+USD4.84 in total, not an invoice. Records: output/20261108_stage3-prose-replay/.
+
+Bullets vary run to run (the control arm used none). A blind reviewer ranked the
+revised wording first (36/50), then the paid run, the control, and Sonnet 5.5 last.
+Reverting the model is not the fix. The revised arm's narrative was cut mid-Strengths
+with no watch list, probably because Opus thinking counts toward the 32k cap. Next:
+make the revised wording permanent and add reasoning about how risks interact (ITS
+parity required). Then fix the cap or ordering and run one confirmatory pass.
+Blocker restored 09:30 UTC.
