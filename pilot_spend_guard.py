@@ -101,6 +101,22 @@ class PilotSpendGuard:
             return db.execute("SELECT reserved FROM budget WHERE id=1").fetchone()[0]
 
     def __call__(self, request):
+        try:
+            self._check(request)
+        except PilotBudgetExceeded as exc:
+            # The SDK surfaces hook errors as a generic APIConnectionError, so record why
+            # the guard refused. Metadata only: no prompt or document content.
+            model, web = "unknown", False
+            try:
+                body = json.loads(request.read())
+                model = str(body.get("model", "unknown"))[:40]
+                web = "tools" in body
+            except Exception:  # noqa: BLE001 - logging must not mask the refusal
+                pass
+            print(f"PILOT_REJECTED reason={exc} model={model} web={web}", flush=True)
+            raise
+
+    def _check(self, request):
         # Only the first-party Messages API is in scope.
         if request.url.host != "api.anthropic.com" or request.url.path != "/v1/messages":
             raise PilotBudgetExceeded("Pilot permits only first-party Messages requests")
