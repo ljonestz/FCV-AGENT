@@ -261,44 +261,89 @@ def logo_path(white=True):
 
 
 VERIFY_RE = re.compile(r"(\[Verify before sharing:.*?\])")
-_VERIFY_PARTS_RE = re.compile(r"^\[Verify before sharing:\s*(.*?)\]$", re.DOTALL)
-_INTERNAL_IDS_RE = re.compile(r"[ \t]*\((?:PF|RG|CE|ER|EV)-\d+(?:\s*(?:,|;|and)\s*(?:PF|RG|CE|ER|EV)-\d+)*\)")
-_HEX = r"(?:B-)?[0-9a-f]{8,}"
-_INTERNAL_ID_HINT_RE = re.compile(r"\bPF-\d|\bDOC-|\bB-[0-9a-f]{8,}|\bblocks?\s+(?:B-)?[0-9a-f]{8,}", re.IGNORECASE)
+_ID_TOKEN_RE = re.compile(r"\bDOC(?= blocks?\b)|\bDOC-[A-Za-z0-9-]+|\bPF-\d+|\bB-[0-9a-f]{8,}|\b[0-9a-f]{12,}\b")
+_INTERNAL_ID_HINT_RE = re.compile(r"\bPF-\d|\bDOC-|\bB-[0-9a-f]{8}|\b[0-9a-f]{12}")
+_PAREN_ID_RE = re.compile(r"\((?:PF|RG|CE|ER|EV)-\d+(?:(?:, |; | and |,|;)(?:PF|RG|CE|ER|EV)-\d+)*\)")
+_VERIFY_PREFIX = "[Verify before sharing:"
+_LEADS = {"check", "see", "compare", "confirm"}
+_JOINERS = {"and", ","}
+_CLOSERS = {":", ")", ",", "and", ".", ";"}
+_PREPS = {"in", "against", "of", "from", "with", "to"}
+
+
+def _drop_parenthetical_ids(text):
+    """Remove '(PF-008, PF-010)'-style ids from prose, with the space before them."""
+    out, last = [], 0
+    for m in _PAREN_ID_RE.finditer(text):
+        start = m.start()
+        while start > last and text[start - 1] in " \t":
+            start -= 1
+        out.append(text[last:start])
+        last = m.end()
+    out.append(text[last:])
+    return "".join(out)
+
+
+def _tidy_tokens(tokens):
+    """One linear pass dropping connectors and labels orphaned by removed ids."""
+    out = []
+    for i, tok in enumerate(tokens):
+        low = tok.lower()
+        nxt = tokens[i + 1].lower() if i + 1 < len(tokens) else None
+        prev = out[-1].lower() if out else None
+        if low in ("block", "blocks") and (nxt is None or nxt in _CLOSERS):
+            if prev == "source":
+                out.pop()
+            continue
+        # A real ", and" in prose stays; a comma only goes before other closers.
+        closes = nxt is None or (nxt in _CLOSERS and not (low == "," and nxt == "and"))
+        after_joiner = prev in _JOINERS and not (low == "and" and prev == ",")
+        if low in _JOINERS and (prev is None or prev in _LEADS or after_joiner or prev == "("
+                                or prev in _PREPS or closes):
+            continue
+        if low in _PREPS and nxt == ":":
+            continue
+        if tok == ")" and prev == "(":
+            out.pop()
+            continue
+        if tok == ":" and len(out) == 1 and prev in _LEADS - {"confirm"}:
+            out.pop()
+            continue
+        out.append(tok)
+    return out
 
 
 def clean_verify_note(note):
     """Drop internal block hashes, PF-nnn fact ids and DOC block ids from a reviewer note.
 
-    Mirrors cleanVerifyNote in static/fcv_readout.js so Word and the browser agree."""
-    t = str(note or "")
-    t = re.sub(r"\s*\(DOC-[A-Za-z0-9-]+(?:\s*(?:,|;|and)\s*DOC-[A-Za-z0-9-]+)*\)", "", t)
-    # Bare document block ids, with any "source block(s)" lead and joining connector.
-    t = re.sub(r"\s*(?:(?:,|\band\b)\s*)?(?:\bsource\s+)?(?:\bblocks?\s+)?\bDOC-[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*",
-               "", t, flags=re.IGNORECASE)
-    t = re.sub(r"\s*\((?:source )?blocks?\s+" + _HEX + r"[^)]*\)", "", t, flags=re.IGNORECASE)
-    t = re.sub(r"(?:\band\s+|,\s*)?(?:\bsource\s+)?\bblocks?\s+" + _HEX
-               + r"(?:\s*(?:,|and)\s*" + _HEX + r")*", "", t, flags=re.IGNORECASE)
-    t = re.sub(r"(?:,\s*)?\bB-[0-9a-f]{10,}\b", "", t)
-    t = re.sub(r"(?:\band\s+|,\s*)?\bPF-\d+\b", "", t)
-    t = re.sub(r"\(\s*(?:source\s+)?blocks?\s*\)", "", t, flags=re.IGNORECASE)
-    # A preposition stranded before the colon ("in: the road") is dropped.
-    t = re.sub(r"\s+(?:in|against|and|of|from|with|to)\s*(?=:)", "", t, flags=re.IGNORECASE)
-    t = re.sub(r"^(\s*(?:Check|See|Compare|Confirm))\s+(?:(?:and|/|,|;)\s+)+", r"\1 ", t, flags=re.IGNORECASE)
-    t = re.sub(r"^\s*(?:Check|See|Compare)(?:\s|,|and)*:\s*", "", t, flags=re.IGNORECASE)
-    t = re.sub(r"\(\s*\)", "", t)
-    t = re.sub(r"\s{2,}", " ", t)
-    t = re.sub(r"\s+([,.;:])", r"\1", t).strip()
+    Mirrors cleanVerifyNote in static/fcv_readout.js so Word and the browser agree.
+    Linear token passes only (no backtracking-prone regexes)."""
+    t = _ID_TOKEN_RE.sub(" ", str(note or ""))
+    t = t.replace("(", " ( ").replace(")", " ) ").replace(", ", " , ").replace(": ", " : ")
+    if t.endswith(":") or t.endswith(","):
+        t = t[:-1] + " " + t[-1]
+    tokens = t.split()
+    for _ in range(4):  # Removals can expose a new orphan; a few passes settle it.
+        tidied = _tidy_tokens(tokens)
+        if tidied == tokens:
+            break
+        tokens = tidied
+    t = " ".join(tokens)
+    for a, b in (("( ", "("), (" )", ")"), (" ,", ","), (" :", ":"), (" .", "."), (" ;", ";")):
+        t = t.replace(a, b)
+    t = t.strip()
     return t[:1].upper() + t[1:] if t else ""
 
 
 def clean_verify_marker(marker):
     """Return a cleaned '[Verify before sharing: ...]' marker, or '' if nothing is left."""
-    m = _VERIFY_PARTS_RE.match(marker)
-    # Notes without internal ids are left exactly as written.
-    if not m or not _INTERNAL_ID_HINT_RE.search(m.group(1)):
+    if not (marker.startswith(_VERIFY_PREFIX) and marker.endswith("]")):
         return marker
-    note = clean_verify_note(m.group(1))
+    body = marker[len(_VERIFY_PREFIX):-1].strip()
+    # Notes without internal ids are left exactly as written.
+    if not _INTERNAL_ID_HINT_RE.search(body):
+        return marker
+    note = clean_verify_note(body)
     return f"[Verify before sharing: {note}]" if note else ""
 _SENTENCE_END_RE = re.compile(r"^(.*?[.!?])(\s+)(.*)$", re.DOTALL)
 
@@ -457,7 +502,7 @@ class Report:
                 if part:
                     add_run(p, part, (size or BODY_SIZE) - 1, True, italic, color=AMBER_TXT, shade=VERIFY_BG)
             else:
-                add_run(p, _INTERNAL_IDS_RE.sub("", part), size, bold=bold, italic=italic, color=color)
+                add_run(p, _drop_parenthetical_ids(part), size, bold=bold, italic=italic, color=color)
 
     def body(self, text, after=6, size=None, color=None, italic=None, keep=False, bold_lead=True):
         """Narrative paragraph. Per house style the opening sentence is bold (set

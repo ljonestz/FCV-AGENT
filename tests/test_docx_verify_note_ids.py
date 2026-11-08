@@ -17,6 +17,10 @@ CASES = [
       "disaggregation."), "Check the Results Framework, POM and monitoring sections for any disaggregation."),
     ("Check against Subcomponent 2.2 (PF-012, PF-024 and source block 4b36c2298630): confirm y.",
      "Check against Subcomponent 2.2: confirm y."),
+    ("Check PF-038 and the Mid-Term Review passage (DOC block 64a28bb371dc): it confirms scope.",
+     "Check the Mid-Term Review passage: it confirms scope."),
+    ("Check PF-003 block DOC-0a1b-B-2c3d: confirm flooding, and that the wording matches.",
+     "Confirm flooding, and that the wording matches."),
     ("Confirm the targeting rule in the Project Operations Manual.",
      "Confirm the targeting rule in the Project Operations Manual."),
 ]
