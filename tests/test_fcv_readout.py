@@ -223,7 +223,7 @@ def test_climate_readout_structure():
     assert html.count("Response ") == 4
     assert html.index('id="fr-priority-1"') < html.index('id="fr-priority-2"')
     assert "Draft one." in html and "In the PID:" in html
-    assert "Operationalization: Early." in html and "Climate relevance: High." in html
+    assert "Operationalizing climate and FCV: Early." in html and "Climate relevance: High." in html
     assert 'href="https://example.org/a"' in html and "javascript:" not in html
     assert "Concept stage only." in html and "Supports judgment." in html
     assert "Lead: Team" in html and "<strong>Suggested lead:</strong> Team</p>" in html and "fr-ptable" not in html

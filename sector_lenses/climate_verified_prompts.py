@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 from datetime import date
 
+from sector_lenses import climate_prose_layer
+
 from sector_lenses.climate_verified_schemas import (
     SEMANTIC_REVIEW_REASON_CODES,
 )
@@ -1004,4 +1006,4 @@ infer that an instrument is absent because a metadata flag is false or unknown.
 Reject readiness flags whose claimed defect exists only in application metadata.
 
 """ + prompt
-    return prompt
+    return climate_prose_layer.apply(stage, prompt)
