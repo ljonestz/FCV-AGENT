@@ -2256,3 +2256,24 @@ with no watch list, probably because Opus thinking counts toward the 32k cap. Ne
 make the revised wording permanent and add reasoning about how risks interact (ITS
 parity required). Then fix the cap or ordering and run one confirmatory pass.
 Blocker restored 09:30 UTC.
+
+### 2026-11-08 Stage 3 prose benchmark: v2 instructions win
+
+User asked for openings like their examples. Four of the five examples were written by
+ITS on Sonnet 4.6; Render uses Opus 5.5. Stage 3 was replayed on saved Stage 1-2
+history for Guinea, Afghanistan and Great Lakes. Setups: A1 Opus with v2 instructions,
+JSON first, 48k output cap; A2 the same with the narrative first; A3 Sonnet 5.5 with
+v2. A blind review judged A1 best on every project for the opening (8.2-8.6 against
+6.6-7.6 for Sonnet and 4.0-5.6 for the original runs). A1's priorities were also
+slightly better. A2 brought lists back and was dropped.
+
+A1 reliability over 9 runs: six clean. Two drifted into lists, and the new repair step
+fixed one live (stage3_prose.py, FCV_STAGE3_PROSE_REPAIR). One dropped its section
+headings. A final format check fixed that: the A1F runs on all three projects were
+clean. The final blind check against the examples rated two "meets the standard" and
+one "close". The remaining weakness is the opening sentence. The guidance was refined
+in 1230d6c, which is untested.
+
+Holds were USD34.21 in total (cap 35), not an invoice. Records:
+output/20261108_stage3-benchmark/. Everything is still env-gated and default off;
+promotion and ITS parity are pending the user's decision. Blocker restored 12:17 UTC.
