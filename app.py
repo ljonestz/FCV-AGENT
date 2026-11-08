@@ -3290,9 +3290,10 @@ format. Keep the concise Summary from repeating the why text of each priority.
 # strong openings are built, plus reasoning about how risks compound.
 _EXPERIMENT_STYLE_V2_ADDITION = """
 HOW A STRONG OPENING IS BUILT (a description of qualities, not text to imitate):
-- Opening Assessment: one sentence of 35-60 words that gives an overall verdict on how well
-  the design fits its FCV context, names the specific areas that need strengthening, and
-  states what is at stake if they are not addressed.
+- Opening Assessment: write it as its own crafted judgment, not a summary of the gaps. In one
+  sentence of 35-60 words and plain words, name the project's single central tension (for
+  instance, what the design depends on that its context may not sustain), then the areas that
+  need strengthening and what is at stake. Spell out any acronym or use the plain term.
 - Operational Context: opens with a thesis about the direction and character of the
   operating environment, not a list of facts. Each following sentence adds one dynamic and
   ties it to this project's footprint, components, delivery channels or beneficiaries,
@@ -3305,7 +3306,8 @@ HOW A STRONG OPENING IS BUILT (a description of qualities, not text to imitate):
 - Gaps: state how many material gaps there are and by when they matter, then rank them by
   consequence. For each, explain the mechanism by which it could cause harm or block
   delivery, name the project element exposed, and say whether it can be closed within
-  existing instruments.
+  existing instruments. Write the gaps as two or three connected paragraphs, never as a run
+  of one- or two-sentence paragraphs.
 - Sentences in these sections typically run 25 to 45 words and use subordinate clauses to
   carry cause and consequence. Ordinal ranking ("the most consequential", "the second") is
   fine; scaffolding that turns a paragraph into a list is not.
