@@ -925,3 +925,19 @@ def test_verify_notes_drop_document_ids_and_dangling_connectors():
     assert "Check the climate risk paragraph: relocation" in html
     assert "Check against Annex 3 and the MCBP description: confirm" in html
     assert "DOC-" not in html and "Check and" not in html and "Check /" not in html
+
+
+def test_failed_web_research_is_a_plain_limitation_not_a_sources_box():
+    # 2026-11-08 Guinea paid run: the brief was only the app.py failure notice in markdown italics.
+    brief = "*Web research for Republic of Guinea could not be completed \u2014 proceeding without supplemental research.*"
+    html = normal({"researchBrief": brief, "researchHtml": "<p><em>Web research for Republic of Guinea could not be completed</em></p>"})
+    assert "Background research and sources" not in html
+    assert "Live web research could not be completed for this run" in html
+    assert "*Web research" not in html
+
+
+def test_successful_web_research_keeps_the_sources_box():
+    html = normal({"researchBrief": "### Core public research: Guinea\nResearch run timestamp: 2026-11-08T07:43:48+00:00",
+                   "researchHtml": "<p>Sources</p>"})
+    assert "Background research and sources" in html
+    assert "Live web research could not be completed" not in html

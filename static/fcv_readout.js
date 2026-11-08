@@ -237,6 +237,10 @@
 
   // Limitations provenance lines shared by both routes: uploaded documents and research retrieval date.
   // `unreadClause` opens the unreadable-file sentence (the climate route has no Executive Summary to point to).
+  // app.py writes "*Web research for <country> could not be completed ...*" as the whole brief on failure.
+  const RESEARCH_FAILED_RE = /^\W*web research\b[^\n]*\bcould not be completed\b/i;
+  const RESEARCH_FAILED_NOTE = 'Live web research could not be completed for this run, so no current external sources were used. Check current-context claims against recent sources before sharing.';
+
   function provenanceLimits(fileNames, researchBrief, unreadClause) {
     const files = (Array.isArray(fileNames) ? fileNames : []).map(displayFileName).filter(Boolean);
     const retrieved = researchDate(researchBrief);
@@ -602,13 +606,16 @@
     const guides = NORMAL_GUIDANCE.map(g => guideItem(k, g, '')).join('');
     if (guides) html += k.section('fr-guidance', h('Relevant WBG Guidance') + k.disclosure('Selected WBG resources for the team', guides, NORMAL_GUIDANCE.length));
 
+    // A failed web search leaves only a one-line notice as the brief; say so plainly instead of showing it as sources.
+    const researchFailed = RESEARCH_FAILED_RE.test(String(d.researchBrief || ''));
     const limits = [
-      ...provenanceLimits(d.fileNames, d.researchBrief),
+      ...provenanceLimits(d.fileNames, researchFailed ? '' : d.researchBrief),
+      researchFailed ? RESEARCH_FAILED_NOTE : '',
       d.partial ? 'This run is partial; some sections may be missing.' : '',
       NORMAL_LIMITATION,
     ];
     html += k.section('fr-limits-sec', h('Limitations') + k.disclosure(LIMITS_SUMMARY, k.limitsBox(limits, verifyNotes)));
-    if (d.researchHtml) html += `<details class="fr-disc fr-research"><summary class="fr-disc-sum"><span>Background research and sources</span><span class="fr-disc-chev" aria-hidden="true">${CHEVRON_SVG}</span></summary><div class="fr-disc-body out-body">${d.researchHtml}</div></details>`;
+    if (d.researchHtml && !researchFailed) html += `<details class="fr-disc fr-research"><summary class="fr-disc-sum"><span>Background research and sources</span><span class="fr-disc-chev" aria-hidden="true">${CHEVRON_SVG}</span></summary><div class="fr-disc-body out-body">${d.researchHtml}</div></details>`;
     return linkPriorities(`<article class="fr-readout fr-route-fcv">${head}${k.toc(h.list)}${html}${k.closing()}</article>`, h.list);
   }
   const THEME_QUESTIONS = {
