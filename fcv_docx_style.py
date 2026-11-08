@@ -261,6 +261,45 @@ def logo_path(white=True):
 
 
 VERIFY_RE = re.compile(r"(\[Verify before sharing:.*?\])")
+_VERIFY_PARTS_RE = re.compile(r"^\[Verify before sharing:\s*(.*?)\]$", re.DOTALL)
+_INTERNAL_IDS_RE = re.compile(r"[ \t]*\((?:PF|RG|CE|ER|EV)-\d+(?:\s*(?:,|;|and)\s*(?:PF|RG|CE|ER|EV)-\d+)*\)")
+_HEX = r"(?:B-)?[0-9a-f]{8,}"
+_INTERNAL_ID_HINT_RE = re.compile(r"\bPF-\d|\bDOC-|\bB-[0-9a-f]{8,}|\bblocks?\s+(?:B-)?[0-9a-f]{8,}", re.IGNORECASE)
+
+
+def clean_verify_note(note):
+    """Drop internal block hashes, PF-nnn fact ids and DOC block ids from a reviewer note.
+
+    Mirrors cleanVerifyNote in static/fcv_readout.js so Word and the browser agree."""
+    t = str(note or "")
+    t = re.sub(r"\s*\(DOC-[A-Za-z0-9-]+(?:\s*(?:,|;|and)\s*DOC-[A-Za-z0-9-]+)*\)", "", t)
+    # Bare document block ids, with any "source block(s)" lead and joining connector.
+    t = re.sub(r"\s*(?:(?:,|\band\b)\s*)?(?:\bsource\s+)?(?:\bblocks?\s+)?\bDOC-[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*",
+               "", t, flags=re.IGNORECASE)
+    t = re.sub(r"\s*\((?:source )?blocks?\s+" + _HEX + r"[^)]*\)", "", t, flags=re.IGNORECASE)
+    t = re.sub(r"(?:\band\s+|,\s*)?(?:\bsource\s+)?\bblocks?\s+" + _HEX
+               + r"(?:\s*(?:,|and)\s*" + _HEX + r")*", "", t, flags=re.IGNORECASE)
+    t = re.sub(r"(?:,\s*)?\bB-[0-9a-f]{10,}\b", "", t)
+    t = re.sub(r"(?:\band\s+|,\s*)?\bPF-\d+\b", "", t)
+    t = re.sub(r"\(\s*(?:source\s+)?blocks?\s*\)", "", t, flags=re.IGNORECASE)
+    # A preposition stranded before the colon ("in: the road") is dropped.
+    t = re.sub(r"\s+(?:in|against|and|of|from|with|to)\s*(?=:)", "", t, flags=re.IGNORECASE)
+    t = re.sub(r"^(\s*(?:Check|See|Compare|Confirm))\s+(?:(?:and|/|,|;)\s+)+", r"\1 ", t, flags=re.IGNORECASE)
+    t = re.sub(r"^\s*(?:Check|See|Compare)(?:\s|,|and)*:\s*", "", t, flags=re.IGNORECASE)
+    t = re.sub(r"\(\s*\)", "", t)
+    t = re.sub(r"\s{2,}", " ", t)
+    t = re.sub(r"\s+([,.;:])", r"\1", t).strip()
+    return t[:1].upper() + t[1:] if t else ""
+
+
+def clean_verify_marker(marker):
+    """Return a cleaned '[Verify before sharing: ...]' marker, or '' if nothing is left."""
+    m = _VERIFY_PARTS_RE.match(marker)
+    # Notes without internal ids are left exactly as written.
+    if not m or not _INTERNAL_ID_HINT_RE.search(m.group(1)):
+        return marker
+    note = clean_verify_note(m.group(1))
+    return f"[Verify before sharing: {note}]" if note else ""
 _SENTENCE_END_RE = re.compile(r"^(.*?[.!?])(\s+)(.*)$", re.DOTALL)
 
 
@@ -414,9 +453,11 @@ class Report:
             if not part:
                 continue
             if VERIFY_RE.fullmatch(part):
-                add_run(p, part, (size or BODY_SIZE) - 1, True, italic, color=AMBER_TXT, shade=VERIFY_BG)
+                part = clean_verify_marker(part)
+                if part:
+                    add_run(p, part, (size or BODY_SIZE) - 1, True, italic, color=AMBER_TXT, shade=VERIFY_BG)
             else:
-                add_run(p, part, size, bold=bold, italic=italic, color=color)
+                add_run(p, _INTERNAL_IDS_RE.sub("", part), size, bold=bold, italic=italic, color=color)
 
     def body(self, text, after=6, size=None, color=None, italic=None, keep=False, bold_lead=True):
         """Narrative paragraph. Per house style the opening sentence is bold (set

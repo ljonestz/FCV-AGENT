@@ -200,3 +200,25 @@ if(events.indexOf('new-id')>events.indexOf('bar'))throw new Error('Session bar s
 """
     result = subprocess.run(['node','-'],input=script,text=True,capture_output=True)
     assert result.returncode == 0, result.stderr
+
+
+def test_anchored_issue_missing_from_aggregate_ids_is_still_applied(assessment):
+    # 2026-11-08 Syria: the reviewer listed SUM-001 but not SUM-002 in object_ids
+    # while anchoring a minor issue on each; the whole reader was discarded.
+    final = assessment['final_reader']
+    review = review_for(final, 'SUM-001', 'minor')
+    other = review_for(final, 'NARR-design', 'minor')
+    for issue in (review['issues'][0], other['issues'][0]):
+        issue.update(disposition='verify', verification_note='Confirm the status wording.')
+    review['issues'] += other['issues']  # object_ids still names only SUM-001
+    summary, narratives = reviewed_final_reader(final, review, assessment)
+    assert summary and len(narratives) == 3
+    design = next(r for r in narratives if r['object_id'] == 'NARR-design')
+    assert 'Verify before sharing: Confirm the status wording.' in design['paragraphs'][0]
+
+
+def test_named_record_without_anchored_issue_still_rejects(assessment):
+    final = assessment['final_reader']
+    review = review_for(final, 'SUM-001', 'minor')
+    review['object_ids'].append('NARR-design')
+    assert reviewed_final_reader(final, review, assessment) == ([], [])

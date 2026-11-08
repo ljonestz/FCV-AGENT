@@ -168,8 +168,12 @@ def test_revision_still_requires_unique_object_ids_and_full_coverage():
     review = deepcopy(fixture['meaning_reviews'][0])
     review['object_ids'] = ['NARR-design', 'NARR-inclusion', 'NARR-inclusion']
     assert not valid_reader_revision(review, reader)
+    # Since 2026-11-08 an under-listed aggregate is accepted: each anchored issue is
+    # validated and applied on its own. A named record with no issue still fails.
     review['object_ids'] = ['NARR-design']
-    assert not valid_reader_revision(review, reader)
+    assert valid_reader_revision(review, reader)
+    review['object_ids'] = ['NARR-design', 'NARR-dividends', 'NARR-inclusion', 'SUM-001']
+    assert not valid_reader_revision(review, reader)  # SUM-001 has no anchored issue
 
 
 # 2026-10-27 success case must keep passing.

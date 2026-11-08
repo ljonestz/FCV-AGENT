@@ -516,8 +516,11 @@ def valid_reader_revision(review: dict, final_reader: object) -> bool:
         issue_codes.update(issue['reason_codes'])
     # Complete anchored findings control disposition; surplus aggregate codes remain
     # visible metadata warnings. A record may carry several anchored issues, but the
-    # aggregate object_ids list names each record once.
-    return set(issue_ids) == set(identifiers) and issue_codes <= set(codes)
+    # aggregate object_ids list names each record once. Every named record must be
+    # anchored by an issue; an anchored issue on a record the aggregate list left out
+    # is still applied (2026-11-08 Syria run: SUM-002 omitted from object_ids
+    # discarded an otherwise admissible minor-only reader).
+    return set(identifiers) <= set(issue_ids) and issue_codes <= set(codes)
 
 
 _NARRATIVE_IDS = frozenset({'NARR-design', 'NARR-dividends', 'NARR-inclusion'})
