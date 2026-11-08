@@ -2215,3 +2215,26 @@ redraw Stage 3 only when it differs; failure keeps the stored reader silently.
 The Afghanistan, 2026-10-18 and 2026-10-14 sessions previously failed export with
 READER_SNAPSHOT_MISMATCH; all three now export, and Afghanistan shows its Summary.
 No prompt, schema, delimiter or version changes; no paid calls. ITS unaffected.
+
+### 2026-11-08 Two authorised paid runs on the readout branch
+
+User approved two paid runs and switched fcv-agent-climate-smoke to
+feat/browser-readout-redesign (667e095). Records: output/20261108_paid-runs/
+(authorization JSON, slot locks, sessions, logs). Run 1 Honduras PAD + RRA,
+climate: complete, Summary admitted (lost on 2026-10-18), 5 priorities,
+reserved USD8.81. Run 2 Guinea water PAD + CPF, normal: complete,
+5 priorities, reserved USD5.43. Reservations are conservative, not invoices.
+
+Live web research failed in both under the spend guard. Run 1: core research
+held 5.13M; the concurrent climate research would have exceeded the 10M
+ceiling. Use the 15M web maximum when two web calls can overlap. Run 2: core
+research was refused before any hold (no PILOT_WEB_HOLD); cause not yet
+diagnosed. The guard is off unless the pilot env vars are set, so production
+is unaffected. Both readouts disclose the missing live evidence.
+
+Fixes from the runs: B-prefixed block ids stripped from verify notes (f6c81e2);
+Smaller Points accept "## Supplementary Dimensions" and "**Label.**" (e8f91dd),
+which the second Stage 2 prompt variant produces; failed research is a plain
+limitation, not a sources box (4579165). Blocker restored 08:04 UTC (web 0,
+budget 1 microUSD, /tmp/fcv-readout-20261108-finished-blocked.sqlite). Both
+slots consumed; do not repeat. Production unchanged; no merge.
