@@ -1305,16 +1305,18 @@ def _all_strings(value: object):
             yield from _all_strings(item)
 
 
-_TRAILING_REVIEW_MARKER = re.compile(r"\s*\[[^\[\]]*\]\s*$")
-
-
 def drafting_text_complete(text: str) -> bool:
     """A draft is complete when its own prose ends a sentence.
 
     A trailing bracketed reviewer marker ("[Verify before sharing: ...]") is
-    display annotation, not part of the draft, so it is ignored here.
+    display annotation, not part of the draft, so it is ignored here. Plain
+    string operations keep this linear on untrusted model text.
     """
-    core = _TRAILING_REVIEW_MARKER.sub("", text or "").strip()
+    core = (text or "").rstrip()
+    if core.endswith("]"):
+        start = core.rfind("[")
+        if start >= 0 and "]" not in core[start + 1:-1]:
+            core = core[:start].rstrip()
     return bool(core) and core[-1:] in ".?!"
 
 
