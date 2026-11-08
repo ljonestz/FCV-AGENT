@@ -6,8 +6,7 @@ builds ... The main remaining challenge is ... accepted priorities") to connecte
 expert judgment, mirroring the 2026-11-08 normal-route Stage 3 layer. The
 fact-checking contracts (evidence binding, reviewer, correction) are unchanged.
 
-CLIMATE_PROSE_STYLE=analytical enables it; anything else keeps the legacy
-wording. The ITS build is not touched (only the ITS team edits it).
+On by default; CLIMATE_PROSE_STYLE=legacy restores the previous wording. The ITS build is not touched (only the ITS team edits it).
 """
 from __future__ import annotations
 
@@ -94,11 +93,20 @@ READER REGISTER AND WORDING:
   will), never as already delivered or working.
 - Avoid repeating the same point across the Summary and the three findings; each
   finding adds analysis the Summary does not already give.
+- Make firm qualitative judgments where the evidence supports them (what is strong,
+  what is weak and why). Keep uncertainty where it is real, but do not stack could,
+  may and depends on in one sentence until the judgment disappears.
+- Spell out every acronym on first use in each record.
+- Refer to the priority actions in your own words; do not end the Summary with a stock
+  formula such as "The priority actions in this note respond by".
+- Do not comment on document extraction, headings or file processing, and never write
+  placeholder role or office names.
 """
 
 
 def enabled() -> bool:
-    return os.environ.get("CLIMATE_PROSE_STYLE", "").strip().lower() == "analytical"
+    # On by default since the 2026-11-08 production benchmark; "legacy" switches it off.
+    return os.environ.get("CLIMATE_PROSE_STYLE", "analytical").strip().lower() != "legacy"
 
 
 def apply(stage: str, prompt: str) -> str:
