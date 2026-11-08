@@ -3285,16 +3285,111 @@ format. Keep the concise Summary from repeating the why text of each priority.
 """
 
 
+# Style v2 adds a description (no sample text, to avoid near-verbatim reuse) of how
+# strong openings are built, plus reasoning about how risks compound.
+_EXPERIMENT_STYLE_V2_ADDITION = """
+HOW A STRONG OPENING IS BUILT (a description of qualities, not text to imitate):
+- Opening Assessment: one sentence of 35-60 words that gives an overall verdict on how well
+  the design fits its FCV context, names the specific areas that need strengthening, and
+  states what is at stake if they are not addressed.
+- Operational Context: opens with a thesis about the direction and character of the
+  operating environment, not a list of facts. Each following sentence adds one dynamic and
+  ties it to this project's footprint, components, delivery channels or beneficiaries,
+  with figures where the record supplies them. Explain how at least two of the dynamics
+  compound one another or the project's design assumptions. Close by setting the design's
+  assumptions against that trajectory.
+- Strengths: order strengths by significance. For each, say what the design choice does,
+  why it suits this context, and the condition or limit on which its value depends, within
+  the same sentence or the next.
+- Gaps: state how many material gaps there are and by when they matter, then rank them by
+  consequence. For each, explain the mechanism by which it could cause harm or block
+  delivery, name the project element exposed, and say whether it can be closed within
+  existing instruments.
+- Sentences in these sections typically run 25 to 45 words and use subordinate clauses to
+  carry cause and consequence. Ordinal ranking ("the most consequential", "the second") is
+  fine; scaffolding that turns a paragraph into a list is not.
+- Write fresh prose for this project. Do not reuse wording from any example sentence that
+  appears elsewhere in these instructions.
+"""
+
+# Section specifications aligned with the target style (applied only under style v2).
+_STAGE3_V2_SECTION_SPECS = [
+    ("### Opening Assessment (ONE BOLD SENTENCE, 25-35 words)\nA single bolded sentence summarising the project's overall FCV integration status.",
+     "### Opening Assessment (ONE BOLD SENTENCE, 35-60 words)\nA single bolded sentence giving the overall verdict on the project's FCV integration, the areas that need strengthening, and what is at stake."),
+    ("### Operational Context (150-200 words, ONE PARAGRAPH)\nSynthesise 3-4 converging FCV risks creating a uniquely challenging operating environment for THIS project.",
+     "### Operational Context (180-240 words, ONE PARAGRAPH)\nSynthesise 3-4 converging FCV risks creating a uniquely challenging operating environment for THIS project, and explain how they compound one another and the design's assumptions."),
+    ("### Strengths (80-150 words, prose)", "### Strengths (150-220 words, ONE OR TWO PARAGRAPHS of prose)"),
+    ("### Gaps (100-130 words, prose)", "### Gaps (150-220 words, ONE OR TWO PARAGRAPHS of prose)"),
+]
+
+
+def _stage3_style_variant() -> str:
+    value = os.environ.get("FCV_STAGE3_STYLE_EXPERIMENT", "")
+    return value if value in {"1", "2"} else ""
+
+
 def _stage3_contract_text() -> str:
     """Return the standard contract, with the experimental style paragraph when enabled."""
     contract = STANDARD_FCV_STAGE3_OUTPUT_CONTRACT
-    if os.environ.get("FCV_STAGE3_STYLE_EXPERIMENT") != "1":
-        return contract
-    start = contract.find(_STANDARD_STYLE_PARAGRAPH_START)
-    end = contract.find(_STANDARD_STYLE_PARAGRAPH_END, start)
-    if start < 0 or end < 0:
-        return contract
-    return contract[:start] + _EXPERIMENT_STYLE_PARAGRAPH + contract[end + len(_STANDARD_STYLE_PARAGRAPH_END):]
+    variant = _stage3_style_variant()
+    if variant:
+        start = contract.find(_STANDARD_STYLE_PARAGRAPH_START)
+        end = contract.find(_STANDARD_STYLE_PARAGRAPH_END, start)
+        if start >= 0 and end >= 0:
+            paragraph = _EXPERIMENT_STYLE_PARAGRAPH + (_EXPERIMENT_STYLE_V2_ADDITION if variant == "2" else "")
+            contract = contract[:start] + paragraph + contract[end + len(_STANDARD_STYLE_PARAGRAPH_END):]
+    if _stage3_narrative_first():
+        # Drop the JSON-first override so the base prompt order (narrative, then JSON) applies.
+        cut = contract.find("OUTPUT ORDER OVERRIDE:")
+        if cut >= 0:
+            contract = contract[:cut].rstrip() + "\n"
+    return contract
+
+
+_GUARDRAIL_STYLE_OLD = """Write the management narrative in clear technical report style: start each
+paragraph with a bold first sentence that states its main point, then explain it.
+Use plain management language, define acronyms on first use, use no em-dash
+punctuation and use semicolons sparingly."""
+_GUARDRAIL_STYLE_NEW = """Write the detailed narrative as connected analytical prose that follows the
+narrative style set out in the output contract; plain management language applies
+only to the JSON summary fields. Define acronyms on first use, use no em-dash
+punctuation and use semicolons sparingly."""
+
+
+def _stage3_apply_section_specs(stage_prompt: str) -> str:
+    if _stage3_style_variant() != "2":
+        return stage_prompt
+    for old, new in _STAGE3_V2_SECTION_SPECS:
+        stage_prompt = stage_prompt.replace(old, new, 1)
+    return stage_prompt
+
+
+def _stage3_narrative_first() -> bool:
+    return os.environ.get("FCV_STAGE3_ORDER_EXPERIMENT") == "narrative_first"
+
+
+_JSON_FIRST_REPLACEMENTS = [
+    ('Before writing the narrative output, emit a machine-readable JSON block',
+     'After completing the full narrative output above, append a machine-readable JSON block'),
+    ('IMPORTANT: The JSON block must come BEFORE all narrative text.',
+     'IMPORTANT: The JSON block must come AFTER all narrative text.'),
+    ('- JSON block is present at the start,', '- JSON block is present at the end,'),
+    ('Emit before the narrative. Same structure as Design Review Stage 3.',
+     'Append after the narrative. Same structure as Design Review Stage 3.'),
+]
+
+
+def _stage3_restore_narrative_first(prompt: str) -> str:
+    if not _stage3_narrative_first():
+        return prompt
+    for json_first, narrative_first in _JSON_FIRST_REPLACEMENTS:
+        prompt = prompt.replace(json_first, narrative_first, 1)
+    return prompt
+
+
+def _stage3_experiment_max_tokens() -> int | None:
+    raw = os.environ.get("FCV_STAGE3_MAX_TOKENS_EXPERIMENT", "")
+    return int(raw) if raw.isdigit() and 32000 <= int(raw) <= 64000 else None
 
 
 _STAGE3_EXPERIMENT_MODELS = {"claude-sonnet-5-5", "claude-opus-5-5"}
@@ -3710,8 +3805,10 @@ def append_core_concise_stage3_contract(
     """Append the standard concise contract only on the core Stage 3 route."""
     if active_lenses:
         return stage_prompt
-    stage_prompt = _prepare_standard_stage3_prompt(stage_prompt)
-    return (
+    stage_prompt = _stage3_apply_section_specs(_prepare_standard_stage3_prompt(stage_prompt))
+    if _stage3_style_variant():
+        stage_prompt = stage_prompt.replace(_GUARDRAIL_STYLE_OLD, _GUARDRAIL_STYLE_NEW, 1)
+    return _stage3_restore_narrative_first(
         _embed_core_concise_stage3_schema(stage_prompt, standard=True)
         + "\n\n--- Concise readout lifecycle framing ---\n"
         + build_concise_lifecycle_context(doc_type, temporal_context, review_mode)
@@ -10756,6 +10853,8 @@ def _stage_model(stage_num):
 
 
 def _stage_output_budget(stage_num):
+    if stage_num == 3 and _stage3_experiment_max_tokens():
+        return _stage3_experiment_max_tokens()
     return STAGE_MAX_TOKENS.get(stage_num, STAGE_MAX_TOKENS[3])
 
 
