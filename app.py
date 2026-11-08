@@ -26,6 +26,7 @@ from fcv_core_research import (
 )
 from fcv_distillation import distill_doc_parts_stream
 import regime_router
+import stage3_prose
 from sector_lenses.climate_native import (
     build_climate_repair_prompt,
     climate_missing_fields,
@@ -10369,6 +10370,7 @@ def run_stage():
                 # Only Stage 2/3 design-review output can carry the ESF/ESCP/ESS
                 # vocabulary that QA flagged; Stage 1 extraction text is not
                 # instrument-prescriptive in the same way.
+                _stage3_prose_report = None
                 if (
                     not is_impl
                     and stage in (2, 3)
@@ -10379,6 +10381,12 @@ def run_stage():
                     if _vocab_violations:
                         full_text = repair_vocabulary_violations(full_text, instrument_type, _vocab_violations, stage)
                         _stream_stage._last_result = full_text
+                    if stage == 3 and not lens_context['active_lenses']:
+                        _prose_holder = {}
+                        yield from _stage3_prose_repair_events(full_text, assessment_id, _prose_holder)
+                        full_text = _prose_holder.get('text', full_text)
+                        _stream_stage._last_result = full_text
+                        _stage3_prose_report = _prose_holder.get('report')
 
                 # Post-processing: extract structured data from delimited blocks
                 priorities = []
@@ -10636,6 +10644,7 @@ def run_stage():
                     'stage': stage,
                     'parse_error': parse_error,
                     'parse_error_message': parse_error_message,
+                    'prose_repair': _stage3_prose_report,
                     'research_brief': research_brief_text if stage == 1 else None,
                     'research_country': research_country if stage == 1 else None,
                     'instrument_type': _instrument_type if stage == 1 else None,
@@ -10850,6 +10859,50 @@ def _stage_model(stage_num):
     if stage_num == 3 and _stage3_experiment_model():
         return _stage3_experiment_model()
     return MODEL_REASONING if stage_num in (2, 3) else MODEL_STANDARD
+
+
+STAGE3_PROSE_REPAIR_MAX_TOKENS = 6000
+
+
+def _stage3_prose_repair_events(text, assessment_id, holder):
+    """Rewrite list-formatted Stage 3 opening sections as prose (opt-in).
+
+    Runs the repair call in a thread and yields keepalive events meanwhile, so the
+    SSE stream never sits silent. Puts the (possibly unchanged) text and a report in
+    holder. Enabled only when FCV_STAGE3_PROSE_REPAIR=1.
+    """
+    holder['text'] = text
+    if os.environ.get("FCV_STAGE3_PROSE_REPAIR") != "1" or not stage3_prose.listy_sections(text):
+        return
+
+    def call_model(prompt):
+        resp = get_client().messages.create(
+            model=_stage_model(3),
+            max_tokens=STAGE3_PROSE_REPAIR_MAX_TOKENS,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return "".join(getattr(block, "text", "") for block in resp.content)
+
+    result = {}
+
+    def _run():
+        try:
+            result['text'], result['report'] = stage3_prose.repair(text, call_model)
+        except Exception as exc:  # noqa: BLE001 - never let the repair break Stage 3
+            result['report'] = {"repaired": False, "reason": f"error:{type(exc).__name__}"}
+
+    worker = threading.Thread(target=_run, daemon=True)
+    worker.start()
+    while worker.is_alive():
+        worker.join(timeout=10)
+        if worker.is_alive():
+            yield f"data: {json.dumps({'keepalive': True})}\n\n"
+    holder['text'] = result.get('text') or text
+    holder['report'] = result.get('report')
+    app.logger.info(
+        "Stage 3 prose repair assessment_id=%s report=%s",
+        assessment_id or 'unknown', json.dumps(holder['report']),
+    )
 
 
 def _stage_output_budget(stage_num):
@@ -12115,6 +12168,10 @@ def run_express():
                 )
                 if _vocab_violations_s3:
                     stage3_output = repair_vocabulary_violations(stage3_output, instrument_type, _vocab_violations_s3, 3)
+                if not _native_climate_s3 and not lens_context_s3['active_lenses']:
+                    _prose_holder_s3 = {}
+                    yield from _stage3_prose_repair_events(stage3_output, assessment_id, _prose_holder_s3)
+                    stage3_output = _prose_holder_s3.get('text', stage3_output)
 
                 # Parse Stage 3 output
                 uploaded_doc_names = [doc.get('name', '') for doc in documents if doc.get('name')]
