@@ -133,8 +133,10 @@
 
   function cleanVerifyNote(note) {
     let t = String(note || '');
-    t = t.replace(/\s*\((?:source )?blocks?\s+[0-9a-f]{8,}[^)]*\)/gi, '');
-    t = t.replace(/(?:\band\s+)?(?:\bsource\s+)?\bblocks?\s+[0-9a-f]{8,}(?:\s*(?:,|and)\s*[0-9a-f]{8,})*/gi, '');
+    // Block ids may carry a "B-" prefix ("blocks B-401385acc7e8, B-40a886547f32").
+    t = t.replace(/\s*\((?:source )?blocks?\s+(?:B-)?[0-9a-f]{8,}[^)]*\)/gi, '');
+    t = t.replace(/(?:\band\s+|,\s*)?(?:\bsource\s+)?\bblocks?\s+(?:B-)?[0-9a-f]{8,}(?:\s*(?:,|and)\s*(?:B-)?[0-9a-f]{8,})*/gi, '');
+    t = t.replace(/(?:,\s*)?\bB-[0-9a-f]{10,}\b/g, '');
     t = t.replace(/(?:\band\s+|,\s*)?\bPF-\d+\b/g, '');
     // Internal document block ids ("(DOC-ab8b...-B-efa7...)") mean nothing to a task team.
     t = t.replace(/\s*\(DOC-[A-Za-z0-9-]+(?:\s*(?:,|;|and)\s*DOC-[A-Za-z0-9-]+)*\)/g, '');

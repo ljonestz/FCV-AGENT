@@ -717,6 +717,16 @@ def test_clean_verify_note_keeps_meaningful_lead_clause():
     assert out == ["Check the PAD annex: dates differ.", "X."]
 
 
+def test_clean_verify_note_strips_prefixed_block_ids():
+    # Seen in the 2026-11-08 Honduras paid run: "B-" prefixed block ids, plural and mid-parenthesis.
+    out = json.loads(run_js(
+        "process.stdout.write(JSON.stringify(["
+        "FR.cleanVerifyNote('Check PAD paras 20, 22 and Annex climate text (blocks B-401385acc7e8, B-40a886547f32, B-01f9d078f642): qualify wording.'),"
+        "FR.cleanVerifyNote('Check PAD para 22 (Component 2 text, block B-40a886547f32): revise actors.')]));"))
+    assert out == ["Check PAD paras 20, 22 and Annex climate text: qualify wording.",
+                   "Check PAD para 22 (Component 2 text): revise actors."]
+
+
 def test_legacy_climate_fallback_sentences_are_replaced():
     legacy = ["The automated Summary could not be independently verified. The operational context and assessment findings provide the available analysis.",
               "Use the ranked operational priorities and points to check as the basis for review. Confirm the stated evidence limitations before relying on the brief."]
