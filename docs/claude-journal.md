@@ -2277,3 +2277,16 @@ in 1230d6c, which is untested.
 Holds were USD34.21 in total (cap 35), not an invoice. Records:
 output/20261108_stage3-benchmark/. Everything is still env-gated and default off;
 promotion and ITS parity are pending the user's decision. Blocker restored 12:17 UTC.
+
+### 2026-11-08 Prose layer made default; production end-to-end run
+
+The Stage 3 analytical prose layer, 48k cap and prose repair are now the Render default
+(ba26df2; FCV_STAGE3_PROSE_STYLE=legacy and FCV_STAGE3_PROSE_REPAIR=0 switch them off).
+ITS is untouched (handover note in output/). Test-service end-to-end attempts timed out
+in Stage 1: the free tier at 0.15 CPU took about 35 s per tiny call. Only small
+classification holds were spent; the test service is blocked again. With the user's
+go-ahead, production FCV-AGENT was switched to feat/browser-readout-redesign (33340ad)
+and the Guinea water PAD + CPF ran end to end in 8.5 min with live research. The opening
+was analytical with all headings and no lists; there were 5 priorities, the readout
+checks were clean and the Word export worked. Records: output/20261108_e2e-run/.
+Rollback: branch main, 474b3cf.
