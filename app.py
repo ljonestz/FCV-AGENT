@@ -3256,6 +3256,55 @@ complete detailed-plus-concise JSON block before the narrative. Close it with
 any earlier instruction that places the JSON block after the narrative.
 '''
 
+# ── Stage 3 prose experiment (test service only; default off) ───────────────
+# FCV_STAGE3_STYLE_EXPERIMENT=1 swaps the management-style paragraph above for a
+# version that confines plain-language targets to the JSON summary layer and asks
+# for connected analytical prose in the detailed narrative. FCV_STAGE3_MODEL_EXPERIMENT
+# selects the Stage 3 model. Both exist only to run a controlled replay; production
+# never sets them. Remove or promote after the 2026-11 prose investigation.
+_STANDARD_STYLE_PARAGRAPH_START = "Write the narrative in a clear technical report style for management."
+_STANDARD_STYLE_PARAGRAPH_END = "repeating the why text of each priority.\n"
+_EXPERIMENT_STYLE_PARAGRAPH = """NARRATIVE STYLE FOR THE DETAILED NOTE: Write the Opening Assessment, Operational
+Context, Strengths, Gaps, FCV Risk Exposure and the two Summary paragraphs as connected
+analytical prose for an experienced FCV and operations reader, in the register of a senior
+peer reviewer. Each paragraph opens with a bold topic sentence that states an analytical
+judgment, then develops it through linked sentences that explain mechanisms, causes and
+consequences and show how the points relate to one another. Do not use bullet lists,
+numbered lists or bold lead-in labels in these sections; integrate the points into the
+paragraph. Vary sentence length and do not reduce the analysis to a series of short
+declarative statements. Meet the word range given for each section in the main output
+structure. Define acronyms on first use, use no em-dash punctuation and use semicolons
+sparingly. Use canonical Markdown for the narrative.
+
+SUMMARY LAYER ONLY: The plain-language targets in this contract apply only to the JSON
+fields concise_readout and priority.concise. JSON field values are plain text without
+Markdown and use plain management language. In the overview, each strength text and each
+how action, start with a short plain main-point sentence and add a concise explanatory
+second sentence where the substance supports it; do not add sentences only to satisfy a
+format. Keep the concise Summary from repeating the why text of each priority.
+"""
+
+
+def _stage3_contract_text() -> str:
+    """Return the standard contract, with the experimental style paragraph when enabled."""
+    contract = STANDARD_FCV_STAGE3_OUTPUT_CONTRACT
+    if os.environ.get("FCV_STAGE3_STYLE_EXPERIMENT") != "1":
+        return contract
+    start = contract.find(_STANDARD_STYLE_PARAGRAPH_START)
+    end = contract.find(_STANDARD_STYLE_PARAGRAPH_END, start)
+    if start < 0 or end < 0:
+        return contract
+    return contract[:start] + _EXPERIMENT_STYLE_PARAGRAPH + contract[end + len(_STANDARD_STYLE_PARAGRAPH_END):]
+
+
+_STAGE3_EXPERIMENT_MODELS = {"claude-sonnet-5-5", "claude-opus-5-5"}
+
+
+def _stage3_experiment_model() -> str | None:
+    configured = os.environ.get("FCV_STAGE3_MODEL_EXPERIMENT")
+    return configured if configured in _STAGE3_EXPERIMENT_MODELS else None
+
+
 _STANDARD_CONCISE_READOUT_SCHEMA = '''  "concise_readout": {
     "headline": "One plain-language sentence stating the overall finding",
     "overview": "An 80-110 word project-specific synthesis of the overall finding, principal exposure, main gap and practical implication; start with a short plain main-point sentence and add a concise explanatory second sentence where the substance supports it",
@@ -3667,7 +3716,7 @@ def append_core_concise_stage3_contract(
         + "\n\n--- Concise readout lifecycle framing ---\n"
         + build_concise_lifecycle_context(doc_type, temporal_context, review_mode)
         + "\n\n"
-        + STANDARD_FCV_STAGE3_OUTPUT_CONTRACT
+        + _stage3_contract_text()
         + STANDARD_RESEARCH_EVIDENCE_CONTRACT
     )
 
@@ -10701,6 +10750,8 @@ def _stage_timeout_seconds(stage_num):
 def _stage_model(stage_num):
     """Stage 1 does long-context extraction on the fast standard model; Stages 2
     and 3 (FCV assessment + recommendations) use the reasoning model."""
+    if stage_num == 3 and _stage3_experiment_model():
+        return _stage3_experiment_model()
     return MODEL_REASONING if stage_num in (2, 3) else MODEL_STANDARD
 
 
