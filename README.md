@@ -46,9 +46,24 @@ details and suggested project-package text. Current browser/HTML/Word styling is
 preserved. See [restoration verification](20260921_detailed-analysis-restoration.md)
 for the single fresh run, export checks and remaining analytical limitations.
 
+## November 8 readout, prose and climate reader update
+
+Production tracks `main` (currently `f5f34ca`). The Stage 3 browser readout was
+redesigned (#92), and Stage 3 openings on the core route are now written as connected
+analytical prose rather than short lists: a style layer applied when the prompt is
+assembled, wider section word ranges, a 48k output cap and a one-call prose repair that
+keeps every figure and acronym. The verified Climate-FCV route has a matching layer
+(#93-#95), and its operationalization line is now "Operationalizing climate and FCV".
+Two climate defects were fixed: a trailing reviewer marker no longer fails drafting
+(#94), and a reviewer that under-lists the records it flagged no longer withholds an
+admissible Summary (#96). Word verification notes no longer show internal evidence ids.
+Paid production runs on Guinea, Honduras, Afghanistan, Syria and the Sahel AF Project
+Paper confirmed the changes. See
+[the November 8 ITS handover](20261108_ITS_Handover_prose-and-climate-reader.docx).
+
 ## October 18 Climate lens routing fixes
 
-Production tracks `main` (currently `6f3d5e6`), which now carries four fixes to the
+On 18 October `main` (`6f3d5e6`) gained four fixes to the
 Climate-FCV lens after a Honduras IPF PAD produced no recommendations. The fixes
 restore instrument resolution when the datasheet financing-instrument grid falls past
 the bounded extraction window, stop an unchecked datasheet MPA checkbox from
@@ -145,6 +160,9 @@ Summary gaps and detailed strengths/gaps use bullets for each existing finding, 
 | `CLIMATE_VERIFIED_RUN_MODE` | No | `quality` (default, Sonnet) or `smoke` (Haiku). Server-only; never accepted from browser requests. |
 | `CLIMATE_VERIFIED_ASSESSMENT_MODEL` | No | Explicit server-side model override for the verified assessment call. |
 | `CLIMATE_VERIFIED_REVIEW_MODEL` | No | Explicit server-side model override for the verified reviewer call. |
+| `FCV_STAGE3_PROSE_STYLE` | No | Unset (default) applies the Stage 3 analytical prose layer; `legacy` restores the previous wording. |
+| `FCV_STAGE3_PROSE_REPAIR` | No | Unset (default) enables the one-call Stage 3 prose repair; `0` disables it. |
+| `CLIMATE_PROSE_STYLE` | No | Unset (default) applies the Climate-FCV analytical prose layer; `legacy` restores the previous wording. |
 
 ## Local Setup
 
