@@ -5,7 +5,7 @@ from sector_lenses import climate_prose_layer as layer
 from sector_lenses.climate_verified_prompts import build_verified_stage_prompt
 
 
-def _prompt(stage, monkeypatch, style=None):
+def _prompt(stage, monkeypatch, style="legacy"):
     monkeypatch.delenv("CLIMATE_PROSE_STYLE", raising=False)
     if style:
         monkeypatch.setenv("CLIMATE_PROSE_STYLE", style)
@@ -22,9 +22,17 @@ def test_every_replacement_matches_once_and_applies(stage, monkeypatch):
         assert old not in styled and new in styled
 
 
-def test_off_by_default(monkeypatch):
-    assert "READER REGISTER AND WORDING" not in _prompt("reader_compiler", monkeypatch)
-    assert "ordinary words" in _prompt("reader_compiler", monkeypatch)
+def test_on_by_default_and_legacy_switch(monkeypatch):
+    assert "READER REGISTER AND WORDING" in _prompt("reader_compiler", monkeypatch, None)
+    assert "READER REGISTER AND WORDING" not in _prompt("reader_compiler", monkeypatch, "legacy")
+    assert "ordinary words" in _prompt("reader_compiler", monkeypatch, "legacy")
+
+
+def test_benchmark_refinements_present(monkeypatch):
+    p = _prompt("reader_compiler", monkeypatch, None)
+    assert "Spell out every acronym on first use" in p
+    assert "do not end the Summary with a stock" in p
+    assert "placeholder role or office names" in p
 
 
 def test_reader_layer_bans_internal_terms_and_formula_openers(monkeypatch):

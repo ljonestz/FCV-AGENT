@@ -35,7 +35,16 @@ def test_judgment_prompt_guards_against_false_formal_rating():
     assert "not a" in lowered and "rating category" in lowered
 
 
-def test_analysis_prompt_requires_lay_ready_existing_response_descriptions():
+def test_analysis_prompt_existing_responses_default_to_analytical(monkeypatch):
+    monkeypatch.delenv("CLIMATE_PROSE_STYLE", raising=False)
+    lowered = " ".join(build_verified_stage_prompt("bounded_analysis", {}).lower().split())
+    assert "two or three connected analytical sentences" in lowered
+    assert "concrete project anchor" in lowered
+    assert "condition or limit on which its value depends" in lowered
+
+
+def test_analysis_prompt_requires_lay_ready_existing_response_descriptions(monkeypatch):
+    monkeypatch.setenv("CLIMATE_PROSE_STYLE", "legacy")
     prompt = build_verified_stage_prompt("bounded_analysis", {})
     lowered = " ".join(prompt.lower().split())
 

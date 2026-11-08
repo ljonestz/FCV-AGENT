@@ -584,7 +584,17 @@ def test_native_judgment_defers_prose_to_final_reader_schema():
     assert reader['assessment_narratives']['items']['additionalProperties'] is False
 
 
-def test_final_reader_prompt_requires_grounded_standalone_summary():
+def test_final_reader_prompt_default_opens_with_analytical_judgment(monkeypatch):
+    monkeypatch.delenv("CLIMATE_PROSE_STYLE", raising=False)
+    prompt = build_verified_stage_prompt('reader_compiler', {}).lower()
+    for expected in ('crafted analytical judgment', 'central climate-fcv tension',
+                     'editorial target 160-230', 'accepted_recommendation_ids',
+                     'connected paragraphs', 'planned/completed', 'reader register and wording'):
+        assert expected in prompt
+
+
+def test_final_reader_prompt_requires_grounded_standalone_summary(monkeypatch):
+    monkeypatch.setenv("CLIMATE_PROSE_STYLE", "legacy")
     prompt = build_verified_stage_prompt('reader_compiler', {}).lower()
     for expected in ('editorial target 160-230', 'length targets are advisory', 'prefer two', 'already recognizes',
                      'accepted_recommendation_ids', 'connected paragraphs',
