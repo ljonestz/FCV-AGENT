@@ -485,6 +485,16 @@ Text.
 """
 
 
+def test_supplementary_points_accept_short_heading_and_period_labels():
+    # 2026-11-08 Guinea paid run: the other Stage 2 prompt variant writes "## Supplementary Dimensions"
+    # with "- **Label.** text" bullets.
+    md = ("## Supplementary Dimensions\n\n- **Gender and GBV.** No SEA/SH risk assessment.\n"
+          "- **Political economy.** Who gains from rationing is not mapped.\n\n## Synthesis\n- **X:** y")
+    out = json.loads(run_js(f"process.stdout.write(JSON.stringify(FR.parseSupplementaryPoints({json.dumps(md)})));"))
+    assert out == [{"title": "Gender and GBV", "why": "No SEA/SH risk assessment."},
+                   {"title": "Political economy", "why": "Who gains from rationing is not mapped."}]
+
+
 def test_supplementary_points_parse_labels_and_strip_tags():
     out = json.loads(run_js(f"process.stdout.write(JSON.stringify(FR.parseSupplementaryPoints({json.dumps(STAGE2_MD)})));"))
     assert out == [{"title": "SORT adequacy", "why": "Ratings look low."},

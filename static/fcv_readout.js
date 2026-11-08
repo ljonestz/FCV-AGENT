@@ -196,10 +196,11 @@
   }
   const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
-  // Stage 2 "## Supplementary FCV Dimensions" bullets ("- **Label:** text") as smaller checks.
+  // Stage 2 "## Supplementary FCV Dimensions" (or "## Supplementary Dimensions") bullets
+  // ("- **Label:** text" or "- **Label.** text") as smaller checks.
   function parseSupplementaryPoints(markdown) {
     const lines = String(markdown || '').replace(/\r\n?/g, '\n').split('\n');
-    const start = lines.findIndex(l => /^#{2,4}\s+supplementary fcv dimensions\b/i.test(l.trim()));
+    const start = lines.findIndex(l => /^#{2,4}\s+supplementary\s+(?:fcv\s+)?dimensions\b/i.test(l.trim()));
     if (start < 0) return [];
     const level = (lines[start].trim().match(/^#+/) || [''])[0].length;
     const out = [];
@@ -209,7 +210,7 @@
       if (head && head[1].length <= level) break;
       const m = line.match(/^[-*+]\s+\*\*(.+?)\*\*\s*:?\s*(.*)$/);
       if (!m) continue;
-      const title = m[1].replace(/:\s*$/, '').replace(STAGE_TAG_RE, '').trim();
+      const title = m[1].replace(/[:.]\s*$/, '').replace(STAGE_TAG_RE, '').trim();
       const why = m[2].replace(/^:\s*/, '').replace(STAGE_TAG_RE, '').replace(/\*\*/g, '').replace(/\s{2,}/g, ' ').trim();
       if (title) out.push({ title, why });
     }
