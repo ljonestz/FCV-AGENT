@@ -67,3 +67,9 @@ def test_max_tokens_experiment_bounds(monkeypatch):
     assert app._stage_output_budget(3) == 48000 and app._stage_output_budget(2) == app.STAGE_MAX_TOKENS[2]
     monkeypatch.setenv("FCV_STAGE3_MAX_TOKENS_EXPERIMENT", "900000")
     assert app._stage_output_budget(3) == app.STAGE_MAX_TOKENS[3]
+
+
+def test_final_format_check_only_under_v2(monkeypatch):
+    assert "FINAL FORMAT CHECK" not in _build(monkeypatch)
+    prompt = _build(monkeypatch, FCV_STAGE3_STYLE_EXPERIMENT="2")
+    assert prompt.rstrip().endswith("write the points as linked sentences instead.")

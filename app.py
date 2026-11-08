@@ -3357,6 +3357,17 @@ only to the JSON summary fields. Define acronyms on first use, use no em-dash
 punctuation and use semicolons sparingly."""
 
 
+_STAGE3_V2_FINAL_FORMAT_CHECK = """
+
+FINAL FORMAT CHECK BEFORE WRITING THE NARRATIVE:
+- Under ## EXECUTIVE SUMMARY, use these exact subheadings in this order, each on its own line:
+  ### Opening Assessment, ### Operational Context, ### FCV Risk Exposure, ### Strengths, ### Gaps.
+- Operational Context, Strengths and Gaps are paragraphs of connected prose. They contain no
+  bullet points, no numbered items and no bold lead-in labels; if you find yourself starting a
+  list, write the points as linked sentences instead.
+"""
+
+
 def _stage3_apply_section_specs(stage_prompt: str) -> str:
     if _stage3_style_variant() != "2":
         return stage_prompt
@@ -3816,6 +3827,7 @@ def append_core_concise_stage3_contract(
         + "\n\n"
         + _stage3_contract_text()
         + STANDARD_RESEARCH_EVIDENCE_CONTRACT
+        + (_STAGE3_V2_FINAL_FORMAT_CHECK if _stage3_style_variant() == "2" else "")
     )
 
 
@@ -10872,7 +10884,16 @@ def _stage3_prose_repair_events(text, assessment_id, holder):
     holder. Enabled only when FCV_STAGE3_PROSE_REPAIR=1.
     """
     holder['text'] = text
-    if os.environ.get("FCV_STAGE3_PROSE_REPAIR") != "1" or not stage3_prose.listy_sections(text):
+    if os.environ.get("FCV_STAGE3_PROSE_REPAIR") != "1":
+        return
+    if not stage3_prose.listy_sections(text):
+        missing = stage3_prose.missing_headings(text)
+        holder['report'] = {"listy": [], "repaired": False, "reason": "", "missing_headings": missing}
+        if missing:
+            app.logger.warning(
+                "Stage 3 opening headings missing assessment_id=%s missing=%s",
+                assessment_id or 'unknown', ",".join(missing),
+            )
         return
 
     def call_model(prompt):

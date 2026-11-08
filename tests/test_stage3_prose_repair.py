@@ -76,3 +76,8 @@ def test_repair_events_off_by_default(monkeypatch):
     holder = {}
     assert list(app._stage3_prose_repair_events(LISTY, "t", holder)) == []
     assert holder["text"] == LISTY
+
+
+def test_missing_headings_reported():
+    assert sp.missing_headings(LISTY) == []
+    assert sp.missing_headings("## EXECUTIVE SUMMARY\n\n**All prose, no subheadings.**\n") == ["Operational Context", "Strengths", "Gaps"]

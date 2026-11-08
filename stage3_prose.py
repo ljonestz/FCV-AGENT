@@ -51,6 +51,11 @@ def _label_count(body: str) -> int:
     return sum(1 for m in _LABEL_LINE_RE.finditer(body) if len(m.group(0).strip("*-+ .0123456789)").split()) <= 8)
 
 
+def missing_headings(text: str) -> list[str]:
+    present = {re.sub(r"^###\s*(?:Potential |Key )?", "", h[0]).strip().lower() for h in find_sections(text)}
+    return [n for n in SECTION_NAMES if n.lower() not in present]
+
+
 def is_listy(body: str) -> bool:
     return bool(_LIST_LINE_RE.search(body) or _label_count(body) >= 2)
 
@@ -111,7 +116,8 @@ def repair(text: str, call_model: Callable[[str], str]) -> tuple[str, dict]:
     On any failure the original text is returned unchanged.
     """
     targets = listy_sections(text)
-    report = {"listy": [t[0] for t in targets], "repaired": False, "reason": ""}
+    report = {"listy": [t[0] for t in targets], "repaired": False, "reason": "",
+              "missing_headings": missing_headings(text)}
     if not targets:
         return text, report
     headings = [t[0] for t in targets]
