@@ -71,9 +71,10 @@ _REPLACEMENTS: dict[str, list[tuple[str, str]]] = {
             "Write every block in the project document's own voice, as text the team could\n"
             "paste into the named section, never as advice to the team: do not write 'the team\n"
             "could', 'we recommend', 'consider' or 'it may be useful'. For advisory_proposal,\n"
-            "keep new roles, decision rules and timing visibly proposed within that voice, for\n"
-            "example 'The project will establish ..., with arrangements to be agreed during\n"
-            "preparation'.",
+            "keep new roles, decision rules, methods and timing visibly proposed within that\n"
+            "voice: use 'The project proposes to', 'would' and 'to be agreed during preparation',\n"
+            "never 'will' for anything not already in the document. End every block with a full\n"
+            "sentence.",
         ),
     ],
 }
