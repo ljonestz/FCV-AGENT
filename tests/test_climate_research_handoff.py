@@ -30,9 +30,9 @@ def test_later_citations_enrich_metadata_and_survive_the_eight_source_cap():
 
 def test_search_requests_bounded_native_quotes_for_the_structurer():
     prompt=build_climate_search_prompt("Burundi","Transport",{})
-    assert "four to six short verbatim passages" in prompt
-    assert "native web-source citations" in prompt
-    assert "140 characters" in prompt
+    flat = " ".join(prompt.split())
+    assert "native web-source citations" in flat
+    assert "cited text" in flat
 
 
 def test_analysis_explains_reference_types_and_empty_context():
@@ -117,7 +117,7 @@ def test_pause_turn_search_hits_are_counted_across_preserved_turns():
     assert result['status'] == 'complete'
     assert len(client.calls) == 3
     assert client.calls[0]['thinking'] == {'type': 'between_tools'}
-    assert client.calls[0]['tools'][0]['max_uses'] == 2
+    assert client.calls[0]['tools'][0]['max_uses'] == 3
     # Preserve encrypted provider blocks only for actual search continuation.
     assert client.calls[1]['messages'][1]['content'] is paused.content
     assert 'tools' not in client.calls[-1]

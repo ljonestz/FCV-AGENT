@@ -147,8 +147,8 @@ def test_live_claims_and_log_counts_are_bounded_and_content_free() -> None:
 
     merged = merge_climate_grounding({}, research)
 
-    assert len(merged["live_claims"]) == 6
-    assert merged["log_counts"]["live_claims"] == 6
+    assert len(merged["live_claims"]) == 8
+    assert merged["log_counts"]["live_claims"] == 8
     assert set(merged["log_counts"]) == {
         "bank_sources",
         "bank_evidence_records",
@@ -232,3 +232,23 @@ def test_candidate_preview_marker_survives_bounded_grounding() -> None:
     assert merged["candidate_preview"] is True
     prompt = json.loads(merged["prompt_context"])
     assert prompt["bank"]["candidate_preview"] is True
+
+
+def test_eight_long_claims_stay_bounded() -> None:
+    from sector_lenses.climate_grounding import CLIMATE_COMBINED_MAX_CHARS
+
+    research = _research_bundle()
+    research["sources"] = [
+        {**research["sources"][0], "id": f"climate-source-{i}",
+         "url": f"https://un.org/doc-{i}"}
+        for i in range(1, 9)
+    ]
+    research["claims"] = [
+        {**research["claims"][0], "id": f"climate-claim-{i}",
+         "claim": "x" * 1500, "source_ids": [f"climate-source-{i}"]}
+        for i in range(1, 9)
+    ]
+    merged = merge_climate_grounding({}, research)
+    assert merged["prompt_context"] != ""
+    assert len(merged["prompt_context"]) <= CLIMATE_COMBINED_MAX_CHARS
+    assert "research" in merged["state"]

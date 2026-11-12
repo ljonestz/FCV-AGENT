@@ -1356,8 +1356,8 @@ def test_climate_research_uses_one_focused_request():
     assert CLIMATE_RESEARCH_START not in call["messages"][0]["content"]
     assert call["max_tokens"] == 3000
     assert call["thinking"] == {"type": "between_tools"}
-    assert call["tools"][0]["max_uses"] == 2
-    assert call["tools"][0]["allowed_domains"] == list(app_module._LEGACY_CLIMATE_SEARCH_DOMAINS)
+    assert call["tools"][0]["max_uses"] == 3
+    assert "allowed_domains" not in call["tools"][0]
     assert call["timeout"] == 135
 
 
@@ -1559,7 +1559,8 @@ def test_rejected_passage_counts_survive_failed_research_and_are_logged(caplog):
         )],
         stop_reason="end_turn",
     )
-    client = _SequencedResearchClient([searched, rejected])
+    # Zero admitted claims now triggers one retry, so both attempts are supplied.
+    client = _SequencedResearchClient([searched, rejected, searched, rejected])
 
     with caplog.at_level("INFO", logger=app_module.app.logger.name):
         result = app_module.run_climate_web_research(
@@ -1580,7 +1581,7 @@ def test_rejected_passage_counts_survive_failed_research_and_are_logged(caplog):
         "invalid_selection_count": 1,
         "admitted_claim_count": 0,
     }
-    assert len(client.calls) == 2
+    assert len(client.calls) == 4
     assert "fields_present=selections" in caplog.text
     assert "selections_count=1" in caplog.text
     assert (
@@ -2360,3 +2361,47 @@ def test_legacy_verifier_accepts_ellipsis_quote():
     assert len(kept["claims"]) == 1
     bad = {**bundle, "claims": [{**claim, "claim": quote + " 99 more"}]}
     assert verify_climate_research_claims(bad, content)["claims"] == []
+
+
+def test_climate_search_request_has_no_allow_list():
+    client = _SequencedResearchClient([_valid_climate_response()])
+    app_module.run_climate_web_research("South Sudan", "Water", {}, client)
+    tool = client.calls[0]["tools"][0]
+    assert "allowed_domains" not in tool
+    assert tool == {"type": "web_search_20250305", "name": "web_search", "max_uses": 3}
+
+
+def test_climate_search_prompt_is_open():
+    prompt = research_module.build_climate_search_prompt("South Sudan", "Water", {})
+    assert "up to 3 web searches" in prompt
+    assert "different publishers" in prompt
+    for dropped in ("exactly two", "140 characters", "untrusted sources", "ellipses"):
+        assert dropped not in prompt
+    assert "900 words" in prompt
+
+
+def test_summary_log_counts_trust(caplog):
+    bundle = _valid_bundle()
+    second = dict(_second_authoritative_source())
+    second["trust_tier"] = "caution"
+    second["source_type"] = "news"
+    bundle["sources"][0]["trust_tier"] = "standard"
+    bundle["sources"] = [bundle["sources"][0], second]
+    with caplog.at_level("INFO", logger=app_module.app.logger.name):
+        app_module.log_climate_research_summary("a-1", bundle, elapsed_ms=5)
+    assert "trust=standard:1,caution:1" in caplog.text
+    assert "news" in caplog.text
+
+
+def test_climate_research_retries_once_when_first_attempt_admits_no_claims():
+    empty = SimpleNamespace(content=[SimpleNamespace(
+        type="text", text="No structured evidence.", citations=[])],
+        stop_reason="end_turn")
+    client = _SequencedResearchClient([empty, _insufficient_but_structured_climate_response()])
+    result = app_module.run_climate_web_research(
+        "South Sudan", "Natural resources", {"project_elements": ["Landing sites"]}, client
+    )
+    assert result["status"] in {"complete", "partial"}
+    assert climate_research_evidence_gate(result)["ok"]
+    assert result["attempts"] == 2
+    assert len(client.calls) == 2
