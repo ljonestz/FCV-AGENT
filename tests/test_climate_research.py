@@ -315,7 +315,8 @@ def test_invented_geography_label_replaced_by_matched_country():
     claim = _resolve(packet, geographies=["Uganda"])["claims"][0]
     assert claim["geographies"] == ["Kenya"]
     context = _admission_packet("https://www.reuters.com/x", "Drought grips East Africa this season.")
-    assert _resolve(context, geographies=["Uganda"])["claims"][0]["geographies"] == ["Kenya"]
+    # Context-only material never inherits the project country as its geography.
+    assert _resolve(context, geographies=["Uganda"])["claims"][0]["geographies"] == []
 
 
 def test_normalizer_derives_trust_tier_and_type_from_url_only():
@@ -2405,3 +2406,96 @@ def test_climate_research_retries_once_when_first_attempt_admits_no_claims():
     assert climate_research_evidence_gate(result)["ok"]
     assert result["attempts"] == 2
     assert len(client.calls) == 2
+
+
+def _pid_profile(*beneficiaries):
+    # Mirrors app.py: the project country is "; ".join(extract_beneficiary_countries(...)).
+    return {"country": "; ".join(beneficiaries), "beneficiary_countries": list(beneficiaries)}
+
+
+def test_drc_pid_name_accepts_drc_passage_without_context_note():
+    packet = _admission_packet(
+        "https://www.reuters.com/x", "Floods hit the Democratic Republic of the Congo.",
+        profile=_pid_profile("Congo, Democratic Republic of"))
+    bundle = _resolve(packet, geographies=["Democratic Republic of the Congo"])
+    assert len(bundle["claims"]) == 1
+    assert "regional or background context only" not in bundle["claims"][0]["evidence_gap"]
+    assert bundle["uncovered_countries"] == []
+
+
+def test_drc_pid_name_rejects_republic_of_congo_passage():
+    packet = _admission_packet(
+        "https://www.reuters.com/x", "Floods hit Brazzaville in the Republic of the Congo.",
+        profile=_pid_profile("Congo, Democratic Republic of"))
+    bundle = _resolve(packet, geographies=["Republic of the Congo"])
+    assert bundle["claims"] == []
+    assert bundle["passage_diagnostics"]["invalid_selection_count"] == 1
+
+
+def test_yemen_pid_name_accepts_yemen_passage_without_note_or_gap():
+    packet = _admission_packet(
+        "https://www.reuters.com/x", "Floods displaced families in Yemen.",
+        profile=_pid_profile("Yemen, Republic of"))
+    bundle = _resolve(packet, geographies=["Yemen"])
+    assert len(bundle["claims"]) == 1
+    assert "regional or background context only" not in bundle["claims"][0]["evidence_gap"]
+    assert bundle["coverage_countries"] == ["Yemen, Republic of"]
+    assert bundle["uncovered_countries"] == []
+    assert bundle["failure_reason"] == ""
+
+
+def test_multi_country_candidates_are_split_on_semicolons():
+    packet = _admission_packet(
+        "https://www.reuters.com/x", "Floods displaced families in Mali.",
+        profile=_pid_profile("Niger", "Mali"))
+    bundle = _resolve(packet, geographies=["Mali"])
+    assert len(bundle["claims"]) == 1
+    assert "regional or background context only" not in bundle["claims"][0]["evidence_gap"]
+
+
+def test_multi_country_wrong_country_passage_is_rejected():
+    packet = _admission_packet(
+        "https://www.reuters.com/x", "Floods in Nigeria displaced thousands.",
+        title="Floods in Nigeria", profile=_pid_profile("Niger", "Mali"))
+    bundle = _resolve(packet, geographies=["Nigeria"])
+    assert bundle["claims"] == []
+    assert bundle["passage_diagnostics"]["invalid_selection_count"] == 1
+
+
+def test_context_only_passage_gets_no_project_country_geography():
+    packet = _admission_packet("https://www.reuters.com/x", "Drought grips East Africa this season.")
+    bundle = _resolve(packet, geographies=["Kenya"])
+    assert len(bundle["claims"]) == 1
+    assert bundle["claims"][0]["geographies"] == []
+    kept = _resolve(packet, geographies=["East Africa"])
+    assert kept["claims"][0]["geographies"] == ["East Africa"]
+
+
+def test_accepted_passage_falls_back_to_matched_country_geography():
+    packet = _admission_packet("https://www.reuters.com/x", "Floods hit Kenya.")
+    bundle = _resolve(packet, geographies=["Invented Place"])
+    assert bundle["claims"][0]["geographies"] == ["Kenya"]
+
+
+def test_uncovered_beneficiaries_are_named_in_failure_reason():
+    packet = _admission_packet(
+        "https://www.reuters.com/x", "Floods hit Kenya.",
+        profile={"country": "Kenya", "beneficiary_countries": ["Kenya", "Uganda", "Rwanda"]})
+    bundle = _resolve(packet, geographies=["Kenya"])
+    assert bundle["uncovered_countries"] == ["Uganda", "Rwanda"]
+    assert bundle["failure_reason"] == "No live web evidence was found for: Uganda, Rwanda."
+    normalized = normalize_climate_research_bundle(bundle)
+    assert normalized["failure_reason"] == "No live web evidence was found for: Uganda, Rwanda."
+    gate = climate_research_evidence_gate(bundle)
+    assert gate["ok"]
+    assert gate["bundle"]["failure_reason"] == bundle["failure_reason"]
+
+
+def test_combined_country_string_is_never_one_candidate():
+    # As one string, "Congo, Democratic Republic of; Burundi" would canonicalise to
+    # plain "Congo" and wrongly accept Republic of the Congo material.
+    packet = _admission_packet(
+        "https://www.reuters.com/x", "Flooding hit Congo-Brazzaville this season.",
+        profile=_pid_profile("Congo, Democratic Republic of", "Burundi"))
+    bundle = _resolve(packet, geographies=["Congo-Brazzaville"])
+    assert bundle["claims"] == []

@@ -57,6 +57,9 @@ CLIMATE_MAX_SELECTIONS = 8
 CLIMATE_MAX_CLAIMS = 8
 CLIMATE_CLAIM_MAX_CHARS = 1500
 CLIMATE_EVIDENCE_GAP_MAX_CHARS = 1200
+CLIMATE_PROJECT_COUNTRY_MAX_CHARS = 400
+CLIMATE_FAILURE_REASON_MAX_CHARS = 240
+
 
 def _bounded(value: Any, limit: int) -> str:
     """Return a stripped string no longer than ``limit`` characters."""
@@ -71,6 +74,33 @@ def _strings(value: Any, count: int, size: int) -> list[str]:
         return []
     values = (_bounded(item, size) for item in value)
     return list(dict.fromkeys(item for item in values if item))[:count]
+
+
+def _project_countries(value: Any) -> list[str]:
+    """Split the "; "-joined project country into names, never on commas.
+
+    Commas belong to World Bank inverted names (Yemen, Republic of). A
+    trailing name cut by the length bound is dropped, never kept partial.
+    """
+    text = str(value or "").strip()
+    if len(text) > CLIMATE_PROJECT_COUNTRY_MAX_CHARS:
+        text = text[:CLIMATE_PROJECT_COUNTRY_MAX_CHARS].rsplit(";", 1)[0]
+    names = (_bounded(name, 80) for name in text.split(";"))
+    return list(dict.fromkeys(name for name in names if name))
+
+
+def _uncovered_reason(countries: list[str]) -> str:
+    """Name uncovered beneficiaries within the normalized failure_reason bound."""
+    prefix = "No live web evidence was found for: "
+    shown = list(countries)
+    while shown:
+        hidden = len(countries) - len(shown)
+        tail = f" and {hidden} other(s)" if hidden else ""
+        reason = prefix + ", ".join(shown) + tail + "."
+        if len(reason) <= CLIMATE_FAILURE_REASON_MAX_CHARS:
+            return reason
+        shown.pop()
+    return f"No live web evidence was found for {len(countries)} beneficiary countries."
 
 
 def _block_value(item: Any, name: str, default: Any = None) -> Any:
@@ -283,7 +313,7 @@ def build_climate_evidence_packet(
         "project_profile": {
             "project_elements": _strings(profile.get("project_elements"), 12, 180),
             "documents": _strings(profile.get("documents"), 4, 180),
-            "country": _bounded(profile.get("country"), 80),
+            "country": "; ".join(_project_countries(profile.get("country"))),
             "country_scope": profile.get("country_scope") if profile.get("country_scope") in ("single", "multi") else "",
             "beneficiary_countries": _strings(profile.get("beneficiary_countries"), 8, 80),
             "document_excerpt": _bounded(
@@ -346,10 +376,10 @@ def resolve_climate_passage_selections(payload: Any, packet: dict[str, Any]) -> 
     selections = selections[:CLIMATE_MAX_SELECTIONS]
     invalid = 0
     profile = packet.get("project_profile", {})
-    project_country = _bounded(profile.get("country"), 80)
+    # Each beneficiary is its own candidate; the joined string never is one.
     candidates = list(dict.fromkeys(
-        value for value in [project_country] + _strings(profile.get("beneficiary_countries"), 8, 80)
-        if value))
+        _project_countries(profile.get("country"))
+        + _strings(profile.get("beneficiary_countries"), 8, 80)))
     allowed_elements = {" ".join(value.casefold().split()): value
                         for value in profile.get("project_elements", [])}
     for selection in selections:
@@ -368,20 +398,21 @@ def resolve_climate_passage_selections(payload: Any, packet: dict[str, Any]) -> 
         if targets:
             verdicts = [country_relevance(name, passage["title"], passage["excerpt"])
                         for name in targets]
-            if any(accepted and not context_only for accepted, context_only in verdicts):
-                matched_country = next(name for name, (accepted, context_only)
-                                       in zip(targets, verdicts) if accepted and not context_only)
-            elif any(context_only for _accepted, context_only in verdicts):
-                matched_country = project_country or targets[0]
-                context_note = (f"Source does not name {project_country or targets[0]} "
-                                "explicitly; regional or background context only.")
-            else:
+            # Accept if any country is named; otherwise any explicit wrong-country
+            # verdict rejects, even when another country would allow context.
+            if (True, False) in verdicts:
+                matched_country = targets[verdicts.index((True, False))]
+            elif (False, False) in verdicts:
                 invalid += 1
                 continue
+            else:
+                context_note = (f"Source does not name {' or '.join(targets)} "
+                                "explicitly; regional or background context only.")
         elements = [allowed_elements[" ".join(value.casefold().split())]
                     for value in _strings(selection.get("project_elements"), 4, 180)
                     if " ".join(value.casefold().split()) in allowed_elements]
-        # Model place labels must appear in the passage; otherwise use the matched country.
+        # Model place labels must appear in the passage. Only an outright accepted
+        # passage falls back to its matched country; context-only gets none.
         geographies = [value for value in geographies if _source_label_matches(value, proof)]
         if not geographies and matched_country:
             geographies = [matched_country]
@@ -411,7 +442,12 @@ def resolve_climate_passage_selections(payload: Any, packet: dict[str, Any]) -> 
     beneficiaries = _strings(profile.get("beneficiary_countries"), 8, 80)
     admitted_proof = ' '.join(claim['source_excerpt'] for claim in bundle['claims']) + ' ' + ' '.join(
         source['title'] for source in bundle['sources'])
-    covered = [country for country in beneficiaries if _source_label_matches(country, admitted_proof)]
+    titles = {source["id"]: source["title"] for source in bundle["sources"]}
+    covered = [country for country in beneficiaries
+               if _source_label_matches(country, admitted_proof) or any(
+                   country_relevance(country, titles.get(source_id, ""), claim["source_excerpt"])
+                   == (True, False)
+                   for claim in bundle["claims"] for source_id in claim["source_ids"])]
     uncovered = [country for country in beneficiaries if country not in covered]
     bundle["status"] = ("complete" if bundle["claims"] and beneficiaries and not uncovered
                         else "partial" if bundle["claims"] else "failed")
@@ -419,8 +455,10 @@ def resolve_climate_passage_selections(payload: Any, packet: dict[str, Any]) -> 
     bundle['passage_diagnostics'] = {'received_count': len(passages), 'selected_count': len(selections),
                                      'invalid_selection_count': invalid,
                                      'admitted_claim_count': len(bundle['claims'])}
-    bundle["failure_reason"] = "" if bundle["claims"] else (
-        "No received passage was admitted as research evidence.")
+    bundle["failure_reason"] = (
+        _uncovered_reason(uncovered) if bundle["claims"] and uncovered
+        else "" if bundle["claims"]
+        else "No received passage was admitted as research evidence.")
     return bundle
 
 

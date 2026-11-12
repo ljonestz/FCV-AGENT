@@ -54,3 +54,51 @@ def test_country_relevance_disambiguates():
 def test_caution_note_copy():
     assert CAUTION_NOTE == ("Source is outside the standard trusted list; "
                             "interpret with caution and check the original.")
+
+
+def test_world_bank_inverted_names_match_short_names():
+    cases = {
+        "Yemen, Republic of": "Floods displaced families in Yemen.",
+        "Egypt, Arab Republic of": "Heat stress in Egypt rose.",
+        "Iran, Islamic Republic of": "Drought in Iran deepened.",
+        "Venezuela, RB": "Rainfall in Venezuela fell.",
+        "Gambia, The": "Coastal erosion in The Gambia accelerated.",
+    }
+    for country, text in cases.items():
+        assert country_relevance(country, "Climate report", text) == (True, False), country
+
+
+def test_inverted_congo_names_use_drc_and_roc_rules():
+    drc_text = "Floods hit the Democratic Republic of the Congo."
+    roc_text = "Floods hit Brazzaville in the Republic of the Congo."
+    for drc in ("Congo, Democratic Republic of", "Congo, Dem. Rep."):
+        assert country_relevance(drc, "Report", drc_text) == (True, False), drc
+        assert country_relevance(drc, "Report", roc_text) == (False, False), drc
+    for roc in ("Congo, Republic of", "Congo, Rep."):
+        assert country_relevance(roc, "Report", roc_text) == (True, False), roc
+        assert country_relevance(roc, "Report", drc_text) == (False, False), roc
+
+
+def test_sudan_and_south_sudan_are_disambiguated():
+    assert country_relevance("Sudan", "Report", "Floods hit South Sudan.") == (False, False)
+    assert country_relevance("Sudan", "Report", "Floods hit Sudan.") == (True, False)
+    assert country_relevance("Sudan", "Report", "Floods hit Sudan and South Sudan.") == (True, False)
+    assert country_relevance("South Sudan", "Report", "Floods hit South Sudan.") == (True, False)
+    assert country_relevance("South Sudan", "Report", "Floods hit Darfur, Sudan.") == (False, False)
+    assert country_relevance("Sudan, Republic of", "Report", "Floods hit South Sudan.") == (False, False)
+
+
+def test_deny_list_covers_short_links_and_blogspot_cctlds():
+    for url in (
+        "https://youtu.be/abc", "https://fb.com/p", "https://www.threads.net/@x",
+        "https://vk.com/wall", "https://someone.tumblr.com/post",
+        "https://x.blogspot.co.uk/a", "https://x.blogspot.fr/a", "https://blogspot.de/a",
+    ):
+        assert is_denied(url), url
+    assert not is_denied("https://notblogspot.example/a")
+    assert not is_denied("https://www.reuters.com/a")
+
+
+def test_publication_date_skips_relative_value_and_continues():
+    assert publication_date({"date": "3 days ago", "page_age": "2026-10-01"}) == "2026-10-01"
+    assert publication_date({"publication_date": "2 weeks ago", "date": "3 days ago"}) == ""

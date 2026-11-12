@@ -21,8 +21,11 @@ DENIED_HOST_SUFFIXES: tuple[str, ...] = (
     "facebook.com", "x.com", "twitter.com", "instagram.com", "tiktok.com",
     "youtube.com", "reddit.com", "quora.com", "medium.com", "substack.com",
     "blogspot.com", "wordpress.com", "linkedin.com", "pinterest.com",
-    "telegram.org", "t.me",
+    "telegram.org", "t.me", "youtu.be", "fb.com", "threads.net", "vk.com",
+    "tumblr.com",
 )
+# Blogspot also serves country-code mirrors (blogspot.co.uk, blogspot.fr, ...).
+_DENIED_LABEL_RE = re.compile(r"(?:^|\.)blogspot\.[a-z0-9.-]+$")
 
 TRUSTED_HOSTS: dict[str, tuple[str, ...]] = {
     "world-bank": ("worldbank.org",),
@@ -105,17 +108,46 @@ def safe_public_url(value: Any) -> str:
     return url
 
 
-
 def publication_date(item: Any) -> str:
+    """Return the first absolute date field; relative ages are skipped."""
     for name in ("publication_date", "published_date", "date", "page_age"):
         value = _string(_value(item, name), 80)
-        if value:
-            return "" if _RELATIVE_DATE_RE.search(value) else value
+        if value and not _RELATIVE_DATE_RE.search(value):
+            return value
     return ""
 
 
-def _country_regex(country: str) -> tuple[list[str], list[str]]:
+_DRC_TAIL_RE = re.compile(r"^(?:democratic republic of(?: the)?|dem\.? rep\.?)$")
+_ROC_TAIL_RE = re.compile(r"^(?:republic of(?: the)?|rep\.?)$")
+_OFFICIAL_PREFIX_RE = re.compile(
+    r"^(?:the )?(?:(?:arab|islamic|federal|democratic|people's|bolivarian|united) )*"
+    r"republic of (?:the )?"
+)
+_SUDAN_RE = r"(?<![a-z0-9-])(?<!south )sudan(?![a-z0-9-])"
+_SOUTH_SUDAN_RE = r"south[\s-]+sudan"
+
+
+def _country_key(country: str) -> str:
+    """Fold a country name and canonicalise World Bank inverted official names.
+
+    "Congo, Dem. Rep." and "Congo, Democratic Republic of" become the DRC
+    name; "Congo, Rep." becomes the Republic of the Congo; any other
+    "X, <qualifier>" form (Yemen, Republic of; Gambia, The; Venezuela, RB;
+    Egypt, Arab Republic of) keeps the short name X.
+    """
     key = _fold(country)
+    if "," in key:
+        head, tail = (part.strip() for part in key.split(",", 1))
+        if head == "congo" and _DRC_TAIL_RE.match(tail):
+            return "democratic republic of the congo"
+        if head == "congo" and _ROC_TAIL_RE.match(tail):
+            return "republic of the congo"
+        key = head or tail
+    return key
+
+
+def _country_regex(country: str) -> tuple[list[str], list[str]]:
+    key = _country_key(country)
     if key in {"guinea", "republic of guinea", "guinea conakry"}:
         return [r"(?<![a-z0-9-])guinea(?![a-z0-9-])"], [
             r"guinea[\s-]+bissau",
@@ -150,6 +182,12 @@ def _country_regex(country: str) -> tuple[list[str], list[str]]:
             r"(?<![a-z0-9-])drc(?![a-z0-9-])", r"congo[\s-]+kinshasa",
             r"kinshasa",
         ]
+    if key in {"sudan", "the sudan", "republic of sudan", "republic of the sudan"}:
+        return [_SUDAN_RE], [_SOUTH_SUDAN_RE]
+    if key in {"south sudan", "republic of south sudan"}:
+        return [_SOUTH_SUDAN_RE], [_SUDAN_RE]
+    # Official long forms ("Republic of Yemen") are matched by their short name.
+    key = _OFFICIAL_PREFIX_RE.sub("", key) or key
     escaped = r"[\s-]+".join(re.escape(part) for part in key.split())
     return [rf"(?<![a-z0-9-]){escaped}(?![a-z0-9-])"], []
 
@@ -166,7 +204,7 @@ def _target_mentions(
     wrong_patterns: list[str],
 ) -> bool:
     folded = _fold(text)
-    key = _fold(country)
+    key = _country_key(country)
     if key in {"guinea", "republic of guinea", "guinea conakry"}:
         for pattern in wrong_patterns:
             folded = re.sub(pattern, " ", folded)
@@ -204,6 +242,7 @@ def country_relevance(country: str, title: str, cited_text: str) -> tuple[bool, 
         return True, False
     return False, True
 
+
 def _host(url: str) -> str:
     try:
         return (urlsplit(_string(url)).hostname or "").rstrip(".").casefold()
@@ -216,7 +255,8 @@ def _host_matches(host: str, suffixes: tuple[str, ...]) -> bool:
 
 
 def is_denied(url: str) -> bool:
-    return _host_matches(_host(url), DENIED_HOST_SUFFIXES)
+    host = _host(url)
+    return _host_matches(host, DENIED_HOST_SUFFIXES) or bool(_DENIED_LABEL_RE.search(host))
 
 
 def source_type(url: str) -> str:

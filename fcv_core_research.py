@@ -307,7 +307,7 @@ def normalize_core_research_response(
             lines.append(
                 f"- [{_escape_markdown(source['title'])}]"
                 f"({_markdown_url(source['url'])}) - {_escape_markdown(date)}"
-            + _caution_suffix(source)
+                + _caution_suffix(source)
             )
             quote = _escape_markdown(source["cited_text"])
             lines.extend("  > " + part for part in quote.splitlines() or ["  >"])
