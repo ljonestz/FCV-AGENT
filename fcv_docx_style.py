@@ -417,7 +417,7 @@ class Report:
     def _footer(self, footer):
         p = footer.paragraphs[0]; self._tabbed(p)
         p_border(p, "top", 4, GREY_LIGHT, space=4)
-        add_run(p, "AI-assisted output — verify before operational use", 7.5, italic=True, color=GREY_TXT)
+        add_run(p, "AI-assisted output - verify before operational use", 7.5, italic=True, color=GREY_TXT)
         add_run(p, "\tPage ", 7.5, color=GREY_TXT)
         add_field(p, "PAGE", 7.5, GREY_TXT, FONT)
         add_run(p, " of ", 7.5, color=GREY_TXT)
