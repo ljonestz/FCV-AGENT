@@ -133,3 +133,32 @@ def test_own_project_source_no_false_matches():
     assert not is_own_project_source("https://x.example/a", "P179017", [])
     assert not is_own_project_source("https://x.example/a", "Guinea water", ids)
 
+
+
+def test_observed_hosts_are_standard_with_sensible_type():
+    expected = {
+        "https://www.unric.org/x": "un",
+        "https://www.idea.int/x": "research",
+        "https://bti-project.org/x": "research",
+        "https://issafrica.org/x": "research",
+        "https://www.afrobarometer.org/x": "research",
+        "https://amaniafrica-et.org/x": "research",
+        "https://eeas.europa.eu/x": "research",
+        "https://ucdp.uu.se/x": "scientific",
+        "https://www.cnn.com/x": "news",
+        "https://www.irinnews.org/x": "news",
+    }
+    for url, kind in expected.items():
+        assert source_type(url) == kind, url
+        assert trust_tier(url) == "standard", url
+    assert trust_tier("https://example-blog.net/post") == "caution"
+
+
+def test_each_trusted_host_is_in_exactly_one_type():
+    from live_source_policy import TRUSTED_HOSTS
+
+    seen: dict[str, str] = {}
+    for kind, hosts in TRUSTED_HOSTS.items():
+        for host in hosts:
+            assert host not in seen, f"{host} in {seen[host]} and {kind}"
+            seen[host] = kind
