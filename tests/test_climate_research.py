@@ -2499,3 +2499,35 @@ def test_combined_country_string_is_never_one_candidate():
         profile=_pid_profile("Congo, Democratic Republic of", "Burundi"))
     bundle = _resolve(packet, geographies=["Congo-Brazzaville"])
     assert bundle["claims"] == []
+
+
+def _zero_claim_attempt(stop_reason="end_turn"):
+    return SimpleNamespace(content=[SimpleNamespace(
+        type="text", text="No structured evidence.", citations=[])],
+        stop_reason=stop_reason)
+
+
+def test_climate_research_does_not_retry_zero_claims_after_max_tokens():
+    client = _SequencedResearchClient([
+        _zero_claim_attempt("max_tokens"),
+        _insufficient_but_structured_climate_response(),
+    ])
+    result = app_module.run_climate_web_research(
+        "South Sudan", "Natural resources", {"project_elements": ["Landing sites"]}, client
+    )
+    assert result["status"] == "failed"
+    assert result["attempts"] == 1
+    assert len(client.calls) == 1
+
+
+def test_climate_research_never_makes_a_third_attempt():
+    client = _SequencedResearchClient([
+        _zero_claim_attempt(), _zero_claim_attempt(),
+        _insufficient_but_structured_climate_response(),
+    ])
+    result = app_module.run_climate_web_research(
+        "South Sudan", "Natural resources", {"project_elements": ["Landing sites"]}, client
+    )
+    assert result["status"] == "failed"
+    assert result["attempts"] == 2
+    assert len(client.calls) == 2
