@@ -561,8 +561,10 @@ def build_climate_search_prompt(
     """Build a bounded, open search-only request for climate-FCV evidence."""
 
     current_date = date.today().isoformat()
+    # Own project ids filter results downstream; the model must not see them.
     profile = json.dumps(
-        project_profile if isinstance(project_profile, dict) else {},
+        {k: v for k, v in (project_profile if isinstance(project_profile, dict) else {}).items()
+         if k != "project_ids"},
         ensure_ascii=False,
         separators=(",", ":"),
     )

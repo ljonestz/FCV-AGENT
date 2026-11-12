@@ -2559,3 +2559,13 @@ def test_climate_evidence_packet_drops_own_project_sources():
     assert [s["url"] for s in packet["sources"]] == ["https://www.un.org/guinea-water"]
     assert [p["url"] for p in packet["passages"]] == ["https://www.un.org/guinea-water"]
     assert packet["passage_diagnostics"]["own_project"] == 1
+
+
+def test_climate_search_prompt_never_shows_project_ids():
+    prompt = research_module.build_climate_search_prompt(
+        "Guinea", "Water",
+        {"documents": ["PAD.docx"], "project_ids": ["P179017"], "country": "Guinea"},
+    )
+    assert "project_ids" not in prompt
+    assert "P179017" not in prompt
+    assert "PAD.docx" in prompt

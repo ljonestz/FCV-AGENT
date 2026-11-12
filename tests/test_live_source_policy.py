@@ -162,3 +162,9 @@ def test_each_trusted_host_is_in_exactly_one_type():
         for host in hosts:
             assert host not in seen, f"{host} in {seen[host]} and {kind}"
             seen[host] = kind
+
+
+def test_project_id_guards_reject_bare_strings_and_junk():
+    assert is_own_project_source("https://x.example/P179017", "t", "P179017")
+    assert not is_own_project_source("https://x.example/Pa", "P", "P")
+    assert not is_own_project_source("https://x.example/Pa", "P", ["P", "", "abc"])

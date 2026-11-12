@@ -574,3 +574,19 @@ def test_own_project_citation_is_dropped_from_core_research():
         content, "Guinea", project_ids=["P179017"]
     )
     assert [s["url"] for s in result["sources"]] == ["https://www.un.org/guinea-water"]
+
+
+def test_bare_string_project_id_is_not_split_into_characters():
+    content = [{
+        "type": "text", "text": "Guinea.",
+        "citations": [{
+            "type": "web_search_result_location",
+            "title": "Guinea water stress",
+            "url": "https://www.un.org/guinea-water",
+            "cited_text": "Guinea faces water stress.",
+        }],
+    }]
+    result = normalize_core_research_response(content, "Guinea", project_ids="P179017")
+    assert len(result["sources"]) == 1
+    result = normalize_core_research_response(content, "Guinea", project_ids="P")
+    assert len(result["sources"]) == 1

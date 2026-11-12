@@ -9,6 +9,7 @@ from typing import Any
 from urllib.parse import urlsplit
 
 from live_source_policy import (
+    clean_project_ids,
     country_relevance,
     is_denied,
     is_own_project_source,
@@ -185,7 +186,7 @@ def normalize_core_research_response(
     candidates: list[dict[str, Any]] = []
     seen: set[tuple[str, str]] = set()
     oversized = 0
-    own_ids = list(project_ids or ())
+    own_ids = clean_project_ids(project_ids)
     for block in blocks:
         if _string(_value(block, "type"), 80) != "text":
             continue

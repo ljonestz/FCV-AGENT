@@ -304,6 +304,14 @@ def extract_project_ids(text: str, limit: int = 8) -> list[str]:
     return list(dict.fromkeys(found))[: max(0, limit)]
 
 
+def clean_project_ids(project_ids: Iterable[str] | str | None) -> list[str]:
+    """Normalise to well-formed upper-case ids; a bare string is one id, junk is dropped."""
+    if isinstance(project_ids, str):
+        project_ids = [project_ids]
+    cleaned = (_string(item).upper() for item in (project_ids or ()))
+    return [pid for pid in cleaned if PROJECT_ID_RE.fullmatch(pid)]
+
+
 def is_own_project_source(url: str, title: str, project_ids: Iterable[str]) -> bool:
     """True when a live source carries one of the screened project's own ids.
 
@@ -311,9 +319,8 @@ def is_own_project_source(url: str, title: str, project_ids: Iterable[str]) -> b
     P179017, while "/P179017-36e7..." and "?id=P179017" do.
     """
     haystack = f"{_string(url)} {_string(title)}"
-    for project_id in project_ids or ():
-        pid = _string(project_id).upper()
-        if pid and re.search(
+    for pid in clean_project_ids(project_ids):
+        if re.search(
             rf"(?<![A-Za-z0-9]){re.escape(pid)}(?![0-9])", haystack, re.IGNORECASE
         ):
             return True
