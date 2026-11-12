@@ -364,12 +364,15 @@ def resolve_climate_passage_selections(payload: Any, packet: dict[str, Any]) -> 
         geographies = _strings(selection.get("geographies"), 4, 160)
         targets = candidates or geographies
         context_note = ""
+        matched_country = ""
         if targets:
             verdicts = [country_relevance(name, passage["title"], passage["excerpt"])
                         for name in targets]
             if any(accepted and not context_only for accepted, context_only in verdicts):
-                pass
+                matched_country = next(name for name, (accepted, context_only)
+                                       in zip(targets, verdicts) if accepted and not context_only)
             elif any(context_only for _accepted, context_only in verdicts):
+                matched_country = project_country or targets[0]
                 context_note = (f"Source does not name {project_country or targets[0]} "
                                 "explicitly; regional or background context only.")
             else:
@@ -378,6 +381,10 @@ def resolve_climate_passage_selections(payload: Any, packet: dict[str, Any]) -> 
         elements = [allowed_elements[" ".join(value.casefold().split())]
                     for value in _strings(selection.get("project_elements"), 4, 180)
                     if " ".join(value.casefold().split()) in allowed_elements]
+        # Model place labels must appear in the passage; otherwise use the matched country.
+        geographies = [value for value in geographies if _source_label_matches(value, proof)]
+        if not geographies and matched_country:
+            geographies = [matched_country]
         url = passage["url"]
         caution = trust_tier(url) == "caution"
         selection = {**selection, "project_elements": elements, "geographies": geographies,
@@ -993,11 +1000,12 @@ def normalize_climate_research_bundle(payload: Any) -> dict[str, Any]:
             or (country_homepage and re.search(r"\b(?:project information document|pid|pad|P\d{6})\b", title, re.IGNORECASE))
         ):
             continue
-        if source_type not in CLIMATE_SOURCE_TYPES:
+        # Provenance labels are derived from the URL, never trusted from the model.
+        keep_declared = (source_type in {"ccdr", "current-operations"}
+                         and (host == "worldbank.org" or host.endswith(".worldbank.org")))
+        if not keep_declared:
             source_type = _policy_source_type(url)
-        tier = _bounded(item.get("trust_tier"), 20)
-        if tier not in {"standard", "caution"}:
-            tier = trust_tier(url)
+        tier = trust_tier(url)
         source_id = f"climate-source-{len(sources) + 1}"
         source_id_aliases[raw_source_id] = source_id
         sources.append({

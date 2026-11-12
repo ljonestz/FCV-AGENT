@@ -289,7 +289,7 @@ def test_insufficient_proof_is_retained_for_inspection_but_not_admitted_groundin
     assert retained["claims"][0]["claim"] not in prompt
 
 
-def test_passage_selection_drops_invented_project_element_and_ignores_geography_label():
+def test_passage_selection_drops_invented_project_element_and_replaces_invented_geography():
     from sector_lenses.research import resolve_climate_passage_selections
     packet = build_climate_evidence_packet([{"type": "text", "citations": [
         {"url": "https://worldbank.org/report", "title": "Burundi report", "cited_text": "Flooding affects access in Burundi."},
@@ -300,10 +300,45 @@ def test_passage_selection_drops_invented_project_element_and_ignores_geography_
         {**labels, "project_elements": ["Invented irrigation component"]}]}, packet)
     assert result["status"] == "complete"
     assert result["claims"][0]["project_elements"] == []
-    # Relevance follows the project countries, not the model's geography label.
+    assert result["claims"][0]["geographies"] == ["Burundi"]
+    # Relevance follows the project countries; an invented place label is replaced.
     result = resolve_climate_passage_selections({"selections": [
         {**labels, "project_elements": ["Component 3"], "geographies": ["Upper Nile"]}]}, packet)
     assert result["claims"][0]["project_elements"] == ["Component 3"]
+    assert result["claims"][0]["geographies"] == ["Burundi"]
+
+
+def test_invented_geography_label_replaced_by_matched_country():
+    packet = _admission_packet("https://www.reuters.com/x", "Floods hit Kenya's Tana River basin.")
+    claim = _resolve(packet, geographies=["Uganda", "Tana River"])["claims"][0]
+    assert claim["geographies"] == ["Tana River"]
+    claim = _resolve(packet, geographies=["Uganda"])["claims"][0]
+    assert claim["geographies"] == ["Kenya"]
+    context = _admission_packet("https://www.reuters.com/x", "Drought grips East Africa this season.")
+    assert _resolve(context, geographies=["Uganda"])["claims"][0]["geographies"] == ["Kenya"]
+
+
+def test_normalizer_derives_trust_tier_and_type_from_url_only():
+    from live_source_policy import CAUTION_NOTE
+    from sector_lenses.research import verify_climate_research_claims
+    url = "https://somesite.example/x"
+    raw = {"status": "partial",
+           "sources": [{"id": "s1", "url": url, "title": "T", "trust_tier": "standard",
+                        "source_type": "world-bank"}],
+           "claims": [{"id": "c1", "claim": "Floods hit Kenya.", "source_excerpt": "Floods hit Kenya.",
+                       "source_ids": ["s1"]}]}
+    bundle = normalize_climate_research_bundle(raw)
+    assert bundle["sources"][0]["trust_tier"] == "caution"
+    assert bundle["sources"][0]["source_type"] == "other"
+    content = [SimpleNamespace(type="text", text="n", citations=[SimpleNamespace(
+        url=url, title="T", cited_text="Floods hit Kenya.")])]
+    kept = verify_climate_research_claims(bundle, content)
+    assert len(kept["claims"]) == 1
+    assert CAUTION_NOTE in kept["claims"][0]["evidence_gap"]
+    wb = normalize_climate_research_bundle({"status": "partial", "sources": [
+        {"id": "s1", "url": "https://openknowledge.worldbank.org/x", "title": "T", "source_type": "ccdr"}],
+        "claims": raw["claims"]})
+    assert wb["sources"][0]["source_type"] == "ccdr"
 
 
 def test_project_labels_keep_parent_components_before_subcomponents():
@@ -1748,7 +1783,7 @@ def test_climate_research_does_not_retry_truncated_structured_evidence():
         client,
     )
 
-    assert result["status"] in {"complete", "partial"}
+    assert result["status"] == "complete"
     assert len(result["claims"]) == 1
     assert climate_research_evidence_gate(result)["ok"]
     assert result["attempts"] == 1
