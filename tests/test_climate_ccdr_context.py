@@ -135,6 +135,7 @@ def test_dynamic_context_accepts_validated_climate_research_source():
         "id": "climate-source-1",
         "lens_id": "climate",
         "source_type": "un",
+        "trust_tier": "standard",
         "title": "Flood risk profile",
         "url": "https://www.undp.org/example",
         "publication_date": "2025",

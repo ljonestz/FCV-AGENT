@@ -1,6 +1,7 @@
 """Route-level contracts for the dedicated Climate-FCV workflow."""
 
 import json
+import threading
 import time
 from types import SimpleNamespace
 
@@ -971,18 +972,36 @@ def test_climate_recovery_failure_blocks_both_workflows(monkeypatch, endpoint):
 
 
 
+class BlockedRecoveryClient(SlowRecoveryClient):
+    """Holds the repair call until released, so it cannot beat the deadline."""
+
+    def __init__(self):
+        super().__init__(delay_seconds=0)
+        self.release = threading.Event()
+
+    def create(self, **kwargs):
+        self.release.wait(timeout=5)
+        return super().create(**kwargs)
+
+
 def test_recovery_iterator_times_out_without_exposing_partial_result():
-    events = list(app_module._iter_climate_diagnostic_recovery(
-        primary={"schema_version": "climate-native-v1", "lenses": []},
-        missing_fields=["lenses.climate"],
-        active_lens_ids=["climate"],
-        source_ids_by_lens={"climate": set()},
-        readout_schema_by_lens={"climate": {}},
-        assessment_id="assessment-timeout",
-        client=SlowRecoveryClient(delay_seconds=0.05),
-        max_seconds=0.01,
-        keepalive_interval=0.002,
-    ))
+    # A sleeping client raced the 10 ms deadline and flaked under scheduler
+    # delay; this one returns only after the iterator has already timed out.
+    client = BlockedRecoveryClient()
+    try:
+        events = list(app_module._iter_climate_diagnostic_recovery(
+            primary={"schema_version": "climate-native-v1", "lenses": []},
+            missing_fields=["lenses.climate"],
+            active_lens_ids=["climate"],
+            source_ids_by_lens={"climate": set()},
+            readout_schema_by_lens={"climate": {}},
+            assessment_id="assessment-timeout",
+            client=client,
+            max_seconds=0.01,
+            keepalive_interval=0.002,
+        ))
+    finally:
+        client.release.set()
 
     assert events[-1]["error_code"] == "climate_recovery_timeout"
     assert events[-1]["recovered"] is False

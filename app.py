@@ -50,10 +50,8 @@ from sector_lenses.climate_verified_render import (
     write_reader_docx,
 )
 from sector_lenses.climate_review_packet import build_review_packet
-from sector_lenses.research import (
-    TRUSTED_CLIMATE_HOST_SUFFIXES,
-    build_climate_bank_search_context,
-)
+from sector_lenses.research import build_climate_bank_search_context
+
 from sector_lenses.pipeline import normalize_climate_assessment
 from sector_lenses import (
     CCDR_RESEARCH_INSTRUCTIONS,
@@ -8095,7 +8093,8 @@ def run_fcv_web_research(
 
 _CLIMATE_TELEMETRY_SOURCE_TYPES = {
     "ccdr", "world-bank", "un", "government", "scientific",
-    "specialist", "current-operations",
+    "specialist", "current-operations", "research", "humanitarian", "news",
+    "other",
 }
 _CLIMATE_TELEMETRY_HORIZONS = {
     "current-near-term", "project-lifetime", "asset-system-lifetime",
@@ -8147,12 +8146,21 @@ def log_climate_research_summary(
         if bundle.get("status") in {"complete", "partial", "failed"}
         else "failed"
     )
+    trust_counts = {"standard": 0, "caution": 0}
+    for item in sources:
+        if isinstance(item, dict):
+            tier = "caution" if item.get("trust_tier") == "caution" else "standard"
+            trust_counts[tier] += 1
+    trust_text = (
+        f"standard:{_telemetry_count(trust_counts['standard'])},"
+        f"caution:{_telemetry_count(trust_counts['caution'])}"
+    )
     passage_diagnostics = bundle.get("passage_diagnostics")
     passage_counts_known = isinstance(passage_diagnostics, dict)
     app.logger.info(
         "Climate research summary assessment_id=%s status=%s attempts=%d "
-        "elapsed_ms=%d sources=%d claims=%d source_types=%s horizons=%s "
-        "passage_checks=received:%d,selected:%d,invalid:%d,admitted:%d",
+        "elapsed_ms=%d sources=%d claims=%d source_types=%s trust=%s "
+        "horizons=%s passage_checks=received:%d,selected:%d,invalid:%d,admitted:%d",
         assessment_id or "unknown",
         status,
         _telemetry_count(bundle.get("attempts"), 2),
@@ -8160,14 +8168,15 @@ def log_climate_research_summary(
         min(len(sources), 99),
         min(len(claims), 99),
         ",".join(source_types) or "none",
+        trust_text,
         horizon_text,
         _telemetry_count(passage_diagnostics.get("received_count"), 24)
         if passage_counts_known else -1,
-        _telemetry_count(passage_diagnostics.get("selected_count"), 6)
+        _telemetry_count(passage_diagnostics.get("selected_count"), 8)
         if passage_counts_known else -1,
-        _telemetry_count(passage_diagnostics.get("invalid_selection_count"), 6)
+        _telemetry_count(passage_diagnostics.get("invalid_selection_count"), 8)
         if passage_counts_known else -1,
-        _telemetry_count(passage_diagnostics.get("admitted_claim_count"), 6)
+        _telemetry_count(passage_diagnostics.get("admitted_claim_count"), 8)
         if passage_counts_known else -1,
     )
 
@@ -8297,8 +8306,7 @@ def run_climate_web_research(
                 "tools": [{
                     "type": "web_search_20250305",
                     "name": "web_search",
-                    "max_uses": 2,
-                    "allowed_domains": list(TRUSTED_CLIMATE_HOST_SUFFIXES),
+                    "max_uses": 3,
                 }],
                 "betas": ["web-search-2025-03-05"],
             }
@@ -8390,7 +8398,7 @@ def run_climate_web_research(
                 if structure_timeout > 0:
                     evidence_packet = build_climate_evidence_packet(
                         provider_content,
-                        project_profile,
+                        {**project_profile, "country": country},
                     )
                     app.logger.info(
                         "Climate research passage admission assessment_id=%s attempt=%d counts=%s",
@@ -8499,15 +8507,15 @@ def run_climate_web_research(
                         current_passage_diagnostics, "received_count", 24
                     ),
                     passage_count(
-                        current_passage_diagnostics, "selected_count", 6
+                        current_passage_diagnostics, "selected_count", 8
                     ),
                     passage_count(
                         current_passage_diagnostics,
                         "invalid_selection_count",
-                        6,
+                        8,
                     ),
                     passage_count(
-                        current_passage_diagnostics, "admitted_claim_count", 6
+                        current_passage_diagnostics, "admitted_claim_count", 8
                     ),
                     diagnostic["source_id_valid"],
                     diagnostic["source_type_valid"],
@@ -8544,15 +8552,12 @@ def run_climate_web_research(
                 return finish(accepted)
             if bundle.get("failure_reason"):
                 failure_reason = str(bundle["failure_reason"])
-            retry_insufficient = (
+            retry_no_claims = (
                 attempt == 1
-                and gate.get("code") == "climate_research_insufficient"
-                and bundle.get("status") in {"partial", "complete"}
-                and bool(bundle.get("sources"))
-                and bool(bundle.get("claims"))
+                and not bundle.get("claims")
                 and getattr(response, "stop_reason", "") != "max_tokens"
             )
-            if retry_insufficient:
+            if retry_no_claims:
                 app.logger.info(
                     "Climate research attempt assessment_id=%s attempt=%d "
                     "outcome=evidence_gate_retry gate_code=%s",

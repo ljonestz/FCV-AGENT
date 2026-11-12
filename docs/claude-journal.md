@@ -2290,3 +2290,31 @@ and the Guinea water PAD + CPF ran end to end in 8.5 min with live research. The
 was analytical with all headings and no lists; there were 5 priorities, the readout
 checks were clean and the Word export worked. Records: output/20261108_e2e-run/.
 Rollback: branch main, 474b3cf.
+
+### 2026-11-12 Live web evidence admission redesign (branch feat/live-evidence-admission)
+
+Problem: ITS QA and Render climate readouts kept showing "No live web evidence was included".
+Render logs for 14 runs (7-11 Nov) showed search working every time (2 searches, 8-14
+citations) but admission discarding it: 20-27 of 24-30 candidates dropped as missing_quote,
+then a bundle gate needing 2+ distinct sources, an authoritative source, a project-element
+match and full country coverage, and an all-or-nothing discard in resolve_climate_grounding.
+About half of runs ended with zero live claims. ITS fails more often: Bedrock has no native
+web_search, so it uses 6 Google snippets through the same strict gate (and drops dates).
+
+Decision (user): use live web generously; one reputable source is enough; label doubtful
+sources with a caution instead of dropping them; same approach for FCV and Climate.
+
+Change: new root module live_source_policy.py (URL safety, social/UGC deny-list, trust tier
+standard|caution, source type, page_age dates, country relevance incl. World Bank inverted
+names, Niger/Nigeria, the two Congos, Sudan/South Sudan). FCV core research gains trust labels,
+the deny-list and publisher round-robin (8 sources). Climate: no domain allow-list, 3 searches,
+core-style prompt, any safe cited passage admitted, claims judged one by one (packet passage +
+country relevance), caution and context-only notes in evidence_gap, labels derived from the URL,
+uncovered countries named in failure_reason, zero-claim retry. Readout names the live source,
+adds "(caution: ...)" and a limitation sentence when any live source is caution-tier.
+Constants: climate max_uses 2->3 (spend guard caps 3), CLIMATE_LIVE_MAX_CLAIMS 6->8, passage
+and claim bound 1500, packet 8 sources / 16 passages / 20k chars; CLIMATE_RESEARCH_MIN_SOURCES
+and CLIMATE_AUTHORITATIVE_SOURCE_TYPES removed.
+
+Validation: unit tests only (no paid runs; user had no budget for a test campaign). Parity
+entry logged in FCV_BUILD_PARITY.md with ITS guidance. Not deployed.

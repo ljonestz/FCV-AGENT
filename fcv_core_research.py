@@ -1,17 +1,25 @@
 """Pure preparation and normalization helpers for bounded core research."""
 from __future__ import annotations
 
-import ipaddress
 import json
 import re
 import unicodedata
 from typing import Any
 from urllib.parse import urlsplit
 
+from live_source_policy import (
+    country_relevance,
+    is_denied,
+    publication_date,
+    safe_public_url,
+    source_type,
+    trust_tier,
+)
+
 MAX_PROFILE_CHARS = 2400
 MAX_DOCUMENTS = 6
 MAX_DOCUMENT_NAME_CHARS = 180
-MAX_SOURCES = 6
+MAX_SOURCES = 8
 MAX_CITED_TEXT_CHARS = 6000
 MAX_MODEL_TEXT_CHARS = 6000
 def _value(item: Any, name: str, default: Any = None) -> Any:
@@ -42,43 +50,14 @@ def _url_key(url: str) -> str:
     return f"{parsed.scheme.casefold()}://{netloc}{path}?{parsed.query}#{parsed.fragment}"
 
 
-def _safe_public_url(value: Any) -> str:
-    url = _string(value, 2000)
-    if not url or any(ord(char) < 32 for char in url):
-        return ""
-    try:
-        parsed = urlsplit(url)
-        hostname = (parsed.hostname or "").rstrip(".").casefold()
-        scheme = parsed.scheme.casefold()
-    except ValueError:
-        return ""
-    if scheme not in {"http", "https"} or not hostname:
-        return ""
-    if parsed.username or parsed.password:
-        return ""
-    if hostname in {"localhost", "localhost.localdomain"} or hostname.endswith(
-        (".local", ".internal", ".localhost")
-    ):
-        return ""
-    try:
-        address = ipaddress.ip_address(hostname)
-    except ValueError:
-        address = None
-    if address is not None and (
-        address.is_private or address.is_loopback or address.is_link_local
-        or address.is_reserved or address.is_multicast or address.is_unspecified
-    ):
-        return ""
-    if address is None and "." not in hostname and ":" not in hostname:
-        return ""
-    return url
+_safe_public_url = safe_public_url
+_date_from = publication_date
+_relevance = country_relevance
 
 
-def _date_from(item: Any) -> str:
-    for name in ("publication_date", "published_date", "date", "page_age"):
-        value = _string(_value(item, name), 80)
-        if value:
-            return value
+def _caution_suffix(source: dict[str, Any]) -> str:
+    if source.get("trust_tier") == "caution":
+        return " (caution: outside the standard trusted list)"
     return ""
 
 
@@ -86,94 +65,6 @@ def _citation_blocks(block: Any) -> list[Any]:
     citations = _value(block, "citations", [])
     return list(citations) if isinstance(citations, (list, tuple)) else []
 
-
-def _country_regex(country: str) -> tuple[list[str], list[str]]:
-    key = _fold(country)
-    if key in {"guinea", "republic of guinea", "guinea conakry"}:
-        return [r"(?<![a-z0-9-])guinea(?![a-z0-9-])"], [
-            r"guinea[\s-]+bissau",
-            r"equatorial[\s-]+guinea",
-            r"papua[\s-]+new[\s-]+guinea",
-        ]
-    if key in {"guinea bissau", "republic of guinea bissau"}:
-        return [r"guinea[\s-]+bissau", r"bissau"], []
-    if key in {"niger", "republic of niger"}:
-        return [r"(?<![a-z0-9-])niger(?![a-z0-9-])"], [r"nigeria"]
-    if key in {
-        "democratic republic of the congo", "democratic republic of congo",
-        "drc", "dr congo", "congo kinshasa",
-    }:
-        return [
-            r"democratic[\s-]+republic[\s-]+(?:of[\s-]+(?:the[\s-]+)?)?congo",
-            r"(?<![a-z0-9-])drc(?![a-z0-9-])", r"dr[\s-]+congo",
-            r"congo[\s-]+kinshasa",
-        ], [
-            r"republic[\s-]+of[\s-]+the[\s-]+congo",
-            r"congo[\s-]+brazzaville", r"brazzaville",
-        ]
-    if key in {"republic of the congo", "republic of congo", "congo brazzaville", "congo"}:
-        return [
-            r"republic[\s-]+of[\s-]+the[\s-]+congo",
-            r"republic[\s-]+of[\s-]+congo", r"congo[\s-]+brazzaville",
-            r"(?<![a-z0-9-])brazzaville(?![a-z0-9-])",
-        ], [
-            r"democratic[\s-]+republic[\s-]+(?:of[\s-]+(?:the[\s-]+)?)?congo",
-            r"(?<![a-z0-9-])drc(?![a-z0-9-])", r"congo[\s-]+kinshasa",
-            r"kinshasa",
-        ]
-    escaped = r"[\s-]+".join(re.escape(part) for part in key.split())
-    return [rf"(?<![a-z0-9-]){escaped}(?![a-z0-9-])"], []
-
-
-def _mentions(text: str, patterns: list[str]) -> bool:
-    folded = _fold(text)
-    return any(re.search(pattern, folded) for pattern in patterns)
-
-
-def _target_mentions(
-    country: str,
-    text: str,
-    target_patterns: list[str],
-    wrong_patterns: list[str],
-) -> bool:
-    folded = _fold(text)
-    key = _fold(country)
-    if key in {"guinea", "republic of guinea", "guinea conakry"}:
-        for pattern in wrong_patterns:
-            folded = re.sub(pattern, " ", folded)
-    elif key in {
-        "republic of the congo", "republic of congo", "congo brazzaville",
-        "congo",
-    }:
-        drc_patterns = (
-            r"democratic[\s-]+republic[\s-]+(?:of[\s-]+(?:the[\s-]+)?)?congo",
-            r"(?<![a-z0-9-])drc(?![a-z0-9-])",
-            r"congo[\s-]+kinshasa",
-            r"(?<![a-z0-9-])kinshasa(?![a-z0-9-])",
-        )
-        for pattern in drc_patterns:
-            folded = re.sub(pattern, " ", folded)
-    return any(re.search(pattern, folded) for pattern in target_patterns)
-
-
-def _relevance(country: str, title: str, cited_text: str) -> tuple[bool, bool]:
-    target, wrong = _country_regex(country)
-    title_target = _target_mentions(country, title, target, wrong)
-    quote_target = _target_mentions(country, cited_text, target, wrong)
-    title_wrong = _mentions(title, wrong)
-    quote_wrong = _mentions(cited_text, wrong)
-    has_target = title_target or quote_target
-    if (quote_wrong or title_wrong) and not has_target:
-        return False, False
-    if quote_wrong or title_wrong:
-        if quote_target:
-            return True, False
-        if title_target and not quote_wrong:
-            return True, False
-        return False, True
-    if has_target:
-        return True, False
-    return False, True
 
 
 def _markdown_url(url: str) -> str:
@@ -288,7 +179,7 @@ def normalize_core_research_response(
             if url:
                 search_results[_url_key(url)] = result
 
-    sources: list[dict[str, Any]] = []
+    candidates: list[dict[str, Any]] = []
     seen: set[tuple[str, str]] = set()
     oversized = 0
     for block in blocks:
@@ -296,7 +187,7 @@ def normalize_core_research_response(
             continue
         for citation in _citation_blocks(block):
             url = _safe_public_url(_value(citation, "url"))
-            if not url:
+            if not url or is_denied(url):
                 continue
             key = _url_key(url)
             matched = search_results.get(key)
@@ -324,15 +215,25 @@ def normalize_core_research_response(
                 "url": url,
                 "cited_text": cited_text,
                 "publication_date": _date_from(citation) or _date_from(matched),
+                "trust_tier": trust_tier(url),
+                "source_type": source_type(url),
             }
             if is_context_only:
                 source["context_only"] = True
-            sources.append(source)
+            candidates.append(source)
             seen.add(excerpt_key)
-            if len(sources) >= MAX_SOURCES:
-                break
-        if len(sources) >= MAX_SOURCES:
-            break
+
+    by_host: dict[str, list[dict[str, Any]]] = {}
+    for source in candidates:
+        host = (urlsplit(source["url"]).hostname or "").casefold()
+        by_host.setdefault(host, []).append(source)
+    sources: list[dict[str, Any]] = []
+    depth = 0
+    while len(sources) < MAX_SOURCES and any(len(v) > depth for v in by_host.values()):
+        for group in by_host.values():
+            if len(group) > depth and len(sources) < MAX_SOURCES:
+                sources.append(group[depth])
+        depth += 1
 
     model_text = _safe_model_text("\n\n".join(text_parts))
     grounded_sources = [
@@ -380,6 +281,7 @@ def normalize_core_research_response(
         lines.append(
             f"- [{_escape_markdown(source['title'])}]"
             f"({_markdown_url(source['url'])}) - {_escape_markdown(date)}"
+            + _caution_suffix(source)
         )
         quote = _escape_markdown(source["cited_text"])
         lines.extend("  > " + part for part in quote.splitlines() or ["  >"])
@@ -405,6 +307,7 @@ def normalize_core_research_response(
             lines.append(
                 f"- [{_escape_markdown(source['title'])}]"
                 f"({_markdown_url(source['url'])}) - {_escape_markdown(date)}"
+                + _caution_suffix(source)
             )
             quote = _escape_markdown(source["cited_text"])
             lines.extend("  > " + part for part in quote.splitlines() or ["  >"])
@@ -446,5 +349,7 @@ def core_research_analysis_context(brief: str) -> str:
         "item, not a historical design gap or rating justification. A later report "
         "can support earlier conditions only when its cited passage explicitly "
         "dates those conditions to the preparation period; otherwise timing is "
-        "unverified. A clipped provider passage supports only what is visible."
+        "unverified. A clipped provider passage supports only what is visible. "
+        "Sources marked caution are outside the standard trusted list; give them "
+        "lower weight and do not rest a finding on them alone."
     )

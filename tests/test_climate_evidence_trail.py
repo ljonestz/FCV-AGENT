@@ -205,3 +205,55 @@ def test_limitations_omit_duplicate_source_descriptions():
         # Parity: the TTL-friendly points-to-check label is used on every surface.
         assert "Points to check before the applicable review" in text
         assert "Review readiness flags for task-team verification" not in text
+
+
+_CAUTION_SUFFIX = "(caution: outside the standard trusted list)"
+_CAUTION_SENTENCE = ("Some live web sources are outside the standard trusted list; "
+                     "check them before relying on them.")
+
+
+def _live_assessment(tier, as_list=False, live_count=1):
+    details = [{"id": "s1", "title": "Regional bulletin", "url": "https://x.example/a",
+                "publication_date": "2026-01-01", "trust_tier": tier, "source_type": "other"}]
+    a = _assessment()
+    a["manifest"] = {"live_research_count": live_count}
+    a["judgments"]["relevance"]["evidence_ids"] = ["PF-1", "CE-LIVE-x"]
+    a["context_evidence"] = [{
+        "evidence_id": "CE-LIVE-x", "statement": "Roads are cut by floods.",
+        "source_details": details if as_list else tuple(details),
+        "evidence_gap": None}]
+    return a
+
+
+def _live_entry(trail):
+    return next(e for e in trail["evidence_key"] if e["id"] == "CE-LIVE-x")
+
+
+def test_caution_live_source_labelled_in_key_and_limitations():
+    for as_list in (False, True):
+        trail = build_evidence_trail(_live_assessment("caution", as_list))
+        text = _live_entry(trail)["text"]
+        assert "Roads are cut by floods." in text
+        assert "Regional bulletin" in text
+        assert text.endswith(_CAUTION_SUFFIX)
+        assert _CAUTION_SENTENCE in trail["limitations"]
+
+
+def test_standard_live_source_has_no_caution_label():
+    trail = build_evidence_trail(_live_assessment("standard"))
+    text = _live_entry(trail)["text"]
+    assert "Regional bulletin" in text
+    assert "caution" not in text
+    assert _CAUTION_SENTENCE not in trail["limitations"]
+
+
+def test_live_entry_without_record_keeps_stub():
+    a = _live_assessment("caution")
+    a["context_evidence"] = []
+    assert _live_entry(build_evidence_trail(a))["text"] == (
+        "Accepted live-research evidence for this run.")
+
+
+def test_zero_live_still_leads_limitations():
+    trail = build_evidence_trail(_live_assessment("standard", live_count=0))
+    assert trail["limitations"].startswith("No live web evidence was included.")

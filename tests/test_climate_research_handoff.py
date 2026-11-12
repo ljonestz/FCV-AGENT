@@ -13,16 +13,16 @@ from tests.test_climate_verified_pipeline import FakeClient, _arguments
 from sector_lenses.climate_verified_pipeline import PipelineClients, run_verified_climate_pipeline
 
 
-def test_later_citations_enrich_metadata_and_survive_the_four_source_cap():
+def test_later_citations_enrich_metadata_and_survive_the_eight_source_cap():
     hits = [{"type":"web_search_result","url":f"https://worldbank.org/report-{i}",
-             "title":f"Report {i}","encrypted_content":"opaque"} for i in range(6)]
+             "title":f"Report {i}","encrypted_content":"opaque"} for i in range(10)]
     bdi = {"url":hits[0]["url"],"title":"Report 0","cited_text":"Flooding disrupts access to border infrastructure in Burundi."}
     drc = {"url":"https://worldbank.org/drc-report","title":"DRC report","cited_text":"Flooding and insecurity interrupt road access in eastern DRC."}
     blocks = [{"type":"web_search_tool_result","content":hits},
               {"type":"text","text":"Observed regional climate evidence.","citations":[bdi,drc]}]
     packet=build_climate_evidence_packet(blocks,{"country_scope":"multi"})
     assert packet["notes"] == "Observed regional climate evidence."
-    assert len(packet["sources"]) == 4
+    assert len(packet["sources"]) == 8
     assert packet["sources"][0]["excerpt"] == bdi["cited_text"]
     assert packet["sources"][1]["url"] == drc["url"]
     assert "opaque" not in json.dumps(packet)
@@ -30,9 +30,9 @@ def test_later_citations_enrich_metadata_and_survive_the_four_source_cap():
 
 def test_search_requests_bounded_native_quotes_for_the_structurer():
     prompt=build_climate_search_prompt("Burundi","Transport",{})
-    assert "four to six short verbatim passages" in prompt
-    assert "native web-source citations" in prompt
-    assert "140 characters" in prompt
+    flat = " ".join(prompt.split())
+    assert "native web-source citations" in flat
+    assert "cited text" in flat
 
 
 def test_analysis_explains_reference_types_and_empty_context():
@@ -117,7 +117,7 @@ def test_pause_turn_search_hits_are_counted_across_preserved_turns():
     assert result['status'] == 'complete'
     assert len(client.calls) == 3
     assert client.calls[0]['thinking'] == {'type': 'between_tools'}
-    assert client.calls[0]['tools'][0]['max_uses'] == 2
+    assert client.calls[0]['tools'][0]['max_uses'] == 3
     # Preserve encrypted provider blocks only for actual search continuation.
     assert client.calls[1]['messages'][1]['content'] is paused.content
     assert 'tools' not in client.calls[-1]
@@ -150,12 +150,10 @@ def test_metadata_snippets_cannot_displace_received_citations():
         {"type": "web_search_tool_result", "content": hits},
         {"type": "text", "citations": citations},
     ], {"beneficiary_countries": ["Burundi", "Congo, Democratic Republic of"]})
-    # Whole provider snippets now fit the 700-character passage allowance.
-    # They may use spare capacity, but must not displace country citations.
-    assert [p["url"] for p in packet["passages"][:2]] == [c["url"] for c in citations]
-    retained_hits = [p for p in packet["passages"] if p["url"] not in {c["url"] for c in citations}]
-    assert all(p["excerpt"] == hits[0]["snippet"].strip() for p in retained_hits)
-    assert len(packet["sources"]) == 4
+    # Raw search-result snippets are metadata only: they never become passages.
+    assert [p["url"] for p in packet["passages"]] == [c["url"] for c in citations]
+    assert packet["passage_diagnostics"]["metadata_only"] == 6
+    assert len(packet["sources"]) == 8
 
 
 def test_later_country_citation_survives_source_and_passage_caps():
@@ -168,18 +166,18 @@ def test_later_country_citation_survives_source_and_passage_caps():
         {"beneficiary_countries": ["Burundi", "Congo, Democratic Republic of"]})
     assert any(p["excerpt"] == drc["cited_text"] and p["url"] == drc["url"]
                for p in packet["passages"])
-    assert len(packet["sources"]) == 4
-    assert len(packet["passages"]) <= 12
-    assert len(json.dumps(packet, ensure_ascii=False)) <= 12_000
+    assert len(packet["sources"]) == 8
+    assert len(packet["passages"]) <= 16
+    assert len(json.dumps(packet, ensure_ascii=False)) <= 20_000
 
 
 def test_passage_cap_retains_proof_for_each_selected_source():
     citations = [{"url": "https://worldbank.org/bdi", "title": "Burundi climate",
-                  "cited_text": f"Flooding disrupts Burundi road route {i}."} for i in range(12)]
+                  "cited_text": f"Flooding disrupts Burundi road route {i}."} for i in range(20)]
     drc = {"url": "https://worldbank.org/drc", "title": "DRC climate",
            "cited_text": "Flooding interrupts road access in DRC."}
     citations.append(drc)
     packet = build_climate_evidence_packet([{"type": "text", "citations": citations}],
         {"beneficiary_countries": ["Burundi", "Congo, Democratic Republic of"]})
-    assert len(packet["passages"]) == 12
+    assert len(packet["passages"]) == 16
     assert any(p["url"] == drc["url"] for p in packet["passages"])
