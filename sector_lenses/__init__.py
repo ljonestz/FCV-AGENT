@@ -58,8 +58,6 @@ from .models import (
 from .registry import load_registry
 from .research import (
     CLIMATE_EVIDENCE_PACKET_MAX_CHARS,
-    CLIMATE_AUTHORITATIVE_SOURCE_TYPES,
-    CLIMATE_RESEARCH_MIN_SOURCES,
     CLIMATE_RESEARCH_END,
     CLIMATE_RESEARCH_START,
     build_climate_evidence_packet,
@@ -145,9 +143,7 @@ __all__ = [
     "CLIMATE_COMBINED_MAX_CHARS",
     "CLIMATE_LIVE_MAX_CLAIMS",
     "CLIMATE_LIVE_TARGET_CLAIMS",
-    "CLIMATE_AUTHORITATIVE_SOURCE_TYPES",
     "CLIMATE_RESEARCH_END",
-    "CLIMATE_RESEARCH_MIN_SOURCES",
     "CLIMATE_RESEARCH_START",
     "build_climate_evidence_packet",
     "build_climate_project_elements",

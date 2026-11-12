@@ -135,7 +135,8 @@ def test_passage_registry_preserves_complementary_quotes_and_owns_proof():
         {**labels, "passage_id": packet["passages"][1]["id"], "claim": "Invented claim", "url": "https://attacker.example"},
         {**labels, "passage_id": "unknown"},
     ]}, packet)
-    assert result["status"] == "partial"
+    # All beneficiaries covered, so complete even though one selection id was invented.
+    assert result["status"] == "complete"
     assert len(result["claims"]) == 1
     assert result["claims"][0]["claim"] == "Drought affects livelihoods in Burundi."
     assert result["sources"][0]["url"] == "https://www.worldbank.org/report"
@@ -192,7 +193,7 @@ def test_packet_admits_truncated_and_unbalanced_source_quotes():
     assert packet["passage_diagnostics"]["admitted"] == 4
 
 
-def test_passage_resolver_rejects_malformed_quote_in_supplied_packet():
+def test_passage_resolver_admits_unbalanced_quote_in_supplied_packet():
     from sector_lenses.research import resolve_climate_passage_selections
 
     packet = {
@@ -216,16 +217,16 @@ def test_passage_resolver_rejects_malformed_quote_in_supplied_packet():
         **labels, "passage_id": "CP-001", "geographies": ["Somalia"],
     }]}, packet)
 
-    assert result["claims"] == []
+    assert [c["claim"] for c in result["claims"]] == [packet["passages"][0]["excerpt"]]
     assert result["passage_diagnostics"] == {
         "received_count": 1,
         "selected_count": 1,
-        "invalid_selection_count": 1,
-        "admitted_claim_count": 0,
+        "invalid_selection_count": 0,
+        "admitted_claim_count": 1,
     }
 
 
-def test_passage_resolver_requires_numeric_geography_in_excerpt_and_keeps_controls():
+def test_passage_resolver_admits_title_only_geography_and_keeps_controls():
     from sector_lenses.research import resolve_climate_passage_selections
 
     quotes = [
@@ -261,16 +262,16 @@ def test_passage_resolver_requires_numeric_geography_in_excerpt_and_keeps_contro
     assert result["passage_diagnostics"] == {
         "received_count": 3,
         "selected_count": 3,
-        "invalid_selection_count": 1,
-        "admitted_claim_count": 2,
+        "invalid_selection_count": 0,
+        "admitted_claim_count": 3,
     }
-    assert [claim["claim"] for claim in result["claims"]] == [quotes[2][2], quotes[1][2]]
-    assert result["status"] == "partial"
+    assert {claim["claim"] for claim in result["claims"]} == {q[2] for q in quotes}
+    assert result["status"] == "complete"
 
 
 def test_insufficient_proof_is_retained_for_inspection_but_not_admitted_grounding(monkeypatch):
     bundle = _valid_bundle()
-    bundle["status"] = "partial"
+    bundle["status"] = "failed"
     bundle["claims"][0]["source_excerpt"] = bundle["claims"][0]["claim"]
     monkeypatch.setattr(app_module, "load_climate_bank", lambda: object())
     monkeypatch.setattr(app_module, "materialize_bank_manifest", lambda *_args: {
@@ -288,17 +289,21 @@ def test_insufficient_proof_is_retained_for_inspection_but_not_admitted_groundin
     assert retained["claims"][0]["claim"] not in prompt
 
 
-def test_passage_selection_rejects_invented_project_element_and_geography():
+def test_passage_selection_drops_invented_project_element_and_ignores_geography_label():
     from sector_lenses.research import resolve_climate_passage_selections
     packet = build_climate_evidence_packet([{"type": "text", "citations": [
         {"url": "https://worldbank.org/report", "title": "Burundi report", "cited_text": "Flooding affects access in Burundi."},
-    ]}], {"project_elements": ["Component 3"], "beneficiary_countries": ["Burundi"]})
+    ]}], {"project_elements": ["Component 3"], "country": "Burundi", "beneficiary_countries": ["Burundi"]})
     labels = {**_valid_bundle()["claims"][0], "passage_id": "CP-001", "geographies": ["Burundi"]}
-    for changed in ({"project_elements": ["Invented irrigation component"]},
-                    {"project_elements": ["Component 3"], "geographies": ["Upper Nile"]}):
-        result = resolve_climate_passage_selections({"selections": [{**labels, **changed}]}, packet)
-        assert result["status"] == "failed"
-        assert result["claims"] == []
+    # An invented project element is dropped, not admitted and not fatal.
+    result = resolve_climate_passage_selections({"selections": [
+        {**labels, "project_elements": ["Invented irrigation component"]}]}, packet)
+    assert result["status"] == "complete"
+    assert result["claims"][0]["project_elements"] == []
+    # Relevance follows the project countries, not the model's geography label.
+    result = resolve_climate_passage_selections({"selections": [
+        {**labels, "project_elements": ["Component 3"], "geographies": ["Upper Nile"]}]}, packet)
+    assert result["claims"][0]["project_elements"] == ["Component 3"]
 
 
 def test_project_labels_keep_parent_components_before_subcomponents():
@@ -675,26 +680,35 @@ def test_climate_research_gate_accepts_two_sources_and_project_claim():
     assert len(decision["bundle"]["sources"]) == 2
 
 
-def test_climate_research_gate_rejects_one_source():
+def test_climate_research_gate_accepts_one_source():
     decision = climate_research_evidence_gate(_valid_bundle())
+    assert decision["ok"] is True
+    assert decision["code"] == ""
+    assert len(decision["bundle"]["sources"]) == 1
+
+
+def test_climate_research_gate_rejects_bundle_without_claims():
+    bundle = _valid_bundle()
+    bundle["claims"] = []
+    decision = climate_research_evidence_gate(bundle)
     assert decision["ok"] is False
     assert decision["code"] == "climate_research_insufficient"
-    assert "two relevant sources" in decision["message"]
+    assert "cited source passage" in decision["message"]
 
 
-def test_climate_research_gate_rejects_claim_without_climate_anchor():
+def test_climate_research_gate_accepts_claim_without_climate_anchor():
     bundle = _valid_bundle()
     bundle["sources"].append(_second_authoritative_source())
     bundle["claims"][0]["source_ids"].append("climate-source-2")
     bundle["claims"][0]["geographies"] = []
     bundle["claims"][0]["affected_groups"] = []
     bundle["claims"][0]["systems_or_assets"] = []
+    bundle["claims"][0]["project_elements"] = []
     decision = climate_research_evidence_gate(bundle)
-    assert decision["ok"] is False
-    assert decision["code"] == "climate_research_insufficient"
+    assert decision["ok"] is True
 
 
-def test_climate_research_gate_rejects_duplicate_cited_source_url():
+def test_climate_research_gate_accepts_duplicate_cited_source_url():
     bundle = _valid_bundle()
     duplicate = _second_authoritative_source()
     duplicate["url"] = "https://openknowledge.worldbank.org/example/"
@@ -703,18 +717,16 @@ def test_climate_research_gate_rejects_duplicate_cited_source_url():
 
     decision = climate_research_evidence_gate(bundle)
 
-    assert decision["ok"] is False
-    assert decision["code"] == "climate_research_insufficient"
+    assert decision["ok"] is True
 
 
-def test_climate_research_gate_rejects_uncited_second_source():
+def test_climate_research_gate_accepts_with_uncited_second_source():
     bundle = _valid_bundle()
     bundle["sources"].append(_second_authoritative_source())
 
     decision = climate_research_evidence_gate(bundle)
 
-    assert decision["ok"] is False
-    assert decision["code"] == "climate_research_insufficient"
+    assert decision["ok"] is True
 
 
 def test_climate_research_bundle_keeps_grounded_project_specific_claims():
@@ -723,7 +735,7 @@ def test_climate_research_bundle_keeps_grounded_project_specific_claims():
     assert result["status"] == "complete"
     assert result["claims"][0]["id"] == "climate-claim-1"
     assert result["claims"][0]["time_horizons"] == ["project-lifetime"]
-    assert format_climate_research_context(result) == ''
+    assert 'Landing-site rehabilitation' in format_climate_research_context(result)
     complete = _valid_bundle()
     complete['sources'].append(_second_authoritative_source())
     complete['claims'][0]['source_ids'].append('climate-source-2')
@@ -755,7 +767,6 @@ def test_climate_research_bundle_rejects_generic_or_untrusted_claims():
 
     result = normalize_climate_research_bundle(raw)
 
-    assert result["sources"] == []
     assert result["claims"] == []
     assert result["status"] == "failed"
 
@@ -786,7 +797,7 @@ def test_climate_research_bundle_is_bounded():
 
     result = normalize_climate_research_bundle(raw)
 
-    assert len(result["claims"]) == 6
+    assert len(result["claims"]) == 8
 
 
 def test_south_sudan_research_fixture_preserves_specific_horizons():
@@ -1030,7 +1041,7 @@ def test_climate_research_prompt_requires_specific_temporal_claims():
         "South Sudan", "Natural resources", {"beneficiary_countries": ["South Sudan"]}
     )
     selection_prompt = research_module.build_climate_passage_selection_prompt({"passages": []})
-    for text in (search_prompt, prompt, selection_prompt):
+    for text in (search_prompt, prompt):
         assert "time window" in text.casefold()
         assert "geographic" in text.casefold()
         assert "denominator" in text.casefold()
@@ -1038,9 +1049,15 @@ def test_climate_research_prompt_requires_specific_temporal_claims():
         assert "past tense" in text.casefold()
         assert "publication date" in text.casefold()
         assert "historical" in text.casefold()
+    # The selection prompt classifies whole passages: no verbatim/ellipsis/geography-in-excerpt rules.
+    assert "past tense" in selection_prompt.casefold()
+    assert "publication date" in selection_prompt.casefold()
+    assert "up to 8 selections" in selection_prompt
+    for dropped in ("ellipses", "unmatched", "verbatim in the selected", "geography must appear"):
+        assert dropped not in selection_prompt
 
 
-def test_legacy_verifier_rejects_truncated_native_quote_and_counts_it():
+def test_legacy_verifier_keeps_truncated_native_quote_and_counts_it():
     quote = (
         "The largest climate impacts on GDP were heat stress effects on labor, "
         "impacts on livestock production,. and flood impacts on transport "
@@ -1058,16 +1075,16 @@ def test_legacy_verifier_rejects_truncated_native_quote_and_counts_it():
 
     result = research_module.verify_climate_research_claims(bundle, content)
 
-    assert result["claims"] == []
+    assert [c["claim"] for c in result["claims"]] == [quote]
     assert result["passage_diagnostics"] == {
         "received_count": 1,
         "selected_count": 1,
-        "invalid_selection_count": 1,
-        "admitted_claim_count": 0,
+        "invalid_selection_count": 0,
+        "admitted_claim_count": 1,
     }
 
 
-def test_legacy_verifier_requires_numeric_geography_inside_excerpt():
+def test_legacy_verifier_does_not_require_numeric_geography_inside_excerpt():
     quote = (
         "Under SSP5-8.5, modeled GDP losses could reach 8 per cent by 2050; "
         "this is a projection, not an observed loss."
@@ -1086,8 +1103,8 @@ def test_legacy_verifier_requires_numeric_geography_inside_excerpt():
 
     result = research_module.verify_climate_research_claims(bundle, content)
 
-    assert result["claims"] == []
-    assert result["passage_diagnostics"]["invalid_selection_count"] == 1
+    assert len(result["claims"]) == 1
+    assert result["passage_diagnostics"]["invalid_selection_count"] == 0
 
 
 def test_source_context_caveat_is_preserved_and_idempotent_across_gates():
@@ -1141,8 +1158,12 @@ def test_source_context_caveat_is_preserved_and_idempotent_across_gates():
     overflow_result = resolve_climate_passage_selections({"selections": [{
         **overflow_labels, "passage_id": packet["passages"][0]["id"],
     }]}, packet)
-    assert overflow_result["claims"] == []
-    assert overflow_result["passage_diagnostics"]["invalid_selection_count"] == 1
+    # An oversized model gap is bounded to 500, never a reason to reject the claim.
+    assert len(overflow_result["claims"]) == 1
+    overflow_gap = overflow_result["claims"][0]["evidence_gap"]
+    assert overflow_gap.startswith("x" * 480)
+    assert overflow_gap.count("Classification is provisional") == 1
+    assert overflow_result["passage_diagnostics"]["invalid_selection_count"] == 0
 
 
 def test_compact_bank_search_context_keeps_scope_and_fits_whole_rows():
@@ -1490,7 +1511,7 @@ def test_rejected_passage_counts_survive_failed_research_and_are_logged(caplog):
             text=(
                 CLIMATE_RESEARCH_START
                 + json.dumps({"selections": [{
-                    "passage_id": "CP-001",
+                    "passage_id": "CP-999",
                     "project_elements": ["Invented activity"],
                     "geographies": ["Burundi"],
                     "evidence_status": "observed",
@@ -1558,7 +1579,7 @@ def test_failed_grounding_retains_only_bounded_passage_diagnostics(monkeypatch):
     assert retained["claims"] == []
 
 
-def test_retry_logs_current_unknown_counts_without_losing_last_usable_counts(caplog):
+def test_admitted_claim_needs_no_retry_and_malformed_selection_logs_unknown_counts(caplog):
     searched = SimpleNamespace(
         content=[
             SimpleNamespace(type="web_search_tool_result", content=[]),
@@ -1601,7 +1622,7 @@ def test_retry_logs_current_unknown_counts_without_losing_last_usable_counts(cap
         )],
         stop_reason="end_turn",
     )
-    client = _SequencedResearchClient([searched, partial, searched, malformed])
+    client = _SequencedResearchClient([searched, partial])
 
     with caplog.at_level("INFO", logger=app_module.app.logger.name):
         result = app_module.run_climate_web_research(
@@ -1615,8 +1636,10 @@ def test_retry_logs_current_unknown_counts_without_losing_last_usable_counts(cap
             assessment_id="assessment-retry-diagnostics",
         )
 
-    assert result["status"] == "partial"
-    assert result["attempts"] == 2
+    # One admitted claim passes the gate, so there is no second attempt.
+    assert result["status"] == "complete"
+    assert result["attempts"] == 1
+    assert len(client.calls) == 2
     assert result["passage_diagnostics"] == {
         "received_count": 1,
         "selected_count": 1,
@@ -1627,9 +1650,20 @@ def test_retry_logs_current_unknown_counts_without_losing_last_usable_counts(cap
         message for message in caplog.messages
         if "outcome=structuring_diagnostic" in message
     ]
-    assert len(diagnostic_logs) == 2
+    assert len(diagnostic_logs) == 1
     assert "passage_checks=received:1,selected:1,invalid:0,admitted:1" in diagnostic_logs[0]
-    assert "passage_checks=received:-1,selected:-1,invalid:-1,admitted:-1" in diagnostic_logs[1]
+
+    caplog.clear()
+    malformed_client = _SequencedResearchClient([searched, malformed, searched, malformed])
+    with caplog.at_level("INFO", logger=app_module.app.logger.name):
+        app_module.run_climate_web_research(
+            "Burundi", "Transport",
+            {"beneficiary_countries": ["Burundi"],
+             "project_elements": ["Landing-site rehabilitation"]},
+            malformed_client, assessment_id="assessment-malformed-diagnostics")
+    unknown_logs = [m for m in caplog.messages if "outcome=structuring_diagnostic" in m]
+    assert unknown_logs
+    assert "passage_checks=received:-1,selected:-1,invalid:-1,admitted:-1" in unknown_logs[0]
 
 
 def test_research_summary_distinguishes_unknown_from_known_zero_counts(caplog):
@@ -1684,7 +1718,7 @@ def test_climate_research_does_not_structure_insufficient_search_results():
     assert len(client.calls) == 1
 
 
-def test_climate_research_retries_once_when_structured_evidence_is_nearly_valid():
+def test_climate_research_accepts_single_source_evidence_without_retry():
     client = _SequencedResearchClient([
         _insufficient_but_structured_climate_response(),
         _valid_climate_response(),
@@ -1698,8 +1732,8 @@ def test_climate_research_retries_once_when_structured_evidence_is_nearly_valid(
     )
 
     assert result["status"] == "complete"
-    assert result["attempts"] == 2
-    assert len(client.calls) == 2
+    assert result["attempts"] == 1
+    assert len(client.calls) == 1
 
 
 def test_climate_research_does_not_retry_truncated_structured_evidence():
@@ -1714,9 +1748,9 @@ def test_climate_research_does_not_retry_truncated_structured_evidence():
         client,
     )
 
-    assert result["status"] == "partial"
+    assert result["status"] in {"complete", "partial"}
     assert len(result["claims"]) == 1
-    assert not climate_research_evidence_gate(result)["ok"]
+    assert climate_research_evidence_gate(result)["ok"]
     assert result["attempts"] == 1
     assert len(client.calls) == 1
 
@@ -2054,7 +2088,7 @@ def test_climate_research_attempt_logging_identifies_response_boundary(caplog):
 @pytest.mark.parametrize("host,expected", [
     ("notworldbank.org", None), ("notipcc.ch", None),
     ("documents1.worldbank.org", "world-bank"), ("www.ipcc.ch", "scientific")])
-def test_passage_source_type_requires_a_complete_official_domain(host, expected, monkeypatch):
+def test_lookalike_hosts_are_other_caution_and_official_hosts_keep_type(host, expected, monkeypatch):
     from sector_lenses import research
     packet = build_climate_evidence_packet([{"type": "text", "citations": [{
         "url": f"https://{host}/report", "title": "Burundi climate report",
@@ -2077,11 +2111,9 @@ def test_passage_source_type_requires_a_complete_official_domain(host, expected,
         "project_elements": ["Component 2"], "confidence": "medium",
         "evidence_status": "observed", "time_horizons": ["current-near-term"],
         "evidence_gap": "Current status unverified."}]}, packet)
-    assert captured["sources"][0]["source_type"] == (expected or "specialist")
-    if expected is None:
-        assert result["sources"][0]["source_type"] == "specialist"
-    else:
-        assert result["sources"][0]["source_type"] == expected
+    assert captured["sources"][0]["source_type"] == (expected or "other")
+    assert result["sources"][0]["source_type"] == (expected or "other")
+    assert result["sources"][0]["trust_tier"] == ("caution" if expected is None else "standard")
 
 
 def test_research_passage_diagnostics_explain_rejection_without_source_content():
@@ -2182,3 +2214,114 @@ def test_denied_source_counted():
 def test_packet_carries_project_country():
     packet = build_climate_evidence_packet([], {"country": "Burundi"})
     assert packet["project_profile"]["country"] == "Burundi"
+
+
+def _admission_packet(url, text, title="Climate report", profile=None):
+    return build_climate_evidence_packet(
+        [{"type": "text", "citations": [{"url": url, "title": title, "cited_text": text}]}],
+        profile if profile is not None else {"country": "Kenya", "beneficiary_countries": ["Kenya"]},
+    )
+
+
+def _resolve(packet, **selection):
+    from sector_lenses.research import resolve_climate_passage_selections
+    base = {"passage_id": "CP-001"}
+    base.update(selection)
+    return resolve_climate_passage_selections({"selections": [base]}, packet)
+
+
+def test_single_news_source_passes_gate():
+    packet = _admission_packet("https://www.reuters.com/x", "Floods hit Kenya's Tana River basin.")
+    bundle = _resolve(packet, geographies=["Kenya"])
+    gate = climate_research_evidence_gate(bundle)
+    assert gate["ok"] and len(gate["bundle"]["claims"]) == 1
+    assert gate["bundle"]["sources"][0]["trust_tier"] == "standard"
+    assert gate["bundle"]["sources"][0]["source_type"] == "news"
+
+
+def test_caution_claim_carries_note():
+    from live_source_policy import CAUTION_NOTE
+    from sector_lenses.research import CLIMATE_SOURCE_CONTEXT_CAVEAT
+    packet = _admission_packet("https://somesite.example/p", "Drought is worsening in Kenya.")
+    bundle = _resolve(packet, geographies=["Kenya"])
+    gap = bundle["claims"][0]["evidence_gap"]
+    assert CAUTION_NOTE in gap and CLIMATE_SOURCE_CONTEXT_CAVEAT in gap
+    assert bundle["sources"][0]["trust_tier"] == "caution"
+
+
+def test_context_only_claim_note():
+    packet = _admission_packet("https://www.reuters.com/x", "Drought grips East Africa this season.")
+    bundle = _resolve(packet, geographies=["Kenya"])
+    assert len(bundle["claims"]) == 1
+    assert ("Source does not name Kenya explicitly; regional or background context only."
+            in bundle["claims"][0]["evidence_gap"])
+
+
+def test_wrong_country_passage_rejected():
+    packet = _admission_packet("https://www.reuters.com/x", "Floods displaced thousands in Niger.",
+                               profile={"country": "Nigeria", "beneficiary_countries": ["Nigeria"]})
+    bundle = _resolve(packet, geographies=["Nigeria"])
+    assert bundle["claims"] == []
+    assert bundle["passage_diagnostics"]["invalid_selection_count"] == 1
+
+
+def test_invented_passage_id_rejected():
+    packet = _admission_packet("https://www.reuters.com/x", "Floods hit Kenya.")
+    bundle = _resolve(packet, passage_id="CP-999", geographies=["Kenya"])
+    assert bundle["claims"] == []
+    assert bundle["passage_diagnostics"]["invalid_selection_count"] == 1
+
+
+def test_missing_labels_get_defaults():
+    packet = _admission_packet("https://www.reuters.com/x", "Floods hit Kenya.")
+    claim = _resolve(packet, geographies=["Kenya"])["claims"][0]
+    assert claim["confidence"] == "medium"
+    assert claim["evidence_status"] == "inferred"
+    assert claim["time_horizons"] == ["current-near-term"]
+    assert claim["project_elements"] == []
+
+
+def test_uncovered_country_does_not_block():
+    packet = _admission_packet(
+        "https://www.reuters.com/x", "Floods hit Kenya.",
+        profile={"country": "Kenya", "beneficiary_countries": ["Kenya", "Uganda"]})
+    bundle = _resolve(packet, geographies=["Kenya"])
+    assert bundle["uncovered_countries"] == ["Uganda"]
+    assert bundle["status"] == "partial"
+    assert climate_research_evidence_gate(bundle)["ok"]
+
+
+def test_normalizer_keeps_news_source_type():
+    bundle = normalize_climate_research_bundle({
+        "status": "partial",
+        "sources": [{"id": "s1", "source_type": "news", "title": "AP", "url": "https://apnews.com/x"}],
+        "claims": [{"id": "c1", "claim": "Floods.", "source_ids": ["s1"]}]})
+    assert len(bundle["sources"]) == 1
+    assert bundle["sources"][0]["source_type"] == "news"
+    assert bundle["sources"][0]["trust_tier"] == "standard"
+
+
+def test_normalizer_recomputes_unknown_type_and_tier():
+    bundle = normalize_climate_research_bundle({
+        "status": "partial",
+        "sources": [{"id": "s1", "source_type": "weird", "trust_tier": "bogus",
+                     "title": "AP", "url": "https://apnews.com/x"}],
+        "claims": [{"id": "c1", "claim": "Floods.", "source_ids": ["s1"]}]})
+    assert bundle["sources"][0]["source_type"] == "news"
+    assert bundle["sources"][0]["trust_tier"] == "standard"
+
+
+def test_legacy_verifier_accepts_ellipsis_quote():
+    from sector_lenses.research import verify_climate_research_claims
+    quote = "Floods displaced 40 families in Kenya... and more elsewhere."
+    content = [SimpleNamespace(type="text", text="n", citations=[SimpleNamespace(
+        url="https://www.reuters.com/x", title="T", cited_text=quote)])]
+    source = {"id": "climate-source-1", "source_type": "news", "title": "T",
+              "url": "https://www.reuters.com/x", "publication_date": ""}
+    claim = {"id": "climate-claim-1", "claim": quote, "source_excerpt": quote,
+             "source_ids": ["climate-source-1"], "geographies": [], "evidence_gap": ""}
+    bundle = {"status": "partial", "sources": [source], "claims": [claim]}
+    kept = verify_climate_research_claims(bundle, content)
+    assert len(kept["claims"]) == 1
+    bad = {**bundle, "claims": [{**claim, "claim": quote + " 99 more"}]}
+    assert verify_climate_research_claims(bad, content)["claims"] == []

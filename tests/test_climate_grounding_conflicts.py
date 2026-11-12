@@ -87,7 +87,7 @@ def test_conflict_ids_remap_after_invalid_claims_are_skipped() -> None:
     invalid = {
         **raw["claims"][0],
         "id": "climate-claim-1",
-        "project_elements": [],
+        "claim": "",
     }
     second = {
         **raw["claims"][0],
