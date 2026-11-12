@@ -9,6 +9,7 @@ from __future__ import annotations
 import ipaddress
 import re
 import unicodedata
+from collections.abc import Iterable
 from typing import Any, Literal
 from urllib.parse import urlsplit
 
@@ -277,3 +278,28 @@ def source_type(url: str) -> str:
 
 def trust_tier(url: str) -> Literal["standard", "caution"]:
     return "standard" if source_type(url) != "other" else "caution"
+
+
+PROJECT_ID_RE = re.compile(r"\bP\d{6}\b")
+
+
+def extract_project_ids(text: str, limit: int = 8) -> list[str]:
+    """Unique World Bank project ids (P + six digits), first-seen order, upper-case."""
+    found = (match.upper() for match in PROJECT_ID_RE.findall(_string(text)))
+    return list(dict.fromkeys(found))[: max(0, limit)]
+
+
+def is_own_project_source(url: str, title: str, project_ids: Iterable[str]) -> bool:
+    """True when a live source carries one of the screened project's own ids.
+
+    The id must stand as a whole token, so P1790170 and XP179017 never match
+    P179017, while "/P179017-36e7..." and "?id=P179017" do.
+    """
+    haystack = f"{_string(url)} {_string(title)}"
+    for project_id in project_ids or ():
+        pid = _string(project_id).upper()
+        if pid and re.search(
+            rf"(?<![A-Za-z0-9]){re.escape(pid)}(?![0-9])", haystack, re.IGNORECASE
+        ):
+            return True
+    return False

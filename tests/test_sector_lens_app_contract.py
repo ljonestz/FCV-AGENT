@@ -2776,3 +2776,20 @@ def test_reader_failure_bridge_emits_diagnostics_before_blocking(monkeypatch):
     assert "result" not in event and "climate_assessment" not in event
     with pytest.raises(ClimateReaderIntegrityError):
         next(stream)
+
+
+def test_research_plan_project_ids_come_only_from_project_documents():
+    plan = app_module.build_stage1_research_plan(
+        active_lens_ids=["climate"],
+        country="Guinea",
+        sector="Water",
+        doc_parts=[
+            {"label": "PROJECT DOCUMENT", "name": "PAD",
+             "raw_text": "Project ID: P179017. Guinea Water. Also P179017."},
+            {"label": "CONTEXT DOCUMENT", "name": "CPF",
+             "raw_text": "Portfolio: P111111, P222222."},
+            {"label": "PACKAGE DOCUMENT", "name": "Pkg", "raw_text": "P333333"},
+        ],
+    )
+
+    assert plan["project_profile"]["project_ids"] == ["P179017"]

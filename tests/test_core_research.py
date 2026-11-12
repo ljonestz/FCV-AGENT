@@ -549,3 +549,28 @@ def test_host_diversity():
 def test_analysis_context_mentions_caution_weighting():
     out = core_research_analysis_context("### Brief")
     assert "Sources marked caution are outside the standard trusted list" in out
+
+
+def test_own_project_citation_is_dropped_from_core_research():
+    content = [{
+        "type": "text",
+        "text": "Guinea water context.",
+        "citations": [
+            {
+                "type": "web_search_result_location",
+                "title": "Guinea Water and Sanitation Project (P179017)",
+                "url": "https://documents1.worldbank.org/curated/en/pad.pdf",
+                "cited_text": "The project in Guinea finances water supply.",
+            },
+            {
+                "type": "web_search_result_location",
+                "title": "Guinea water stress",
+                "url": "https://www.un.org/guinea-water",
+                "cited_text": "Guinea faces water stress.",
+            },
+        ],
+    }]
+    result = normalize_core_research_response(
+        content, "Guinea", project_ids=["P179017"]
+    )
+    assert [s["url"] for s in result["sources"]] == ["https://www.un.org/guinea-water"]
