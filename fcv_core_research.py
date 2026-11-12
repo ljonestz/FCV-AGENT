@@ -1,12 +1,13 @@
 """Pure preparation and normalization helpers for bounded core research."""
 from __future__ import annotations
 
-import ipaddress
 import json
 import re
 import unicodedata
 from typing import Any
 from urllib.parse import urlsplit
+
+from live_source_policy import country_relevance, publication_date, safe_public_url
 
 MAX_PROFILE_CHARS = 2400
 MAX_DOCUMENTS = 6
@@ -42,138 +43,15 @@ def _url_key(url: str) -> str:
     return f"{parsed.scheme.casefold()}://{netloc}{path}?{parsed.query}#{parsed.fragment}"
 
 
-def _safe_public_url(value: Any) -> str:
-    url = _string(value, 2000)
-    if not url or any(ord(char) < 32 for char in url):
-        return ""
-    try:
-        parsed = urlsplit(url)
-        hostname = (parsed.hostname or "").rstrip(".").casefold()
-        scheme = parsed.scheme.casefold()
-    except ValueError:
-        return ""
-    if scheme not in {"http", "https"} or not hostname:
-        return ""
-    if parsed.username or parsed.password:
-        return ""
-    if hostname in {"localhost", "localhost.localdomain"} or hostname.endswith(
-        (".local", ".internal", ".localhost")
-    ):
-        return ""
-    try:
-        address = ipaddress.ip_address(hostname)
-    except ValueError:
-        address = None
-    if address is not None and (
-        address.is_private or address.is_loopback or address.is_link_local
-        or address.is_reserved or address.is_multicast or address.is_unspecified
-    ):
-        return ""
-    if address is None and "." not in hostname and ":" not in hostname:
-        return ""
-    return url
-
-
-def _date_from(item: Any) -> str:
-    for name in ("publication_date", "published_date", "date", "page_age"):
-        value = _string(_value(item, name), 80)
-        if value:
-            return value
-    return ""
+_safe_public_url = safe_public_url
+_date_from = publication_date
+_relevance = country_relevance
 
 
 def _citation_blocks(block: Any) -> list[Any]:
     citations = _value(block, "citations", [])
     return list(citations) if isinstance(citations, (list, tuple)) else []
 
-
-def _country_regex(country: str) -> tuple[list[str], list[str]]:
-    key = _fold(country)
-    if key in {"guinea", "republic of guinea", "guinea conakry"}:
-        return [r"(?<![a-z0-9-])guinea(?![a-z0-9-])"], [
-            r"guinea[\s-]+bissau",
-            r"equatorial[\s-]+guinea",
-            r"papua[\s-]+new[\s-]+guinea",
-        ]
-    if key in {"guinea bissau", "republic of guinea bissau"}:
-        return [r"guinea[\s-]+bissau", r"bissau"], []
-    if key in {"niger", "republic of niger"}:
-        return [r"(?<![a-z0-9-])niger(?![a-z0-9-])"], [r"nigeria"]
-    if key in {
-        "democratic republic of the congo", "democratic republic of congo",
-        "drc", "dr congo", "congo kinshasa",
-    }:
-        return [
-            r"democratic[\s-]+republic[\s-]+(?:of[\s-]+(?:the[\s-]+)?)?congo",
-            r"(?<![a-z0-9-])drc(?![a-z0-9-])", r"dr[\s-]+congo",
-            r"congo[\s-]+kinshasa",
-        ], [
-            r"republic[\s-]+of[\s-]+the[\s-]+congo",
-            r"congo[\s-]+brazzaville", r"brazzaville",
-        ]
-    if key in {"republic of the congo", "republic of congo", "congo brazzaville", "congo"}:
-        return [
-            r"republic[\s-]+of[\s-]+the[\s-]+congo",
-            r"republic[\s-]+of[\s-]+congo", r"congo[\s-]+brazzaville",
-            r"(?<![a-z0-9-])brazzaville(?![a-z0-9-])",
-        ], [
-            r"democratic[\s-]+republic[\s-]+(?:of[\s-]+(?:the[\s-]+)?)?congo",
-            r"(?<![a-z0-9-])drc(?![a-z0-9-])", r"congo[\s-]+kinshasa",
-            r"kinshasa",
-        ]
-    escaped = r"[\s-]+".join(re.escape(part) for part in key.split())
-    return [rf"(?<![a-z0-9-]){escaped}(?![a-z0-9-])"], []
-
-
-def _mentions(text: str, patterns: list[str]) -> bool:
-    folded = _fold(text)
-    return any(re.search(pattern, folded) for pattern in patterns)
-
-
-def _target_mentions(
-    country: str,
-    text: str,
-    target_patterns: list[str],
-    wrong_patterns: list[str],
-) -> bool:
-    folded = _fold(text)
-    key = _fold(country)
-    if key in {"guinea", "republic of guinea", "guinea conakry"}:
-        for pattern in wrong_patterns:
-            folded = re.sub(pattern, " ", folded)
-    elif key in {
-        "republic of the congo", "republic of congo", "congo brazzaville",
-        "congo",
-    }:
-        drc_patterns = (
-            r"democratic[\s-]+republic[\s-]+(?:of[\s-]+(?:the[\s-]+)?)?congo",
-            r"(?<![a-z0-9-])drc(?![a-z0-9-])",
-            r"congo[\s-]+kinshasa",
-            r"(?<![a-z0-9-])kinshasa(?![a-z0-9-])",
-        )
-        for pattern in drc_patterns:
-            folded = re.sub(pattern, " ", folded)
-    return any(re.search(pattern, folded) for pattern in target_patterns)
-
-
-def _relevance(country: str, title: str, cited_text: str) -> tuple[bool, bool]:
-    target, wrong = _country_regex(country)
-    title_target = _target_mentions(country, title, target, wrong)
-    quote_target = _target_mentions(country, cited_text, target, wrong)
-    title_wrong = _mentions(title, wrong)
-    quote_wrong = _mentions(cited_text, wrong)
-    has_target = title_target or quote_target
-    if (quote_wrong or title_wrong) and not has_target:
-        return False, False
-    if quote_wrong or title_wrong:
-        if quote_target:
-            return True, False
-        if title_target and not quote_wrong:
-            return True, False
-        return False, True
-    if has_target:
-        return True, False
-    return False, True
 
 
 def _markdown_url(url: str) -> str:
