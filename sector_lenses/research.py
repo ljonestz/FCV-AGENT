@@ -10,14 +10,23 @@ from urllib.parse import urlparse
 
 from .climate_bank_selector import compact_bank_packet
 from .climate_verified_schemas import validate_summary_fragment
+from live_source_policy import (
+    is_denied,
+    publication_date as _policy_publication_date,
+    safe_public_url,
+    source_type as _policy_source_type,
+    trust_tier,
+)
 
 
 CLIMATE_RESEARCH_START = "%%%CLIMATE_RESEARCH_START%%%"
 CLIMATE_RESEARCH_END = "%%%CLIMATE_RESEARCH_END%%%"
-CLIMATE_EVIDENCE_PACKET_MAX_CHARS = 12_000
+CLIMATE_EVIDENCE_PACKET_MAX_CHARS = 20_000
 CLIMATE_BANK_SEARCH_CONTEXT_MAX_CHARS = 2_500
 # Preserve whole provider passages up to the existing claim-text budget.
-CLIMATE_SOURCE_PASSAGE_MAX_CHARS = 700
+CLIMATE_SOURCE_PASSAGE_MAX_CHARS = 1500
+CLIMATE_PACKET_MAX_SOURCES = 8
+CLIMATE_PACKET_MAX_PASSAGES = 16
 CLIMATE_SOURCE_CONTEXT_CAVEAT = (
     "Received excerpt only; original context may narrow place, time, population or scenario. "
     "Classification is provisional; check the original source."
@@ -38,23 +47,6 @@ CLIMATE_SOURCE_TYPES = {
     "specialist",
     "current-operations",
 }
-TRUSTED_CLIMATE_HOST_SUFFIXES = (
-    "worldbank.org",
-    "ipcc.ch",
-    "un.org",
-    "undp.org",
-    "unep.org",
-    "unhcr.org",
-    "wfp.org",
-    "fao.org",
-    "iom.int",
-    "reliefweb.int",
-    "cgiar.org",
-    "cgspace.cgiar.org",
-    "adelphi.de",
-    "oecd.org",
-)
-
 
 def _bounded(value: Any, limit: int) -> str:
     """Return a stripped string no longer than ``limit`` characters."""
@@ -69,15 +61,6 @@ def _strings(value: Any, count: int, size: int) -> list[str]:
         return []
     values = (_bounded(item, size) for item in value)
     return list(dict.fromkeys(item for item in values if item))[:count]
-
-
-def _trusted_https(url: str) -> bool:
-    parsed = urlparse(url)
-    host = (parsed.hostname or "").casefold()
-    return parsed.scheme.casefold() == "https" and any(
-        host == suffix or host.endswith("." + suffix)
-        for suffix in TRUSTED_CLIMATE_HOST_SUFFIXES
-    )
 
 
 def _publication_date(value: Any) -> str:
@@ -157,67 +140,101 @@ def build_climate_evidence_packet(
     content: Any,
     project_profile: dict[str, Any],
 ) -> dict[str, Any]:
-    """Convert search blocks into bounded, trusted structuring evidence."""
+    """Convert search blocks into bounded structuring evidence.
 
-    blocks = content if isinstance(content, list) else []
+    Any safe, non-denied cited source is admitted; trust is a label, not a gate.
+    """
+
+    blocks = (content if isinstance(content, list) else [])[:40]
     note_parts: list[str] = []
     sources: list[dict[str, str]] = []
     by_url: dict[str, dict[str, str]] = {}
     passages: list[dict[str, str]] = []
-    counts = dict.fromkeys(('candidates', 'invalid_source', 'missing_title',
-                            'missing_quote', 'overlong_quote', 'duplicate',
+    counts = dict.fromkeys(('candidates', 'invalid_source', 'denied', 'missing_title',
+                            'metadata_only', 'overlong_quote', 'duplicate',
                             'admitted', 'retained'), 0)
+
+    def key_of(url: str) -> str:
+        return url.casefold().rstrip("/")
+
+    def host_of(url: str) -> str:
+        return (urlparse(url).hostname or "").casefold()
+
+    # Raw search results carry page_age and titles that later citations lack.
+    result_by_url: dict[str, Any] = {}
+    for block in blocks:
+        if _bounded(_block_value(block, "type"), 80) == "web_search_tool_result":
+            results = _block_value(block, "content", [])
+            for result in (results if isinstance(results, list) else [])[:8]:
+                safe = safe_public_url(_block_value(result, "url"))
+                if safe:
+                    result_by_url.setdefault(key_of(safe), result)
 
     def add_source(item: Any) -> None:
         counts['candidates'] += 1
-        url = _bounded(_block_value(item, "url"), 1000)
-        url_key = url.casefold().rstrip("/")
-        if not url or not _trusted_https(url):
+        url = safe_public_url(_block_value(item, "url"))
+        if not url:
             counts['invalid_source'] += 1
             return
-        title = _bounded(_block_value(item, "title") or by_url.get(url_key, {}).get("title"), 220)
+        if is_denied(url):
+            counts['denied'] += 1
+            return
+        url_key = key_of(url)
+        matched = result_by_url.get(url_key)
+        title = _bounded(
+            _block_value(item, "title")
+            or (_block_value(matched, "title") if matched is not None else "")
+            or by_url.get(url_key, {}).get("title"),
+            220,
+        )
         if not title:
             counts['missing_title'] += 1
             return
-        publication_date = _publication_date(_block_value(item, "publication_date"))
+        publication_date = _bounded(
+            _policy_publication_date(item)
+            or (_policy_publication_date(matched) if matched is not None else ""),
+            40,
+        )
         excerpt = _bounded(
             _block_value(item, "cited_text")
             or _block_value(item, "snippet")
             or _block_value(item, "text"),
             320,
         )
-        # Preserve a received short quote whole. Never truncate a long passage
-        # into apparent proof, or ask the classifier to reconstruct its wording.
-        quote = str(_block_value(item, "cited_text") or _block_value(item, "snippet") or "").strip()
-        duplicate = any(passage["url"].casefold().rstrip("/") == url_key
+        # Only a native cited_text is proof. Preserve it whole; never truncate a
+        # long passage into apparent proof.
+        quote = str(_block_value(item, "cited_text") or "").strip()
+        duplicate = any(key_of(passage["url"]) == url_key
                         and passage["excerpt"] == quote for passage in passages)
         if not quote:
-            counts['missing_quote'] += 1
-        elif not _usable_source_quote(quote):
-            counts['missing_quote'] += 1
+            counts['metadata_only'] += 1
         elif len(quote) > CLIMATE_SOURCE_PASSAGE_MAX_CHARS:
             counts['overlong_quote'] += 1
         elif duplicate:
             counts['duplicate'] += 1
-        elif len(passages) < 24:
+        elif len(passages) < 64:
             counts['admitted'] += 1
-            passages.append({"id": f"CP-{len(passages) + 1:03d}", "url": url,
-                             "title": title, "publication_date": publication_date, "excerpt": quote})
+            passages.append({"id": "", "url": url, "title": title,
+                             "publication_date": publication_date, "excerpt": quote})
         if url_key in by_url:
             # Metadata hits precede native citations; enrich without losing the quote.
             if excerpt and not by_url[url_key]["excerpt"]:
                 by_url[url_key]["excerpt"] = excerpt
+            if publication_date and not by_url[url_key]["publication_date"]:
+                by_url[url_key]["publication_date"] = publication_date
             return
         source = {
             "title": title,
             "url": url,
             "publication_date": publication_date,
             "excerpt": excerpt,
+            "trust_tier": trust_tier(url),
+            "source_type": _policy_source_type(url),
         }
         by_url[url_key] = source
         sources.append(source)
 
-    for block in blocks[:40]:
+    for block in blocks:
         block_type = _bounded(_block_value(block, "type"), 80)
         if block_type == "text":
             note = _bounded(_block_value(block, "text"), 2200)
@@ -233,36 +250,42 @@ def build_climate_evidence_packet(
     profile = project_profile if isinstance(project_profile, dict) else {}
     proof_by_url: dict[str, str] = {}
     for passage in passages:
-        key = passage["url"].casefold().rstrip("/")
+        key = key_of(passage["url"])
         proof_by_url[key] = proof_by_url.get(key, "") + " " + passage["title"] + " " + passage["excerpt"]
     # Metadata snippets must not crowd out received proof from a later country.
-    sources.sort(key=lambda source: source["url"].casefold().rstrip("/") not in proof_by_url)
+    sources.sort(key=lambda source: key_of(source["url"]) not in proof_by_url)
     country_sources = []
     for country in _strings(profile.get("beneficiary_countries"), 8, 80):
         match = next((source for source in sources if _source_label_matches(
-            country, proof_by_url.get(source["url"].casefold().rstrip("/"), ""))), None)
+            country, proof_by_url.get(key_of(source["url"]), ""))), None)
         if match is not None and match not in country_sources:
             country_sources.append(match)
     sources = country_sources + [source for source in sources if source not in country_sources]
-    selected_urls = {source["url"].casefold().rstrip("/") for source in sources[:4]}
-    selected_passages = [passage for passage in passages
-                         if passage["url"].casefold().rstrip("/") in selected_urls]
-    # Reserve one whole passage per retained source before filling the shared cap.
-    first_passages = []
-    for source in sources[:4]:
-        first = next((passage for passage in selected_passages
-                      if passage["url"].casefold().rstrip("/") == source["url"].casefold().rstrip("/")), None)
-        if first is not None:
-            first_passages.append(first)
-    selected_passages = first_passages + [p for p in selected_passages if p not in first_passages]
+    sources = sources[:CLIMATE_PACKET_MAX_SOURCES]
+    # Round-robin by host so one publisher cannot crowd out the others. Within a
+    # host, each retained source gets its first passage before any second one.
+    host_queues: dict[str, list[dict[str, str]]] = {}
+    for host in dict.fromkeys(host_of(source["url"]) for source in sources):
+        own = [[p for p in passages if key_of(p["url"]) == key_of(source["url"])]
+               for source in sources if host_of(source["url"]) == host]
+        host_queues[host] = [group[0] for group in own if group] + [
+            p for group in own for p in group[1:]]
+    selected_passages: list[dict[str, str]] = []
+    while len(selected_passages) < CLIMATE_PACKET_MAX_PASSAGES and any(host_queues.values()):
+        for queue in host_queues.values():
+            if queue and len(selected_passages) < CLIMATE_PACKET_MAX_PASSAGES:
+                selected_passages.append(queue.pop(0))
+    selected_passages = [{**p, "id": f"CP-{index:03d}"}
+                         for index, p in enumerate(selected_passages, 1)]
     packet = {
         "passage_diagnostics": counts,
         "notes": _bounded("\n\n".join(note_parts), 2200),
-        "sources": sources[:4],
-        "passages": selected_passages[:12],
+        "sources": sources,
+        "passages": selected_passages,
         "project_profile": {
             "project_elements": _strings(profile.get("project_elements"), 12, 180),
             "documents": _strings(profile.get("documents"), 4, 180),
+            "country": _bounded(profile.get("country"), 80),
             "country_scope": profile.get("country_scope") if profile.get("country_scope") in ("single", "multi") else "",
             "beneficiary_countries": _strings(profile.get("beneficiary_countries"), 8, 80),
             "document_excerpt": _bounded(
@@ -416,13 +439,13 @@ def verify_climate_research_claims(bundle: dict[str, Any], content: Any) -> dict
         for item in (items if isinstance(items, list) else [])[:8]:
             received_passages += 1
             url = _bounded(_block_value(item, "url"), 1000)
-            if _trusted_https(url):
+            if safe_public_url(url) and not is_denied(url):
                 date = _publication_date(_block_value(item, "publication_date"))
                 if date:
                     publication_dates.setdefault(url.casefold().rstrip("/"), date)
             passage = str(_block_value(item, "cited_text") or _block_value(item, "snippet") or "").strip()
             if (
-                not _trusted_https(url)
+                not (safe_public_url(url) and not is_denied(url))
                 or not passage
                 or not _usable_source_quote(passage)
                 or len(passage) > 6000
@@ -918,9 +941,8 @@ def summarize_climate_structuring_response(
                             in CLIMATE_SOURCE_TYPES
                         )
                         title_ok = bool(_bounded(source.get("title"), 300))
-                        url_ok = _trusted_https(
-                            _bounded(source.get("url"), 1000)
-                        )
+                        _url = _bounded(source.get("url"), 1000)
+                        url_ok = bool(safe_public_url(_url) and not is_denied(_url))
                         source_id_valid += int(id_ok)
                         source_type_valid += int(type_ok)
                         source_title_present += int(title_ok)
@@ -989,7 +1011,7 @@ def normalize_climate_research_bundle(payload: Any) -> dict[str, Any]:
             or raw_source_id in source_id_aliases
             or source_type not in CLIMATE_SOURCE_TYPES
             or not title
-            or not _trusted_https(url)
+            or not (safe_public_url(url) and not is_denied(url))
             or (country_homepage and re.search(r"\b(?:project information document|pid|pad|P\d{6})\b", title, re.IGNORECASE))
         ):
             continue

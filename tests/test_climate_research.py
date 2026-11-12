@@ -146,7 +146,7 @@ def test_passage_registry_does_not_claim_uncovered_country_or_accept_long_proof(
     from sector_lenses.research import resolve_climate_passage_selections
     packet = build_climate_evidence_packet([{"type": "text", "citations": [
         {"url": "https://www.worldbank.org/report", "title": "Burundi climate report", "cited_text": "Flooding affects access in Burundi."},
-        {"url": "https://www.worldbank.org/report", "title": "Burundi climate report", "cited_text": "Long " * 160},
+        {"url": "https://www.worldbank.org/report", "title": "Burundi climate report", "cited_text": "Long " * 320},
     ]}], {"beneficiary_countries": ["Burundi", "DRC"], "project_elements": ["Landing-site rehabilitation"]})
     assert len(packet["passages"]) == 1
     labels = _valid_bundle()["claims"][0]
@@ -159,7 +159,9 @@ def test_passage_registry_does_not_claim_uncovered_country_or_accept_long_proof(
     assert result["uncovered_countries"] == ["DRC"]
 
 
-def test_passage_registry_omits_truncated_and_unbalanced_source_quotes():
+def test_packet_admits_truncated_and_unbalanced_source_quotes():
+    # The packet admits any safe cited text; the resolver (below) still refuses
+    # truncated or unbalanced excerpts as grounding.
     truncated_gdp = (
         "The largest climate impacts on GDP were heat stress effects on labor, "
         "impacts on livestock production,. and flood impacts on transport "
@@ -185,9 +187,9 @@ def test_passage_registry_omits_truncated_and_unbalanced_source_quotes():
         ],
     }], {"beneficiary_countries": ["Somalia"]})
 
-    assert packet["passages"] == []
-    assert packet["passage_diagnostics"]["missing_quote"] == 4
-    assert packet["passage_diagnostics"]["admitted"] == 0
+    assert [p["excerpt"] for p in packet["passages"]] == malformed_quotes
+    assert "missing_quote" not in packet["passage_diagnostics"]
+    assert packet["passage_diagnostics"]["admitted"] == 4
 
 
 def test_passage_resolver_rejects_malformed_quote_in_supplied_packet():
@@ -250,7 +252,7 @@ def test_passage_resolver_requires_numeric_geography_in_excerpt_and_keeps_contro
     selections = [{
         **labels,
         "passage_id": passage["id"],
-        "geographies": ["Somalia" if passage["id"] != "CP-003" else "Banadir"],
+        "geographies": ["Banadir" if "banadir" in passage["url"] else "Somalia"],
         "evidence_status": "projected",
     } for passage in packet["passages"]]
 
@@ -262,7 +264,7 @@ def test_passage_resolver_requires_numeric_geography_in_excerpt_and_keeps_contro
         "invalid_selection_count": 1,
         "admitted_claim_count": 2,
     }
-    assert [claim["claim"] for claim in result["claims"]] == [quotes[1][2], quotes[2][2]]
+    assert [claim["claim"] for claim in result["claims"]] == [quotes[2][2], quotes[1][2]]
     assert result["status"] == "partial"
 
 
@@ -331,9 +333,11 @@ def test_country_homepage_guard_uses_complete_hostname_boundaries():
         ("https://worldbank.org/en/country/burundi", "Project Information Document", False),
         ("https://www.worldbank.org/ext/en/country/burundi", "Project Information Document", False),
         ("https://WWW.WORLDBANK.ORG/en/country/burundi/overview", "Country overview", True),
-        ("https://notworldbank.org/en/country/burundi", "Country overview", False),
-        ("https://worldbank.org.attacker.example/en/country/burundi", "Country overview", False),
-        ("https://attacker.example/worldbank.org/en/country/burundi", "Country overview", False),
+        # Non-allow-listed hosts are admitted (trust is a label); the homepage
+        # guard itself only applies to genuine worldbank.org hostnames.
+        ("https://notworldbank.org/en/country/burundi", "Project Information Document", True),
+        ("https://worldbank.org.attacker.example/en/country/burundi", "Project Information Document", True),
+        ("https://attacker.example/worldbank.org/en/country/burundi", "Project Information Document", True),
         ("https://worldbank.org@attacker.example/en/country/burundi", "Country overview", False),
     ]
     for url, title, accepted in cases:
@@ -631,10 +635,11 @@ def test_climate_evidence_packet_is_bounded_and_excludes_raw_payloads():
     assert packet["notes"]
     assert [source["url"] for source in packet["sources"]] == [
         "https://www.worldbank.org/example-ccdr",
+        "https://example.com/untrusted",
         "https://www.un.org/example-climate",
     ]
+    assert packet["sources"][1]["trust_tier"] == "caution"
     assert "encrypted-secret" not in serialized
-    assert "example.com/untrusted" not in serialized
     assert packet["project_profile"]["document_excerpt"]
 
 
@@ -1296,8 +1301,7 @@ def test_climate_research_uses_one_focused_request():
     assert call["max_tokens"] == 3000
     assert call["thinking"] == {"type": "between_tools"}
     assert call["tools"][0]["max_uses"] == 2
-    from sector_lenses.research import TRUSTED_CLIMATE_HOST_SUFFIXES
-    assert call["tools"][0]["allowed_domains"] == list(TRUSTED_CLIMATE_HOST_SUFFIXES)
+    assert call["tools"][0]["allowed_domains"] == list(app_module._LEGACY_CLIMATE_SEARCH_DOMAINS)
     assert call["timeout"] == 135
 
 
@@ -2057,12 +2061,9 @@ def test_passage_source_type_requires_a_complete_official_domain(host, expected,
         "cited_text": "Flooding affects access in Burundi."}]}],
         {"project_elements": ["Component 2"], "beneficiary_countries": ["Burundi"]})
     if expected is None:
-        assert packet["passages"] == []
-        packet = build_climate_evidence_packet([{"type": "text", "citations": [{
-            "url": "https://www.worldbank.org/report", "title": "Burundi climate report",
-            "cited_text": "Flooding affects access in Burundi."}]}],
-            {"project_elements": ["Component 2"], "beneficiary_countries": ["Burundi"]})
-        packet["passages"][0]["url"] = f"https://{host}/report"
+        # Look-alike hosts are admitted but labelled for caution, never as official.
+        assert packet["sources"][0]["trust_tier"] == "caution"
+        assert len(packet["passages"]) == 1
     captured = {}
     normalize = research.normalize_climate_research_bundle
 
@@ -2078,7 +2079,7 @@ def test_passage_source_type_requires_a_complete_official_domain(host, expected,
         "evidence_gap": "Current status unverified."}]}, packet)
     assert captured["sources"][0]["source_type"] == (expected or "specialist")
     if expected is None:
-        assert result["sources"] == []
+        assert result["sources"][0]["source_type"] == "specialist"
     else:
         assert result["sources"][0]["source_type"] == expected
 
@@ -2087,14 +2088,15 @@ def test_research_passage_diagnostics_explain_rejection_without_source_content()
     base = {'url': 'https://www.worldbank.org/report', 'title': 'PRIVATE_TITLE',
             'cited_text': 'PRIVATE_QUOTE'}
     packet = build_climate_evidence_packet([{'type': 'text', 'citations': [
-        base, base, {**base, 'url': 'https://untrusted.invalid/report'},
-        {**base, 'cited_text': ''}, {**base, 'cited_text': 'x' * 701},
+        base, base, {**base, 'url': 'http://localhost/report'},
+        {**base, 'url': 'https://www.facebook.com/post'},
+        {**base, 'cited_text': ''}, {**base, 'cited_text': 'x' * 1501},
         {**base, 'url': 'https://www.worldbank.org/other', 'title': ''},
     ]}], {})
     counts = packet['passage_diagnostics']
-    assert counts == {'candidates': 6, 'invalid_source': 1, 'missing_title': 1,
-                      'missing_quote': 1, 'overlong_quote': 1, 'duplicate': 1,
-                      'admitted': 1, 'retained': 1}
+    assert counts == {'candidates': 7, 'invalid_source': 1, 'denied': 1,
+                      'missing_title': 1, 'metadata_only': 1, 'overlong_quote': 1,
+                      'duplicate': 1, 'admitted': 1, 'retained': 1}
     assert 'PRIVATE' not in json.dumps(counts)
     assert packet['passages'][0]['excerpt'] == 'PRIVATE_QUOTE'
 
@@ -2119,3 +2121,64 @@ def test_long_native_quotes_keep_qualifications_through_research_gate():
     assert verify_climate_research_claims(bundle, content)['claims'] == bundle['claims']
     forged = {**bundle, 'claims': [{**bundle['claims'][0], 'source_excerpt': 'Invented quotation'}]}
     assert verify_climate_research_claims(forged, content)['claims'] == []
+
+
+def test_packet_admits_non_allowlisted_cited_passage():
+    packet = build_climate_evidence_packet([{"type": "text", "citations": [
+        {"url": "https://www.crisisgroup.org/x", "title": "Crisis report",
+         "cited_text": "Flooding displaced thousands in Burundi."}]}], {})
+    assert len(packet["passages"]) == 1
+    assert packet["sources"][0]["trust_tier"] == "standard"
+    assert packet["sources"][0]["source_type"] == "research"
+
+
+def test_packet_admits_ellipsis_passage():
+    quote = "Flooding displaced thousands (in Burundi... and neighbouring areas."
+    packet = build_climate_evidence_packet([{"type": "text", "citations": [
+        {"url": "https://example.org/x", "title": "Report", "cited_text": quote}]}], {})
+    assert [p["excerpt"] for p in packet["passages"]] == [quote]
+    assert packet["sources"][0]["trust_tier"] == "caution"
+
+
+def test_raw_search_result_is_metadata_only():
+    packet = build_climate_evidence_packet([{"type": "web_search_tool_result", "content": [
+        {"url": "https://www.worldbank.org/r", "title": "Report", "page_age": "2026-09-01",
+         "snippet": "Some metadata"}]}], {})
+    counts = packet["passage_diagnostics"]
+    assert counts["metadata_only"] == 1 and "missing_quote" not in counts
+    assert packet["passages"] == []
+
+
+def test_packet_reads_page_age():
+    packet = build_climate_evidence_packet([
+        {"type": "web_search_tool_result", "content": [
+            {"url": "https://www.worldbank.org/r", "title": "Report", "page_age": "2026-09-01"}]},
+        {"type": "text", "citations": [
+            {"url": "https://www.worldbank.org/r", "title": "Report", "cited_text": "Flooding in Burundi."}]},
+    ], {})
+    assert packet["sources"][0]["publication_date"] == "2026-09-01"
+    assert packet["passages"][0]["publication_date"] == "2026-09-01"
+
+
+def test_packet_round_robin_hosts():
+    citations = [{"url": f"https://www.worldbank.org/r{i}", "title": f"WB {i}",
+                  "cited_text": f"Flooding passage {i}."} for i in range(6)]
+    citations += [{"url": "https://www.un.org/a", "title": "UN", "cited_text": "UN passage."},
+                  {"url": "https://www.fao.org/b", "title": "FAO", "cited_text": "FAO passage."}]
+    packet = build_climate_evidence_packet([{"type": "text", "citations": citations}], {})
+    hosts = [p["url"].split("/")[2] for p in packet["passages"]]
+    assert hosts[:3] == ["www.worldbank.org", "www.un.org", "www.fao.org"]
+    assert hosts[3] == "www.worldbank.org"
+    assert len(packet["sources"]) == 8 and len(packet["passages"]) == 8
+
+
+def test_denied_source_counted():
+    packet = build_climate_evidence_packet([{"type": "text", "citations": [
+        {"url": "https://www.facebook.com/post", "title": "Post", "cited_text": "Flood."}]}], {})
+    assert packet["passage_diagnostics"]["denied"] == 1
+    assert packet["sources"] == [] and packet["passages"] == []
+
+
+def test_packet_carries_project_country():
+    packet = build_climate_evidence_packet([], {"country": "Burundi"})
+    assert packet["project_profile"]["country"] == "Burundi"

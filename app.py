@@ -50,10 +50,15 @@ from sector_lenses.climate_verified_render import (
     write_reader_docx,
 )
 from sector_lenses.climate_review_packet import build_review_packet
-from sector_lenses.research import (
-    TRUSTED_CLIMATE_HOST_SUFFIXES,
-    build_climate_bank_search_context,
+from sector_lenses.research import build_climate_bank_search_context
+
+# Task 5 removes allowed_domains from the climate search tool entirely.
+_LEGACY_CLIMATE_SEARCH_DOMAINS = (
+    "worldbank.org", "ipcc.ch", "un.org", "undp.org", "unep.org", "unhcr.org",
+    "wfp.org", "fao.org", "iom.int", "reliefweb.int", "cgiar.org",
+    "cgspace.cgiar.org", "adelphi.de", "oecd.org",
 )
+
 from sector_lenses.pipeline import normalize_climate_assessment
 from sector_lenses import (
     CCDR_RESEARCH_INSTRUCTIONS,
@@ -8298,7 +8303,7 @@ def run_climate_web_research(
                     "type": "web_search_20250305",
                     "name": "web_search",
                     "max_uses": 2,
-                    "allowed_domains": list(TRUSTED_CLIMATE_HOST_SUFFIXES),
+                    "allowed_domains": list(_LEGACY_CLIMATE_SEARCH_DOMAINS),
                 }],
                 "betas": ["web-search-2025-03-05"],
             }
@@ -8390,7 +8395,7 @@ def run_climate_web_research(
                 if structure_timeout > 0:
                     evidence_packet = build_climate_evidence_packet(
                         provider_content,
-                        project_profile,
+                        {**project_profile, "country": country},
                     )
                     app.logger.info(
                         "Climate research passage admission assessment_id=%s attempt=%d counts=%s",
