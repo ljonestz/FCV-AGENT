@@ -2776,3 +2776,33 @@ def test_reader_failure_bridge_emits_diagnostics_before_blocking(monkeypatch):
     assert "result" not in event and "climate_assessment" not in event
     with pytest.raises(ClimateReaderIntegrityError):
         next(stream)
+
+
+def test_research_plan_project_ids_come_only_from_project_documents():
+    plan = app_module.build_stage1_research_plan(
+        active_lens_ids=["climate"],
+        country="Guinea",
+        sector="Water",
+        doc_parts=[
+            {"label": "PROJECT DOCUMENT", "name": "PAD",
+             "raw_text": "Project ID: P179017. Guinea Water. Also P179017."},
+            {"label": "CONTEXT DOCUMENT", "name": "CPF",
+             "raw_text": "Portfolio: P111111, P222222."},
+            {"label": "PACKAGE INSTRUMENT", "name": "Pkg", "raw_text": "P333333"},
+        ],
+    )
+
+    assert plan["project_profile"]["project_ids"] == ["P179017"]
+
+
+def test_research_plan_project_ids_cutoff_and_cap():
+    late = " " * 20000 + "P999999"
+    ids = " ".join(f"P{100000 + i}" for i in range(12))
+    plan = app_module.build_stage1_research_plan(
+        active_lens_ids=[], country="Guinea", sector="Water",
+        doc_parts=[{"label": "PROJECT DOCUMENT", "name": "PAD", "raw_text": late},
+                   {"label": "PROJECT DOCUMENT", "name": "PAD2", "raw_text": ids}],
+    )
+    got = plan["project_profile"]["project_ids"]
+    assert "P999999" not in got
+    assert got == [f"P{100000 + i}" for i in range(8)]

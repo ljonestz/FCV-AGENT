@@ -2165,7 +2165,7 @@ def test_research_passage_diagnostics_explain_rejection_without_source_content()
     counts = packet['passage_diagnostics']
     assert counts == {'candidates': 7, 'invalid_source': 1, 'denied': 1,
                       'missing_title': 1, 'metadata_only': 1, 'overlong_quote': 1,
-                      'duplicate': 1, 'admitted': 1, 'retained': 1}
+                      'duplicate': 1, 'admitted': 1, 'retained': 1, 'own_project': 0}
     assert 'PRIVATE' not in json.dumps(counts)
     assert packet['passages'][0]['excerpt'] == 'PRIVATE_QUOTE'
 
@@ -2531,3 +2531,41 @@ def test_climate_research_never_makes_a_third_attempt():
     assert result["status"] == "failed"
     assert result["attempts"] == 2
     assert len(client.calls) == 2
+
+
+def test_climate_evidence_packet_drops_own_project_sources():
+    content = [{
+        "type": "text",
+        "text": "Water evidence.",
+        "citations": [
+            {
+                "type": "web_search_result_location",
+                "title": "The World Bank Guinea Water and Sanitation Project (P179017)",
+                "url": "https://documents1.worldbank.org/curated/en/pad.pdf",
+                "cited_text": "The project finances water supply in Guinea.",
+            },
+            {
+                "type": "web_search_result_location",
+                "title": "Guinea water report",
+                "url": "https://www.un.org/guinea-water",
+                "cited_text": "Guinea faces water stress.",
+            },
+        ],
+    }]
+    packet = build_climate_evidence_packet(
+        content, {"documents": ["PAD.docx"], "project_ids": ["P179017"]}
+    )
+
+    assert [s["url"] for s in packet["sources"]] == ["https://www.un.org/guinea-water"]
+    assert [p["url"] for p in packet["passages"]] == ["https://www.un.org/guinea-water"]
+    assert packet["passage_diagnostics"]["own_project"] == 1
+
+
+def test_climate_search_prompt_never_shows_project_ids():
+    prompt = research_module.build_climate_search_prompt(
+        "Guinea", "Water",
+        {"documents": ["PAD.docx"], "project_ids": ["P179017"], "country": "Guinea"},
+    )
+    assert "project_ids" not in prompt
+    assert "P179017" not in prompt
+    assert "PAD.docx" in prompt

@@ -9,6 +9,7 @@ from __future__ import annotations
 import ipaddress
 import re
 import unicodedata
+from collections.abc import Iterable
 from typing import Any, Literal
 from urllib.parse import urlsplit
 
@@ -31,6 +32,9 @@ TRUSTED_HOSTS: dict[str, tuple[str, ...]] = {
     "un": (
         "un.org", "undp.org", "unep.org", "unhcr.org", "unicef.org", "unocha.org",
         "reliefweb.int", "wfp.org", "fao.org", "iom.int", "who.int", "ipcinfo.org",
+        "unric.org", "undrr.org", "preventionweb.net", "unfccc.int", "ilo.org",
+        "ohchr.org", "unhabitat.org", "unwomen.org", "unfpa.org", "unesco.org",
+        "unodc.org",
     ),
     "research": (
         "imf.org", "oecd.org", "afdb.org", "adb.org", "iadb.org", "ifad.org",
@@ -39,18 +43,30 @@ TRUSTED_HOSTS: dict[str, tuple[str, ...]] = {
         "csis.org", "iiss.org", "carnegieendowment.org", "wri.org", "iied.org",
         "adelphi.de", "climate-diplomacy.org", "internal-displacement.org",
         "fews.net", "acaps.org", "hrw.org", "amnesty.org",
+        "idea.int", "bti-project.org", "bertelsmann-stiftung.de", "issafrica.org",
+        "afrobarometer.org", "latinobarometro.org", "arabbarometer.org",
+        "amaniafrica-et.org", "insightcrime.org", "globalinitiative.net",
+        "freedomhouse.org", "transparency.org", "clingendael.org",
+        "saferworld-global.org", "saferworld.org.uk", "interpeace.org", "cmi.no",
+        "gppi.net", "ipinst.org", "wilsoncenter.org", "cfr.org", "rand.org",
+        "ecfr.eu", "prio.org", "cgdev.org", "globalr2p.org",
+        # Regional and multilateral bodies (no separate type exists).
+        "au.int", "ecowas.int", "europa.eu", "oas.org", "cepal.org", "igad.int",
+        "sadc.int", "isdb.org", "aiib.org", "ebrd.com", "eib.org",
     ),
     "humanitarian": ("icrc.org", "ifrc.org", "msf.org", "thenewhumanitarian.org"),
     "news": (
         "reuters.com", "apnews.com", "afp.com", "bbc.com", "bbc.co.uk",
         "aljazeera.com", "france24.com", "dw.com", "theguardian.com", "ft.com",
         "nytimes.com", "washingtonpost.com", "economist.com", "bloomberg.com",
-        "allafrica.com", "rfi.fr",
+        "allafrica.com", "rfi.fr", "cnn.com", "npr.org", "lemonde.fr", "elpais.com",
+        "efe.com", "africanews.com", "devex.com", "irinnews.org",
     ),
     "scientific": (
         "ipcc.ch", "nature.com", "science.org", "sciencedirect.com", "springer.com",
         "wiley.com", "tandfonline.com", "doi.org", "copernicus.eu", "noaa.gov",
-        "nasa.gov", "wmo.int",
+        "nasa.gov", "wmo.int", "ucdp.uu.se", "worldweatherattribution.org",
+        "climateanalytics.org",
     ),
 }
 
@@ -277,3 +293,35 @@ def source_type(url: str) -> str:
 
 def trust_tier(url: str) -> Literal["standard", "caution"]:
     return "standard" if source_type(url) != "other" else "caution"
+
+
+PROJECT_ID_RE = re.compile(r"\bP\d{6}\b")
+
+
+def extract_project_ids(text: str, limit: int = 8) -> list[str]:
+    """Unique World Bank project ids (P + six digits), first-seen order, upper-case."""
+    found = (match.upper() for match in PROJECT_ID_RE.findall(_string(text)))
+    return list(dict.fromkeys(found))[: max(0, limit)]
+
+
+def clean_project_ids(project_ids: Iterable[str] | str | None) -> list[str]:
+    """Normalise to well-formed upper-case ids; a bare string is one id, junk is dropped."""
+    if isinstance(project_ids, str):
+        project_ids = [project_ids]
+    cleaned = (_string(item).upper() for item in (project_ids or ()))
+    return [pid for pid in cleaned if PROJECT_ID_RE.fullmatch(pid)]
+
+
+def is_own_project_source(url: str, title: str, project_ids: Iterable[str]) -> bool:
+    """True when a live source carries one of the screened project's own ids.
+
+    The id must stand as a whole token, so P1790170 and XP179017 never match
+    P179017, while "/P179017-36e7..." and "?id=P179017" do.
+    """
+    haystack = f"{_string(url)} {_string(title)}"
+    for pid in clean_project_ids(project_ids):
+        if re.search(
+            rf"(?<![A-Za-z0-9]){re.escape(pid)}(?![0-9])", haystack, re.IGNORECASE
+        ):
+            return True
+    return False

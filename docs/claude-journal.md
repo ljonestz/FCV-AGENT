@@ -2318,3 +2318,20 @@ and CLIMATE_AUTHORITATIVE_SOURCE_TYPES removed.
 
 Validation: unit tests only (no paid runs; user had no budget for a test campaign). Parity
 entry logged in FCV_BUILD_PARITY.md with ITS guidance. Not deployed.
+
+### 2026-11-12 Live evidence: production check and follow-ups
+
+Deployed PR #98 (58d7021) to production and ran two authorised paid Express runs with the
+climate lens (records: OneDrive repo output/20261112_live-evidence-runs/, including Word/PDF
+reports). Guinea Water: 3 searches, 19 citations, 15 passages admitted, 8 climate claims from 6
+sources (4 standard, 2 caution), first attempt, 5.7 min. Honduras PAD: 8 claims from 6 sources
+(OCHA, FEWS NET, Brookings, Duke, UNRIC; 5 standard, 1 caution), 4.9 min. "No live web evidence
+was included" no longer appears; the new caution limitation line does. FCV core research returned
+8 publishers per run. Live sources are mostly undated (PDFs); none of the live claims was cited in
+a judgment or priority (context only).
+
+Follow-ups (branch fix/live-evidence-followups): the screened project's own documents are dropped
+from live evidence (P-numbers from PROJECT DOCUMENT parts only, first 20k chars, max 8; Guinea had
+2 of 8 claims from its own PAD P179017), project_ids kept out of the climate search prompt; trusted
+list extended (UNRIC, other UN agencies, IDEA, BTI, ISS Africa, Afrobarometer, Amani Africa,
+InSight Crime, regional bodies and others); Word footer em dash replaced with a hyphen.

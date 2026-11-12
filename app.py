@@ -25,6 +25,7 @@ from fcv_core_research import (
     normalize_core_research_response,
 )
 from fcv_distillation import distill_doc_parts_stream
+from live_source_policy import extract_project_ids
 import regime_router
 import stage3_prose
 from sector_lenses.climate_native import (
@@ -8075,6 +8076,7 @@ def run_fcv_web_research(
         resp = api_client.beta.messages.create(**request_options)
         result = normalize_core_research_response(
             resp.content, country, researched_at=researched_at,
+            project_ids=(project_profile or {}).get("project_ids", []),
         )
         result['ccdr_context'] = {}
         return result
@@ -8690,6 +8692,11 @@ def build_stage1_research_plan(
         name for part in project_parts[:2]
         for name in extract_beneficiary_countries(str(part.get("raw_text") or ""))
     ))[:8]
+    # Own ids come only from PROJECT DOCUMENT datasheet areas, never context docs.
+    project_ids = extract_project_ids(
+        " ".join(str(part.get("raw_text") or "")[:20000] for part in project_parts),
+        limit=8,
+    )
     scope = "multi" if len(beneficiaries) > 1 else str(country_scope or "single").strip().lower()
     country_count = max(0, int(resolved_country_count), len(beneficiaries))
     return {
@@ -8711,6 +8718,7 @@ def build_stage1_research_plan(
             "document_excerpt": excerpt,
             "country_scope": scope,
             "beneficiary_countries": beneficiaries,
+            "project_ids": project_ids,
         },
         "country_scope": scope,
         "resolved_country_count": country_count,

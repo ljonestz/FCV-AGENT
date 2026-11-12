@@ -4,12 +4,15 @@ from __future__ import annotations
 import json
 import re
 import unicodedata
+from collections.abc import Iterable
 from typing import Any
 from urllib.parse import urlsplit
 
 from live_source_policy import (
+    clean_project_ids,
     country_relevance,
     is_denied,
+    is_own_project_source,
     publication_date,
     safe_public_url,
     source_type,
@@ -155,6 +158,7 @@ def normalize_core_research_response(
     country: str,
     *,
     researched_at: str = "",
+    project_ids: Iterable[str] = (),
 ) -> dict:
     """Normalize provider blocks into safe, country-focused Markdown and source metadata."""
     country_text = _string(country, 160) or "Unknown country"
@@ -182,6 +186,7 @@ def normalize_core_research_response(
     candidates: list[dict[str, Any]] = []
     seen: set[tuple[str, str]] = set()
     oversized = 0
+    own_ids = clean_project_ids(project_ids)
     for block in blocks:
         if _string(_value(block, "type"), 80) != "text":
             continue
@@ -194,6 +199,8 @@ def normalize_core_research_response(
             title = _string(_value(citation, "title"), 500) or _string(
                 _value(matched, "title"), 500
             )
+            if is_own_project_source(url, title, own_ids):
+                continue
             cited_text = _string(_value(citation, "cited_text"))
             if not cited_text:
                 cited_text = _string(_value(citation, "snippet"))

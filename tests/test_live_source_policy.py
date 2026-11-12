@@ -1,7 +1,9 @@
 from live_source_policy import (
     CAUTION_NOTE,
     country_relevance,
+    extract_project_ids,
     is_denied,
+    is_own_project_source,
     publication_date,
     safe_public_url,
     source_type,
@@ -102,3 +104,67 @@ def test_deny_list_covers_short_links_and_blogspot_cctlds():
 def test_publication_date_skips_relative_value_and_continues():
     assert publication_date({"date": "3 days ago", "page_age": "2026-10-01"}) == "2026-10-01"
     assert publication_date({"publication_date": "2 weeks ago", "date": "3 days ago"}) == ""
+
+
+def test_extract_project_ids_unique_ordered_upper():
+    text = "Project P179017 and P123456, again P179017. Not P1790170 or XP111111."
+    assert extract_project_ids(text) == ["P179017", "P123456"]
+    assert extract_project_ids("") == []
+    many = " ".join(f"P{100000 + i}" for i in range(20))
+    assert len(extract_project_ids(many)) == 8
+    assert len(extract_project_ids(many, limit=3)) == 3
+
+
+def test_own_project_source_title_and_url_matches():
+    ids = ["P179017"]
+    assert is_own_project_source(
+        "https://x.example/a", "The World Bank Guinea Water and Sanitation Project (P179017)", ids
+    )
+    assert is_own_project_source(
+        "https://documents1.worldbank.org/curated/en/P179017-36e7abc/pad.pdf", "PAD", ids
+    )
+    assert is_own_project_source("https://projects.worldbank.org/x?id=p179017", "Page", ids)
+
+
+def test_own_project_source_no_false_matches():
+    ids = ["P179017"]
+    assert not is_own_project_source("https://x.example/P1790170", "Project P1790170", ids)
+    assert not is_own_project_source("https://x.example/XP179017", "XP179017", ids)
+    assert not is_own_project_source("https://x.example/a", "P179017", [])
+    assert not is_own_project_source("https://x.example/a", "Guinea water", ids)
+
+
+
+def test_observed_hosts_are_standard_with_sensible_type():
+    expected = {
+        "https://www.unric.org/x": "un",
+        "https://www.idea.int/x": "research",
+        "https://bti-project.org/x": "research",
+        "https://issafrica.org/x": "research",
+        "https://www.afrobarometer.org/x": "research",
+        "https://amaniafrica-et.org/x": "research",
+        "https://eeas.europa.eu/x": "research",
+        "https://ucdp.uu.se/x": "scientific",
+        "https://www.cnn.com/x": "news",
+        "https://www.irinnews.org/x": "news",
+    }
+    for url, kind in expected.items():
+        assert source_type(url) == kind, url
+        assert trust_tier(url) == "standard", url
+    assert trust_tier("https://example-blog.net/post") == "caution"
+
+
+def test_each_trusted_host_is_in_exactly_one_type():
+    from live_source_policy import TRUSTED_HOSTS
+
+    seen: dict[str, str] = {}
+    for kind, hosts in TRUSTED_HOSTS.items():
+        for host in hosts:
+            assert host not in seen, f"{host} in {seen[host]} and {kind}"
+            seen[host] = kind
+
+
+def test_project_id_guards_reject_bare_strings_and_junk():
+    assert is_own_project_source("https://x.example/P179017", "t", "P179017")
+    assert not is_own_project_source("https://x.example/Pa", "P", "P")
+    assert not is_own_project_source("https://x.example/Pa", "P", ["P", "", "abc"])

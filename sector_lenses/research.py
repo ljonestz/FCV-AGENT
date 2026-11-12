@@ -14,6 +14,7 @@ from live_source_policy import (
     CAUTION_NOTE,
     country_relevance,
     is_denied,
+    is_own_project_source,
     publication_date as _policy_publication_date,
     safe_public_url,
     source_type as _policy_source_type,
@@ -180,7 +181,9 @@ def build_climate_evidence_packet(
     passages: list[dict[str, str]] = []
     counts = dict.fromkeys(('candidates', 'invalid_source', 'denied', 'missing_title',
                             'metadata_only', 'overlong_quote', 'duplicate',
-                            'admitted', 'retained'), 0)
+                            'admitted', 'retained', 'own_project'), 0)
+    profile = project_profile if isinstance(project_profile, dict) else {}
+    own_ids = _strings(profile.get("project_ids"), 8, 20)
 
     def key_of(url: str) -> str:
         return url.casefold().rstrip("/")
@@ -215,6 +218,9 @@ def build_climate_evidence_packet(
             or by_url.get(url_key, {}).get("title"),
             220,
         )
+        if is_own_project_source(url, title, own_ids):
+            counts['own_project'] += 1
+            return
         if not title:
             counts['missing_title'] += 1
             return
@@ -275,7 +281,6 @@ def build_climate_evidence_packet(
             results = _block_value(block, "content", [])
             for result in (results if isinstance(results, list) else [])[:8]:
                 add_source(result)
-    profile = project_profile if isinstance(project_profile, dict) else {}
     proof_by_url: dict[str, str] = {}
     for passage in passages:
         key = key_of(passage["url"])
@@ -556,8 +561,10 @@ def build_climate_search_prompt(
     """Build a bounded, open search-only request for climate-FCV evidence."""
 
     current_date = date.today().isoformat()
+    # Own project ids filter results downstream; the model must not see them.
     profile = json.dumps(
-        project_profile if isinstance(project_profile, dict) else {},
+        {k: v for k, v in (project_profile if isinstance(project_profile, dict) else {}).items()
+         if k != "project_ids"},
         ensure_ascii=False,
         separators=(",", ":"),
     )

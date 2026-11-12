@@ -174,7 +174,9 @@ def test_report_components_keep_brand_advisory_scorecard_links_and_qualification
         if relationship.reltype.endswith("/image")
     )
     assert "FCV SCREENER" in _xml_text(section.header._element)
-    assert "AI-assisted output" in _xml_text(section.footer._element)
+    footer_text = _xml_text(section.footer._element)
+    assert "AI-assisted output - verify before operational use" in footer_text
+    assert chr(0x2014) not in footer_text
 
     scorecard = next(
         table
