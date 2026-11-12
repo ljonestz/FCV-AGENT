@@ -528,7 +528,7 @@ def test_standard_source_labelled():
     )
     assert result["sources"][0]["trust_tier"] == "standard"
     assert result["sources"][0]["source_type"] == "news"
-    line = next(l for l in result["brief"].splitlines() if "reuters.com" in l)
+    line = next(l for l in result["brief"].splitlines() if "(https://www.reuters.com/world/guinea)" in l)
     assert "caution" not in line
 
 

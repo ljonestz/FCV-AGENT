@@ -25,7 +25,6 @@ DENIED_HOST_SUFFIXES: tuple[str, ...] = (
     "tumblr.com",
 )
 # Blogspot also serves country-code mirrors (blogspot.co.uk, blogspot.fr, ...).
-_DENIED_LABEL_RE = re.compile(r"(?:^|\.)blogspot\.[a-z0-9.-]+$")
 
 TRUSTED_HOSTS: dict[str, tuple[str, ...]] = {
     "world-bank": ("worldbank.org",),
@@ -256,7 +255,10 @@ def _host_matches(host: str, suffixes: tuple[str, ...]) -> bool:
 
 def is_denied(url: str) -> bool:
     host = _host(url)
-    return _host_matches(host, DENIED_HOST_SUFFIXES) or bool(_DENIED_LABEL_RE.search(host))
+    # Any blogspot.<tld> variant (blogspot.co.uk, x.blogspot.fr): a 'blogspot'
+    # label followed by at least one more label. Label split, no regex (ReDoS).
+    labels = host.split(".")
+    return _host_matches(host, DENIED_HOST_SUFFIXES) or "blogspot" in labels[:-1]
 
 
 def source_type(url: str) -> str:
