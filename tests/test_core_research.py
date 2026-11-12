@@ -2,6 +2,7 @@ from types import SimpleNamespace
 
 from fcv_core_research import (
     build_core_research_prompt,
+    core_research_analysis_context,
     normalize_core_research_response,
 )
 
@@ -70,6 +71,8 @@ def test_sdk_citation_preserves_provider_metadata_and_unknown_media_is_allowed()
             "url": "http://regional.example/news/guinea",
             "cited_text": "Communities in Guinea face repeated border closures.",
             "publication_date": "2026-08-31",
+            "trust_tier": "caution",
+            "source_type": "other",
         }
     ]
     assert "regional.example" in result["brief"]
@@ -488,3 +491,61 @@ def test_possessive_country_title_supports_country_attribution():
         }], "Somalia")
         assert len(result["sources"]) == 1
         assert not result["sources"][0].get("context_only")
+
+
+def _one_block(*citations):
+    return [SimpleNamespace(type="text", text="Synthesis.", citations=list(citations))]
+
+
+def _guinea(url, n=0):
+    return citation(
+        title=f"Guinea update {n}",
+        url=url,
+        cited_text=f"Guinea faces displacement pressure, item {n}.",
+        page_age="2026-08-01",
+    )
+
+
+def test_denied_host_dropped():
+    result = normalize_core_research_response(
+        _one_block(_guinea("https://www.facebook.com/x")), "Guinea"
+    )
+    assert result["sources"] == []
+
+
+def test_caution_source_kept_and_labelled():
+    result = normalize_core_research_response(
+        _one_block(_guinea("https://somesite.example/x")), "Guinea"
+    )
+    assert result["sources"][0]["trust_tier"] == "caution"
+    line = next(l for l in result["brief"].splitlines() if "somesite.example" in l)
+    assert "(caution: outside the standard trusted list)" in line
+
+
+def test_standard_source_labelled():
+    result = normalize_core_research_response(
+        _one_block(_guinea("https://www.reuters.com/world/guinea")), "Guinea"
+    )
+    assert result["sources"][0]["trust_tier"] == "standard"
+    assert result["sources"][0]["source_type"] == "news"
+    line = next(l for l in result["brief"].splitlines() if "reuters.com" in l)
+    assert "caution" not in line
+
+
+def test_host_diversity():
+    cites = [_guinea(f"https://reliefweb.int/report/{i}", i) for i in range(5)]
+    cites += [
+        _guinea("https://www.reuters.com/a", 10),
+        _guinea("https://www.bbc.com/b", 11),
+        _guinea("https://www.worldbank.org/c", 12),
+    ]
+    result = normalize_core_research_response(_one_block(*cites), "Guinea")
+    hosts = [s["url"].split("/")[2] for s in result["sources"]]
+    assert {"www.reuters.com", "www.bbc.com", "www.worldbank.org"} <= set(hosts)
+    assert hosts.count("reliefweb.int") <= 5
+    assert len(hosts) == 8
+
+
+def test_analysis_context_mentions_caution_weighting():
+    out = core_research_analysis_context("### Brief")
+    assert "Sources marked caution are outside the standard trusted list" in out

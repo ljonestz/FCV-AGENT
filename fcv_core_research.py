@@ -7,12 +7,19 @@ import unicodedata
 from typing import Any
 from urllib.parse import urlsplit
 
-from live_source_policy import country_relevance, publication_date, safe_public_url
+from live_source_policy import (
+    country_relevance,
+    is_denied,
+    publication_date,
+    safe_public_url,
+    source_type,
+    trust_tier,
+)
 
 MAX_PROFILE_CHARS = 2400
 MAX_DOCUMENTS = 6
 MAX_DOCUMENT_NAME_CHARS = 180
-MAX_SOURCES = 6
+MAX_SOURCES = 8
 MAX_CITED_TEXT_CHARS = 6000
 MAX_MODEL_TEXT_CHARS = 6000
 def _value(item: Any, name: str, default: Any = None) -> Any:
@@ -46,6 +53,12 @@ def _url_key(url: str) -> str:
 _safe_public_url = safe_public_url
 _date_from = publication_date
 _relevance = country_relevance
+
+
+def _caution_suffix(source: dict[str, Any]) -> str:
+    if source.get("trust_tier") == "caution":
+        return " (caution: outside the standard trusted list)"
+    return ""
 
 
 def _citation_blocks(block: Any) -> list[Any]:
@@ -166,7 +179,7 @@ def normalize_core_research_response(
             if url:
                 search_results[_url_key(url)] = result
 
-    sources: list[dict[str, Any]] = []
+    candidates: list[dict[str, Any]] = []
     seen: set[tuple[str, str]] = set()
     oversized = 0
     for block in blocks:
@@ -174,7 +187,7 @@ def normalize_core_research_response(
             continue
         for citation in _citation_blocks(block):
             url = _safe_public_url(_value(citation, "url"))
-            if not url:
+            if not url or is_denied(url):
                 continue
             key = _url_key(url)
             matched = search_results.get(key)
@@ -202,15 +215,25 @@ def normalize_core_research_response(
                 "url": url,
                 "cited_text": cited_text,
                 "publication_date": _date_from(citation) or _date_from(matched),
+                "trust_tier": trust_tier(url),
+                "source_type": source_type(url),
             }
             if is_context_only:
                 source["context_only"] = True
-            sources.append(source)
+            candidates.append(source)
             seen.add(excerpt_key)
-            if len(sources) >= MAX_SOURCES:
-                break
-        if len(sources) >= MAX_SOURCES:
-            break
+
+    by_host: dict[str, list[dict[str, Any]]] = {}
+    for source in candidates:
+        host = (urlsplit(source["url"]).hostname or "").casefold()
+        by_host.setdefault(host, []).append(source)
+    sources: list[dict[str, Any]] = []
+    depth = 0
+    while len(sources) < MAX_SOURCES and any(len(v) > depth for v in by_host.values()):
+        for group in by_host.values():
+            if len(group) > depth and len(sources) < MAX_SOURCES:
+                sources.append(group[depth])
+        depth += 1
 
     model_text = _safe_model_text("\n\n".join(text_parts))
     grounded_sources = [
@@ -258,6 +281,7 @@ def normalize_core_research_response(
         lines.append(
             f"- [{_escape_markdown(source['title'])}]"
             f"({_markdown_url(source['url'])}) - {_escape_markdown(date)}"
+            + _caution_suffix(source)
         )
         quote = _escape_markdown(source["cited_text"])
         lines.extend("  > " + part for part in quote.splitlines() or ["  >"])
@@ -283,6 +307,7 @@ def normalize_core_research_response(
             lines.append(
                 f"- [{_escape_markdown(source['title'])}]"
                 f"({_markdown_url(source['url'])}) - {_escape_markdown(date)}"
+            + _caution_suffix(source)
             )
             quote = _escape_markdown(source["cited_text"])
             lines.extend("  > " + part for part in quote.splitlines() or ["  >"])
@@ -324,5 +349,7 @@ def core_research_analysis_context(brief: str) -> str:
         "item, not a historical design gap or rating justification. A later report "
         "can support earlier conditions only when its cited passage explicitly "
         "dates those conditions to the preparation period; otherwise timing is "
-        "unverified. A clipped provider passage supports only what is visible."
+        "unverified. A clipped provider passage supports only what is visible. "
+        "Sources marked caution are outside the standard trusted list; give them "
+        "lower weight and do not rest a finding on them alone."
     )
