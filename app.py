@@ -8172,11 +8172,11 @@ def log_climate_research_summary(
         horizon_text,
         _telemetry_count(passage_diagnostics.get("received_count"), 24)
         if passage_counts_known else -1,
-        _telemetry_count(passage_diagnostics.get("selected_count"), 6)
+        _telemetry_count(passage_diagnostics.get("selected_count"), 8)
         if passage_counts_known else -1,
-        _telemetry_count(passage_diagnostics.get("invalid_selection_count"), 6)
+        _telemetry_count(passage_diagnostics.get("invalid_selection_count"), 8)
         if passage_counts_known else -1,
-        _telemetry_count(passage_diagnostics.get("admitted_claim_count"), 6)
+        _telemetry_count(passage_diagnostics.get("admitted_claim_count"), 8)
         if passage_counts_known else -1,
     )
 
@@ -8507,15 +8507,15 @@ def run_climate_web_research(
                         current_passage_diagnostics, "received_count", 24
                     ),
                     passage_count(
-                        current_passage_diagnostics, "selected_count", 6
+                        current_passage_diagnostics, "selected_count", 8
                     ),
                     passage_count(
                         current_passage_diagnostics,
                         "invalid_selection_count",
-                        6,
+                        8,
                     ),
                     passage_count(
-                        current_passage_diagnostics, "admitted_claim_count", 6
+                        current_passage_diagnostics, "admitted_claim_count", 8
                     ),
                     diagnostic["source_id_valid"],
                     diagnostic["source_type_valid"],
