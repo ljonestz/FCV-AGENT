@@ -127,3 +127,11 @@ def test_unknown_publication_date_cannot_be_silent_current_context():
     evidence = adapt_grounding_evidence(merge_climate_grounding({}, _research_bundle()))[0]
     assert "Current conditions are unverified" in evidence.evidence_gap
     assert evidence.source_details[0]["publication_date"] == ""
+
+
+def test_live_source_details_carry_trust_tier_and_source_type():
+    bundle = _research_bundle()
+    bundle["sources"][0].update(trust_tier="caution", source_type="other")
+    evidence = adapt_grounding_evidence(merge_climate_grounding({}, bundle))[0]
+    assert evidence.source_details[0]["trust_tier"] == "caution"
+    assert evidence.source_details[0]["source_type"] == "other"

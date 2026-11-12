@@ -164,7 +164,8 @@ def adapt_grounding_evidence(
             continue
         primary_url = live_source_urls[declared_source_ids[0]]
         source_details = tuple({key: _text(live_source_records[source_id].get(key))
-                                for key in ("id", "title", "url", "publication_date")}
+                                for key in ("id", "title", "url", "publication_date",
+                                            "trust_tier", "source_type")}
                                for source_id in declared_source_ids[:6])
         evidence_gap = _text(claim.get("evidence_gap"))
         if any(not source["publication_date"] for source in source_details):

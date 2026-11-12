@@ -1153,6 +1153,36 @@ def _chain_prose(chain: list) -> str:
     return "; ".join(parts) + ("." if parts else "")
 
 
+_LIVE_STUB = "Accepted live-research evidence for this run."
+_LIVE_CAUTION_SUFFIX = " (caution: outside the standard trusted list)"
+_LIVE_CAUTION_SENTENCE = ("Some live web sources are outside the standard trusted list; "
+                          "check them before relying on them.")
+
+
+def _live_source_details(record: object) -> list[dict]:
+    details = _mapping(record).get("source_details")
+    if not isinstance(details, (list, tuple)):
+        return []
+    return [d for d in details if isinstance(d, dict)]
+
+
+def _live_has_caution(record: object) -> bool:
+    return any(_text(d.get("trust_tier")) == "caution"
+               for d in _live_source_details(record))
+
+
+def _live_evidence_text(record: object) -> str:
+    statement = _text(_mapping(record).get("statement"))
+    if not statement:
+        return _LIVE_STUB
+    details = _live_source_details(record)
+    title = next((_text(d.get("title")) for d in details[:1] if _text(d.get("title"))), "")
+    text = statement + (f" (Source: {title})" if title else "")
+    if _live_has_caution(record):
+        text += _LIVE_CAUTION_SUFFIX
+    return text
+
+
 def build_evidence_trail(assessment: dict[str, object]) -> dict[str, object]:
     """Project a plain-language evidence trail from the raw verified assessment.
 
@@ -1168,6 +1198,10 @@ def build_evidence_trail(assessment: dict[str, object]) -> dict[str, object]:
             for g in _records(analysis.get("residual_gaps"))}
     pathways_raw = _records(analysis.get("pathways"))
     pathways_by_id = {_text(p.get("pathway_id")): p for p in pathways_raw}
+
+    live_by_id = {_text(r.get("evidence_id")): r
+                  for r in _records(assessment.get("context_evidence"))
+                  if _text(r.get("evidence_id")).startswith("CE-LIVE-")}
 
     pathways = []
     for p in pathways_raw:
@@ -1233,7 +1267,7 @@ def build_evidence_trail(assessment: dict[str, object]) -> dict[str, object]:
                 if isinstance(pathways_by_id[cid].get("chain"), list) else []
             )
         elif t == "CE-LIVE":
-            text = "Accepted live-research evidence for this run."
+            text = _live_evidence_text(live_by_id.get(cid))
         elif t == "CE":
             text = "Context evidence cited for this run (summary not stored)."
         else:
@@ -1262,6 +1296,9 @@ def build_evidence_trail(assessment: dict[str, object]) -> dict[str, object]:
         )
     else:
         limitations = _text(limitations_raw)
+
+    if any(_live_has_caution(r) for r in live_by_id.values()):
+        limitations = (limitations + " " + _LIVE_CAUTION_SENTENCE).strip()
 
     if not manifest.get('live_research_count', 0):
         limitations = ('No live web evidence was included. Check current-context claims against current sources before sharing. '
