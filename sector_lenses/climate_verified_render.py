@@ -1108,6 +1108,12 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
             "candidate_suppressions": _records(
                 diagnostics.get("candidate_suppressions")
             )[:3],
+            # Support-only fields: present only when the reviewer format retry
+            # ran or every recommendation was withheld. Not rendered to readers.
+            **({"semantic_review_retry": _mapping(diagnostics.get("semantic_review_retry"))}
+               if _mapping(diagnostics.get("semantic_review_retry")) else {}),
+            **({"semantic_review_excerpt": _text(diagnostics.get("semantic_review_excerpt"))[:6000]}
+               if _text(diagnostics.get("semantic_review_excerpt")) else {}),
         },
         "advisory_notice": ADVISORY_NOTICE,
     })

@@ -440,7 +440,10 @@ def test_unresolved_routing_triggers_one_source_first_review():
     assert result["validation"]["status"] == "attention"
     assert result["priorities"] == []
     assert result["manifest"]["suppressed_counts"]["recommendations"] == 1
-    assert result["recommendation_diagnostics"] == {
+    diagnostics = dict(result["recommendation_diagnostics"])
+    # Every recommendation was withheld, so a bounded reviewer excerpt is kept.
+    assert json.loads(diagnostics.pop("semantic_review_excerpt"))["verdict"] == "revise"
+    assert diagnostics == {
         "raw_candidate_count": 1,
         "parsed_candidate_count": 1,
         "valid_candidate_count": 1,

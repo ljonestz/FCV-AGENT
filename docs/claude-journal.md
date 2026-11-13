@@ -2335,3 +2335,24 @@ from live evidence (P-numbers from PROJECT DOCUMENT parts only, first 20k chars,
 2 of 8 claims from its own PAD P179017), project_ids kept out of the climate search prompt; trusted
 list extended (UNRIC, other UN agencies, IDEA, BTI, ISS Africa, Afrobarometer, Amani Africa,
 InSight Crime, regional bodies and others); Word footer em dash replaced with a hyphen.
+
+### 2026-11-13 Climate reviewer format retry (branch fix/climate-reviewer-format-retry)
+
+ITS QA (now aligned with Render) ran the same climate project four times; one run (esq0pe215y1p)
+showed "Recommendations stage incomplete" with 0 priorities. Saved session: 5 candidates generated
+and admitted, reviewer verdict block, codes SEMANTIC_REVIEW_TARGET_UNRESOLVED +
+SEMANTIC_REVIEW_VERDICT_INVALID on all five. Reading: the reviewer said pass but every core_reviews
+record failed reconcile_core_reviews, so pass-with-invalid-records became block and withheld all.
+Raw response not in the session (Save Session keeps only the reader model), so the broken rule is
+unconfirmed; likeliest is source_block_ids citing PF-/context IDs (schema leaves it free text). The
+other three runs: revise 5/5, pass 4/4, pass 5/5. Model variability, not an ITS port defect.
+Fix: when every core record is structurally invalid, resample conditional_review once with the
+identical payload (adopt only if fewer invalid records), guarded by 420 s remaining wall clock
+(review + reader compile + reader review) so the Summary is not starved; retry error keeps the
+first review. recommendation_diagnostics/technical_annex gain semantic_review_retry and, when all
+recommendations are withheld, semantic_review_excerpt (6,000 chars of reviewer JSON), so saved
+sessions now show the raw reviewer output. repairs gets SEMANTIC_REVIEW_FORMAT_RETRY_ATTEMPTED.
+No prompt, schema, delimiter, Stage-3 JSON, route or KB change. Follow-up if an excerpt confirms
+non-block citations: enum-constrain conditional_review source_block_ids (schema parity item).
+Full suite: only new difference vs main was one diagnostics-equality test updated for the excerpt;
+the 32 country-bank failures are pre-existing in a fresh worktree (bank data not present).
