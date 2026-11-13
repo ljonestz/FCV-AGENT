@@ -116,6 +116,20 @@ PROMPT_VERSIONS = {
 # repair spend (1,670 + 408).
 READER_CORRECTION_RESERVE_TOKENS = 3_000
 
+# A conditional review whose every core record is structurally invalid is
+# resampled once (2026-11-13 ITS QA run esq0pe215y1p lost all five priorities
+# to one such response; three reruns on the same inputs passed). The retry runs
+# only when the remaining wall clock still covers the retry plus a full final
+# reader compile and review, so it never starves the Summary.
+REVIEW_FORMAT_RETRY_HEADROOM_SECONDS = (
+    CALL_BUDGETS["conditional_review"].timeout_seconds
+    + CALL_BUDGETS["reader_compiler"].timeout_seconds
+    + CALL_BUDGETS["reader_review"].timeout_seconds
+)
+# Bounded reviewer response kept in recommendation diagnostics (and so in saved
+# sessions) when every recommendation was withheld.
+SEMANTIC_REVIEW_EXCERPT_CHARS = 6_000
+
 
 class JsonClient(Protocol):
     def complete_json(
@@ -1426,6 +1440,7 @@ def run_verified_climate_pipeline(
     reviewer_verdict = "not_invoked"
     semantic_review_object_ids: list[str] = []
     correction_trace: dict[str, object] = {}
+    review_retry_trace: dict[str, object] = {}
     verification_issues: dict[str, dict] = {}
     review: dict[str, object] = {}
     review_input: dict[str, object] = {}
@@ -1461,14 +1476,53 @@ def run_verified_climate_pipeline(
             cancel_event=cancel_event,
             deadline=deadline,
         )
-        reviewer_verdict = _text(review.get("verdict"), "block").casefold()
-        review_reasons = _bounded_reason_codes(review.get("reason_codes"))
         priority_ids = {item.recommendation_id for item in priorities}
         core_admission = reconcile_core_reviews(
             review,
             (item.recommendation_id for item in priorities),
             (item["block_id"] for item in block_records),
         )
+        if set(core_admission.invalid_core_ids) >= priority_ids:
+            # Every core record failed the structural contract (citation IDs that
+            # are not source blocks, verdict/code mismatch, missing records). That
+            # is a format slip, not a judgment, and would otherwise withhold every
+            # priority. Resample the identical request once when the deadline
+            # still leaves the final reader its full time.
+            review_retry_trace = {
+                "first_review": _diagnostic_snapshot(review),
+                "first_invalid_core_ids": list(core_admission.invalid_core_ids),
+            }
+            if deadline - time.monotonic() >= REVIEW_FORMAT_RETRY_HEADROOM_SECONDS:
+                repairs.append("SEMANTIC_REVIEW_FORMAT_RETRY_ATTEMPTED")
+                try:
+                    retried_review = _call(
+                        clients.reviewer,
+                        "conditional_review",
+                        review_input,
+                        latency_ms,
+                        cancel_event=cancel_event,
+                        deadline=deadline,
+                    )
+                except PipelineCancelled:
+                    raise
+                except Exception as error:
+                    review_retry_trace["failure"] = type(error).__name__
+                else:
+                    retried_admission = reconcile_core_reviews(
+                        retried_review,
+                        (item.recommendation_id for item in priorities),
+                        (item["block_id"] for item in block_records),
+                    )
+                    review_retry_trace["retry_invalid_core_ids"] = list(
+                        retried_admission.invalid_core_ids)
+                    if (len(retried_admission.invalid_core_ids)
+                            < len(core_admission.invalid_core_ids)):
+                        review, core_admission = retried_review, retried_admission
+                        review_retry_trace["adopted"] = True
+            else:
+                review_retry_trace["skipped"] = "deadline"
+        reviewer_verdict = _text(review.get("verdict"), "block").casefold()
+        review_reasons = _bounded_reason_codes(review.get("reason_codes"))
         review_reasons.extend(core_admission.reason_codes)
         readiness_ids = {item.flag_id for item in readiness}
         disputed_readiness_ids = readiness_ids & (
@@ -2136,6 +2190,7 @@ def run_verified_climate_pipeline(
             "review_input": _diagnostic_snapshot(review_input),
             "reviewed_recommendations": _diagnostic_snapshot(review_input.get("recommendations", [])),
             "semantic_review": _diagnostic_snapshot(review),
+            "semantic_review_retry": review_retry_trace,
             "recommendation_correction": correction_trace,
             "drafting_suppressions": drafting_suppressions,
             "final_reader": reader_trace,
@@ -2169,6 +2224,16 @@ def run_verified_climate_pipeline(
             "semantic_review_object_ids": semantic_review_object_ids,
             "candidate_suppressions": candidate_suppressions,
             **({"verification_issues": verification_issues} if verification_issues else {}),
+            **({"semantic_review_retry": {
+                key: review_retry_trace[key]
+                for key in ("first_invalid_core_ids", "retry_invalid_core_ids",
+                            "adopted", "failure", "skipped")
+                if key in review_retry_trace}} if review_retry_trace else {}),
+            # Saved sessions keep only the reader model, so carry a bounded copy
+            # of the reviewer response whenever every recommendation was withheld.
+            **({"semantic_review_excerpt": _diagnostic_snapshot(review)["json"][
+                :SEMANTIC_REVIEW_EXCERPT_CHARS]}
+               if parsed_candidate_count > 0 and not priorities and review else {}),
         },
         "manifest": safe_log_summary(manifest),
     }
