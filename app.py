@@ -27,6 +27,7 @@ from fcv_core_research import (
 from fcv_distillation import distill_doc_parts_stream
 from live_source_policy import extract_project_ids
 import regime_router
+import review_stage as review_stage_mod
 import stage3_prose
 from sector_lenses.climate_native import (
     build_climate_repair_prompt,
@@ -4300,6 +4301,35 @@ def build_regime_header(preparation_regime, processing_model, es_regime, instrum
     )
 
 
+def append_review_stage_blocks(stage_prompt, stage, review_stage, regime_context, review_mode):
+    """Append the user-selected review-stage framing (Stage 2/3) and, at Stage 3,
+    the due-diligence checklist instruction. Returns the prompt unchanged when no
+    stage was selected and no checklist applies (legacy / unresolved runs)."""
+    block = review_stage_mod.review_stage_prompt_block(review_stage)
+    if block:
+        stage_prompt = stage_prompt + "\n\n" + block
+    if stage == 3:
+        column, _note = review_stage_mod.checklist_column(review_stage, regime_context, review_mode)
+        stage_prompt = stage_prompt + review_stage_mod.checklist_prompt_block(column)
+    return stage_prompt
+
+
+def review_stage_done_fields(parsed, review_stage, regime_context, review_mode):
+    """Stage 3 done-event fields for the review stage and checklist."""
+    column, note = review_stage_mod.checklist_column(review_stage, regime_context, review_mode)
+    rows = (review_stage_mod.normalize_dd_checklist((parsed or {}).get('dd_checklist'), column)
+            if column else [])
+    stage = review_stage_mod.normalize_review_stage(review_stage)
+    return {
+        'review_stage': stage,
+        'review_stage_label': review_stage_mod.REVIEW_STAGES.get(stage, {}).get('label', ''),
+        'review_stage_notice': review_stage_mod.stage_conflict_notice(regime_context, review_stage),
+        'dd_checklist': rows,
+        'dd_checklist_column': review_stage_mod.COLUMN_LABELS.get(column, '') if column else '',
+        'dd_checklist_note': note,
+    }
+
+
 def extract_horizon_considerations(stage3_output: str) -> str:
     """Extract Horizon Considerations section from Stage 3 output.
     Returns the text content or empty string if not found.
@@ -7049,6 +7079,7 @@ def extract_priorities(
         'dpf_watch': [],
         'p4r_watch': [],
         'regional_watch': [],
+        'dd_checklist': [],
     }
 
     m = re.search(r'%%%JSON_START%%%(.*?)%%%JSON_END%%%', text, re.DOTALL)
@@ -7383,6 +7414,9 @@ def extract_priorities(
         'wider_fcv_context': wider_fcv_context,
         'climate_unlinked': climate_unlinked,
         'climate_total': climate_total,
+        # Optional due-diligence checklist rows (2026-11-16); validated against the
+        # review stage's question set when the done event is built.
+        'dd_checklist': data.get('dd_checklist') if isinstance(data.get('dd_checklist'), list) else [],
     }
 
 
@@ -9510,6 +9544,11 @@ def run_stage():
         )
         review_mode = data.get('review_mode', 'design').strip()  # 'design' or 'implementation'
         is_impl = (review_mode == 'implementation')
+        review_stage = review_stage_mod.normalize_review_stage(data.get('review_stage'))
+        if review_stage:
+            data['regime_context'] = review_stage_mod.apply_review_stage(
+                data.get('regime_context'), review_stage
+            )
         _native_climate_stage2 = (
             not is_impl and stage == 2 and climate_active(analysis_state)
         )
@@ -9750,6 +9789,9 @@ def run_stage():
                 )
                 if _s2_regime_header:
                     stage_prompt = stage_prompt + "\n\n" + _s2_regime_header
+                stage_prompt = append_review_stage_blocks(
+                    stage_prompt, 2, review_stage, _s2_regime, review_mode
+                )
 
                 stage_prompt = (
                     stage_prompt +
@@ -10122,6 +10164,9 @@ def run_stage():
                     data.get('temporal_context', {}),
                     review_mode,
                     lens_context['active_lenses'],
+                )
+                stage_prompt = append_review_stage_blocks(
+                    stage_prompt, 3, review_stage, data.get('regime_context') or {}, review_mode
                 )
             if _native_climate_stage3:
                 messages = [{"role": "user", "content": stage_prompt}]
@@ -10723,6 +10768,10 @@ def run_stage():
                     ]
                     if _native_climate_stage3:
                         done_data['lens_diagnostic'] = _native_climate_stage3_diagnostic
+                    else:
+                        done_data.update(review_stage_done_fields(
+                            parsed, review_stage, data.get('regime_context') or {}, review_mode
+                        ))
 
                 yield f"data: {json.dumps(done_data)}\n\n"
 
@@ -11074,6 +11123,7 @@ def run_express():
         )
         review_mode = data.get('review_mode', 'design').strip()
         is_impl = (review_mode == 'implementation')
+        review_stage = review_stage_mod.normalize_review_stage(data.get('review_stage'))
         user_context = data.get('user_context', '').strip()  # optional user-supplied context
         priority_questions = normalize_priority_questions(data.get('priority_questions'))
         if not documents:
@@ -11579,6 +11629,8 @@ def run_express():
                 instrument_type = extract_instrument_type(stage1_output)
                 temporal_context = extract_temporal_context(stage1_output)
                 regime_context = extract_regime_context(stage1_output, instrument_type)
+                if review_stage:
+                    regime_context = review_stage_mod.apply_review_stage(regime_context, review_stage)
                 # NEW: extract classification, sector, flags
                 country_classification = extract_country_classification(stage1_output)
                 context_flags = extract_context_flags(stage1_output)
@@ -11748,6 +11800,9 @@ def run_express():
                     )
                     if _e2_regime_header:
                         stage2_prompt = stage2_prompt + "\n\n" + _e2_regime_header
+                    stage2_prompt = append_review_stage_blocks(
+                        stage2_prompt, 2, review_stage, _e2_regime, review_mode
+                    )
 
                     confirmed_category_e2 = (
                         country_classification.get('category', 'General')
@@ -12148,6 +12203,9 @@ def run_express():
                         review_mode,
                         lens_context_s3['active_lenses'],
                     )
+                    stage3_prompt = append_review_stage_blocks(
+                        stage3_prompt, 3, review_stage, regime_context or {}, review_mode
+                    )
                 stage3_messages = (
                     [{"role": "user", "content": stage3_prompt}]
                     if _native_climate_s3 else
@@ -12265,6 +12323,10 @@ def run_express():
                 _stage3_done['concise_readout'] = parsed.get('concise_readout')
                 if _native_climate_s3:
                     _stage3_done['lens_diagnostic'] = lens_diagnostic
+                else:
+                    _stage3_done.update(review_stage_done_fields(
+                        parsed, review_stage, regime_context or {}, review_mode
+                    ))
                 yield f"data: {json.dumps(_stage3_done)}\n\n"
 
                 # ── Express complete ──
@@ -14005,6 +14067,9 @@ def download_report():
                 bold=True, color=AMBER,
             )
         add_climate_notice()
+        review_stage_notice = str(data.get('review_stage_notice') or '').strip()
+        if review_stage_notice and not climate_valid:
+            _add_single_para(review_stage_notice, size=9, color=WB_GRAY)
 
         # ── FCV Risk Exposure ──
         if climate_valid:
@@ -14169,6 +14234,30 @@ def download_report():
                 ]
                 if who_when_resources:
                     report.who_strip(who_when_resources)
+
+        # ── Due-diligence checklist (2026-11-16) ──
+        if not climate_valid:
+            dd_rows = review_stage_mod.normalize_dd_checklist(data.get('dd_checklist'))
+            dd_note = str(data.get('dd_checklist_note') or '').strip()
+            if dd_rows:
+                column_label = str(data.get('dd_checklist_column') or '').strip()
+                _add_section_heading('Due-Diligence Checklist')
+                report.info_box(
+                    'The questions follow the FCV due-diligence review'
+                    + (f' ({column_label})' if column_label else '')
+                    + '. The notes say what the package shows on each question and where to look; '
+                    'they are not ratings.',
+                    size=9.5, keep=True,
+                )
+                report.data_table(
+                    ['#', 'Question', 'Notes'],
+                    [0.35, 2.75, CONTENT_W - 3.1],
+                    [[str(i), f"{row['element']}: {row['question']}", row['note']]
+                     for i, row in enumerate(dd_rows, start=1)],
+                    keep_together=False,
+                )
+            elif dd_note:
+                _add_single_para(dd_note, size=9, color=WB_GRAY)
 
         # ── Watch List for Supervision ──
         if mid_cycle_watch:

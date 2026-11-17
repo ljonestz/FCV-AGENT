@@ -548,6 +548,18 @@
     return labels.filter(l => counts[l.key]).map(l => ({ text: `${prefix || ''}${counts[l.key]} ${l.text}`, cls: l.cls }));
   }
 
+  // Due-diligence checklist (2026-11-16): collapsed, plain notes, no status labels.
+  function ddChecklistSection(k, h, dd) {
+    if (!dd || typeof dd !== 'object') return '';
+    const rows = (Array.isArray(dd.dd_checklist) ? dd.dd_checklist : [])
+      .filter(r => r && typeof r === 'object' && r.question && r.note).slice(0, 6);
+    if (!rows.length) return '';
+    const items = rows.map((r, i) => `<div class="fr-check fr-dd-row"><span class="fr-check-num">${String(i + 1).padStart(2, '0')}</span><div><h4 class="fr-check-title">${k.esc(r.element || '')}</h4><p class="fr-dd-q" dir="auto">${k.esc(r.question)}</p><p dir="auto" class="fr-p">${k.esc(r.note)}</p></div></div>`).join('');
+    const column = dd.dd_checklist_column ? ` (${k.esc(dd.dd_checklist_column)})` : '';
+    const intro = `<p class="fr-intro">These questions follow the FCV due-diligence review${column}. The notes say what the package shows on each question and where to look; they are not ratings.</p>`;
+    return k.section('fr-dd', h('Due-Diligence Checklist') + k.disclosure('Due-diligence checklist for this review', intro + items, rows.length));
+  }
+
   function renderNormal(k, data) {
     const verifyNotes = [];
     const d = scrubDeep(data || {}, verifyNotes);
@@ -556,6 +568,8 @@
     const priorities = Array.isArray(d.priorities) ? d.priorities.slice(0, 5) : [];
     // Ratings stay in the data (ITS parity) but are not displayed; each card shows a one-sentence judgment.
     let head = d.noticesHtml || '';
+    const dd = d.ddChecklist && typeof d.ddChecklist === 'object' ? d.ddChecklist : null;
+    if (dd && dd.review_stage_notice) head += `<p class="fr-note fr-stage-notice" dir="auto">${k.esc(dd.review_stage_notice)}</p>`;
     head += k.scorecard([
       { key: 'sensitivity', label: 'FCV Sensitivity', summary: headline(k, d.sensitivitySummary), def: DEFINITIONS.sensitivity },
       { key: 'responsiveness', label: 'FCV Responsiveness', summary: headline(k, d.responsivenessSummary), def: DEFINITIONS.responsiveness },
@@ -618,6 +632,8 @@
       html += k.section('fr-cards-sec', h('Priority Actions for the Task Team') + intro + (s.framing ? k.prose(s.framing) : '') + k.cards(cards, n));
     }
 
+    html += ddChecklistSection(k, h, dd);
+
     const smaller = (Array.isArray(d.smallerPoints) ? d.smallerPoints : []).filter(x => x && x.title);
     if (smaller.length) {
       html += k.section('fr-checks', h('Smaller Points to Check During Preparation')
@@ -639,6 +655,7 @@
       ...provenanceLimits(d.fileNames, researchFailed ? '' : d.researchBrief),
       researchFailed ? RESEARCH_FAILED_NOTE : '',
       d.partial ? 'This run is partial; some sections may be missing.' : '',
+      dd && !(Array.isArray(dd.dd_checklist) && dd.dd_checklist.length) ? (dd.dd_checklist_note || '') : '',
       NORMAL_LIMITATION,
     ];
     html += k.section('fr-limits-sec', h('Limitations') + k.disclosure(LIMITS_SUMMARY, k.limitsBox(limits, verifyNotes)));

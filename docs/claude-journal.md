@@ -2378,3 +2378,17 @@ Full suite before test updates: 2338 passed, 13 failed (all gauge/scale assertio
 contract); affected files after updates: 330 passed. No paid run yet; output quality unvalidated.
 Design note for the process-stage selector and due-diligence checklist:
 docs/superpowers/specs/2026-11-16-process-stage-toggle-and-dd-checklist-design.md.
+
+### 2026-11-16 Review-stage selector and due-diligence checklist
+
+Upload screen asks (optional, no default) where the operation is: Technical Design, Implementation
+Readiness, One Review, legacy Concept (PCN/PID), legacy Appraisal/Decision Review (PAD), Additional
+Financing OR Restructuring, or Not sure. Blank or Not sure keeps today's detection. A selection pins
+the regime used by the header, reference floor and timing, adds a short framing block to Stages 2-3,
+and shows one neutral notice when the documents look different. Stage 3 returns an optional
+`dd_checklist` (4-6 plain notes, no status labels) against the due-diligence proposal's Annex I
+questions, rendered as a collapsed section after the priorities (browser and Word). Legacy runs get no
+checklist and a one-line "not needed" note. Code: `review_stage.py`, `app.py`
+(`append_review_stage_blocks`, `review_stage_done_fields`), `static/fcv_readout.js`, `index.html`.
+Step-by-step now sends `regime_context`. Climate-verified route unchanged. Tests:
+`tests/test_review_stage.py` (13). Parity logged.
