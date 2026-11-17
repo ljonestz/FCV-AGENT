@@ -132,7 +132,7 @@ for (const question of ['How sensitive is this project to climate and FCV consid
   const html = renderClimateVerifiedAssessment({climate_sensitivity_rating:{question, value:'strong', label:'Strong', level:4}});
   if (!html.includes('How well does the design recognize and manage interacting climate and FCV risks, and avoid doing harm?')) throw new Error('canonical rating question missing');
   if (html.includes('How sensitive is this project to climate and FCV considerations?')) throw new Error('legacy wording leaked');
-  if (!html.includes('>Strong<')) throw new Error('saved score changed');
+  if (html.includes('>Strong<')) throw new Error('rating label should not be displayed (2026-11-16)');
 }
 """
     result = _run_node(script)

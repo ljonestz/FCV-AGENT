@@ -415,18 +415,29 @@
       return `<div class="fr-meter" role="img" aria-label="${level} of ${steps}" data-copy-skip>${segments}</div>`;
     }
 
+    // A tile with a `summary` shows that one-sentence judgment instead of a rating label and meter.
+    function scoreTile(t) {
+      if (t.summary !== undefined) {
+        const body = String(t.summary || '').trim();
+        return `<div class="fr-sc-tile fr-sc-tile-summary" data-fr-rating="${esc(t.key)}"><div class="fr-sc-label">${esc(t.label)}</div>${body ? `<p class="fr-sc-summary" dir="auto">${esc(body)}</p>` : ''}<div class="fr-sc-def">${esc(t.def)}</div></div>`;
+      }
+      return `<div class="fr-sc-tile" data-fr-rating="${esc(t.key)}"><div class="fr-sc-label">${esc(t.label)}</div><div class="fr-sc-value">${esc(t.value || 'Not available')}</div>${meter(t.steps, t.level)}${t.level ? `<div class="fr-sc-scale" data-copy-skip><span>${esc(t.lo)}</span><span class="fr-sc-of">${t.level} of ${t.steps}</span><span>${esc(t.hi)}</span></div>` : ''}<div class="fr-sc-def">${esc(t.def)}</div></div>`;
+    }
+
     function scorecard(tiles, count) {
-      const tileHtml = tiles.map(t => `<div class="fr-sc-tile" data-fr-rating="${esc(t.key)}"><div class="fr-sc-label">${esc(t.label)}</div><div class="fr-sc-value">${esc(t.value || 'Not available')}</div>${meter(t.steps, t.level)}${t.level ? `<div class="fr-sc-scale" data-copy-skip><span>${esc(t.lo)}</span><span class="fr-sc-of">${t.level} of ${t.steps}</span><span>${esc(t.hi)}</span></div>` : ''}<div class="fr-sc-def">${esc(t.def)}</div></div>`).join('');
+      const tileHtml = tiles.map(scoreTile).join('');
+      const summaryMode = tiles.some(t => t.summary !== undefined);
       const pills = (count.pills || []).map(p => `<span class="fr-pill ${p.cls}">${esc(p.text)}</span>`).join('');
       // With priorities, the tile is a jump link to them; the route fills in the section id at the end.
       const linked = Number(count.number) > 0;
       const countTag = linked ? `<a class="fr-sc-count fr-sc-count-link" href="#${PRIORITIES_HREF}" aria-label="Go to the priority actions">` : '<div class="fr-sc-count">';
       const countEnd = linked ? '</a>' : '</div>';
-      return `<p class="fr-sc-lead">${esc(SCORECARD_LEAD)}</p><section class="fr-scorecard" aria-label="Assessment ratings">${tileHtml}${countTag}<div class="fr-sc-count-lbl">${esc(count.label)}</div><div class="fr-sc-count-num">${Number(count.number) || 0}</div>${pills ? `<div class="fr-sc-pills">${pills}</div>` : ''}${count.def ? `<div class="fr-sc-count-def">${esc(count.def)}</div>` : ''}${countEnd}</section>`;
+      return `<p class="fr-sc-lead">${esc(summaryMode ? SUMMARY_CARD_LEAD : SCORECARD_LEAD)}</p><section class="fr-scorecard" aria-label="${summaryMode ? 'Assessment summary' : 'Assessment ratings'}">${tileHtml}${countTag}<div class="fr-sc-count-lbl">${esc(count.label)}</div><div class="fr-sc-count-num">${Number(count.number) || 0}</div>${pills ? `<div class="fr-sc-pills">${pills}</div>` : ''}${count.def ? `<div class="fr-sc-count-def">${esc(count.def)}</div>` : ''}${countEnd}</section>`;
     }
 
+    // Rows without a `value` key show the judgment only (no rating pill).
     function ratingRows(rows) {
-      return `<div class="fr-ratings">${rows.map(r => `<div class="fr-rating-row"><div class="fr-rating-meta"><div class="fr-rating-dim">${esc(r.dim)}</div><span class="fr-rating-val ${r.cls}">${esc(r.value || 'Not available')}</span><div class="fr-rating-def">${esc(r.def)}</div></div><div class="fr-rating-why">${r.whyHtml || '<p class="fr-p">No rationale was returned for this rating.</p>'}</div></div>`).join('')}</div>`;
+      return `<div class="fr-ratings">${rows.map(r => `<div class="fr-rating-row"><div class="fr-rating-meta"><div class="fr-rating-dim">${esc(r.dim)}</div>${'value' in r ? `<span class="fr-rating-val ${r.cls}">${esc(r.value || 'Not available')}</span>` : ''}<div class="fr-rating-def">${esc(r.def)}</div></div><div class="fr-rating-why">${r.whyHtml || `<p class="fr-p">${'value' in r ? 'No rationale was returned for this rating.' : 'No assessment was returned for this dimension.'}</p>`}</div></div>`).join('')}</div>`;
     }
 
     function priorityCard(p) {
@@ -514,6 +525,12 @@
   const NORMAL_LIMITATION = 'Findings are based on the text of the project documents and may miss arrangements described elsewhere. Ratings and priorities are advisory and should be confirmed through project and country expertise.';
 
   const SCORECARD_LEAD = 'The ratings below are a high-level AI assessment based on insights from the project package. They do not reflect a formal WBG or FCV Group designation. Read them as a general guide, alongside the more detailed overview and assessment that follows.';
+  const SUMMARY_CARD_LEAD = 'The summaries below are a high-level AI reading of the project package. They do not reflect a formal WBG or FCV Group designation. Read them as a general guide, alongside the more detailed overview and assessment that follows.';
+
+  // One-sentence headline for a summary card: the first sentence of the full judgment.
+  function headline(k, text) {
+    return k.takeSentences(stripBold(String(text || '').split(/\n\s*\n/)[0] || ''), 1).head;
+  }
 
   // Zero gets no line: an empty list can mean a withheld or incomplete stage, not "none needed".
   function countDef(n, one, many) {
@@ -537,11 +554,11 @@
     const h = k.numbering();
     const s = parseStage3Sections(d.stage3Markdown);
     const priorities = Array.isArray(d.priorities) ? d.priorities.slice(0, 5) : [];
-    const levelOf = v => FCV_SCALE.findIndex(x => x.toLowerCase() === String(v || '').toLowerCase()) + 1;
+    // Ratings stay in the data (ITS parity) but are not displayed; each card shows a one-sentence judgment.
     let head = d.noticesHtml || '';
     head += k.scorecard([
-      { key: 'sensitivity', label: 'FCV Sensitivity', value: d.fcvRating, steps: 6, level: levelOf(d.fcvRating), lo: FCV_SCALE[0], hi: FCV_SCALE[5], def: DEFINITIONS.sensitivity },
-      { key: 'responsiveness', label: 'FCV Responsiveness', value: d.fcvResponsivenessRating, steps: 6, level: levelOf(d.fcvResponsivenessRating), lo: FCV_SCALE[0], hi: FCV_SCALE[5], def: DEFINITIONS.responsiveness },
+      { key: 'sensitivity', label: 'FCV Sensitivity', summary: headline(k, d.sensitivitySummary), def: DEFINITIONS.sensitivity },
+      { key: 'responsiveness', label: 'FCV Responsiveness', summary: headline(k, d.responsivenessSummary), def: DEFINITIONS.responsiveness },
     ], { label: 'Priority actions', number: priorities.length, def: countDef(priorities.length, 'priority action', 'priority actions'), pills: countPills(priorities, p => String(p.risk_level || '').toLowerCase(), [
       { key: 'high', text: 'high priority', cls: 'fr-pill-high' }, { key: 'medium', text: 'medium priority', cls: 'fr-pill-medium' }, { key: 'low', text: 'low priority', cls: 'fr-pill-low' }]) });
 
@@ -568,12 +585,12 @@
       html += k.section('fr-risk', h('FCV Risk Exposure') + k.prose(s.risk));
     }
 
-    if (d.fcvRating || d.fcvResponsivenessRating || d.sensitivitySummary || d.responsivenessSummary) {
+    if (d.sensitivitySummary || d.responsivenessSummary) {
       html += k.section('fr-ratings-sec', h('FCV Sensitivity and Responsiveness')
-        + k.intro('Each rating rests on the judgment summarized here.')
+        + k.intro('The fuller judgment behind each summary at the top of this note.')
         + k.ratingRows([
-          { dim: 'FCV Sensitivity', value: d.fcvRating, cls: 'fr-rv-sens', def: DEFINITIONS.sensitivity, whyHtml: k.prose(d.sensitivitySummary) },
-          { dim: 'FCV Responsiveness', value: d.fcvResponsivenessRating, cls: 'fr-rv-resp', def: DEFINITIONS.responsiveness, whyHtml: k.prose(d.responsivenessSummary) },
+          { dim: 'FCV Sensitivity', def: DEFINITIONS.sensitivity, whyHtml: k.prose(d.sensitivitySummary) },
+          { dim: 'FCV Responsiveness', def: DEFINITIONS.responsiveness, whyHtml: k.prose(d.responsivenessSummary) },
         ]));
     }
 
@@ -709,7 +726,6 @@
     const sens = Object.assign({}, judgment('sensitivity'));
     if (!sens.value && csr.value) sens.value = csr.value;
     const resp = judgment('responsiveness');
-    const level = v => CLIMATE_SCALE.indexOf(String(v || '')) + 1;
     const priorities = (Array.isArray(r.priorities) ? r.priorities : []).slice()
       .sort((a, b) => (Number(a.rank) || 999) - (Number(b.rank) || 999)).slice(0, 5);
 
@@ -723,9 +739,10 @@
       : confKeys.map(c => ({ text: `${confCounts[c]} ${c} confidence`, cls: 'fr-pill-conf ' + CONFIDENCE_CLASS[c] }));
 
     let head = o.noticesHtml || '';
+    // As on the normal route: ratings stay in the reader data but each card shows a one-sentence judgment.
     head += k.scorecard([
-      { key: 'climate-sensitivity', label: 'Climate-FCV sensitivity', value: climateLabel(sens.value), steps: 5, level: level(sens.value), lo: 'Very limited', hi: 'Very strong', def: DEFINITIONS.climateSensitivity },
-      { key: 'climate-responsiveness', label: 'Climate-FCV responsiveness', value: climateLabel(resp.value), steps: 5, level: level(resp.value), lo: 'Very limited', hi: 'Very strong', def: DEFINITIONS.climateResponsiveness },
+      { key: 'climate-sensitivity', label: 'Climate-FCV sensitivity', summary: headline(k, sens.rationale), def: DEFINITIONS.climateSensitivity },
+      { key: 'climate-responsiveness', label: 'Climate-FCV responsiveness', summary: headline(k, resp.rationale), def: DEFINITIONS.climateResponsiveness },
     ], { label: 'Priority actions', number: priorities.length, def: countDef(priorities.length, 'priority action', 'priority actions'), pills: confPills });
 
     const overview = (Array.isArray(r.summary_overview) ? r.summary_overview : [r.summary_overview]).map(t => String(t || '').trim()).filter(Boolean)
@@ -780,11 +797,11 @@
     const notes = [rel.value ? `<p><strong>Climate relevance: ${k.esc(climateLabel(rel.value))}.</strong> ${k.esc(rel.rationale || '')}</p>` : '',
       ops.value ? `<p><strong>Operationalizing climate and FCV: ${k.esc(climateLabel(ops.value))}.</strong> ${k.esc(OPS_DEFINITION)} ${k.esc(ops.rationale || '')}</p>` : ''].join('');
     html += k.section('fr-ratings-sec', h('Climate-FCV Sensitivity and Responsiveness')
-      + k.intro('Each rating rests on the judgment summarized here.')
+      + k.intro('The fuller judgment behind each summary at the top of this note.')
       + k.ratingRows([
-        { dim: 'Climate-FCV sensitivity', value: climateLabel(sens.value), cls: climatePillClass(sens.value), def: DEFINITIONS.climateSensitivity, whyHtml: k.paragraphs([sens.rationale || sens.description]) },
-        { dim: 'Climate-FCV responsiveness', value: climateLabel(resp.value), cls: climatePillClass(resp.value), def: DEFINITIONS.climateResponsiveness, whyHtml: k.paragraphs([resp.rationale || resp.description]) },
-      ]) + (notes ? `<div class="fr-ops-note"><div class="fr-ops-lbl">Supporting judgments (not shown on the scorecard)</div>${notes}</div>` : ''));
+        { dim: 'Climate-FCV sensitivity', def: DEFINITIONS.climateSensitivity, whyHtml: k.paragraphs([sens.rationale || sens.description]) },
+        { dim: 'Climate-FCV responsiveness', def: DEFINITIONS.climateResponsiveness, whyHtml: k.paragraphs([resp.rationale || resp.description]) },
+      ]) + (notes ? `<div class="fr-ops-note"><div class="fr-ops-lbl">Supporting judgments (not shown in the summary)</div>${notes}</div>` : ''));
 
     const statement = (r.priority_summary && r.priority_summary.statement) || '';
     if (priorities.length) {

@@ -5019,6 +5019,10 @@ Format each finding as a paragraph. At the end of each finding paragraph, place 
 "[finding text] **[R]** *FCV Strategy Shift: Jobs & Private Sector*"
 "[finding text] **[S+R]** *FCV Strategy Shift: Differentiate*"
 
+## M&E calibration (applies to every results, indicator and monitoring finding)
+
+Keep M&E expectations proportionate to what one operation can attribute and measure within its life. Do not treat the absence of PDO- or outcome-level indicators of peace, stability, social cohesion or conflict reduction as a gap: these outcomes are rarely attributable to a single project and are better assessed at completion (ICR) or through country-level analysis. Focus M&E findings on: (1) whether the number and complexity of indicators is realistic for the monitoring capacity, data systems and access conditions (a very large indicator set is itself a monitoring risk); (2) whether beneficiary indicators are disaggregated by the groups that matter in this context (for example sex, age or displacement status) and, where the geographic scope makes it relevant, by region or area; (3) whether FCV-relevant monitoring is tied to the PDO and the existing Results Framework rather than a parallel system; and (4) whether monitoring can flag early warning that implementation is having unintended negative effects. Where the PDO itself explicitly targets an FCV driver, indicators for that objective can be assessed.
+
 ## Do No Harm (after all themes, before synthesis)
 
 Assess the project against these 9 Do No Harm principles:
@@ -5545,10 +5549,12 @@ Then write the following two summary paragraphs (these will be stripped from the
 
 **FCV Sensitivity Summary (80-100 words):**
 Write a paragraph of 80-100 words assessing the project's overall FCV SENSITIVITY standing. Cover: how well the project avoids doing harm in the FCV context, the quality of its contextual awareness, and its operational readiness. Be direct about the overall level — do not hedge. Reference 1-2 specific strengths and 1-2 specific gaps from the Stage 2 assessment.
+Open with ONE sentence (at most 35 words) that states the overall judgment on its own: it is shown alone in the summary box at the top of the note, so it must make sense without the rest of the paragraph. Do not name a rating label (such as "Adequate" or "Well Embedded") anywhere in the paragraph; describe what the project does well and what it does not.
 (This paragraph will also be reproduced faithfully in the JSON block as `sensitivity_summary`.)
 
 **FCV Responsiveness Summary (80-100 words):**
-Write a paragraph of 80-100 words assessing the project's FCV RESPONSIVENESS — the degree to which it actively contributes to addressing root drivers of fragility and/or building resilience. Anchor this explicitly to whichever of the four FCV Strategy 2026-2030 pillars (Shift A: Anticipate, Shift B: Differentiate, Shift C: Jobs & Private Sector, Shift D: Enhanced Toolkit) are most relevant to this project's context and sector. Be honest: many projects will have low responsiveness scores. Say so clearly and explain what the missed opportunity is, rather than inflating the assessment.
+Write a paragraph of 80-100 words assessing the project's FCV RESPONSIVENESS — the degree to which it actively contributes to addressing root drivers of fragility and/or building resilience. Anchor this explicitly to whichever of the four FCV Strategy 2026-2030 pillars (Shift A: Anticipate, Shift B: Differentiate, Shift C: Jobs & Private Sector, Shift D: Enhanced Toolkit) are most relevant to this project's context and sector. Responsiveness is not expected of every project: it means purposefully addressing an FCV driver or strengthening resilience, which goes beyond FCV sensitivity. Highlight where the project does this and which of its features count as responsiveness. Do not criticize a project for limited responsiveness, and do not frame its absence as a gap or weakness, unless the project has obvious responsiveness potential that it ignores (for example, its objectives or beneficiaries directly concern an FCV driver such as displacement or exclusion, yet the design makes no link to it); only then name that missed opportunity, constructively. Do not inflate the assessment: where the project simply operates in an FCV setting without aiming to address drivers, say so neutrally.
+Open with ONE sentence (at most 35 words) that states the judgment on its own: it is shown alone in the summary box at the top of the note, so it must make sense without the rest of the paragraph. Do not name a rating label anywhere in the paragraph.
 (This paragraph will also be reproduced faithfully in the JSON block as `responsiveness_summary`.)
 
 ---
@@ -5593,6 +5599,7 @@ For each action, provide:
 - `guidance`: 2-3 sentences (up to 4 for complex actions) describing what to add or revise and why. Be specific: name the concrete content to include (e.g. which indicators, which stakeholder groups, which risk triggers). Enough detail that the TTL knows exactly what "good" looks like without needing to interpret. **CPF linkage (optional):** If a CPF was uploaded and this specific action would directly help strengthen a named CPF priority or outcome (as identified in the CPF content extracted in Stage 1), add a single sentence at the end of the guidance: "This would also help advance [CPF outcome/priority name as stated in the CPF]." Only add this where a genuine, specific linkage exists — do not force it for every action, and do not fabricate CPF outcome names.
 - `suggested_language`: 2-3 sentences of ready-to-paste draft text for the specific document element named above. Write in formal WBG project document register. Be concrete and specific to this project's context, geography, sector, and implementation arrangements — the TTL should be able to insert this into the PAD section or commitment with minimal editing. Name specific actors, locations, mechanisms, or thresholds where possible rather than using placeholder language.
 When drafting suggested language for a Results Framework indicator, provide the full specification: (1) indicator name; (2) unit of measurement; (3) proposed baseline and target; (4) data source; (5) collection frequency; (6) if the project is in an access-constrained context, a one-sentence data contingency (e.g., 'In the event of access restrictions, TPM/remote verification will be used'). Do not produce indicator names alone.
+M&E calibration: do not recommend new PDO- or outcome-level indicators of peace, stability, social cohesion or conflict reduction unless the PDO itself explicitly targets that FCV driver; such outcomes are rarely attributable to one operation and belong to completion (ICR) or country-level assessment. Prefer M&E actions that keep the indicator set manageable for the available monitoring capacity, add disaggregation of beneficiaries (and by region or area where the geographic scope warrants), tie FCV-relevant monitoring to the PDO and existing Results Framework, or add early-warning signals of unintended negative effects.
 WHO_ACTS: [Semicolon-separated from: TTL; PIU; Government; FCV CC; FM Team; ESF Team; Technical Team; M&E Team]
 WHEN: [One of: Identification | Preparation | Appraisal | Implementation | Restructuring — must be appropriate for {doc_type} stage]
 ACTION_TIMING: [One of: flag-for-preparation | required-before-appraisal | required-before-board | next-series | supervision]
@@ -6269,11 +6276,11 @@ The main implementation-stage FCV gaps, constructively framed.
 %%%PRIORITIES_START%%%
 
 **FCV Sensitivity Summary (80–100 words):**
-How the project is currently managing FCV sensitivity in implementation.
+How the project is currently managing FCV sensitivity in implementation. Open with ONE sentence (at most 35 words) that states the judgment on its own, because it is shown alone in the summary box at the top of the note. Do not name a rating label.
 (Reproduced in JSON as `sensitivity_summary`.)
 
 **FCV Responsiveness Summary (80–100 words):**
-How the project is contributing to improving FCV conditions through implementation.
+How the project is contributing to improving FCV conditions through implementation. Responsiveness is not expected of every project: highlight what the project contributes and which features count as responsiveness, and do not criticize limited responsiveness unless the project has obvious potential that it ignores. Open with ONE sentence (at most 35 words) that states the judgment on its own, because it is shown alone in the summary box at the top of the note. Do not name a rating label.
 (Reproduced in JSON as `responsiveness_summary`.)
 
 ---
@@ -13508,29 +13515,16 @@ def download_report():
     def add_rating_scorecard():
         if not rating_values_present and not rating_summaries_present:
             return
-        if not (rating_values_present or priorities):
+        if not (rating_summaries_present or priorities):
             return
 
-        scale = (
-            'Extremely Low', 'Very Low', 'Low', 'Adequate',
-            'Well Embedded', 'Very Well Embedded',
-        )
-        tiles = []
-        for label, value, _ in rating_rows:
-            value = str(value or '').strip()
-            match = next(
-                (index for index, level in enumerate(scale, start=1)
-                 if level.casefold() == value.casefold()),
-                0,
-            )
-            tiles.append({
-                'label': label,
-                'value': value,
-                'n': len(scale),
-                'idx': match,
-                'lo': scale[0],
-                'hi': scale[-1],
-            })
+        # The ratings stay in the Stage 3 JSON (ITS parity) but are no longer
+        # displayed: each card carries the one-sentence opening judgment instead.
+        from fcv_docx_style import first_sentence
+        tiles = [
+            {'label': label, 'summary': first_sentence(text)}
+            for label, _, text in rating_rows
+        ]
         risk_levels = [
             str(priority.get('risk_level') or '').strip()
             for priority in priorities
@@ -13554,14 +13548,10 @@ def download_report():
             return
 
         _add_section_heading('FCV Sensitivity & Responsiveness')
-        for index, (label, value, text) in enumerate(rating_rows):
-            value = str(value or '').strip()
+        for index, (label, _, text) in enumerate(rating_rows):
             text = str(text or '').strip()
-            if value:
-                report.rating_segment(label, value, first=(index == 0))
-            elif text:
-                report.h2_caps(label)
             if text:
+                report.rating_segment(label, '', first=(index == 0))
                 add_markdown(text)
 
     def add_core_risk_exposure():

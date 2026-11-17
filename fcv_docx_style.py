@@ -367,6 +367,46 @@ def _split_first_sentence(text):
     return lead + gap, rest
 
 
+_HEADLINE_ABBREVIATIONS = {
+    "dr", "mr", "mrs", "ms", "prof", "sr", "jr", "etc", "e.g", "i.e", "vs", "no",
+    "fig", "approx", "fcv", "wbg", "op", "u.s", "u.k",
+}
+
+
+def first_sentence(text):
+    """Return the first sentence of the first paragraph (summary-card headline).
+
+    Mirrors findVisibleSentenceEnd in index.html so the Word card and the browser
+    card show the same sentence: skips abbreviations, initials, decimals and URLs."""
+    para = re.split(r"\n\s*\n", str(text or "").replace("**", "").strip())[0].strip()
+    para = re.sub(r"\s+", " ", para)
+    for index, mark in enumerate(para):
+        if mark not in ".!?":
+            continue
+        end = index + 1
+        while end < len(para) and para[end] in "\"')]":
+            end += 1
+        after = para[end:]
+        if after and not after[0].isspace():
+            continue
+        before = para[:index]
+        if mark == "." and index > 0 and index + 1 < len(para) and before[-1].isdigit() and para[index + 1].isdigit():
+            continue
+        if mark == "." and re.search(r"https?://\S*$", before, re.IGNORECASE):
+            continue
+        token_match = re.search(r"([A-Za-z][A-Za-z.]*)$", before)
+        token = token_match.group(1) if token_match else ""
+        normalized = token.lower().rstrip(".")
+        if mark == "." and (
+            normalized in _HEADLINE_ABBREVIATIONS
+            or re.fullmatch(r"(?:[a-z]\.)+[a-z]?", token, re.IGNORECASE)
+            or re.fullmatch(r"[A-Z]", token)
+        ):
+            continue
+        return para[:end].strip()
+    return para
+
+
 class Report:
     """lens: 'fcv' or 'climate'.  meta keys: title, project_line, running_label, date, classification,
     generator, disclaimer."""
@@ -650,7 +690,9 @@ class Report:
         add_run(p, "\t" + right_label, 6.5, color=GREY_TXT)
 
     def scorecard(self, tiles, count_tile, note=None):
-        """tiles: [{label, value, n, idx, lo, hi}] ; count_tile: {label, number, lines:[(text, pill_key|None)]}"""
+        """tiles: [{label, value, n, idx, lo, hi}] or [{label, summary}] ; count_tile: {label, number, lines:[(text, pill_key|None)]}
+
+        A tile carrying "summary" shows that one-sentence judgment instead of a rating value and meter."""
         w = [2.45, 2.45, CONTENT_W - 4.9]
         t = self.doc.add_table(rows=1, cols=3)
         bd = (4, GREY_LIGHT)
@@ -660,6 +702,11 @@ class Report:
             c = t.rows[0].cells[i]
             p = first_para(c); pfmt(p, after=1)
             add_run(p, tl["label"].upper(), 7.5, True, color=GREY_TXT, spacing=0.8)
+            if "summary" in tl:
+                p = c.add_paragraph(); pfmt(p, after=2)
+                p.paragraph_format.line_spacing = 1.15
+                add_run(p, tl["summary"] or "See the assessment below.", 9.5, True, color=NAVY)
+                continue
             p = c.add_paragraph(); pfmt(p, after=5)
             add_run(p, tl["value"], 13.5, True, color=NAVY)
             self.meter(c, tl["n"], tl["idx"], w[i] - 0.3, tl["lo"], tl["hi"])
@@ -696,14 +743,17 @@ class Report:
         self.spacer(6)
 
     def rating_segment(self, label, value, meaning=(), why=(), notes=(), question="", scale="", first=False):
-        """Compact rating write-up for the body (no scale graphic - that lives in the page-1 scorecard)."""
+        """Compact rating write-up for the body (no scale graphic - that lives in the page-1 scorecard).
+
+        An empty value omits the rating pill, leaving the label and the judgment."""
         p = self.doc.add_paragraph(style="Heading 2")
         pfmt(p, before=4 if first else 12, after=4, keep_next=True)
         if not first:
             p_border(p, "top", 4, GREY_LIGHT, space=10)
         add_run(p, label.upper(), 8.5, True, color=GREY_TXT, spacing=0.8)
-        add_run(p, "   ")
-        add_run(p, f" {value} ", 9.5, True, color="FFFFFF", shade=NAVY)
+        if value:
+            add_run(p, "   ")
+            add_run(p, f" {value} ", 9.5, True, color="FFFFFF", shade=NAVY)
         for m in meaning:
             q = self.doc.add_paragraph(); pfmt(q, after=3, keep_next=True)
             add_run(q, m, 9.5, True, color=NAVY)

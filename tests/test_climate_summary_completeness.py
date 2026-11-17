@@ -213,7 +213,7 @@ def test_risk_relevance_is_not_credited_as_a_project_strength():
 const exposure=renderClimateVerifiedAssessment({judgments:[{dimension:'relevance',value:'high',rationale:'Climate risks are material.'}]});
 if(exposure.includes('What the design already provides'))throw new Error('risk exposure was credited as a project strength');
 const dividend=renderClimateVerifiedAssessment({judgments:[{dimension:'responsiveness',value:'very_strong',rationale:'An evidenced design supports wider dividends.'}]});
-if(!dividend.includes('Very strong')||!dividend.includes('An evidenced design supports wider dividends.'))throw new Error('very strong contribution was lost');
+if(!dividend.includes('fr-sc-summary" dir="auto">An evidenced design supports wider dividends.')||!dividend.includes('An evidenced design supports wider dividends.'))throw new Error('very strong contribution was lost');
 """
     result = _run_node(script)
     assert result.returncode == 0, result.stderr

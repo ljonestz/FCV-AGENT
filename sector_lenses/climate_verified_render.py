@@ -9,7 +9,7 @@ from urllib.parse import urlsplit
 from pathlib import Path
 from typing import Any
 
-from fcv_docx_style import BE_AWARE, CONTENT_W, Report
+from fcv_docx_style import BE_AWARE, CONTENT_W, Report, first_sentence
 
 from fcv_presentation import priority_advisory_text
 
@@ -1846,15 +1846,10 @@ def write_reader_docx(
     minor_points = _records(model.get("minor_climate_points"))
     doc_flags = _records(model.get("review_readiness_flags"))
     cards = _rating_cards(model)
+    # Ratings stay in the reader model but are not displayed: each card carries
+    # the one-sentence opening judgment of its rationale, as on the normal route.
     tiles = [
-        {
-            "label": card["title"],
-            "value": card["label"],
-            "n": 5,
-            "idx": card["level"],
-            "lo": "Very limited",
-            "hi": "Very strong",
-        }
+        {"label": card["title"], "summary": first_sentence(card.get("rationale"))}
         for card in cards
     ]
     check_count = len(minor_points) + len(doc_flags)
@@ -1932,17 +1927,16 @@ def write_reader_docx(
         rationale = [_text(card.get("rationale"))] if _text(card.get("rationale")) else []
         report.rating_segment(
             card["title"],
-            card["label"],
+            "",
             meaning=meaning,
             why=rationale,
             question=card["question"],
-            scale="Scale: Very limited / Limited / Moderate / Strong / Very strong.",
             first=index == 0,
         )
     report.small(
-        "Not expected, Unclear and legacy Emerging are unscored. "
-        "Contributing to responsiveness is often a sign of going above and beyond. "
-        "The expected contribution depends on the project's scope."
+        "Responsiveness is not expected of every project; contributing to it is often "
+        "a sign of going above and beyond. The expected contribution depends on the "
+        "project's scope."
     )
     report.small(SENSITIVITY_RATING_CAVEAT)
 

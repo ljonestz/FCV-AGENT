@@ -2356,3 +2356,25 @@ No prompt, schema, delimiter, Stage-3 JSON, route or KB change. Follow-up if an 
 non-block citations: enum-constrain conditional_review source_block_ids (schema parity item).
 Full suite: only new difference vs main was one diagnostics-equality test updated for the excerpt;
 the 32 country-bank failures are pre-existing in a fresh worktree (bank data not present).
+
+### 2026-11-16 Qualitative S/R summaries, M&E calibration, climate paragraph shape
+Trigger: due-diligence task-team discussion (Adequate/Adequate read as contradictory; responsiveness
+should not be criticized; M&E should not push peace/stability outcome indicators) and a comparison of
+16 Nov QA/ITS outputs (climate prose is connected but paragraphs are shorter: ~72 vs 100-177 words in
+the opening; priorities comparable). Branch feat/fcv-qualitative-ratings-and-me.
+Display: top summary boxes on both routes show the first sentence of the sensitivity/responsiveness
+judgment instead of gauges (browser, Share export, Word); body section keeps the full judgment, no
+rating pill. Rating fields still generated and stored (ITS parity). first_sentence() in
+fcv_docx_style mirrors findVisibleSentenceEnd so Word and browser pick the same sentence. Server
+climate HTML (review packet only) left labelled.
+Prompts: DEFAULT_PROMPTS 3/impl_3 and climate judgment prompt require a standalone opening sentence
+(<=35 words), no rating label, responsiveness "not expected" with criticism only for obvious ignored
+potential. New M&E calibration in DEFAULT_PROMPTS 2 and 3.
+Climate prose layer: Summary ~210 words in two paragraphs, findings 220-280 words in two paragraphs of
+four to six sentences, executive_readout full paragraphs, paragraph-shape rule. Hard ceilings
+unchanged; reader_review/reader_correction untouched (layer contract test).
+Tests: 13 existing tests updated from gauge assertions; new tests/test_qualitative_rating_summaries.py.
+Full suite before test updates: 2338 passed, 13 failed (all gauge/scale assertions or the layer
+contract); affected files after updates: 330 passed. No paid run yet; output quality unvalidated.
+Design note for the process-stage selector and due-diligence checklist:
+docs/superpowers/specs/2026-11-16-process-stage-toggle-and-dd-checklist-design.md.

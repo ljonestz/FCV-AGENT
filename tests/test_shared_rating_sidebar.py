@@ -81,10 +81,15 @@ def test_exports_include_responsiveness_contribution_and_scope(tmp_path):
     write_reader_docx(reader, output)
     document = Document(output)
     doc_text = "\n".join([p.text for p in document.paragraphs] + [cell.text for table in document.tables for row in table.rows for cell in row.cells])
-    for text in [render_reader_html(reader), doc_text]:
-        assert "Moderate contribution" in text
-        assert "often a sign of going above and beyond" in text
-        assert "Very limited / Limited / Moderate / Strong / Very strong" in text
+    # The server HTML (review packet only) keeps the labelled cards; the Word export
+    # shows judgments without labels or the scale (2026-11-16).
+    html_text = render_reader_html(reader)
+    assert "Moderate contribution" in html_text
+    assert "often a sign of going above and beyond" in html_text
+    assert "Very limited / Limited / Moderate / Strong / Very strong" in html_text
+    assert "often a sign of going above and beyond" in doc_text
+    assert "Moderate contribution" not in doc_text
+    assert "Very limited / Limited / Moderate / Strong / Very strong" not in doc_text
 
 
 @pytest.mark.parametrize(

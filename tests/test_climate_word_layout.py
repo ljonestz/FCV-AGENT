@@ -364,8 +364,9 @@ def test_legacy_climate_word_without_priorities_has_no_empty_priority_table(
         and "priority" in block.rows[0].cells[1].text.casefold()
         for block in blocks
     )
-    assert "Unclear" in body
-    assert "Not expected for this project" in body
+    # 2026-11-16: unscored values are no longer shown as labels; the scope note stays.
+    assert "Not expected for this project" not in body
+    assert "Responsiveness is not expected of every project" in body
 
 
 def test_climate_docx_preserves_standalone_qualification_in_amber(tmp_path):

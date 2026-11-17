@@ -584,8 +584,9 @@ def test_downloaded_report_has_climate_readout_and_context_sources():
     # The compact scorecard leads; detailed rating explanations follow findings.
     assert _docx_contains(text, "FCV Sensitivity")
     assert _docx_contains(text, "FCV Responsiveness")
-    assert _docx_contains(text, "Adequate")
-    assert _docx_contains(text, "Emerging")
+    # 2026-11-16: the cards carry one-sentence judgments; rating labels are not shown.
+    assert _docx_contains(text, "The project recognizes key FCV risks and remaining gaps.")
+    assert not _docx_contains(text, "Emerging")
     assert _docx_index(text, "FCV Sensitivity & Responsiveness") > _docx_index(
         text, "How climate and FCV dynamics could affect this project"
     )

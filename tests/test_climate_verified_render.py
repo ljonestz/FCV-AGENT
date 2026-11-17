@@ -1420,7 +1420,8 @@ def test_docx_writer_accepts_an_in_memory_stream():
     assert BE_AWARE[0] in document_text
     assert document_text.index(BE_AWARE[0]) < document_text.index("Overview")
     assert document_text.index(BE_AWARE[0]) < document_text.index("Candidate country evidence: preview; not approved.") < document_text.index("Overview")
-    assert "Scale: Very limited / Limited / Moderate / Strong / Very strong." in document_text
+    # 2026-11-16: judgments replace rating labels and the scale in the Word export.
+    assert "Scale: Very limited" not in document_text
     assert HEADINGS[0] in document_text
 
 
