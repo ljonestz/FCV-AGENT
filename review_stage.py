@@ -19,6 +19,7 @@ note; the question text is held here so the model never rewrites it.
 
 from __future__ import annotations
 
+import json
 import re
 
 AUTO = ""
@@ -345,6 +346,56 @@ def checklist_prompt_block(column) -> str:
         + "(such as met, partial, gap, adequate) or labels. Do not copy the question text; the interface "
         + "shows it." + nl
         + "Questions:" + nl + nl.join(rows) + nl
+    )
+
+
+def _reader_digest(reader, limit=14000) -> str:
+    """Compact, source-grounded view of a verified Climate-FCV reader for the checklist call."""
+    reader = reader if isinstance(reader, dict) else {}
+
+    def records(key, fields):
+        out = []
+        for item in reader.get(key) or []:
+            if isinstance(item, dict):
+                out.append({f: item.get(f) for f in fields if item.get(f)})
+        return out
+
+    themes = []
+    for theme in reader.get("assessment_themes") or []:
+        if isinstance(theme, dict):
+            paras = theme.get("paragraphs") or []
+            themes.append({"title": theme.get("title"), "question": theme.get("question"),
+                           "text": " ".join(str(p) for p in paras if p)[:1800]})
+    digest = {
+        "operation_context": reader.get("operation_context"),
+        "assessment_findings": themes,
+        "core_questions": records("core_questions", ("theme", "question", "summary")),
+        "what_the_design_provides": records("existing_responses", ("description", "limitation")),
+        "gaps": records("summary_gaps", ("gap_type", "text")),
+        "document_points_to_confirm": records("review_readiness_flags", ("flag", "why_it_matters")),
+        "priorities": records("priorities", ("rank", "title")),
+        "smaller_points": records("minor_climate_points", ("point",)),
+    }
+    return json.dumps(digest, ensure_ascii=False)[:limit]
+
+
+def climate_checklist_prompt(column, reader) -> str:
+    """Single-call prompt for the Climate-FCV route's due-diligence checklist.
+
+    The verified climate pipeline has no free-form Stage 3 JSON block, so the checklist is
+    a separate call over the finished reader. It uses the same questions and note rules as
+    the normal route and returns {"dd_checklist": [...]} only."""
+    if not column:
+        return ""
+    nl = chr(10)
+    return (
+        "You are preparing the due-diligence checklist for a completed Climate-FCV review of a "
+        "World Bank operation. Use only the assessment below; do not add facts, figures or sources."
+        + checklist_prompt_block(column)
+        + nl + "In each note, point to the Overview, an assessment finding, a priority or a "
+        "document point by its title where possible." + nl
+        + 'Return only a JSON object: {"dd_checklist": [...]}. No other text.' + nl + nl
+        + "ASSESSMENT (JSON):" + nl + _reader_digest(reader)
     )
 
 

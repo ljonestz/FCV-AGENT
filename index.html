@@ -1965,7 +1965,9 @@
 .fr-readout .fr-sc-tile{padding:14px 16px 12px;border-right:1px solid var(--fr-border);display:flex;flex-direction:column}
 .fr-readout .fr-sc-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--fr-grey);margin-bottom:5px}
 .fr-readout .fr-sc-value{font-size:22px;font-weight:700;color:var(--fr-navy);line-height:1.25;margin-bottom:9px}
-.fr-readout .fr-sc-summary{font-size:14px;font-weight:600;color:var(--fr-navy);line-height:1.45;margin:0 0 9px}
+.fr-readout .fr-sc-summary{font-size:14px;font-weight:400;color:var(--fr-navy);line-height:1.45;margin:0 0 9px}
+.fr-readout .fr-sc-summary strong{font-weight:700}
+.fr-readout .fr-resp-intro{font-style:italic;margin:0 0 8px}
 .fr-readout .fr-sc-summary+.fr-sc-def{margin-top:auto}
 .fr-readout .fr-dd-q{font-size:13px;font-style:italic;color:var(--fr-navy);margin:2px 0 6px}
 .fr-readout .fr-stage-notice{margin:0 0 10px}
@@ -5211,7 +5213,7 @@
     if(String(r.evidence_status||'').toLowerCase()==='preview; not approved')notices.push('<div class="finalized-pad-notice"><div class="fpn-body"><strong>Candidate country evidence: preview; not approved.</strong></div></div>');
     if(!route.confirmed)notices.push('<p class="climate-route-warning">Suggested document wording is not shown because the document type or financing route could not be confirmed reliably.</p>');
     const hasPriorities=Array.isArray(r.priorities)&&r.priorities.length>0;
-    return frApi().renderClimate(r,{noticesHtml:notices.join(''),draftingAllowed:route.confirmed,advisoryText:hasPriorities?stage3AdvisoryText('climate'):'',fileNames:readoutFileNames(),researchBrief});
+    return frApi().renderClimate(r,{noticesHtml:notices.join(''),draftingAllowed:route.confirmed,advisoryText:hasPriorities?stage3AdvisoryText('climate'):'',fileNames:readoutFileNames(),researchBrief,ddChecklist:(typeof stageDdState!=='undefined'?stageDdState:null)});
   }
 
   // Blunt, upfront caveat shown above the Stage 3 readout. Sits in the #stage-disp

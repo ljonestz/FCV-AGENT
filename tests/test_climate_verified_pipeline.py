@@ -564,8 +564,9 @@ def test_semantic_review_with_unresolved_targets_fails_safe():
     assert "SEMANTIC_REVIEW_TARGET_UNRESOLVED" in diagnostics["reason_codes"]
 
 
-@pytest.mark.parametrize("verdict", ["revise", "block"])
+@pytest.mark.parametrize("verdict", ["block"])
 def test_negative_review_without_any_target_cannot_certify_core(verdict):
+    # An untargeted "revise" whose cores all passed now keeps them (see the test below).
     review = {
         "verdict": verdict,
         "reason_codes": ["PROJECT_FACT_UNSUPPORTED"],
@@ -583,6 +584,50 @@ def test_negative_review_without_any_target_cannot_certify_core(verdict):
 
     assert result["priorities"] == []
     assert "SEMANTIC_REVIEW_TARGET_UNRESOLVED" in result["validation"]["reason_codes"]
+
+
+def test_untargeted_revise_keeps_explicitly_passed_cores_and_withholds_drafting():
+    # 2026-11-17 AFG HCJ: five cores supported/qualified, verdict revise with one untargeted code.
+    responses = _responses()
+    candidates = []
+    for number in range(1, 6):
+        candidate = deepcopy(responses[3]["recommendation_candidates"][0])
+        candidate["recommendation_id"] = f"REC-{number:03}"
+        candidate["title"] = f"Confirm bounded site decision {number}"
+        candidates.append(candidate)
+    responses[3]["recommendation_candidates"] = candidates
+    identifiers = [candidate["recommendation_id"] for candidate in candidates]
+    review = {
+        "verdict": "revise", "reason_codes": ["PROJECT_FACT_UNSUPPORTED"], "object_ids": [], "issues": [],
+        "passed_core_ids": identifiers,
+        "core_reviews": [_core_review(identifier) for identifier in identifiers],
+    }
+    result = run_verified_climate_pipeline(
+        **_arguments(), clients=PipelineClients(FakeClient(responses, []), FakeClient([review], [])),
+    )
+
+    assert {item["recommendation_id"] for item in result["priorities"]} == set(identifiers)
+    assert all(item.get("current_document_drafting") is None
+               and item.get("operational_instrument_drafting") is None for item in result["priorities"])
+    reasons = result["validation"]["reason_codes"]
+    assert "SEMANTIC_REVIEW_UNTARGETED_REVISE" in reasons
+    assert "RECOMMENDATIONS_ALL_SUPPRESSED" not in reasons
+    assert result["validation"]["status"] == "attention"
+    assert result["manifest"]["suppressed_counts"]["recommendations"] == 0
+
+
+def test_untargeted_revise_with_an_unsupported_core_still_withholds():
+    review = {
+        "verdict": "revise", "reason_codes": ["PROJECT_FACT_UNSUPPORTED"], "object_ids": [], "issues": [],
+        "passed_core_ids": [],
+        "core_reviews": [{**_core_review(), "premise_verdict": "unsupported",
+                          "reason_codes": ["PROJECT_FACT_UNSUPPORTED"]}],
+    }
+    result = run_verified_climate_pipeline(
+        **_arguments(), clients=PipelineClients(FakeClient(_responses(), []), FakeClient([review], [])),
+    )
+    assert "SEMANTIC_REVIEW_UNTARGETED_REVISE" not in result["validation"]["reason_codes"]
+    assert result["priorities"] == []
 
 
 def test_empty_revise_preserves_explicit_core_passes_with_attention():

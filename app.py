@@ -4330,6 +4330,34 @@ def review_stage_done_fields(parsed, review_stage, regime_context, review_mode):
     }
 
 
+def climate_review_stage_done_fields(reader, review_stage, operation_context, review_mode, call=None):
+    """Review-stage and checklist fields for the verified Climate-FCV Stage 3 event.
+
+    The checklist comes from one extra call over the finished reader (the reader itself
+    must stay byte-identical to its canonical rebuild, so the rows travel alongside it).
+    Any failure omits the checklist rather than substituting weaker text."""
+    regime = review_stage_mod.apply_review_stage(dict(operation_context or {}), review_stage)
+    column, _note = review_stage_mod.checklist_column(review_stage, regime, review_mode)
+    parsed = {}
+    if column:
+        try:
+            if call is None:
+                def call(prompt):
+                    response = get_client().messages.create(
+                        model=MODEL_STANDARD, max_tokens=2000,
+                        messages=[{'role': 'user', 'content': prompt}],
+                    )
+                    return ''.join(getattr(block, 'text', '') for block in response.content)
+            text = call(review_stage_mod.climate_checklist_prompt(column, reader)) or ''
+            match = re.search(r'\{[\s\S]*\}', text)
+            parsed = json.loads(match.group(0)) if match else {}
+        except Exception as error:  # noqa: BLE001 - optional add-on; never fail the run
+            app.logger.warning('Climate due-diligence checklist omitted: %s', type(error).__name__)
+            parsed = {}
+    return review_stage_done_fields(parsed if isinstance(parsed, dict) else {},
+                                    review_stage, regime, review_mode)
+
+
 def extract_horizon_considerations(stage3_output: str) -> str:
     """Extract Horizon Considerations section from Stage 3 output.
     Returns the text content or empty string if not found.
@@ -11489,6 +11517,11 @@ def run_express():
                     }) + "\n\n"
 
                     yield f"data: {json.dumps({'stage_start': 3})}\n\n"
+                    climate_dd_fields = climate_review_stage_done_fields(
+                        verified_reader, review_stage,
+                        verified_operation_context.as_record() if verified_operation_context else {},
+                        review_mode,
+                    )
                     yield "data: " + json.dumps({
                         'stage_done': 3,
                         'result': executive,
@@ -11498,6 +11531,7 @@ def run_express():
                         'lens_warnings': source_warnings,
                         'climate_assessment': verified_assessment,
                         'climate_reader': verified_reader,
+                        **climate_dd_fields,
                     }) + "\n\n"
                     yield f"data: {json.dumps({'express_done': True})}\n\n"
                     return
@@ -13233,7 +13267,9 @@ def download_report():
         reader_model = reader_model['reader']
         verified_buf = io.BytesIO()
         write_reader_docx(
-            reader_model, verified_buf, report_meta=_word_report_meta(data)
+            reader_model, verified_buf, report_meta=_word_report_meta(data),
+            dd={key: data.get(key) for key in (
+                'review_stage_notice', 'dd_checklist', 'dd_checklist_column', 'dd_checklist_note')},
         )
         verified_buf.seek(0)
         from flask import send_file
@@ -13609,11 +13645,15 @@ def download_report():
         if not rating_values_present and not rating_summaries_present:
             return
 
+        from fcv_docx_style import RESPONSIVENESS_INTRO
         _add_section_heading('FCV Sensitivity & Responsiveness')
         for index, (label, _, text) in enumerate(rating_rows):
             text = str(text or '').strip()
             if text:
-                report.rating_segment(label, '', first=(index == 0))
+                report.rating_segment(
+                    label, '', first=(index == 0),
+                    intro=RESPONSIVENESS_INTRO if 'Responsiveness' in label else '',
+                )
                 add_markdown(text)
 
     def add_core_risk_exposure():

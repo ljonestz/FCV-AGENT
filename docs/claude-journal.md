@@ -2392,3 +2392,22 @@ checklist and a one-line "not needed" note. Code: `review_stage.py`, `app.py`
 (`append_review_stage_blocks`, `review_stage_done_fields`), `static/fcv_readout.js`, `index.html`.
 Step-by-step now sends `regime_context`. Climate-verified route unchanged. Tests:
 `tests/test_review_stage.py` (13). Parity logged.
+
+### 2026-11-17 Paid review-stage runs, climate zero-priority gate, climate checklist, Snapshot label
+Paid runs on fcv-agent-1 (build 7a4cd02, spend guard off at the user's choice after the USD6 legacy
+ceiling refused USD12; several pre-request refusals at nil spend). Chad new-model Project Paper, normal
+route, review stage IR: 571 s, all stages, Stage 2 framed for the IR review, 6 checklist rows in the IR
+column, plain notes, Word section 06. Defect noted, not fixed: the priority `when` enum
+(Identification|Preparation|Appraisal|Implementation|Restructuring) has no new-model value, so IR notes
+show "Appraisal". AFG HCJ concept PID + ESRS, climate route: 228 s, verified route complete but 0
+priorities: 5 candidates admitted, reviewer passed every core (2 supported, 3 qualified) yet returned
+revise with one untargeted code (PROJECT_FACT_UNSUPPORTED), which the pipeline treated as
+SEMANTIC_REVIEW_TARGET_UNRESOLVED and withheld all five. This was deliberate fail-closed behaviour
+(test_negative_review_without_any_target_cannot_certify_core). Changed at the user's request: an
+untargeted revise with all cores explicitly passed keeps the cores, withholds all drafting, records
+SEMANTIC_REVIEW_UNTARGETED_REVISE and shows the inconclusive-review message; block stays fail-closed.
+Also: due-diligence checklist on the climate route (one extra Sonnet call over the finished reader;
+rows travel beside the reader, which must match its canonical rebuild); "Snapshot:" label on the
+summary cards (both routes, browser and Word); a responsiveness "not required" note under the
+responsiveness sub-heading on both routes (replaces the climate Word closing note). Not yet validated by
+a paid run. Run artefacts: output/20261116_review-stage-paid-runs/ (untracked).

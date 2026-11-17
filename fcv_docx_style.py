@@ -373,6 +373,14 @@ _HEADLINE_ABBREVIATIONS = {
 }
 
 
+# Set under the responsiveness sub-heading on both routes (browser text lives in fcv_readout.js).
+RESPONSIVENESS_INTRO = (
+    "Responsiveness is not required of every project. It is good practice where the context "
+    "and the project's objectives allow it, so read what follows as an opportunity to consider "
+    "rather than a gap to close."
+)
+
+
 def first_sentence(text):
     """Return the first sentence of the first paragraph (summary-card headline).
 
@@ -705,7 +713,12 @@ class Report:
             if "summary" in tl:
                 p = c.add_paragraph(); pfmt(p, after=2)
                 p.paragraph_format.line_spacing = 1.15
-                add_run(p, tl["summary"] or "See the assessment below.", 9.5, True, color=NAVY)
+                if tl["summary"]:
+                    # "Snapshot:" label in bold, the one-sentence judgment in regular weight.
+                    add_run(p, "Snapshot: ", 9.5, True, color=NAVY)
+                    add_run(p, tl["summary"], 9.5, False, color=NAVY)
+                else:
+                    add_run(p, "See the assessment below.", 9.5, True, color=NAVY)
                 continue
             p = c.add_paragraph(); pfmt(p, after=5)
             add_run(p, tl["value"], 13.5, True, color=NAVY)
@@ -742,10 +755,12 @@ class Report:
         row_no_split(t.rows[0])
         self.spacer(6)
 
-    def rating_segment(self, label, value, meaning=(), why=(), notes=(), question="", scale="", first=False):
+    def rating_segment(self, label, value, meaning=(), why=(), notes=(), question="", scale="", first=False,
+                       intro=""):
         """Compact rating write-up for the body (no scale graphic - that lives in the page-1 scorecard).
 
-        An empty value omits the rating pill, leaving the label and the judgment."""
+        An empty value omits the rating pill, leaving the label and the judgment. ``intro`` is a short
+        framing note set directly under the sub-heading (e.g. that responsiveness is not required)."""
         p = self.doc.add_paragraph(style="Heading 2")
         pfmt(p, before=4 if first else 12, after=4, keep_next=True)
         if not first:
@@ -754,6 +769,9 @@ class Report:
         if value:
             add_run(p, "   ")
             add_run(p, f" {value} ", 9.5, True, color="FFFFFF", shade=NAVY)
+        if intro:
+            q = self.doc.add_paragraph(); pfmt(q, after=4, keep_next=True)
+            add_run(q, intro, 9, italic=True, color=GREY_TXT)
         for m in meaning:
             q = self.doc.add_paragraph(); pfmt(q, after=3, keep_next=True)
             add_run(q, m, 9.5, True, color=NAVY)

@@ -366,7 +366,7 @@ def test_legacy_climate_word_without_priorities_has_no_empty_priority_table(
     )
     # 2026-11-16: unscored values are no longer shown as labels; the scope note stays.
     assert "Not expected for this project" not in body
-    assert "Responsiveness is not expected of every project" in body
+    assert "Responsiveness is not required of every project" in body
 
 
 def test_climate_docx_preserves_standalone_qualification_in_amber(tmp_path):

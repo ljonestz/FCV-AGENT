@@ -87,7 +87,7 @@ def test_exports_include_responsiveness_contribution_and_scope(tmp_path):
     assert "Moderate contribution" in html_text
     assert "often a sign of going above and beyond" in html_text
     assert "Very limited / Limited / Moderate / Strong / Very strong" in html_text
-    assert "often a sign of going above and beyond" in doc_text
+    assert "Responsiveness is not required of every project." in doc_text
     assert "Moderate contribution" not in doc_text
     assert "Very limited / Limited / Moderate / Strong / Very strong" not in doc_text
 

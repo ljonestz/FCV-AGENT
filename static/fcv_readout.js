@@ -13,6 +13,9 @@
     climateSensitivity: 'How well does the design recognize and manage interacting climate and FCV risks, and avoid doing harm?',
     climateResponsiveness: 'Does the project use relevant opportunities to generate wider peace and social dividends? Not expected for every project.',
   };
+  // Set under the responsiveness sub-heading on both routes (Word: fcv_docx_style.RESPONSIVENESS_INTRO).
+  const RESPONSIVENESS_INTRO = "Responsiveness is not required of every project. It is good practice where the context and the project's objectives allow it, so read what follows as an opportunity to consider rather than a gap to close.";
+  const responsivenessIntroHtml = k => `<p class="fr-note fr-resp-intro" dir="auto">${k.esc(RESPONSIVENESS_INTRO)}</p>`;
 
   // Limitations sit in a collapsed disclosure on both routes; printing opens it (beforeprint handler).
   const LIMITS_SUMMARY = 'Limitations of this screening';
@@ -419,7 +422,7 @@
     function scoreTile(t) {
       if (t.summary !== undefined) {
         const body = String(t.summary || '').trim();
-        return `<div class="fr-sc-tile fr-sc-tile-summary" data-fr-rating="${esc(t.key)}"><div class="fr-sc-label">${esc(t.label)}</div>${body ? `<p class="fr-sc-summary" dir="auto">${esc(body)}</p>` : ''}<div class="fr-sc-def">${esc(t.def)}</div></div>`;
+        return `<div class="fr-sc-tile fr-sc-tile-summary" data-fr-rating="${esc(t.key)}"><div class="fr-sc-label">${esc(t.label)}</div>${body ? `<p class="fr-sc-summary" dir="auto"><strong>Snapshot:</strong> ${esc(body)}</p>` : ''}<div class="fr-sc-def">${esc(t.def)}</div></div>`;
       }
       return `<div class="fr-sc-tile" data-fr-rating="${esc(t.key)}"><div class="fr-sc-label">${esc(t.label)}</div><div class="fr-sc-value">${esc(t.value || 'Not available')}</div>${meter(t.steps, t.level)}${t.level ? `<div class="fr-sc-scale" data-copy-skip><span>${esc(t.lo)}</span><span class="fr-sc-of">${t.level} of ${t.steps}</span><span>${esc(t.hi)}</span></div>` : ''}<div class="fr-sc-def">${esc(t.def)}</div></div>`;
     }
@@ -604,7 +607,7 @@
         + k.intro('The fuller judgment behind each summary at the top of this note.')
         + k.ratingRows([
           { dim: 'FCV Sensitivity', def: DEFINITIONS.sensitivity, whyHtml: k.prose(d.sensitivitySummary) },
-          { dim: 'FCV Responsiveness', def: DEFINITIONS.responsiveness, whyHtml: k.prose(d.responsivenessSummary) },
+          { dim: 'FCV Responsiveness', def: DEFINITIONS.responsiveness, whyHtml: d.responsivenessSummary ? responsivenessIntroHtml(k) + k.prose(d.responsivenessSummary) : '' },
         ]));
     }
 
@@ -756,6 +759,7 @@
       : confKeys.map(c => ({ text: `${confCounts[c]} ${c} confidence`, cls: 'fr-pill-conf ' + CONFIDENCE_CLASS[c] }));
 
     let head = o.noticesHtml || '';
+    if (o.ddChecklist && o.ddChecklist.review_stage_notice) head += `<p class="fr-note fr-stage-notice" dir="auto">${k.esc(o.ddChecklist.review_stage_notice)}</p>`;
     // As on the normal route: ratings stay in the reader data but each card shows a one-sentence judgment.
     head += k.scorecard([
       { key: 'climate-sensitivity', label: 'Climate-FCV sensitivity', summary: headline(k, sens.rationale), def: DEFINITIONS.climateSensitivity },
@@ -817,7 +821,7 @@
       + k.intro('The fuller judgment behind each summary at the top of this note.')
       + k.ratingRows([
         { dim: 'Climate-FCV sensitivity', def: DEFINITIONS.climateSensitivity, whyHtml: k.paragraphs([sens.rationale || sens.description]) },
-        { dim: 'Climate-FCV responsiveness', def: DEFINITIONS.climateResponsiveness, whyHtml: k.paragraphs([resp.rationale || resp.description]) },
+        { dim: 'Climate-FCV responsiveness', def: DEFINITIONS.climateResponsiveness, whyHtml: (resp.rationale || resp.description) ? responsivenessIntroHtml(k) + k.paragraphs([resp.rationale || resp.description]) : '' },
       ]) + (notes ? `<div class="fr-ops-note"><div class="fr-ops-lbl">Supporting judgments (not shown in the summary)</div>${notes}</div>` : ''));
 
     const statement = (r.priority_summary && r.priority_summary.statement) || '';
@@ -866,6 +870,9 @@
       html += k.section('fr-cards-sec', h('Priority Actions for the Task Team') + `<p class="fr-p">${k.esc(r.recommendation_message || 'No operational priorities were identified in this assessment. Review the assessment findings and points to check below.')}</p>`);
     }
 
+    // Due-diligence checklist (2026-11-17): same section as the normal route, before the smaller checks.
+    html += ddChecklistSection(k, h, o.ddChecklist && typeof o.ddChecklist === 'object' ? o.ddChecklist : null);
+
     const checks = [].concat(
       (Array.isArray(r.review_readiness_flags) ? r.review_readiness_flags : []).map(f => ({ title: f.flag || 'Point to verify', why: f.why_it_matters, how: f.suggested_verification })),
       (Array.isArray(r.minor_climate_points) ? r.minor_climate_points : []).map(m => ({ title: m.point || 'Point to consider', why: m.why, how: m.how_to_check })));
@@ -906,7 +913,9 @@
     // A run that states it used no live web evidence must not also show a research retrieval date.
     const noLiveWeb = /no live web evidence/i.test(limits);
     const limitsText = limits || 'This automated screening is advisory and is limited by the coverage and detail of the uploaded documents. The team should confirm material findings through project and country expertise.';
-    html += k.section('fr-limits-sec', h('Limitations') + k.disclosure(LIMITS_SUMMARY, k.limitsBox([...provenanceLimits(o.fileNames, noLiveWeb ? '' : o.researchBrief, 'Where a document could not be read'), fallbackNote, ...withheldNotes, limitsText, r.advisory_notice], verifyNotes)));
+    const ddClimate = o.ddChecklist && typeof o.ddChecklist === 'object' ? o.ddChecklist : null;
+    const ddNote = ddClimate && !(Array.isArray(ddClimate.dd_checklist) && ddClimate.dd_checklist.length) ? String(ddClimate.dd_checklist_note || '') : '';
+    html += k.section('fr-limits-sec', h('Limitations') + k.disclosure(LIMITS_SUMMARY, k.limitsBox([...provenanceLimits(o.fileNames, noLiveWeb ? '' : o.researchBrief, 'Where a document could not be read'), fallbackNote, ...withheldNotes, limitsText, ddNote, r.advisory_notice], verifyNotes)));
     const saysAlready = /does not constitute/i.test(`${limitsText} ${r.advisory_notice || ''}`);
     return linkPriorities(`<article class="fr-readout fr-route-climate">${head}${k.toc(h.list)}${html}${saysAlready ? '' : k.closing()}</article>`, h.list);
   }

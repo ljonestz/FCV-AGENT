@@ -1563,6 +1563,17 @@ def run_verified_climate_pipeline(
                     and set(core_admission.passed_core_ids) == priority_ids):
                 # Keep explicit core passes available without certifying the contradictory verdict.
                 review_reasons.append("SEMANTIC_REVIEW_VERDICT_INVALID")
+            elif (reviewer_verdict == "revise" and priority_ids
+                    and isinstance(review.get("reason_codes"), list) and review.get("reason_codes")
+                    and review.get("object_ids") == [] and review.get("issues") == []
+                    and not core_admission.invalid_core_ids
+                    and not core_admission.unsupported_core_ids
+                    and set(core_admission.passed_core_ids) == priority_ids):
+                # 2026-11-17 (AFG HCJ): every core was explicitly supported or qualified, but the
+                # verdict carried an untargeted reason code. Keep the cores; the untargeted concern
+                # can only be attributed to wording, so all drafting artifacts are withheld below.
+                review_reasons.append("SEMANTIC_REVIEW_UNTARGETED_REVISE")
+                semantic_review_object_ids = sorted(artifact_ids)
             else:
                 review_reasons.append("SEMANTIC_REVIEW_TARGET_UNRESOLVED")
                 semantic_review_object_ids = sorted(priority_ids)

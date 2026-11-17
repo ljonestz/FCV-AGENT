@@ -72,7 +72,7 @@ def test_climate_word_export_shows_sentences_not_scale():
     assert first_sentence(SENS) in text
     assert "Very limited / Limited / Moderate" not in text
     assert "Limited contribution" not in text
-    assert "Responsiveness is not expected of every project" in text
+    assert "Responsiveness is not required of every project" in text
 
 
 def test_stage3_prompts_ask_for_standalone_opening_sentence_and_no_criticism():

@@ -202,3 +202,79 @@ def test_selector_has_no_default_and_offers_legacy_and_af_or_restructuring():
         assert f'value="{value}"' in select
     assert "Additional Financing OR Restructuring" in select
     assert "review_stage:reviewStage" in html
+
+
+# ── 2026-11-17: climate-route checklist, Snapshot label, responsiveness note ──
+
+def test_climate_checklist_prompt_lists_column_ids_and_reader_digest():
+    reader = {"assessment_themes": [{"title": "Fair benefits", "paragraphs": ["Hub selection is needs-based."]}],
+              "priorities": [{"rank": 1, "title": "Screen facility siting"}]}
+    prompt = rs.climate_checklist_prompt("td", reader)
+    assert '"dd_checklist"' in prompt and '"context_td"' in prompt and "_ir\"" not in prompt
+    assert "Screen facility siting" in prompt and "Hub selection is needs-based." in prompt
+    assert rs.climate_checklist_prompt(None, reader) == ""
+
+
+def test_climate_done_fields_call_once_for_new_model_and_skip_legacy():
+    from app import climate_review_stage_done_fields
+    calls = []
+
+    def fake(prompt):
+        calls.append(prompt)
+        return 'Sure: {"dd_checklist": [{"question_id": "context_td", "note": "Partial: The Overview flags no RRA."}]}'
+
+    done = climate_review_stage_done_fields({}, "td", {"preparation_regime": "unresolved_policy_source"}, "design", call=fake)
+    assert len(calls) == 1
+    assert [r["question_id"] for r in done["dd_checklist"]] == ["context_td"]
+    assert done["dd_checklist"][0]["note"] == "The Overview flags no RRA."
+    assert done["dd_checklist_column"] == "Technical Design review"
+
+    legacy = climate_review_stage_done_fields({}, "concept", {}, "design", call=fake)
+    assert len(calls) == 1 and legacy["dd_checklist"] == []
+    assert legacy["dd_checklist_note"] == rs.LEGACY_CHECKLIST_NOTE
+
+
+def test_climate_done_fields_omit_checklist_when_the_call_fails():
+    from app import climate_review_stage_done_fields
+
+    def broken(prompt):
+        raise RuntimeError("provider down")
+
+    done = climate_review_stage_done_fields({}, "ir", {}, "design", call=broken)
+    assert done["dd_checklist"] == [] and done["dd_checklist_note"] == ""
+
+
+def test_climate_readout_renders_checklist_snapshot_and_responsiveness_note():
+    from tests.test_fcv_readout import CLIMATE_READER, climate
+    state = _dd_state()
+    html = climate(CLIMATE_READER, {"draftingAllowed": True, "noticesHtml": "", "ddChecklist": state})
+    assert "Due-Diligence Checklist" in html and "Have teams validated the FCV analysis" in html
+    assert "<strong>Snapshot:</strong>" in html
+    assert "Responsiveness is not required of every project." in html
+    plain = climate(CLIMATE_READER)
+    assert "Due-Diligence Checklist" not in plain
+
+
+def test_climate_word_carries_checklist_and_responsiveness_intro():
+    from sector_lenses.climate_verified_render import (
+        build_reader_model,
+        write_reader_docx,
+    )
+    reader = build_reader_model({"judgments": {"sensitivity": {"value": "moderate", "rationale": "Design fits. More detail."},
+                                               "responsiveness": {"value": "moderate", "rationale": "Some dividends. Detail."}}})
+    stream = BytesIO()
+    write_reader_docx(reader, stream, dd=_dd_state())
+    stream.seek(0)
+    document = Document(stream)
+    text = "\n".join([p.text for p in document.paragraphs]
+                     + [c.text for t in document.tables for r in t.rows for c in r.cells])
+    assert "Due-Diligence Checklist" in text and "see Section II" in text
+    assert "Responsiveness is not required of every project." in text
+    assert "Snapshot: " in text
+
+
+def test_normal_word_scorecard_and_responsiveness_intro():
+    body = _download({"sensitivity_summary": "Design fits the context. More detail.",
+                      "responsiveness_summary": "It engages two drivers. More detail."})
+    assert "Snapshot: Design fits the context." in body
+    assert "Responsiveness is not required of every project." in body
