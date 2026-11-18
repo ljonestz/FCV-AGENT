@@ -4391,12 +4391,18 @@ def recover_stage3_priorities(stage_output, parsed, reparse, *, template='', cal
                 )
                 return ''.join(getattr(block, 'text', '') for block in response.content)
         reply = call(prompt) or ''
-        match = re.search(r'%%%JSON_START%%%(.*?)%%%JSON_END%%%', reply, re.DOTALL)
-        block = match.group(1).strip() if match else reply.strip()
+        r_start = reply.find('%%%JSON_START%%%')
+        r_end = reply.find('%%%JSON_END%%%', r_start + 16) if r_start >= 0 else -1
+        block = reply[r_start + 16:r_end].strip() if r_start >= 0 and r_end >= 0 else reply.strip()
         start, end = block.find('{'), block.rfind('}')
         if start < 0 or end <= start:
             return stage_output, parsed
-        stripped = re.sub(r'%%%JSON_START%%%.*?(?:%%%JSON_END%%%|\Z)', '', text, flags=re.DOTALL).rstrip()
+        t_start = text.find('%%%JSON_START%%%')
+        if t_start >= 0:
+            t_end = text.find('%%%JSON_END%%%', t_start + 16)
+            stripped = (text[:t_start] + (text[t_end + 14:] if t_end >= 0 else '')).rstrip()
+        else:
+            stripped = text.rstrip()
         repaired = stripped + '\n\n%%%JSON_START%%%\n' + block[start:end + 1] + '\n%%%JSON_END%%%'
         new_parsed = reparse(repaired)
     except Exception as error:  # noqa: BLE001 - recovery is optional
@@ -7210,13 +7216,16 @@ def extract_priorities(
         # 2026-11-17: each empty outcome says why, and recoverable ones get one JSON-only retry.
         return {**_error_result, 'parse_failure': code, 'message': message}
 
-    m = re.search(r'%%%JSON_START%%%(.*?)%%%JSON_END%%%', text or '', re.DOTALL)
-    if not m:
+    # str.find, not a lazy regex, on model output (CodeQL polynomial-redos).
+    source = text or ''
+    json_start = source.find('%%%JSON_START%%%')
+    json_end = source.find('%%%JSON_END%%%', json_start + 16) if json_start >= 0 else -1
+    if json_start < 0 or json_end < 0:
         return failed('missing', 'The recommendations note was cut off before its priority '
                                  'list could be read. Please re-run this stage.')
 
     try:
-        data = json.loads(m.group(1).strip())
+        data = json.loads(source[json_start + 16:json_end].strip())
     except (json.JSONDecodeError, ValueError):
         return failed('invalid', "The note's priority list was malformed and could not be read. "
                                  'Please re-run this stage.')

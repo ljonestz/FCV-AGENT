@@ -400,10 +400,14 @@ def first_sentence(text):
         before = para[:index]
         if mark == "." and index > 0 and index + 1 < len(para) and before[-1].isdigit() and para[index + 1].isdigit():
             continue
-        if mark == "." and re.search(r"https?://\S*$", before, re.IGNORECASE):
+        # Linear scans (no end-anchored regex on user text; CodeQL polynomial-redos).
+        last_word = before.rsplit(None, 1)[-1] if before.strip() else ""
+        if mark == "." and last_word.lower().startswith(("http://", "https://")) and not before[-1:].isspace():
             continue
-        token_match = re.search(r"([A-Za-z][A-Za-z.]*)$", before)
-        token = token_match.group(1) if token_match else ""
+        start = len(before)
+        while start > 0 and before[start - 1].isascii() and (before[start - 1].isalpha() or before[start - 1] == "."):
+            start -= 1
+        token = before[start:].lstrip(".")
         normalized = token.lower().rstrip(".")
         if mark == "." and (
             normalized in _HEADLINE_ABBREVIATIONS
