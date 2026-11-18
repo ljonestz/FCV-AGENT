@@ -4330,6 +4330,23 @@ def review_stage_done_fields(parsed, review_stage, regime_context, review_mode):
     }
 
 
+_INSTRUMENT_CHOICES = {'ipf': 'IPF', 'pforr': 'PforR', 'dpf': 'DPF'}
+
+
+def normalize_instrument_choice(value) -> str:
+    """User's optional Financing instrument choice: 'IPF', 'PforR', 'DPF' or '' (not stated)."""
+    return _INSTRUMENT_CHOICES.get(str(value or '').strip().casefold(), '')
+
+
+def apply_instrument_choice(instrument_type, choice) -> str:
+    """Normal route: the user's choice fills an instrument Stage 1 could not detect; a detected
+    instrument always wins (2026-11-17)."""
+    chosen = normalize_instrument_choice(choice)
+    if chosen and str(instrument_type or 'Unknown') == 'Unknown':
+        return 'DPO' if chosen == 'DPF' else chosen
+    return instrument_type
+
+
 def climate_review_stage_done_fields(reader, review_stage, operation_context, review_mode, call=None):
     """Review-stage and checklist fields for the verified Climate-FCV Stage 3 event.
 
@@ -9425,6 +9442,30 @@ def get_glossary():
     return jsonify(FCV_GLOSSARY)
 
 
+@app.route('/api/detect-instrument', methods=['POST'])
+def detect_instrument():
+    """Pre-fill the optional Financing instrument choice from the primary document (no model call).
+
+    Returns {"instrument": "IPF"|"PforR"|"DPF"|""}; empty when the document does not state one."""
+    data = request.get_json(force=True, silent=True) or {}
+    doc = data.get('document') if isinstance(data, dict) else None
+    if not isinstance(doc, dict) or not doc.get('content'):
+        return jsonify(instrument='')
+    try:
+        text, _pages, fields = _extract_uploaded_content(
+            doc.get('content', ''), doc.get('name', 'document'), doc.get('type', 'text'))
+        prepared = prepare_verified_sources([{
+            'label': 'PROJECT DOCUMENT', 'name': doc.get('name', 'document'),
+            'raw_text': text[:MAX_DOC_CHARS], 'structured_fields': fields,
+        }])
+        context = resolve_verified_operation_context(prepared)
+        instrument = context.instrument_type if context.instrument_type in {'IPF', 'PforR', 'DPF'} else ''
+    except Exception as error:  # noqa: BLE001 - optional convenience; never block the upload
+        app.logger.info('Instrument pre-detection skipped: %s', type(error).__name__)
+        instrument = ''
+    return jsonify(instrument=instrument)
+
+
 @app.route('/api/sector-lenses', methods=['GET'])
 def get_sector_lenses():
     """Return enabled selector modules; invalid packages remain non-fatal diagnostics."""
@@ -10652,7 +10693,8 @@ def run_stage():
                     lens_evidence = extract_lens_evidence(full_text, [
                         item['id'] for item in lens_context['active_lenses']
                     ]) if lens_context['active_lenses'] else {}
-                    _instrument_type = extract_instrument_type(full_text)
+                    _instrument_type = apply_instrument_choice(
+                        extract_instrument_type(full_text), data.get('instrument_choice'))
                     _temporal_context = extract_temporal_context(full_text)
                     _regime_context = extract_regime_context(full_text, _instrument_type)
                     _process_type = extract_process_type(full_text) if is_impl else None
@@ -11275,6 +11317,8 @@ def run_express():
                         # verified route; derive from the primary document.
                         doc_type="Unknown",
                         instrument_type="Unknown",
+                        # The user's explicit choice fills only an unresolved instrument.
+                        user_instrument=normalize_instrument_choice(data.get('instrument_choice')),
                     )
                     doc_type = verified_operation_context.document_type
                     instrument_type = verified_operation_context.instrument_type
@@ -11660,7 +11704,8 @@ def run_express():
                 if dt_match:
                     doc_type = dt_match.group(1).strip()
 
-                instrument_type = extract_instrument_type(stage1_output)
+                instrument_type = apply_instrument_choice(
+                    extract_instrument_type(stage1_output), data.get('instrument_choice'))
                 temporal_context = extract_temporal_context(stage1_output)
                 regime_context = extract_regime_context(stage1_output, instrument_type)
                 if review_stage:

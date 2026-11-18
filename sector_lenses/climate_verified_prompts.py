@@ -471,8 +471,13 @@ Return fewer when fewer pass; never manufacture one for symmetry or to reach a n
 only when existence, scope, timing, and authority are verified separately.
 When no existing vehicle is evidenced, use standard_document_advisory and target
 the current stage document only where the supplied operational-guidance packet
-permits it. If neither destination is safe, fail actionability or timing; do not
-ask the task team to confirm routing. Credit existing mitigation before defining
+permits it. When the packet is empty because the document or instrument route is
+unresolved, still compile each recommendation that passes the other tests: address
+it to the task team as a preparation decision on the named project element, use
+standard_document_advisory, and leave document drafting out (it is withheld). An
+unresolved route alone is never a reason to fail actionability or timing; fail them
+only when the action itself is not feasible at this stage. Do not ask the task team
+to confirm routing. Credit existing mitigation before defining
 the residual improvement. Minimum action must be proportionate. Enhanced action
 requires a specific activation condition.
 Treat residual gaps as analysis to check, not independent proof of their factual
@@ -523,7 +528,9 @@ target, not a minimum to pad or an admission rule. Explain the operational mecha
 and the preparation work, rather than expanding the same document clarification.
 Make the action usable in document preparation: name the current document and
 the relevant section from operational_guidance.permitted_targets, then specify
-the decision, criterion, responsibility or evidence to add or revise there.
+the decision, criterion, responsibility or evidence to add or revise there. When
+no permitted target is supplied, name the project element (component, criterion,
+arrangement or indicator) and the preparation decision instead of a section.
 Keep each priority centred on one coherent operational decision. Develop two or
 three related edits or preparation steps where useful, rather than stopping at a
 general instruction to improve the description. In minimum_action and the opening sentence of the narrative's
