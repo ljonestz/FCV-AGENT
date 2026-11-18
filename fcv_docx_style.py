@@ -843,11 +843,11 @@ class Report:
                     self.internal_link(p, v[1], v[0], 9)
                 else:
                     add_run(p, v, 9 if i == 1 else 8.5, color=BODY_TXT if i < 3 else GREY_TXT)
-        if keep_together:
-            for row in t.rows[:-1]:
-                for c in row.cells:
-                    for p in c.paragraphs:
-                        p.paragraph_format.keep_with_next = True
+        # A split table still keeps its header row with the first data row (no orphan header).
+        for row in (t.rows[:-1] if keep_together else t.rows[:1] if len(t.rows) > 1 else []):
+            for c in row.cells:
+                for p in c.paragraphs:
+                    p.paragraph_format.keep_with_next = True
         self.spacer(8)
 
     # ================================================================ links & bookmarks
