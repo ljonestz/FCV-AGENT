@@ -2436,5 +2436,10 @@ rejected without truncation. Phase 4: climate reader names the unresolved route 
 produced. Offline replay: AFG run 1's real reviewer output now keeps all five recommendations. An
 independent code review found no safety regressions; its two defects (choice carry-over, retry time
 budget) were fixed. Tests: 23 new zero-priority tests plus updated pinned tests; full suite green before
-the review fixes (2398 passed, 1 pinned silent-empty test updated). Paid validation pending a test-service
-deploy of this branch (dashboard access failed overnight). Spec: docs/superpowers/specs/2026-11-17-zero-priority-holistic-plan.md (local).
+the review fixes (2398 passed, 1 pinned silent-empty test updated). Paid validation (2026-11-18, fcv-agent-1 build
+10cd9c4, 4 paid runs): AFG HCJ concept PID + ESRS, climate, TD: 4 priorities (previously 0), instrument
+IPF resolved from the datasheet, status complete, TD checklist 6 rows, Word report carries the priorities;
+Honduras P181166 PCN, climate: 5 priorities, IPF, partial (DRAFTING_TARGET_UNVERIFIED), no checklist (legacy
+process, correct); Chad Project Paper, normal, IR: 5 priorities, no parse error, IR checklist 6 rows. One
+earlier AFG attempt was cut at 69 s in Stage 2 by a service restart (env save), not by the app; it was
+rerun under a new label. Spec: docs/superpowers/specs/2026-11-17-zero-priority-holistic-plan.md (local).
