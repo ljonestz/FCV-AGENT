@@ -4330,6 +4330,84 @@ def review_stage_done_fields(parsed, review_stage, regime_context, review_mode):
     }
 
 
+def _blocking_with_keepalive(fn, holder, interval=10.0, stage=None):
+    """Run a blocking call on a thread, yielding SSE keepalives until it finishes.
+
+    The result (or the exception) is stored in ``holder['result']`` / ``holder['error']``."""
+    import threading
+
+    def run():
+        try:
+            holder['result'] = fn()
+        except Exception as error:  # noqa: BLE001 - surfaced through holder
+            holder['error'] = error
+
+    worker = threading.Thread(target=run, daemon=True)
+    worker.start()
+    payload = {'keepalive': True, **({'stage': stage} if stage else {})}
+    while worker.is_alive():
+        worker.join(timeout=interval)
+        if worker.is_alive():
+            yield f"data: {json.dumps(payload)}\n\n"
+
+
+# Parse failures a single JSON-only follow-up can usually recover (2026-11-17).
+# 'too_many' is excluded: more than five priorities is rejected without truncation by design.
+STAGE3_RECOVERABLE_FAILURES = frozenset({'missing', 'invalid', 'empty', 'malformed'})
+
+
+def _stage3_json_template(is_impl=False) -> str:
+    prompt = DEFAULT_PROMPTS.get('impl_3' if is_impl else '3', '') or ''
+    match = re.search(r'%%%JSON_START%%%\s*(\{.*?)\s*%%%JSON_END%%%', prompt, re.DOTALL)
+    return match.group(1).strip()[:12000] if match else ''
+
+
+def recover_stage3_priorities(stage_output, parsed, reparse, *, template='', call=None):
+    """One JSON-only follow-up when the Stage 3 priority block is missing, cut off, invalid,
+    empty or over-long. Copies the note's own priorities; never adds new content.
+
+    Returns ``(text, parsed)``; the originals are returned unchanged if recovery fails."""
+    failure = (parsed or {}).get('parse_failure')
+    if not (parsed or {}).get('error') or failure not in STAGE3_RECOVERABLE_FAILURES:
+        return stage_output, parsed
+    text = str(stage_output or '')
+    body = text if len(text) <= 120000 else text[:40000] + '\n[...]\n' + text[-80000:]
+    nl = chr(10)
+    prompt = (
+        "The FCV recommendations note below should end with a machine-readable JSON block, but the "
+        f"block is {'missing or cut off' if failure == 'missing' else 'empty' if failure == 'empty' else 'invalid'}."
+        + nl + "Return ONLY the complete JSON block between %%%JSON_START%%% and %%%JSON_END%%%, with valid JSON. "
+        "Copy the priorities, ratings and summaries exactly as the note states them; add nothing new. "
+        "Keep any partial JSON's structure and values."
+        + (nl + "Use this structure:" + nl + template if template else '')
+        + nl + nl + "NOTE:" + nl + body
+    )
+    try:
+        if call is None:
+            def call(message):
+                response = get_client().messages.create(
+                    model=MODEL_STANDARD, max_tokens=16000,
+                    messages=[{'role': 'user', 'content': message}],
+                )
+                return ''.join(getattr(block, 'text', '') for block in response.content)
+        reply = call(prompt) or ''
+        match = re.search(r'%%%JSON_START%%%(.*?)%%%JSON_END%%%', reply, re.DOTALL)
+        block = match.group(1).strip() if match else reply.strip()
+        start, end = block.find('{'), block.rfind('}')
+        if start < 0 or end <= start:
+            return stage_output, parsed
+        stripped = re.sub(r'%%%JSON_START%%%.*?(?:%%%JSON_END%%%|\Z)', '', text, flags=re.DOTALL).rstrip()
+        repaired = stripped + '\n\n%%%JSON_START%%%\n' + block[start:end + 1] + '\n%%%JSON_END%%%'
+        new_parsed = reparse(repaired)
+    except Exception as error:  # noqa: BLE001 - recovery is optional
+        app.logger.warning('Stage 3 JSON recovery failed: %s', type(error).__name__)
+        return stage_output, parsed
+    if new_parsed.get('error'):
+        return stage_output, parsed
+    new_parsed['json_recovered'] = failure
+    return repaired, new_parsed
+
+
 _INSTRUMENT_CHOICES = {'ipf': 'IPF', 'pforr': 'PforR', 'dpf': 'DPF'}
 
 
@@ -7125,16 +7203,26 @@ def extract_priorities(
         'p4r_watch': [],
         'regional_watch': [],
         'dd_checklist': [],
+        'parse_failure': '',
     }
 
-    m = re.search(r'%%%JSON_START%%%(.*?)%%%JSON_END%%%', text, re.DOTALL)
+    def failed(code, message):
+        # 2026-11-17: each empty outcome says why, and recoverable ones get one JSON-only retry.
+        return {**_error_result, 'parse_failure': code, 'message': message}
+
+    m = re.search(r'%%%JSON_START%%%(.*?)%%%JSON_END%%%', text or '', re.DOTALL)
     if not m:
-        return _error_result
+        return failed('missing', 'The recommendations note was cut off before its priority '
+                                 'list could be read. Please re-run this stage.')
 
     try:
         data = json.loads(m.group(1).strip())
     except (json.JSONDecodeError, ValueError):
-        return _error_result
+        return failed('invalid', "The note's priority list was malformed and could not be read. "
+                                 'Please re-run this stage.')
+    if not isinstance(data, dict):
+        return failed('invalid', "The note's priority list was malformed and could not be read. "
+                                 'Please re-run this stage.')
 
     # Fill missing top-level fields with defaults
     for field in _REQUIRED_TOP_FIELDS:
@@ -7143,15 +7231,12 @@ def extract_priorities(
 
     priorities_raw = data.get('priorities', [])
     if not isinstance(priorities_raw, list) or len(priorities_raw) < 1:
-        return _error_result
+        return failed('empty', 'The note did not return any priority actions. Please re-run this stage.')
 
     standard_route = active_lens_ids == []
     if standard_route and len(priorities_raw) > 5:
-        _error_result['message'] = (
-            'Standard FCV output may contain at most five priorities; '
-            'the result was rejected without truncation.'
-        )
-        return _error_result
+        return failed('too_many', 'Standard FCV output may contain at most five priorities; '
+                                  'the result was rejected without truncation.')
 
     raw_priorities_are_objects = all(isinstance(pr, dict) for pr in priorities_raw)
     priorities = []
@@ -7437,6 +7522,11 @@ def extract_priorities(
         wider_fcv_context = wider_fcv_context.strip()[:1200] or None
     else:
         wider_fcv_context = None
+
+    if not priorities:
+        # Every listed priority was malformed: never return a silent empty success.
+        return failed('malformed', "The note's priorities were malformed and could not be read. "
+                                   'Please re-run this stage.')
 
     return {
         'error': False,
@@ -10605,17 +10695,36 @@ def run_stage():
                     # array at request start) — includes all zones (primary, package, context).
                     # data.get('documents', []) is empty at Stage 3 in step-by-step mode.
                     _s3_regime = (data.get('regime_context', {}) or {})
-                    parsed = extract_priorities(
-                        full_text,
-                        uploaded_doc_names_payload,
-                        [item['id'] for item in lens_context['active_lenses']],
-                        _native_climate_stage3_diagnostic
-                        if _native_climate_stage3
-                        else lens_context.get('lens_diagnostic', {}),
-                        preparation_regime=_s3_regime.get('preparation_regime', 'unresolved_policy_source'),
-                        instrument=data.get('instrument_type', '') or '',
-                        document_type=stage3_document_type,
-                    )
+
+                    def _reparse_s3(text_):
+                        return extract_priorities(
+                            text_,
+                            uploaded_doc_names_payload,
+                            [item['id'] for item in lens_context['active_lenses']],
+                            _native_climate_stage3_diagnostic
+                            if _native_climate_stage3
+                            else lens_context.get('lens_diagnostic', {}),
+                            preparation_regime=_s3_regime.get('preparation_regime', 'unresolved_policy_source'),
+                            instrument=data.get('instrument_type', '') or '',
+                            document_type=stage3_document_type,
+                        )
+                    parsed = _reparse_s3(full_text)
+                    if (parsed.get('error') and not _native_climate_stage3
+                            and parsed.get('parse_failure') in STAGE3_RECOVERABLE_FAILURES):
+                        log_stage3_parse_failure(
+                            assessment_id, full_text, parsed,
+                            NATIVE_CLIMATE_STAGE3_MAX_TOKENS if _native_climate_stage3
+                            else _stage_output_budget(3),
+                        )
+                        _recovery = {}
+                        _failed_text, _failed_parse = full_text, parsed
+                        yield from _blocking_with_keepalive(
+                            lambda: recover_stage3_priorities(
+                                _failed_text, _failed_parse, _reparse_s3,
+                                template=_stage3_json_template(is_impl)),
+                            _recovery, stage=3)
+                        if 'result' in _recovery:
+                            full_text, parsed = _recovery['result']
                     log_stage3_parse_failure(
                         assessment_id, full_text, parsed,
                         NATIVE_CLIMATE_STAGE3_MAX_TOKENS if _native_climate_stage3
@@ -11561,11 +11670,16 @@ def run_express():
                     }) + "\n\n"
 
                     yield f"data: {json.dumps({'stage_start': 3})}\n\n"
-                    climate_dd_fields = climate_review_stage_done_fields(
-                        verified_reader, review_stage,
-                        verified_operation_context.as_record() if verified_operation_context else {},
-                        review_mode,
+                    _dd_holder = {}
+                    yield from _blocking_with_keepalive(
+                        lambda: climate_review_stage_done_fields(
+                            verified_reader, review_stage,
+                            verified_operation_context.as_record() if verified_operation_context else {},
+                            review_mode,
+                        ),
+                        _dd_holder, stage=3,
                     )
+                    climate_dd_fields = _dd_holder.get('result') or {}
                     yield "data: " + json.dumps({
                         'stage_done': 3,
                         'result': executive,
@@ -12313,16 +12427,35 @@ def run_express():
 
                 # Parse Stage 3 output
                 uploaded_doc_names = [doc.get('name', '') for doc in documents if doc.get('name')]
-                parsed = extract_priorities(
-                    stage3_output,
-                    uploaded_doc_names,
-                    [item['id'] for item in lens_context_s3['active_lenses']],
-                    lens_diagnostic if _native_climate_s3
-                    else lens_context_s3.get('lens_diagnostic', {}),
-                    preparation_regime=(regime_context or {}).get('preparation_regime', 'unresolved_policy_source'),
-                    instrument=instrument_type or '',
-                    document_type=doc_type,
-                )
+
+                def _reparse_s3e(text_):
+                    return extract_priorities(
+                        text_,
+                        uploaded_doc_names,
+                        [item['id'] for item in lens_context_s3['active_lenses']],
+                        lens_diagnostic if _native_climate_s3
+                        else lens_context_s3.get('lens_diagnostic', {}),
+                        preparation_regime=(regime_context or {}).get('preparation_regime', 'unresolved_policy_source'),
+                        instrument=instrument_type or '',
+                        document_type=doc_type,
+                    )
+                parsed = _reparse_s3e(stage3_output)
+                if (parsed.get('error') and not _native_climate_s3
+                        and parsed.get('parse_failure') in STAGE3_RECOVERABLE_FAILURES):
+                    log_stage3_parse_failure(
+                        assessment_id, stage3_output, parsed,
+                        NATIVE_CLIMATE_STAGE3_MAX_TOKENS if _native_climate_s3
+                        else _stage_output_budget(3),
+                    )
+                    _recovery_e = {}
+                    _failed_text_e, _failed_parse_e = stage3_output, parsed
+                    yield from _blocking_with_keepalive(
+                        lambda: recover_stage3_priorities(
+                            _failed_text_e, _failed_parse_e, _reparse_s3e,
+                            template=_stage3_json_template(is_impl)),
+                        _recovery_e, stage=3)
+                    if 'result' in _recovery_e:
+                        stage3_output, parsed = _recovery_e['result']
                 log_stage3_parse_failure(
                     assessment_id, stage3_output, parsed,
                     NATIVE_CLIMATE_STAGE3_MAX_TOKENS if _native_climate_s3

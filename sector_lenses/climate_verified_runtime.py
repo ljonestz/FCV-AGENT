@@ -440,6 +440,12 @@ def resolve_verified_operation_context(
     # unique document evidence always wins (2026-11-17).
     chosen = {"ipf": "IPF", "pforr": "PforR", "dpf": "DPF"}.get(
         str(user_instrument or "").strip().casefold(), "")
+    conflicting = [value for value in structured_instruments if value != "Unknown"]
+    if (chosen and instrument.casefold() == "unknown" and len(conflicting) > 1
+            and chosen not in conflicting):
+        # A conflicting datasheet may only be settled with one of the instruments it names.
+        warnings.append("INSTRUMENT_USER_CHOICE_NOT_IN_DATASHEET")
+        chosen = ""
     if chosen and instrument.casefold() == "unknown":
         instrument = chosen
         warnings.append("INSTRUMENT_USER_DESIGNATED")

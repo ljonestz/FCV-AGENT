@@ -116,3 +116,31 @@ def test_instrument_selector_is_optional_and_sent_with_both_routes():
         assert f'value="{value}"' in select
     assert html.count("instrument_choice:instrumentChoice") == 2
     assert "/api/detect-instrument" in html and "Assumed from the document: " in html
+
+
+def test_conflicting_datasheet_accepts_only_a_named_instrument():
+    fields = [
+        {"field_name": "Financing Instrument", "field_value": "Investment Project Financing", "location": "t:0"},
+        {"field_name": "Financing Instrument", "field_value": "Program-for-Results", "location": "t:1"},
+    ]
+    prepared = _prepared("Body text. " * 30, fields)
+    assert resolve_verified_operation_context(prepared).instrument_type == "Unknown"
+    named = resolve_verified_operation_context(prepared, user_instrument="PforR")
+    assert named.instrument_type == "PforR"
+    other = resolve_verified_operation_context(prepared, user_instrument="DPF")
+    assert other.instrument_type == "Unknown"
+    assert "INSTRUMENT_USER_CHOICE_NOT_IN_DATASHEET" in other.warning_codes
+
+
+def test_instrument_choice_is_cleared_between_documents_and_sessions():
+    html = INDEX.read_text(encoding="utf-8")
+    body = html[html.index("function resetInstrumentChoice()"):]
+    body = body[:body.index("\n  }\n")]
+    for cleared in ("instrumentChoice=''", "instrumentChoiceTouched=false", "instrumentDetectedFor=''", "sel.value=''"):
+        assert cleared in body
+    # New run, session load, removed primary file and empty detection all clear it.
+    assert html.count("resetInstrumentChoice()") >= 5
+    detect = html[html.index("function detectInstrumentForPrimary()"):]
+    detect = detect[:detect.index("\n  }\n")]
+    assert "if(!f){if(instrumentDetectedFor)resetInstrumentChoice();return;}" in detect
+    assert "sel.value='';selectInstrumentChoice('',false);" in detect

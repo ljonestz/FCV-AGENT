@@ -55,6 +55,11 @@ DIMENSIONS = (
         "indicators, and triggers the team can act on?",
     ),
 )
+ROUTE_UNRESOLVED_NO_PRIORITY_MESSAGE = (
+    "No priority actions were produced, and the financing instrument or document type could "
+    "not be confirmed from the upload. Choose the financing instrument in the review panel, "
+    "or check the document's datasheet, and re-run."
+)
 NO_RECOMMENDATION_MESSAGE = (
     "No operational priorities were identified in this assessment. Review the "
     "assessment findings and points to check below."
@@ -915,10 +920,13 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
     )
     admitted_count = diagnostics.get("admitted_count", 0)
     inconclusive_review = bool(priorities) and (
-        diagnostics.get("reviewer_verdict") == "revise"
+        diagnostics.get("reviewer_verdict") in {"revise", "block"}
         and isinstance(diagnostic_reasons, (list, tuple))
-        and ("SEMANTIC_REVIEW_VERDICT_INVALID" in diagnostic_reasons
-             or "SEMANTIC_REVIEW_UNTARGETED_REVISE" in diagnostic_reasons)
+        and any(code in diagnostic_reasons for code in (
+            "SEMANTIC_REVIEW_VERDICT_INVALID",
+            "SEMANTIC_REVIEW_UNTARGETED_REVISE",
+            "SEMANTIC_REVIEW_UNTARGETED_BLOCK",
+        ))
     )
     partially_reviewed = bool(priorities) and (
         diagnostics.get("reviewer_verdict") in {"revise", "block"}
@@ -1046,6 +1054,11 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
             "Fewer than three priorities were validated despite several material findings. "
             "Review the uncovered findings before relying on this note; do not add actions just to meet a count."
         )
+    if (not reader_priorities and recommendation_status != "incomplete"
+            and "OPERATIONAL_GUIDANCE_WITHHELD" in codes):
+        # 2026-11-17: say why, and point to the fix, instead of a neutral "none identified".
+        recommendation_status = "partial"
+        recommendation_message = ROUTE_UNRESOLVED_NO_PRIORITY_MESSAGE
     return _scrub_placeholders({
         "assessment_themes": _assessment_themes(_summary_gap_items(assessment, reader_priorities, limit=12), core_questions, reader_priorities, minor_climate_points, assessment=assessment),
         "executive_readout": executive,

@@ -3527,7 +3527,7 @@
           }
         }
         // A loaded session has names only; do not export names from a previous upload.
-        pF=[];pkF=[];cF=[];
+        pF=[];pkF=[];cF=[];if(typeof resetInstrumentChoice==='function')resetInstrumentChoice();
         ['ip','ipack','ic'].forEach(id=>{document.getElementById(id).value='';});
         const savedFiles=Array.isArray(state.fileNames)?{project:state.fileNames}:state.fileNames||{};
         restoredFileNames={
@@ -6257,6 +6257,7 @@ ${climatePrintDisclosureScript()}
   function reset(){
     if(typeof setTabStatus==='function')setTabStatus('idle');
     restoredFileNames={project:[],context:[]};
+    if(typeof resetInstrumentChoice==='function')resetInstrumentChoice();
     pF=[];pkF=[];cF=[];fileMetadata={};hist=[];curS=0;sessionName='';busy=false;stageOutputs={};stageHists={};researchBrief='';researchCountry='';priorityQuestions=[];focusQuestionsResult=null;pqPanelEnabled=true;
     ['ip','ipack','ic'].forEach(id=>{document.getElementById(id).value='';});
     activeLenses=[];resolvedLensVersions={};lensSuggestions=[];lensDiagnostic={};lensContextSources=[];climateResearch={};climateGrounding={};climateIntegration=null;climateVerifiedAssessment=null;climateVerifiedFailure=null;climateVerifiedReader=null;lensSelectionTouched=false;lensSelectionLocked=false;renderLensSelector();
@@ -6455,11 +6456,21 @@ ${climatePrintDisclosureScript()}
     if(byUser)instrumentChoiceTouched=true;
   }
   const INSTRUMENT_LABELS={IPF:'Investment Project Financing (IPF)',PforR:'Program-for-Results (PforR)',DPF:'Development Policy Financing (DPF)'};
+  const INSTRUMENT_HINT_DEFAULT='Filled in from the primary document when it states the instrument. Your choice is used only where the document is silent or unclear.';
+  // A choice belongs to one primary document: never carry it to the next run or session.
+  function resetInstrumentChoice(){
+    instrumentChoice='';instrumentChoiceTouched=false;instrumentDetectedFor='';
+    const sel=document.getElementById('instrument-choice');if(sel)sel.value='';
+    const hint=document.getElementById('instrument-choice-hint');if(hint)hint.textContent=INSTRUMENT_HINT_DEFAULT;
+  }
   function detectInstrumentForPrimary(){
     const f=(typeof pF!=='undefined'&&pF.length)?pF[0]:null;
     const sel=document.getElementById('instrument-choice');
     const hint=document.getElementById('instrument-choice-hint');
-    if(!f||!sel||instrumentDetectedFor===f.name||f.size>25*1024*1024)return;
+    if(!f){if(instrumentDetectedFor)resetInstrumentChoice();return;}
+    if(!sel||instrumentDetectedFor===f.name)return;
+    resetInstrumentChoice();
+    if(f.size>25*1024*1024)return;
     instrumentDetectedFor=f.name;
     const ft=detectFileType(f.name);
     const r=new FileReader();
@@ -6472,8 +6483,9 @@ ${climatePrintDisclosureScript()}
           if(j&&INSTRUMENT_LABELS[j.instrument]){
             sel.value=j.instrument;selectInstrumentChoice(j.instrument,false);
             if(hint)hint.textContent='Assumed from the document: '+INSTRUMENT_LABELS[j.instrument]+'. Change it if this is wrong.';
-          }else if(hint){
-            hint.textContent='The document does not state its financing instrument. Choosing one is optional and helps target the suggested wording.';
+          }else{
+            sel.value='';selectInstrumentChoice('',false);
+            if(hint)hint.textContent='The document does not state its financing instrument. Choosing one is optional and helps target the suggested wording.';
           }
         }).catch(()=>{});
     };
