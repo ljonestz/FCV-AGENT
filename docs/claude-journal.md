@@ -2411,3 +2411,30 @@ rows travel beside the reader, which must match its canonical rebuild); "Snapsho
 summary cards (both routes, browser and Word); a responsiveness "not required" note under the
 responsiveness sub-heading on both routes (replaces the climate Word closing note). Not yet validated by
 a paid run. Run artefacts: output/20261116_review-stage-paid-runs/ (untracked).
+
+### 2026-11-18 Zero prioritised actions: holistic fix (branch fix/zero-priority-holistic)
+Root cause of the AFG HCJ climate zero-priority runs: docx_structure paired each datasheet label with
+the next label in World Bank two-row grids (Financing Instrument => "Borrower(s)"), the runtime then
+forced the instrument to Unknown and skipped text fallbacks, operational guidance was withheld, and the
+recommendation prompt said "fail actionability" without a permitted destination (run 2: compiler
+returned []). An inventory of every zero-priority path (15 climate, 5 normal route) drove four phases.
+Phase 1: two-row grids pair by column and a label is never a value (all 11 test-case docx files now
+read IPF correctly); an unreadable non-blank structured instrument falls back to a unique whole-document
+check (blank stays fail-closed); the compiler keeps task-team actions when no document target is
+permitted (prompt climate-recommendations-v2.26); optional Financing instrument selector pre-filled by
+a no-model /api/detect-instrument; the choice fills only what the document leaves unresolved (unique
+document evidence wins; a conflicting datasheet accepts only a named instrument) and is cleared between
+documents and sessions. Phase 2 (user decisions): a well-formed review that passes every core keeps the
+cores under any verdict (revise, block, invalid) with drafting withheld and the inconclusive notice;
+stray reviewer IDs are ignored (SEMANTIC_REVIEW_TARGET_UNKNOWN_IGNORED); reviewer records need one real
+passage; invalid enums are coerced to the most conservative value; one format retry (x1.5 tokens) for
+truncated/non-JSON compiler or reviewer replies and one empty-list retry when >=2 residual gaps exist,
+both only with reviewer/reader headroom left; reviewer output budget 2,500 -> 4,000. Phase 3: Stage 3
+failure codes (missing/invalid/empty/malformed) with specific messages, one JSON-only recovery call with
+SSE keepalives (not on native-climate Stage 3), no silent empty success; more than five priorities stays
+rejected without truncation. Phase 4: climate reader names the unresolved route when no priority is
+produced. Offline replay: AFG run 1's real reviewer output now keeps all five recommendations. An
+independent code review found no safety regressions; its two defects (choice carry-over, retry time
+budget) were fixed. Tests: 23 new zero-priority tests plus updated pinned tests; full suite green before
+the review fixes (2398 passed, 1 pinned silent-empty test updated). Paid validation pending a test-service
+deploy of this branch (dashboard access failed overnight). Spec: docs/superpowers/specs/2026-11-17-zero-priority-holistic-plan.md (local).
