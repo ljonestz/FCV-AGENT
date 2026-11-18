@@ -46,7 +46,9 @@ def _valid_core_record(record: object, known_blocks: set[str]) -> bool:
         or not blocks
         or not all(isinstance(block, str) for block in blocks)
         or len(blocks) != len(set(blocks))
-        or not set(blocks) <= known_blocks
+        # 2026-11-17: extra non-passage IDs (e.g. fact IDs) are ignored; at least one cited
+        # passage must be real, so a record with no verifiable source stays invalid.
+        or not set(blocks) & known_blocks
         or not isinstance(codes, list)
         or not all(
             isinstance(code, str) and code in SEMANTIC_REVIEW_REASON_CODES

@@ -57,6 +57,7 @@ from sector_lenses.climate_recommendations import (
     normalize_drafting_blocks,
     numeric_tokens_in_text,
     normalize_unsupported_drafting_precision,
+    normalize_format_fields,
     normalize_optional_enhancement,
     normalize_recommendation_references,
     normalize_unverified_completion_actor,
@@ -98,7 +99,7 @@ PROMPT_VERSIONS = {
     "fact_extraction": "climate-facts-v2.9",
     "bounded_analysis": "climate-analysis-v2.13",
     "judgment_review": "climate-judgments-v2.17",
-    "recommendation_compiler": "climate-recommendations-v2.25",
+    "recommendation_compiler": "climate-recommendations-v2.26",
     "conditional_review": "climate-review-v2.25",
     "drafting_compiler": "climate-drafting-v1.9",
     "reader_compiler": "climate-final-reader-v1.14",
@@ -208,6 +209,22 @@ def _as_record(value: object) -> dict[str, object]:
 class PipelineCancelled(RuntimeError):
     """Cancellation is never converted into an optional-artifact fallback."""
 
+
+_FORMAT_RETRY_STAGES = frozenset({"recommendation_compiler", "conditional_review"})
+_FORMAT_RETRY_MIN_SECONDS = 90
+_EMPTY_RETRY_MIN_GAPS = 2
+
+
+def _is_format_failure(error: Exception) -> bool:
+    """Truncated, refused-as-incomplete or non-JSON structured output from the client."""
+    text = str(error)
+    return text.startswith((
+        "Structured climate output incomplete",
+        "Expected valid structured JSON",
+        "Expected a structured JSON object",
+    )) and "stop_reason=refusal" not in text
+
+
 def _call(
     client: JsonClient,
     stage: str,
@@ -239,13 +256,32 @@ def _call(
             raise TimeoutError('Correction output-token allowance exhausted')
     started = time.monotonic()
     try:
-        result = client.complete_json(
-            stage=stage,
-            payload=payload,
-            timeout_seconds=remaining,
-            max_output_tokens=output_tokens,
-            max_transient_retries=0 if repair_allowance is not None else 1,
-        )
+        try:
+            result = client.complete_json(
+                stage=stage,
+                payload=payload,
+                timeout_seconds=remaining,
+                max_output_tokens=output_tokens,
+                max_transient_retries=0 if repair_allowance is not None else 1,
+            )
+        except ValueError as error:
+            # 2026-11-17: a truncated or non-JSON compiler/reviewer reply used to fail the
+            # whole run. Retry once with a larger output allowance when time allows.
+            left = remaining if deadline is None else int(deadline - time.monotonic())
+            # The compiler retry must leave the reviewer/reader their headroom (review: 2026-11-17).
+            floor = (_FORMAT_RETRY_MIN_SECONDS if stage == "conditional_review"
+                     else budget.timeout_seconds + REVIEW_FORMAT_RETRY_HEADROOM_SECONDS)
+            if (stage not in _FORMAT_RETRY_STAGES or repair_allowance is not None
+                    or optional or (deadline is not None and left < floor) or cancelled()
+                    or not _is_format_failure(error)):
+                raise
+            result = client.complete_json(
+                stage=stage,
+                payload=payload,
+                timeout_seconds=min(budget.timeout_seconds, left),
+                max_output_tokens=int(output_tokens * 1.5),
+                max_transient_retries=0,
+            )
     except Exception as error:
         if cancelled() or isinstance(error, PipelineCancelled) or (
             isinstance(error, RuntimeError) and str(error) == 'Verified Climate-FCV pipeline cancelled'
@@ -1162,6 +1198,39 @@ def run_verified_climate_pipeline(
         "recommendation_candidates",
         "priorities",
     )
+    empty_retry_floor = (CALL_BUDGETS["recommendation_compiler"].timeout_seconds
+                         + REVIEW_FORMAT_RETRY_HEADROOM_SECONDS)
+    if (not raw_candidates and len(gaps) >= _EMPTY_RETRY_MIN_GAPS
+            and (deadline is None or deadline - time.monotonic() >= empty_retry_floor)):
+        # 2026-11-17: an empty list despite several admitted residual gaps is retried once.
+        reasons.append("RECOMMENDATIONS_EMPTY_RETRY_ATTEMPTED")
+        retry_payload = _call(
+            clients.assessment,
+            "recommendation_compiler",
+            {
+                "facts": [asdict(item) for item in facts],
+                "source_passages": source_passages,
+                "analysis": analysis_record,
+                "judgments": asdict(judgments),
+                "operation_context": resolved_context,
+                "guidance_registry_version": GUIDANCE_REGISTRY_VERSION,
+                "operational_guidance": [item.as_record() for item in guidance],
+                "retry_note": (
+                    f"A previous attempt returned no candidates although {len(gaps)} residual gaps "
+                    "were admitted. Consider every admitted residual gap against the tests; an "
+                    "unresolved route is not a reason to return none. Return an empty array only "
+                    "if no gap supports a material, feasible decision."
+                ),
+            },
+            latency_ms,
+            cancel_event=cancel_event,
+            deadline=None if deadline is None else deadline - REVIEW_FORMAT_RETRY_HEADROOM_SECONDS,
+            optional=True,
+        )
+        if not retry_payload.get("_optional_failure"):
+            retried = _records(retry_payload, "recommendation_candidates", "priorities")
+            if retried:
+                recommendation_payload, raw_candidates = retry_payload, retried
     candidates_missing_drafting = [
         record
         for record in raw_candidates
@@ -1238,6 +1307,8 @@ def run_verified_climate_pipeline(
             candidate,
             supported_numeric_tokens=source_numeric_tokens,
         )
+        candidate, format_repairs = normalize_format_fields(candidate)
+        repairs.extend(format_repairs)
         candidate, enhancement_repairs = normalize_optional_enhancement(candidate)
         repairs.extend(enhancement_repairs)
         candidate, precision_repairs = normalize_unsupported_core_precision(candidate)
@@ -1537,22 +1608,39 @@ def run_verified_climate_pipeline(
                 + list(core_admission.affected_core_ids)
             )
         )[:15]
+        # 2026-11-17 zero-priority policy: when every core was explicitly supported or qualified
+        # in a well-formed review that names no known target, a negative or contradictory verdict
+        # cannot be attributed to any core. Keep the cores with an inconclusive-review warning and
+        # withhold all drafting. Any unpassed, unsupported or malformed core stays fail-closed.
+        all_cores_passed = (
+            bool(priority_ids)
+            and not core_admission.invalid_core_ids
+            and not core_admission.unsupported_core_ids
+            and set(core_admission.passed_core_ids) == priority_ids
+            and not core_admission.reason_codes  # e.g. a record for an unknown core
+        )
+        envelope_ok = (
+            isinstance(review.get("reason_codes"), list)
+            and isinstance(review.get("object_ids"), list)
+            and review.get("issues") == []
+        )
         if reviewer_verdict == 'pass' and (
             review.get('object_ids') or review.get('reason_codes')
             or review.get('issues') or core_admission.affected_core_ids
         ):
             reviewer_verdict = 'block'
             review_reasons.append('SEMANTIC_REVIEW_VERDICT_INVALID')
-            if not semantic_review_object_ids and not disputed_readiness_ids:
+            if (not semantic_review_object_ids and not disputed_readiness_ids
+                    and not (all_cores_passed and envelope_ok)):
                 semantic_review_object_ids = sorted(priority_ids)
         if reviewer_verdict not in {"pass", "revise", "block"}:
             reviewer_verdict = "block"
             review_reasons.append("SEMANTIC_REVIEW_VERDICT_INVALID")
-            semantic_review_object_ids = sorted(priority_ids)
+            if not (all_cores_passed and envelope_ok):
+                semantic_review_object_ids = sorted(priority_ids)
         if set(_strings(review.get("object_ids"))) - (priority_ids | artifact_ids | readiness_ids):
-            reviewer_verdict = "block"
-            review_reasons.append("SEMANTIC_REVIEW_TARGET_UNRESOLVED")
-            semantic_review_object_ids = sorted(priority_ids)
+            # A stray ID (e.g. a gap or fact ID) is ignored, not a reason to withhold every action.
+            review_reasons.append("SEMANTIC_REVIEW_TARGET_UNKNOWN_IGNORED")
         if core_admission.invalid_core_ids:
             review_reasons.append('SEMANTIC_REVIEW_TARGET_UNRESOLVED')
         if (reviewer_verdict != "pass" and not semantic_review_object_ids
@@ -1563,6 +1651,12 @@ def run_verified_climate_pipeline(
                     and set(core_admission.passed_core_ids) == priority_ids):
                 # Keep explicit core passes available without certifying the contradictory verdict.
                 review_reasons.append("SEMANTIC_REVIEW_VERDICT_INVALID")
+            elif all_cores_passed and envelope_ok:
+                review_reasons.append(
+                    "SEMANTIC_REVIEW_UNTARGETED_BLOCK" if reviewer_verdict == "block"
+                    else "SEMANTIC_REVIEW_UNTARGETED_REVISE"
+                )
+                semantic_review_object_ids = sorted(artifact_ids)
             else:
                 review_reasons.append("SEMANTIC_REVIEW_TARGET_UNRESOLVED")
                 semantic_review_object_ids = sorted(priority_ids)

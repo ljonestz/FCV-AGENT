@@ -312,7 +312,7 @@ def test_term_tooltips_do_not_underline_navigation_or_headings():
 def test_climate_readout_receives_provenance_inputs_like_normal_route():
     source = html()
     climate = function_body(source, "function renderClimateVerifiedAssessment(")
-    assert "fileNames:readoutFileNames(),researchBrief}" in climate
+    assert "fileNames:readoutFileNames(),researchBrief," in climate
     assert "fileNames:readoutFileNames(),researchBrief," in function_body(source, "function renderNormalReadoutHtml(")
 
 

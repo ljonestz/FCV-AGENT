@@ -38,6 +38,32 @@ _REPLACEMENTS: dict[str, list[tuple[str, str]]] = {
             "Explain uncertainty, and any technical concept briefly, in clear expert prose\n"
             "rather than simplified language.",
         ),
+        # 2026-11-16 paragraph shape: fewer, fuller paragraphs (same hard ceilings).
+        (
+            "Summary: prefer two connected paragraphs of about 90-100 words each, targeting 190 words overall (editorial target 160-230); use a third only if essential.",
+            "Summary: write two connected paragraphs of about 100-115 words each, each carrying one\n"
+            "line of reasoning over four to six sentences, targeting about 210 words overall\n"
+            "(editorial target 160-230); use a third only if essential.",
+        ),
+        (
+            "Assessment narratives: three short question-led answers,",
+            "Assessment narratives: three question-led answers,",
+        ),
+        (
+            "Keep design to\n180-240 words, as for dividends and inclusion, in two or three connected\n"
+            "paragraphs when the support is rich enough.",
+            "Keep design to\n220-280 words, as for dividends and inclusion, in two connected paragraphs\n"
+            "(a third only if essential), each building one argument over four to six sentences,\n"
+            "when the support is rich enough.",
+        ),
+        (
+            "Target 180-240 words;",
+            "Target 220-280 words;",
+        ),
+        (
+            "Aim for about 190 summary words.",
+            "Aim for about 210 summary words.",
+        ),
     ],
     "bounded_analysis": [
         (
@@ -62,6 +88,12 @@ _REPLACEMENTS: dict[str, list[tuple[str, str]]] = {
             "Explain unfamiliar concepts in ordinary language for a first-time reader.",
             "Explain any technical concept briefly in clear expert prose.",
         ),
+        (
+            "executive_readout as two to three short paragraphs separated by a blank line,\n"
+            "each covering one clear theme, so a reader can scan the key takeaways.",
+            "executive_readout as two or three full paragraphs separated by a blank line,\n"
+            "each developing one clear theme as connected argument, not a list of takeaways.",
+        ),
     ],
     "drafting_compiler": [
         (
@@ -84,6 +116,9 @@ READER REGISTER AND WORDING:
 - Write for an experienced FCV and operations reader in the register of a senior peer
   reviewer: connected sentences that carry cause and consequence, typically 25 to 40
   words, with no list-like run of one-fact sentences.
+- Build each paragraph around one line of reasoning carried across four to six
+  sentences. Do not split one argument across separate short paragraphs, and do not
+  end a paragraph after a single point.
 - Do not open the Summary with formulas such as "The project already builds" or "The
   main remaining challenge is"; write a judgment specific to this project.
 - Never use internal terms in reader prose: accepted priorities, accepted actions,

@@ -382,6 +382,13 @@ sentence verbatim.
 Write each judgment rationale as three to five plain-language sentences (roughly
 60-110 words) that a non-specialist can follow; avoid abrupt one-line fragments,
 and explain the reasoning rather than just stating a verdict.
+For the sensitivity and responsiveness rationales, open with one sentence (at most
+35 words) that states the judgment on its own: it is shown alone in the summary box
+at the top of the note, so it must make sense without the rest of the rationale.
+Do not name the rating category (such as moderate or limited) in any rationale;
+describe what the design does well and what it does not. For responsiveness, highlight
+what the project contributes and do not criticize a limited or not_expected
+contribution unless the project has obvious potential that it ignores.
 Do not describe a dimension as formally rated unless it is an actual rating
 category in the document; if a dimension (for example climate risk) is stated
 only in narrative and is not a rating category, describe it as narrative-stated
@@ -464,8 +471,13 @@ Return fewer when fewer pass; never manufacture one for symmetry or to reach a n
 only when existence, scope, timing, and authority are verified separately.
 When no existing vehicle is evidenced, use standard_document_advisory and target
 the current stage document only where the supplied operational-guidance packet
-permits it. If neither destination is safe, fail actionability or timing; do not
-ask the task team to confirm routing. Credit existing mitigation before defining
+permits it. When the packet is empty because the document or instrument route is
+unresolved, still compile each recommendation that passes the other tests: address
+it to the task team as a preparation decision on the named project element, use
+standard_document_advisory, and leave document drafting out (it is withheld). An
+unresolved route alone is never a reason to fail actionability or timing; fail them
+only when the action itself is not feasible at this stage. Do not ask the task team
+to confirm routing. Credit existing mitigation before defining
 the residual improvement. Minimum action must be proportionate. Enhanced action
 requires a specific activation condition.
 Treat residual gaps as analysis to check, not independent proof of their factual
@@ -516,7 +528,9 @@ target, not a minimum to pad or an admission rule. Explain the operational mecha
 and the preparation work, rather than expanding the same document clarification.
 Make the action usable in document preparation: name the current document and
 the relevant section from operational_guidance.permitted_targets, then specify
-the decision, criterion, responsibility or evidence to add or revise there.
+the decision, criterion, responsibility or evidence to add or revise there. When
+no permitted target is supplied, name the project element (component, criterion,
+arrangement or indicator) and the preparation decision instead of a section.
 Keep each priority centred on one coherent operational decision. Develop two or
 three related edits or preparation steps where useful, rather than stopping at a
 general instruction to improve the description. In minimum_action and the opening sentence of the narrative's

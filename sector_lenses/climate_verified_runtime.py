@@ -243,6 +243,19 @@ def _structured_financing_instruments(
     return tuple(selected)
 
 
+def _structured_instrument_is_blank(prepared: PreparedClimateSources) -> bool:
+    """True when a primary-document Financing Instrument field exists with no value."""
+    primary_ids = {
+        item.document_id for item in prepared.documents if item.relationship == "primary"
+    }
+    return any(
+        block.document_id in primary_ids
+        and str(block.field_name or "").casefold() == "financing instrument"
+        and not str(block.field_value or "").strip()
+        for block in (*prepared.structured_fields, *prepared.blocks)
+    )
+
+
 def _sole_document_instrument(source_text: str) -> str:
     """Return the instrument when the full primary source names exactly one.
 
@@ -281,8 +294,12 @@ def resolve_verified_operation_context(
     *,
     doc_type: str = "Unknown",
     instrument_type: str = "Unknown",
+    user_instrument: str = "",
 ) -> VerifiedOperationContext:
-    """Resolve conservative routing from explicit primary-document markers."""
+    """Resolve conservative routing from explicit primary-document markers.
+
+    ``user_instrument`` (IPF/PforR/DPF) is the user's explicit choice; it fills an instrument
+    the document leaves unresolved and never overrides unique document evidence."""
 
     filenames, source_text = _primary_context_text(prepared)
     source_head = source_text[:8_000]
@@ -383,6 +400,13 @@ def resolve_verified_operation_context(
         instrument = "Unknown"
         if structured_instruments[0] == "Unknown":
             warnings.append("INSTRUMENT_STRUCTURED_UNRESOLVED")
+            if not _structured_instrument_is_blank(prepared):
+                # A filled but unrecognised datasheet value (e.g. a mis-read cell) is not
+                # evidence against the document: accept only an instrument the whole primary
+                # source names uniquely. A blank field stays fail-closed (2026-11-17).
+                detected_instrument = _sole_document_instrument(source_text)
+                if detected_instrument != "Unknown":
+                    notes.append("instrument_structured_fallback")
     elif detected_instrument == "Unknown":
         if pforr and not dpf and (not ipf or hybrid_ipf):
             detected_instrument = "PforR"
@@ -411,6 +435,23 @@ def resolve_verified_operation_context(
     elif not structured_instruments and sum((pforr, dpf, ipf)) > 1:
         instrument = "Unknown"
         warnings.append("INSTRUMENT_ROUTE_AMBIGUOUS")
+
+    # The user's instrument choice (review panel) resolves only what the document leaves open;
+    # unique document evidence always wins (2026-11-17).
+    chosen = {"ipf": "IPF", "pforr": "PforR", "dpf": "DPF"}.get(
+        str(user_instrument or "").strip().casefold(), "")
+    conflicting = [value for value in structured_instruments if value != "Unknown"]
+    if (chosen and instrument.casefold() == "unknown" and len(conflicting) > 1
+            and chosen not in conflicting):
+        # A conflicting datasheet may only be settled with one of the instruments it names.
+        warnings.append("INSTRUMENT_USER_CHOICE_NOT_IN_DATASHEET")
+        chosen = ""
+    if chosen and instrument.casefold() == "unknown":
+        instrument = chosen
+        warnings.append("INSTRUMENT_USER_DESIGNATED")
+        notes.append(f"instrument_user_choice:{chosen}")
+    elif chosen and instrument.casefold() != chosen.casefold():
+        warnings.append("INSTRUMENT_USER_CHOICE_OVERRIDDEN_BY_DOCUMENT")
 
     # Datasheet templates list "[ ] Multiphase Programmatic Approach (MPA)" and
     # "[ ] Contingent Emergency Response Component (CERC)" on every operation; an

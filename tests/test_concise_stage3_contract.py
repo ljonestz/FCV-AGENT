@@ -270,8 +270,13 @@ def test_non_object_raw_priority_disables_concise_bundle(include_valid):
 
     result = extract_priorities(_wrapped(payload))
 
+    if not include_valid:
+        # 2026-11-17: an all-malformed list is a recoverable failure, never a silent empty success.
+        assert result["error"] is True and result["parse_failure"] == "malformed"
+        assert result["priorities"] == [] and result["concise_readout"] is None
+        return
     assert result["error"] is False
-    assert len(result["priorities"]) == (1 if include_valid else 0)
+    assert len(result["priorities"]) == 1
     assert result["concise_readout"] is None
     assert all("concise" not in priority for priority in result["priorities"])
 

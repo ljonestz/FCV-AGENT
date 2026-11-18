@@ -312,7 +312,7 @@ def validate_final_reader_records(payload: object, assessment: dict[str, object]
             valid = grounded(record, texts)
             count = sum(len(text.split()) for text in texts)
             if not 1 <= count <= 400:
-                rejected(identifier, f'Finding has {count} words; nonempty prose is required and the hard ceiling is 400 (editorial target 180-240).', 'READER_WORD_COUNT')
+                rejected(identifier, f'Finding has {count} words; nonempty prose is required and the hard ceiling is 400 (editorial target 180-280).', 'READER_WORD_COUNT')
                 valid = False
         record_status[status_key] = valid
         if valid:

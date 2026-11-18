@@ -2356,3 +2356,90 @@ No prompt, schema, delimiter, Stage-3 JSON, route or KB change. Follow-up if an 
 non-block citations: enum-constrain conditional_review source_block_ids (schema parity item).
 Full suite: only new difference vs main was one diagnostics-equality test updated for the excerpt;
 the 32 country-bank failures are pre-existing in a fresh worktree (bank data not present).
+
+### 2026-11-16 Qualitative S/R summaries, M&E calibration, climate paragraph shape
+Trigger: due-diligence task-team discussion (Adequate/Adequate read as contradictory; responsiveness
+should not be criticized; M&E should not push peace/stability outcome indicators) and a comparison of
+16 Nov QA/ITS outputs (climate prose is connected but paragraphs are shorter: ~72 vs 100-177 words in
+the opening; priorities comparable). Branch feat/fcv-qualitative-ratings-and-me.
+Display: top summary boxes on both routes show the first sentence of the sensitivity/responsiveness
+judgment instead of gauges (browser, Share export, Word); body section keeps the full judgment, no
+rating pill. Rating fields still generated and stored (ITS parity). first_sentence() in
+fcv_docx_style mirrors findVisibleSentenceEnd so Word and browser pick the same sentence. Server
+climate HTML (review packet only) left labelled.
+Prompts: DEFAULT_PROMPTS 3/impl_3 and climate judgment prompt require a standalone opening sentence
+(<=35 words), no rating label, responsiveness "not expected" with criticism only for obvious ignored
+potential. New M&E calibration in DEFAULT_PROMPTS 2 and 3.
+Climate prose layer: Summary ~210 words in two paragraphs, findings 220-280 words in two paragraphs of
+four to six sentences, executive_readout full paragraphs, paragraph-shape rule. Hard ceilings
+unchanged; reader_review/reader_correction untouched (layer contract test).
+Tests: 13 existing tests updated from gauge assertions; new tests/test_qualitative_rating_summaries.py.
+Full suite before test updates: 2338 passed, 13 failed (all gauge/scale assertions or the layer
+contract); affected files after updates: 330 passed. No paid run yet; output quality unvalidated.
+Design note for the process-stage selector and due-diligence checklist:
+docs/superpowers/specs/2026-11-16-process-stage-toggle-and-dd-checklist-design.md.
+
+### 2026-11-16 Review-stage selector and due-diligence checklist
+
+Upload screen asks (optional, no default) where the operation is: Technical Design, Implementation
+Readiness, One Review, legacy Concept (PCN/PID), legacy Appraisal/Decision Review (PAD), Additional
+Financing OR Restructuring, or Not sure. Blank or Not sure keeps today's detection. A selection pins
+the regime used by the header, reference floor and timing, adds a short framing block to Stages 2-3,
+and shows one neutral notice when the documents look different. Stage 3 returns an optional
+`dd_checklist` (4-6 plain notes, no status labels) against the due-diligence proposal's Annex I
+questions, rendered as a collapsed section after the priorities (browser and Word). Legacy runs get no
+checklist and a one-line "not needed" note. Code: `review_stage.py`, `app.py`
+(`append_review_stage_blocks`, `review_stage_done_fields`), `static/fcv_readout.js`, `index.html`.
+Step-by-step now sends `regime_context`. Climate-verified route unchanged. Tests:
+`tests/test_review_stage.py` (13). Parity logged.
+
+### 2026-11-17 Paid review-stage runs, climate zero-priority gate, climate checklist, Snapshot label
+Paid runs on fcv-agent-1 (build 7a4cd02, spend guard off at the user's choice after the USD6 legacy
+ceiling refused USD12; several pre-request refusals at nil spend). Chad new-model Project Paper, normal
+route, review stage IR: 571 s, all stages, Stage 2 framed for the IR review, 6 checklist rows in the IR
+column, plain notes, Word section 06. Defect noted, not fixed: the priority `when` enum
+(Identification|Preparation|Appraisal|Implementation|Restructuring) has no new-model value, so IR notes
+show "Appraisal". AFG HCJ concept PID + ESRS, climate route: 228 s, verified route complete but 0
+priorities: 5 candidates admitted, reviewer passed every core (2 supported, 3 qualified) yet returned
+revise with one untargeted code (PROJECT_FACT_UNSUPPORTED), which the pipeline treated as
+SEMANTIC_REVIEW_TARGET_UNRESOLVED and withheld all five. This was deliberate fail-closed behaviour
+(test_negative_review_without_any_target_cannot_certify_core). Changed at the user's request: an
+untargeted revise with all cores explicitly passed keeps the cores, withholds all drafting, records
+SEMANTIC_REVIEW_UNTARGETED_REVISE and shows the inconclusive-review message; block stays fail-closed.
+Also: due-diligence checklist on the climate route (one extra Sonnet call over the finished reader;
+rows travel beside the reader, which must match its canonical rebuild); "Snapshot:" label on the
+summary cards (both routes, browser and Word); a responsiveness "not required" note under the
+responsiveness sub-heading on both routes (replaces the climate Word closing note). Not yet validated by
+a paid run. Run artefacts: output/20261116_review-stage-paid-runs/ (untracked).
+
+### 2026-11-18 Zero prioritised actions: holistic fix (branch fix/zero-priority-holistic)
+Root cause of the AFG HCJ climate zero-priority runs: docx_structure paired each datasheet label with
+the next label in World Bank two-row grids (Financing Instrument => "Borrower(s)"), the runtime then
+forced the instrument to Unknown and skipped text fallbacks, operational guidance was withheld, and the
+recommendation prompt said "fail actionability" without a permitted destination (run 2: compiler
+returned []). An inventory of every zero-priority path (15 climate, 5 normal route) drove four phases.
+Phase 1: two-row grids pair by column and a label is never a value (all 11 test-case docx files now
+read IPF correctly); an unreadable non-blank structured instrument falls back to a unique whole-document
+check (blank stays fail-closed); the compiler keeps task-team actions when no document target is
+permitted (prompt climate-recommendations-v2.26); optional Financing instrument selector pre-filled by
+a no-model /api/detect-instrument; the choice fills only what the document leaves unresolved (unique
+document evidence wins; a conflicting datasheet accepts only a named instrument) and is cleared between
+documents and sessions. Phase 2 (user decisions): a well-formed review that passes every core keeps the
+cores under any verdict (revise, block, invalid) with drafting withheld and the inconclusive notice;
+stray reviewer IDs are ignored (SEMANTIC_REVIEW_TARGET_UNKNOWN_IGNORED); reviewer records need one real
+passage; invalid enums are coerced to the most conservative value; one format retry (x1.5 tokens) for
+truncated/non-JSON compiler or reviewer replies and one empty-list retry when >=2 residual gaps exist,
+both only with reviewer/reader headroom left; reviewer output budget 2,500 -> 4,000. Phase 3: Stage 3
+failure codes (missing/invalid/empty/malformed) with specific messages, one JSON-only recovery call with
+SSE keepalives (not on native-climate Stage 3), no silent empty success; more than five priorities stays
+rejected without truncation. Phase 4: climate reader names the unresolved route when no priority is
+produced. Offline replay: AFG run 1's real reviewer output now keeps all five recommendations. An
+independent code review found no safety regressions; its two defects (choice carry-over, retry time
+budget) were fixed. Tests: 23 new zero-priority tests plus updated pinned tests; full suite green before
+the review fixes (2398 passed, 1 pinned silent-empty test updated). Paid validation (2026-11-18, fcv-agent-1 build
+10cd9c4, 4 paid runs): AFG HCJ concept PID + ESRS, climate, TD: 4 priorities (previously 0), instrument
+IPF resolved from the datasheet, status complete, TD checklist 6 rows, Word report carries the priorities;
+Honduras P181166 PCN, climate: 5 priorities, IPF, partial (DRAFTING_TARGET_UNVERIFIED), no checklist (legacy
+process, correct); Chad Project Paper, normal, IR: 5 priorities, no parse error, IR checklist 6 rows. One
+earlier AFG attempt was cut at 69 s in Stage 2 by a service restart (env save), not by the app; it was
+rerun under a new label. Spec: docs/superpowers/specs/2026-11-17-zero-priority-holistic-plan.md (local).

@@ -27,10 +27,29 @@ class DocxUnit:
 _STRUCTURED_FIELDS = {
     "operation id": "Operation ID",
     "financing instrument": "Financing Instrument",
+    "lending instrument": "Financing Instrument",
     "environmental and social risk classification": (
         "Environmental and Social Risk Classification"
     ),
 }
+# Other World Bank datasheet labels. They are never structured fields, but a cell holding one is a
+# label, not a value: World Bank PID/PAD datasheets put a row of labels above a row of values
+# (e.g. "Financing Instrument | Borrower(s) | Implementing Agency"), and pairing a field with the
+# next label ("Financing Instrument => Borrower(s)") left the route unresolved (AFG HCJ, 2026-11-17).
+_DATASHEET_LABELS = frozenset({
+    "operation name", "project id", "project name", "country", "region", "product line",
+    "team leader(s)", "team leader", "practice area (lead)", "practice area", "borrower(s)",
+    "borrower", "implementing agency", "implementing agencies", "estimated appraisal date",
+    "estimated approval date", "estimated board date", "estimated concept review date",
+    "approval date", "closing date", "board approval date", "concept review decision",
+    "proposed development objective(s)", "proposed development objective",
+    "project development objective(s)", "financing (in usd million)", "total project cost",
+    "total financing", "financing gap", "process", "environmental assessment category",
+    "bank/ifc collaboration", "is this a regionally tagged project?", "associated project",
+    "parent project id", "parent project name", "joint ifc", "team leader(s) name",
+    "project beneficiary(ies)", "project beneficiary", "beneficiary country(ies)",
+    "beneficiary country", "operation id(s)",
+})
 _BRACKET_OPTION = re.compile(r"\[\s*(?P<checked>[xX]?)\s*\]")
 _OPTION_BOUNDARY = re.compile(r"[;|,\n]")
 
@@ -67,6 +86,12 @@ def _heading_level(paragraph: Any) -> int | None:
 def _canonical_field(value: str) -> str:
     key = re.sub(r"\s+", " ", value).strip().rstrip(":").casefold()
     return _STRUCTURED_FIELDS.get(key, "")
+
+
+def _is_datasheet_label(value: str) -> bool:
+    """True for a structured field label or another known datasheet label."""
+    key = re.sub(r"\s+", " ", value).strip().rstrip(":").casefold()
+    return bool(key) and (key in _STRUCTURED_FIELDS or key in _DATASHEET_LABELS)
 
 
 def _children(element: Any, tag: str) -> Iterable[Any]:
@@ -281,10 +306,31 @@ def extract_docx_units(document: Any) -> list[DocxUnit]:
         table_index += 1
         rows = list(_children(table, "w:tr"))
         consumed_value_rows: set[int] = set()
+        # Value-row cells already paired with a field label in the row above (mixed label rows).
+        consumed_value_cells: dict[int, set[int]] = {}
+
+        def walk_plain_cell(cell: Any, row_index: int, column_index: int) -> None:
+            coordinates = coordinate_prefix + (row_index, column_index)
+            walk_cell(
+                cell,
+                coordinates=coordinates,
+                nested_prefix=coordinate_prefix + (current_table, row_index, column_index),
+                table_id=current_table,
+                reader_group=table_location(
+                    current_table, coordinate_prefix + (row_index,), "row"
+                ),
+            )
+
         for row_index, row in enumerate(rows):
             if row_index in consumed_value_rows:
                 continue
             cells = list(_children(row, "w:tc"))
+            if row_index in consumed_value_cells:
+                skip = consumed_value_cells[row_index]
+                for column_index, cell in enumerate(cells):
+                    if column_index not in skip:
+                        walk_plain_cell(cell, row_index, column_index)
+                continue
             direct_texts = [_ordered_cell_text(cell) for cell in cells]
             canonical_headers = [_canonical_field(text) for text in direct_texts]
             is_header_row = (
@@ -336,6 +382,59 @@ def extract_docx_units(document: Any) -> list[DocxUnit]:
                     consumed_value_rows.add(row_index + 1)
                     continue
 
+            # Mixed label row: every non-empty cell is a datasheet label, at least one is a
+            # structured field, and the next row holds the values in the same columns.
+            non_empty = [text for text in direct_texts if text.strip()]
+            is_mixed_label_row = (
+                not is_header_row
+                and len(non_empty) >= 2
+                and any(canonical_headers)
+                and all(_is_datasheet_label(text) for text in non_empty)
+                and row_index + 1 < len(rows)
+            )
+            if is_mixed_label_row:
+                value_cells = list(_children(rows[row_index + 1], "w:tc"))
+                values = [_ordered_cell_text(cell) for cell in value_cells]
+                field_columns = [
+                    column_index for column_index, field_name in enumerate(canonical_headers)
+                    if field_name and column_index < len(values)
+                    and not _is_datasheet_label(values[column_index])
+                ]
+                if field_columns:
+                    for column_index, cell in enumerate(cells):
+                        if column_index not in field_columns:
+                            walk_plain_cell(cell, row_index, column_index)
+                            continue
+                        field_name = canonical_headers[column_index]
+                        field_value = values[column_index]
+                        value_cell = value_cells[column_index]
+                        field_index = paragraph_index
+                        paragraph_index += (
+                            visible_paragraph_count(cell)
+                            + visible_paragraph_count(value_cell)
+                        )
+                        coordinates = coordinate_prefix + (row_index, column_index)
+                        units.append(
+                            DocxUnit(
+                                text=f"{field_name}: {field_value}" if field_value else field_name,
+                                heading_path=tuple(headings),
+                                paragraph_index=field_index,
+                                table_coordinates=coordinates,
+                                field_name=field_name,
+                                field_value=field_value,
+                                location=table_location(current_table, coordinates, "field"),
+                                kind="structured_field",
+                            )
+                        )
+                        for source_cell in (cell, value_cell):
+                            walk_nested_tables(
+                                source_cell,
+                                coordinate_prefix=coordinate_prefix
+                                + (current_table, row_index, column_index),
+                            )
+                    consumed_value_cells[row_index + 1] = set(field_columns)
+                    continue
+
             same_row_pairs: dict[int, tuple[int, str, str]] = {}
             consumed_pair_cells: set[int] = set()
             for column_index in range(len(cells) - 1):
@@ -345,7 +444,7 @@ def extract_docx_units(document: Any) -> list[DocxUnit]:
                     continue
                 pair_field = _canonical_field(direct_texts[column_index])
                 pair_value = direct_texts[column_index + 1]
-                if pair_field and not _canonical_field(pair_value):
+                if pair_field and not _is_datasheet_label(pair_value):
                     same_row_pairs[column_index] = (
                         column_index + 1,
                         pair_field,

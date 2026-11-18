@@ -27,6 +27,7 @@ from fcv_core_research import (
 from fcv_distillation import distill_doc_parts_stream
 from live_source_policy import extract_project_ids
 import regime_router
+import review_stage as review_stage_mod
 import stage3_prose
 from sector_lenses.climate_native import (
     build_climate_repair_prompt,
@@ -4300,6 +4301,164 @@ def build_regime_header(preparation_regime, processing_model, es_regime, instrum
     )
 
 
+def append_review_stage_blocks(stage_prompt, stage, review_stage, regime_context, review_mode):
+    """Append the user-selected review-stage framing (Stage 2/3) and, at Stage 3,
+    the due-diligence checklist instruction. Returns the prompt unchanged when no
+    stage was selected and no checklist applies (legacy / unresolved runs)."""
+    block = review_stage_mod.review_stage_prompt_block(review_stage)
+    if block:
+        stage_prompt = stage_prompt + "\n\n" + block
+    if stage == 3:
+        column, _note = review_stage_mod.checklist_column(review_stage, regime_context, review_mode)
+        stage_prompt = stage_prompt + review_stage_mod.checklist_prompt_block(column)
+    return stage_prompt
+
+
+def review_stage_done_fields(parsed, review_stage, regime_context, review_mode):
+    """Stage 3 done-event fields for the review stage and checklist."""
+    column, note = review_stage_mod.checklist_column(review_stage, regime_context, review_mode)
+    rows = (review_stage_mod.normalize_dd_checklist((parsed or {}).get('dd_checklist'), column)
+            if column else [])
+    stage = review_stage_mod.normalize_review_stage(review_stage)
+    return {
+        'review_stage': stage,
+        'review_stage_label': review_stage_mod.REVIEW_STAGES.get(stage, {}).get('label', ''),
+        'review_stage_notice': review_stage_mod.stage_conflict_notice(regime_context, review_stage),
+        'dd_checklist': rows,
+        'dd_checklist_column': review_stage_mod.COLUMN_LABELS.get(column, '') if column else '',
+        'dd_checklist_note': note,
+    }
+
+
+def _blocking_with_keepalive(fn, holder, interval=10.0, stage=None):
+    """Run a blocking call on a thread, yielding SSE keepalives until it finishes.
+
+    The result (or the exception) is stored in ``holder['result']`` / ``holder['error']``."""
+    import threading
+
+    def run():
+        try:
+            holder['result'] = fn()
+        except Exception as error:  # noqa: BLE001 - surfaced through holder
+            holder['error'] = error
+
+    worker = threading.Thread(target=run, daemon=True)
+    worker.start()
+    payload = {'keepalive': True, **({'stage': stage} if stage else {})}
+    while worker.is_alive():
+        worker.join(timeout=interval)
+        if worker.is_alive():
+            yield f"data: {json.dumps(payload)}\n\n"
+
+
+# Parse failures a single JSON-only follow-up can usually recover (2026-11-17).
+# 'too_many' is excluded: more than five priorities is rejected without truncation by design.
+STAGE3_RECOVERABLE_FAILURES = frozenset({'missing', 'invalid', 'empty', 'malformed'})
+
+
+def _stage3_json_template(is_impl=False) -> str:
+    prompt = DEFAULT_PROMPTS.get('impl_3' if is_impl else '3', '') or ''
+    match = re.search(r'%%%JSON_START%%%\s*(\{.*?)\s*%%%JSON_END%%%', prompt, re.DOTALL)
+    return match.group(1).strip()[:12000] if match else ''
+
+
+def recover_stage3_priorities(stage_output, parsed, reparse, *, template='', call=None):
+    """One JSON-only follow-up when the Stage 3 priority block is missing, cut off, invalid,
+    empty or over-long. Copies the note's own priorities; never adds new content.
+
+    Returns ``(text, parsed)``; the originals are returned unchanged if recovery fails."""
+    failure = (parsed or {}).get('parse_failure')
+    if not (parsed or {}).get('error') or failure not in STAGE3_RECOVERABLE_FAILURES:
+        return stage_output, parsed
+    text = str(stage_output or '')
+    body = text if len(text) <= 120000 else text[:40000] + '\n[...]\n' + text[-80000:]
+    nl = chr(10)
+    prompt = (
+        "The FCV recommendations note below should end with a machine-readable JSON block, but the "
+        f"block is {'missing or cut off' if failure == 'missing' else 'empty' if failure == 'empty' else 'invalid'}."
+        + nl + "Return ONLY the complete JSON block between %%%JSON_START%%% and %%%JSON_END%%%, with valid JSON. "
+        "Copy the priorities, ratings and summaries exactly as the note states them; add nothing new. "
+        "Keep any partial JSON's structure and values."
+        + (nl + "Use this structure:" + nl + template if template else '')
+        + nl + nl + "NOTE:" + nl + body
+    )
+    try:
+        if call is None:
+            def call(message):
+                response = get_client().messages.create(
+                    model=MODEL_STANDARD, max_tokens=16000,
+                    messages=[{'role': 'user', 'content': message}],
+                )
+                return ''.join(getattr(block, 'text', '') for block in response.content)
+        reply = call(prompt) or ''
+        r_start = reply.find('%%%JSON_START%%%')
+        r_end = reply.find('%%%JSON_END%%%', r_start + 16) if r_start >= 0 else -1
+        block = reply[r_start + 16:r_end].strip() if r_start >= 0 and r_end >= 0 else reply.strip()
+        start, end = block.find('{'), block.rfind('}')
+        if start < 0 or end <= start:
+            return stage_output, parsed
+        t_start = text.find('%%%JSON_START%%%')
+        if t_start >= 0:
+            t_end = text.find('%%%JSON_END%%%', t_start + 16)
+            stripped = (text[:t_start] + (text[t_end + 14:] if t_end >= 0 else '')).rstrip()
+        else:
+            stripped = text.rstrip()
+        repaired = stripped + '\n\n%%%JSON_START%%%\n' + block[start:end + 1] + '\n%%%JSON_END%%%'
+        new_parsed = reparse(repaired)
+    except Exception as error:  # noqa: BLE001 - recovery is optional
+        app.logger.warning('Stage 3 JSON recovery failed: %s', type(error).__name__)
+        return stage_output, parsed
+    if new_parsed.get('error'):
+        return stage_output, parsed
+    new_parsed['json_recovered'] = failure
+    return repaired, new_parsed
+
+
+_INSTRUMENT_CHOICES = {'ipf': 'IPF', 'pforr': 'PforR', 'dpf': 'DPF'}
+
+
+def normalize_instrument_choice(value) -> str:
+    """User's optional Financing instrument choice: 'IPF', 'PforR', 'DPF' or '' (not stated)."""
+    return _INSTRUMENT_CHOICES.get(str(value or '').strip().casefold(), '')
+
+
+def apply_instrument_choice(instrument_type, choice) -> str:
+    """Normal route: the user's choice fills an instrument Stage 1 could not detect; a detected
+    instrument always wins (2026-11-17)."""
+    chosen = normalize_instrument_choice(choice)
+    if chosen and str(instrument_type or 'Unknown') == 'Unknown':
+        return 'DPO' if chosen == 'DPF' else chosen
+    return instrument_type
+
+
+def climate_review_stage_done_fields(reader, review_stage, operation_context, review_mode, call=None):
+    """Review-stage and checklist fields for the verified Climate-FCV Stage 3 event.
+
+    The checklist comes from one extra call over the finished reader (the reader itself
+    must stay byte-identical to its canonical rebuild, so the rows travel alongside it).
+    Any failure omits the checklist rather than substituting weaker text."""
+    regime = review_stage_mod.apply_review_stage(dict(operation_context or {}), review_stage)
+    column, _note = review_stage_mod.checklist_column(review_stage, regime, review_mode)
+    parsed = {}
+    if column:
+        try:
+            if call is None:
+                def call(prompt):
+                    response = get_client().messages.create(
+                        model=MODEL_STANDARD, max_tokens=2000,
+                        messages=[{'role': 'user', 'content': prompt}],
+                    )
+                    return ''.join(getattr(block, 'text', '') for block in response.content)
+            text = call(review_stage_mod.climate_checklist_prompt(column, reader)) or ''
+            match = re.search(r'\{[\s\S]*\}', text)
+            parsed = json.loads(match.group(0)) if match else {}
+        except Exception as error:  # noqa: BLE001 - optional add-on; never fail the run
+            app.logger.warning('Climate due-diligence checklist omitted: %s', type(error).__name__)
+            parsed = {}
+    return review_stage_done_fields(parsed if isinstance(parsed, dict) else {},
+                                    review_stage, regime, review_mode)
+
+
 def extract_horizon_considerations(stage3_output: str) -> str:
     """Extract Horizon Considerations section from Stage 3 output.
     Returns the text content or empty string if not found.
@@ -5019,6 +5178,10 @@ Format each finding as a paragraph. At the end of each finding paragraph, place 
 "[finding text] **[R]** *FCV Strategy Shift: Jobs & Private Sector*"
 "[finding text] **[S+R]** *FCV Strategy Shift: Differentiate*"
 
+## M&E calibration (applies to every results, indicator and monitoring finding)
+
+Keep M&E expectations proportionate to what one operation can attribute and measure within its life. Do not treat the absence of PDO- or outcome-level indicators of peace, stability, social cohesion or conflict reduction as a gap: these outcomes are rarely attributable to a single project and are better assessed at completion (ICR) or through country-level analysis. Focus M&E findings on: (1) whether the number and complexity of indicators is realistic for the monitoring capacity, data systems and access conditions (a very large indicator set is itself a monitoring risk); (2) whether beneficiary indicators are disaggregated by the groups that matter in this context (for example sex, age or displacement status) and, where the geographic scope makes it relevant, by region or area; (3) whether FCV-relevant monitoring is tied to the PDO and the existing Results Framework rather than a parallel system; and (4) whether monitoring can flag early warning that implementation is having unintended negative effects. Where the PDO itself explicitly targets an FCV driver, indicators for that objective can be assessed.
+
 ## Do No Harm (after all themes, before synthesis)
 
 Assess the project against these 9 Do No Harm principles:
@@ -5545,10 +5708,12 @@ Then write the following two summary paragraphs (these will be stripped from the
 
 **FCV Sensitivity Summary (80-100 words):**
 Write a paragraph of 80-100 words assessing the project's overall FCV SENSITIVITY standing. Cover: how well the project avoids doing harm in the FCV context, the quality of its contextual awareness, and its operational readiness. Be direct about the overall level — do not hedge. Reference 1-2 specific strengths and 1-2 specific gaps from the Stage 2 assessment.
+Open with ONE sentence (at most 35 words) that states the overall judgment on its own: it is shown alone in the summary box at the top of the note, so it must make sense without the rest of the paragraph. Do not name a rating label (such as "Adequate" or "Well Embedded") anywhere in the paragraph; describe what the project does well and what it does not.
 (This paragraph will also be reproduced faithfully in the JSON block as `sensitivity_summary`.)
 
 **FCV Responsiveness Summary (80-100 words):**
-Write a paragraph of 80-100 words assessing the project's FCV RESPONSIVENESS — the degree to which it actively contributes to addressing root drivers of fragility and/or building resilience. Anchor this explicitly to whichever of the four FCV Strategy 2026-2030 pillars (Shift A: Anticipate, Shift B: Differentiate, Shift C: Jobs & Private Sector, Shift D: Enhanced Toolkit) are most relevant to this project's context and sector. Be honest: many projects will have low responsiveness scores. Say so clearly and explain what the missed opportunity is, rather than inflating the assessment.
+Write a paragraph of 80-100 words assessing the project's FCV RESPONSIVENESS — the degree to which it actively contributes to addressing root drivers of fragility and/or building resilience. Anchor this explicitly to whichever of the four FCV Strategy 2026-2030 pillars (Shift A: Anticipate, Shift B: Differentiate, Shift C: Jobs & Private Sector, Shift D: Enhanced Toolkit) are most relevant to this project's context and sector. Responsiveness is not expected of every project: it means purposefully addressing an FCV driver or strengthening resilience, which goes beyond FCV sensitivity. Highlight where the project does this and which of its features count as responsiveness. Do not criticize a project for limited responsiveness, and do not frame its absence as a gap or weakness, unless the project has obvious responsiveness potential that it ignores (for example, its objectives or beneficiaries directly concern an FCV driver such as displacement or exclusion, yet the design makes no link to it); only then name that missed opportunity, constructively. Do not inflate the assessment: where the project simply operates in an FCV setting without aiming to address drivers, say so neutrally.
+Open with ONE sentence (at most 35 words) that states the judgment on its own: it is shown alone in the summary box at the top of the note, so it must make sense without the rest of the paragraph. Do not name a rating label anywhere in the paragraph.
 (This paragraph will also be reproduced faithfully in the JSON block as `responsiveness_summary`.)
 
 ---
@@ -5593,6 +5758,7 @@ For each action, provide:
 - `guidance`: 2-3 sentences (up to 4 for complex actions) describing what to add or revise and why. Be specific: name the concrete content to include (e.g. which indicators, which stakeholder groups, which risk triggers). Enough detail that the TTL knows exactly what "good" looks like without needing to interpret. **CPF linkage (optional):** If a CPF was uploaded and this specific action would directly help strengthen a named CPF priority or outcome (as identified in the CPF content extracted in Stage 1), add a single sentence at the end of the guidance: "This would also help advance [CPF outcome/priority name as stated in the CPF]." Only add this where a genuine, specific linkage exists — do not force it for every action, and do not fabricate CPF outcome names.
 - `suggested_language`: 2-3 sentences of ready-to-paste draft text for the specific document element named above. Write in formal WBG project document register. Be concrete and specific to this project's context, geography, sector, and implementation arrangements — the TTL should be able to insert this into the PAD section or commitment with minimal editing. Name specific actors, locations, mechanisms, or thresholds where possible rather than using placeholder language.
 When drafting suggested language for a Results Framework indicator, provide the full specification: (1) indicator name; (2) unit of measurement; (3) proposed baseline and target; (4) data source; (5) collection frequency; (6) if the project is in an access-constrained context, a one-sentence data contingency (e.g., 'In the event of access restrictions, TPM/remote verification will be used'). Do not produce indicator names alone.
+M&E calibration: do not recommend new PDO- or outcome-level indicators of peace, stability, social cohesion or conflict reduction unless the PDO itself explicitly targets that FCV driver; such outcomes are rarely attributable to one operation and belong to completion (ICR) or country-level assessment. Prefer M&E actions that keep the indicator set manageable for the available monitoring capacity, add disaggregation of beneficiaries (and by region or area where the geographic scope warrants), tie FCV-relevant monitoring to the PDO and existing Results Framework, or add early-warning signals of unintended negative effects.
 WHO_ACTS: [Semicolon-separated from: TTL; PIU; Government; FCV CC; FM Team; ESF Team; Technical Team; M&E Team]
 WHEN: [One of: Identification | Preparation | Appraisal | Implementation | Restructuring — must be appropriate for {doc_type} stage]
 ACTION_TIMING: [One of: flag-for-preparation | required-before-appraisal | required-before-board | next-series | supervision]
@@ -6269,11 +6435,11 @@ The main implementation-stage FCV gaps, constructively framed.
 %%%PRIORITIES_START%%%
 
 **FCV Sensitivity Summary (80–100 words):**
-How the project is currently managing FCV sensitivity in implementation.
+How the project is currently managing FCV sensitivity in implementation. Open with ONE sentence (at most 35 words) that states the judgment on its own, because it is shown alone in the summary box at the top of the note. Do not name a rating label.
 (Reproduced in JSON as `sensitivity_summary`.)
 
 **FCV Responsiveness Summary (80–100 words):**
-How the project is contributing to improving FCV conditions through implementation.
+How the project is contributing to improving FCV conditions through implementation. Responsiveness is not expected of every project: highlight what the project contributes and which features count as responsiveness, and do not criticize limited responsiveness unless the project has obvious potential that it ignores. Open with ONE sentence (at most 35 words) that states the judgment on its own, because it is shown alone in the summary box at the top of the note. Do not name a rating label.
 (Reproduced in JSON as `responsiveness_summary`.)
 
 ---
@@ -7042,16 +7208,30 @@ def extract_priorities(
         'dpf_watch': [],
         'p4r_watch': [],
         'regional_watch': [],
+        'dd_checklist': [],
+        'parse_failure': '',
     }
 
-    m = re.search(r'%%%JSON_START%%%(.*?)%%%JSON_END%%%', text, re.DOTALL)
-    if not m:
-        return _error_result
+    def failed(code, message):
+        # 2026-11-17: each empty outcome says why, and recoverable ones get one JSON-only retry.
+        return {**_error_result, 'parse_failure': code, 'message': message}
+
+    # str.find, not a lazy regex, on model output (CodeQL polynomial-redos).
+    source = text or ''
+    json_start = source.find('%%%JSON_START%%%')
+    json_end = source.find('%%%JSON_END%%%', json_start + 16) if json_start >= 0 else -1
+    if json_start < 0 or json_end < 0:
+        return failed('missing', 'The recommendations note was cut off before its priority '
+                                 'list could be read. Please re-run this stage.')
 
     try:
-        data = json.loads(m.group(1).strip())
+        data = json.loads(source[json_start + 16:json_end].strip())
     except (json.JSONDecodeError, ValueError):
-        return _error_result
+        return failed('invalid', "The note's priority list was malformed and could not be read. "
+                                 'Please re-run this stage.')
+    if not isinstance(data, dict):
+        return failed('invalid', "The note's priority list was malformed and could not be read. "
+                                 'Please re-run this stage.')
 
     # Fill missing top-level fields with defaults
     for field in _REQUIRED_TOP_FIELDS:
@@ -7060,15 +7240,12 @@ def extract_priorities(
 
     priorities_raw = data.get('priorities', [])
     if not isinstance(priorities_raw, list) or len(priorities_raw) < 1:
-        return _error_result
+        return failed('empty', 'The note did not return any priority actions. Please re-run this stage.')
 
     standard_route = active_lens_ids == []
     if standard_route and len(priorities_raw) > 5:
-        _error_result['message'] = (
-            'Standard FCV output may contain at most five priorities; '
-            'the result was rejected without truncation.'
-        )
-        return _error_result
+        return failed('too_many', 'Standard FCV output may contain at most five priorities; '
+                                  'the result was rejected without truncation.')
 
     raw_priorities_are_objects = all(isinstance(pr, dict) for pr in priorities_raw)
     priorities = []
@@ -7355,6 +7532,11 @@ def extract_priorities(
     else:
         wider_fcv_context = None
 
+    if not priorities:
+        # Every listed priority was malformed: never return a silent empty success.
+        return failed('malformed', "The note's priorities were malformed and could not be read. "
+                                   'Please re-run this stage.')
+
     return {
         'error': False,
         'priorities': priorities,
@@ -7376,6 +7558,9 @@ def extract_priorities(
         'wider_fcv_context': wider_fcv_context,
         'climate_unlinked': climate_unlinked,
         'climate_total': climate_total,
+        # Optional due-diligence checklist rows (2026-11-16); validated against the
+        # review stage's question set when the done event is built.
+        'dd_checklist': data.get('dd_checklist') if isinstance(data.get('dd_checklist'), list) else [],
     }
 
 
@@ -9356,6 +9541,30 @@ def get_glossary():
     return jsonify(FCV_GLOSSARY)
 
 
+@app.route('/api/detect-instrument', methods=['POST'])
+def detect_instrument():
+    """Pre-fill the optional Financing instrument choice from the primary document (no model call).
+
+    Returns {"instrument": "IPF"|"PforR"|"DPF"|""}; empty when the document does not state one."""
+    data = request.get_json(force=True, silent=True) or {}
+    doc = data.get('document') if isinstance(data, dict) else None
+    if not isinstance(doc, dict) or not doc.get('content'):
+        return jsonify(instrument='')
+    try:
+        text, _pages, fields = _extract_uploaded_content(
+            doc.get('content', ''), doc.get('name', 'document'), doc.get('type', 'text'))
+        prepared = prepare_verified_sources([{
+            'label': 'PROJECT DOCUMENT', 'name': doc.get('name', 'document'),
+            'raw_text': text[:MAX_DOC_CHARS], 'structured_fields': fields,
+        }])
+        context = resolve_verified_operation_context(prepared)
+        instrument = context.instrument_type if context.instrument_type in {'IPF', 'PforR', 'DPF'} else ''
+    except Exception as error:  # noqa: BLE001 - optional convenience; never block the upload
+        app.logger.info('Instrument pre-detection skipped: %s', type(error).__name__)
+        instrument = ''
+    return jsonify(instrument=instrument)
+
+
 @app.route('/api/sector-lenses', methods=['GET'])
 def get_sector_lenses():
     """Return enabled selector modules; invalid packages remain non-fatal diagnostics."""
@@ -9503,6 +9712,11 @@ def run_stage():
         )
         review_mode = data.get('review_mode', 'design').strip()  # 'design' or 'implementation'
         is_impl = (review_mode == 'implementation')
+        review_stage = review_stage_mod.normalize_review_stage(data.get('review_stage'))
+        if review_stage:
+            data['regime_context'] = review_stage_mod.apply_review_stage(
+                data.get('regime_context'), review_stage
+            )
         _native_climate_stage2 = (
             not is_impl and stage == 2 and climate_active(analysis_state)
         )
@@ -9743,6 +9957,9 @@ def run_stage():
                 )
                 if _s2_regime_header:
                     stage_prompt = stage_prompt + "\n\n" + _s2_regime_header
+                stage_prompt = append_review_stage_blocks(
+                    stage_prompt, 2, review_stage, _s2_regime, review_mode
+                )
 
                 stage_prompt = (
                     stage_prompt +
@@ -10116,6 +10333,9 @@ def run_stage():
                     review_mode,
                     lens_context['active_lenses'],
                 )
+                stage_prompt = append_review_stage_blocks(
+                    stage_prompt, 3, review_stage, data.get('regime_context') or {}, review_mode
+                )
             if _native_climate_stage3:
                 messages = [{"role": "user", "content": stage_prompt}]
             else:
@@ -10484,17 +10704,36 @@ def run_stage():
                     # array at request start) — includes all zones (primary, package, context).
                     # data.get('documents', []) is empty at Stage 3 in step-by-step mode.
                     _s3_regime = (data.get('regime_context', {}) or {})
-                    parsed = extract_priorities(
-                        full_text,
-                        uploaded_doc_names_payload,
-                        [item['id'] for item in lens_context['active_lenses']],
-                        _native_climate_stage3_diagnostic
-                        if _native_climate_stage3
-                        else lens_context.get('lens_diagnostic', {}),
-                        preparation_regime=_s3_regime.get('preparation_regime', 'unresolved_policy_source'),
-                        instrument=data.get('instrument_type', '') or '',
-                        document_type=stage3_document_type,
-                    )
+
+                    def _reparse_s3(text_):
+                        return extract_priorities(
+                            text_,
+                            uploaded_doc_names_payload,
+                            [item['id'] for item in lens_context['active_lenses']],
+                            _native_climate_stage3_diagnostic
+                            if _native_climate_stage3
+                            else lens_context.get('lens_diagnostic', {}),
+                            preparation_regime=_s3_regime.get('preparation_regime', 'unresolved_policy_source'),
+                            instrument=data.get('instrument_type', '') or '',
+                            document_type=stage3_document_type,
+                        )
+                    parsed = _reparse_s3(full_text)
+                    if (parsed.get('error') and not _native_climate_stage3
+                            and parsed.get('parse_failure') in STAGE3_RECOVERABLE_FAILURES):
+                        log_stage3_parse_failure(
+                            assessment_id, full_text, parsed,
+                            NATIVE_CLIMATE_STAGE3_MAX_TOKENS if _native_climate_stage3
+                            else _stage_output_budget(3),
+                        )
+                        _recovery = {}
+                        _failed_text, _failed_parse = full_text, parsed
+                        yield from _blocking_with_keepalive(
+                            lambda: recover_stage3_priorities(
+                                _failed_text, _failed_parse, _reparse_s3,
+                                template=_stage3_json_template(is_impl)),
+                            _recovery, stage=3)
+                        if 'result' in _recovery:
+                            full_text, parsed = _recovery['result']
                     log_stage3_parse_failure(
                         assessment_id, full_text, parsed,
                         NATIVE_CLIMATE_STAGE3_MAX_TOKENS if _native_climate_stage3
@@ -10572,7 +10811,8 @@ def run_stage():
                     lens_evidence = extract_lens_evidence(full_text, [
                         item['id'] for item in lens_context['active_lenses']
                     ]) if lens_context['active_lenses'] else {}
-                    _instrument_type = extract_instrument_type(full_text)
+                    _instrument_type = apply_instrument_choice(
+                        extract_instrument_type(full_text), data.get('instrument_choice'))
                     _temporal_context = extract_temporal_context(full_text)
                     _regime_context = extract_regime_context(full_text, _instrument_type)
                     _process_type = extract_process_type(full_text) if is_impl else None
@@ -10716,6 +10956,10 @@ def run_stage():
                     ]
                     if _native_climate_stage3:
                         done_data['lens_diagnostic'] = _native_climate_stage3_diagnostic
+                    else:
+                        done_data.update(review_stage_done_fields(
+                            parsed, review_stage, data.get('regime_context') or {}, review_mode
+                        ))
 
                 yield f"data: {json.dumps(done_data)}\n\n"
 
@@ -11067,6 +11311,7 @@ def run_express():
         )
         review_mode = data.get('review_mode', 'design').strip()
         is_impl = (review_mode == 'implementation')
+        review_stage = review_stage_mod.normalize_review_stage(data.get('review_stage'))
         user_context = data.get('user_context', '').strip()  # optional user-supplied context
         priority_questions = normalize_priority_questions(data.get('priority_questions'))
         if not documents:
@@ -11190,6 +11435,8 @@ def run_express():
                         # verified route; derive from the primary document.
                         doc_type="Unknown",
                         instrument_type="Unknown",
+                        # The user's explicit choice fills only an unresolved instrument.
+                        user_instrument=normalize_instrument_choice(data.get('instrument_choice')),
                     )
                     doc_type = verified_operation_context.document_type
                     instrument_type = verified_operation_context.instrument_type
@@ -11432,6 +11679,16 @@ def run_express():
                     }) + "\n\n"
 
                     yield f"data: {json.dumps({'stage_start': 3})}\n\n"
+                    _dd_holder = {}
+                    yield from _blocking_with_keepalive(
+                        lambda: climate_review_stage_done_fields(
+                            verified_reader, review_stage,
+                            verified_operation_context.as_record() if verified_operation_context else {},
+                            review_mode,
+                        ),
+                        _dd_holder, stage=3,
+                    )
+                    climate_dd_fields = _dd_holder.get('result') or {}
                     yield "data: " + json.dumps({
                         'stage_done': 3,
                         'result': executive,
@@ -11441,6 +11698,7 @@ def run_express():
                         'lens_warnings': source_warnings,
                         'climate_assessment': verified_assessment,
                         'climate_reader': verified_reader,
+                        **climate_dd_fields,
                     }) + "\n\n"
                     yield f"data: {json.dumps({'express_done': True})}\n\n"
                     return
@@ -11569,9 +11827,12 @@ def run_express():
                 if dt_match:
                     doc_type = dt_match.group(1).strip()
 
-                instrument_type = extract_instrument_type(stage1_output)
+                instrument_type = apply_instrument_choice(
+                    extract_instrument_type(stage1_output), data.get('instrument_choice'))
                 temporal_context = extract_temporal_context(stage1_output)
                 regime_context = extract_regime_context(stage1_output, instrument_type)
+                if review_stage:
+                    regime_context = review_stage_mod.apply_review_stage(regime_context, review_stage)
                 # NEW: extract classification, sector, flags
                 country_classification = extract_country_classification(stage1_output)
                 context_flags = extract_context_flags(stage1_output)
@@ -11741,6 +12002,9 @@ def run_express():
                     )
                     if _e2_regime_header:
                         stage2_prompt = stage2_prompt + "\n\n" + _e2_regime_header
+                    stage2_prompt = append_review_stage_blocks(
+                        stage2_prompt, 2, review_stage, _e2_regime, review_mode
+                    )
 
                     confirmed_category_e2 = (
                         country_classification.get('category', 'General')
@@ -12141,6 +12405,9 @@ def run_express():
                         review_mode,
                         lens_context_s3['active_lenses'],
                     )
+                    stage3_prompt = append_review_stage_blocks(
+                        stage3_prompt, 3, review_stage, regime_context or {}, review_mode
+                    )
                 stage3_messages = (
                     [{"role": "user", "content": stage3_prompt}]
                     if _native_climate_s3 else
@@ -12169,16 +12436,35 @@ def run_express():
 
                 # Parse Stage 3 output
                 uploaded_doc_names = [doc.get('name', '') for doc in documents if doc.get('name')]
-                parsed = extract_priorities(
-                    stage3_output,
-                    uploaded_doc_names,
-                    [item['id'] for item in lens_context_s3['active_lenses']],
-                    lens_diagnostic if _native_climate_s3
-                    else lens_context_s3.get('lens_diagnostic', {}),
-                    preparation_regime=(regime_context or {}).get('preparation_regime', 'unresolved_policy_source'),
-                    instrument=instrument_type or '',
-                    document_type=doc_type,
-                )
+
+                def _reparse_s3e(text_):
+                    return extract_priorities(
+                        text_,
+                        uploaded_doc_names,
+                        [item['id'] for item in lens_context_s3['active_lenses']],
+                        lens_diagnostic if _native_climate_s3
+                        else lens_context_s3.get('lens_diagnostic', {}),
+                        preparation_regime=(regime_context or {}).get('preparation_regime', 'unresolved_policy_source'),
+                        instrument=instrument_type or '',
+                        document_type=doc_type,
+                    )
+                parsed = _reparse_s3e(stage3_output)
+                if (parsed.get('error') and not _native_climate_s3
+                        and parsed.get('parse_failure') in STAGE3_RECOVERABLE_FAILURES):
+                    log_stage3_parse_failure(
+                        assessment_id, stage3_output, parsed,
+                        NATIVE_CLIMATE_STAGE3_MAX_TOKENS if _native_climate_s3
+                        else _stage_output_budget(3),
+                    )
+                    _recovery_e = {}
+                    _failed_text_e, _failed_parse_e = stage3_output, parsed
+                    yield from _blocking_with_keepalive(
+                        lambda: recover_stage3_priorities(
+                            _failed_text_e, _failed_parse_e, _reparse_s3e,
+                            template=_stage3_json_template(is_impl)),
+                        _recovery_e, stage=3)
+                    if 'result' in _recovery_e:
+                        stage3_output, parsed = _recovery_e['result']
                 log_stage3_parse_failure(
                     assessment_id, stage3_output, parsed,
                     NATIVE_CLIMATE_STAGE3_MAX_TOKENS if _native_climate_s3
@@ -12258,6 +12544,10 @@ def run_express():
                 _stage3_done['concise_readout'] = parsed.get('concise_readout')
                 if _native_climate_s3:
                     _stage3_done['lens_diagnostic'] = lens_diagnostic
+                else:
+                    _stage3_done.update(review_stage_done_fields(
+                        parsed, review_stage, regime_context or {}, review_mode
+                    ))
                 yield f"data: {json.dumps(_stage3_done)}\n\n"
 
                 # ── Express complete ──
@@ -13164,7 +13454,9 @@ def download_report():
         reader_model = reader_model['reader']
         verified_buf = io.BytesIO()
         write_reader_docx(
-            reader_model, verified_buf, report_meta=_word_report_meta(data)
+            reader_model, verified_buf, report_meta=_word_report_meta(data),
+            dd={key: data.get(key) for key in (
+                'review_stage_notice', 'dd_checklist', 'dd_checklist_column', 'dd_checklist_note')},
         )
         verified_buf.seek(0)
         from flask import send_file
@@ -13508,29 +13800,16 @@ def download_report():
     def add_rating_scorecard():
         if not rating_values_present and not rating_summaries_present:
             return
-        if not (rating_values_present or priorities):
+        if not (rating_summaries_present or priorities):
             return
 
-        scale = (
-            'Extremely Low', 'Very Low', 'Low', 'Adequate',
-            'Well Embedded', 'Very Well Embedded',
-        )
-        tiles = []
-        for label, value, _ in rating_rows:
-            value = str(value or '').strip()
-            match = next(
-                (index for index, level in enumerate(scale, start=1)
-                 if level.casefold() == value.casefold()),
-                0,
-            )
-            tiles.append({
-                'label': label,
-                'value': value,
-                'n': len(scale),
-                'idx': match,
-                'lo': scale[0],
-                'hi': scale[-1],
-            })
+        # The ratings stay in the Stage 3 JSON (ITS parity) but are no longer
+        # displayed: each card carries the one-sentence opening judgment instead.
+        from fcv_docx_style import first_sentence
+        tiles = [
+            {'label': label, 'summary': first_sentence(text)}
+            for label, _, text in rating_rows
+        ]
         risk_levels = [
             str(priority.get('risk_level') or '').strip()
             for priority in priorities
@@ -13553,15 +13832,15 @@ def download_report():
         if not rating_values_present and not rating_summaries_present:
             return
 
+        from fcv_docx_style import RESPONSIVENESS_INTRO
         _add_section_heading('FCV Sensitivity & Responsiveness')
-        for index, (label, value, text) in enumerate(rating_rows):
-            value = str(value or '').strip()
+        for index, (label, _, text) in enumerate(rating_rows):
             text = str(text or '').strip()
-            if value:
-                report.rating_segment(label, value, first=(index == 0))
-            elif text:
-                report.h2_caps(label)
             if text:
+                report.rating_segment(
+                    label, '', first=(index == 0),
+                    intro=RESPONSIVENESS_INTRO if 'Responsiveness' in label else '',
+                )
                 add_markdown(text)
 
     def add_core_risk_exposure():
@@ -14015,6 +14294,9 @@ def download_report():
                 bold=True, color=AMBER,
             )
         add_climate_notice()
+        review_stage_notice = str(data.get('review_stage_notice') or '').strip()
+        if review_stage_notice and not climate_valid:
+            _add_single_para(review_stage_notice, size=9, color=WB_GRAY)
 
         # ── FCV Risk Exposure ──
         if climate_valid:
@@ -14179,6 +14461,30 @@ def download_report():
                 ]
                 if who_when_resources:
                     report.who_strip(who_when_resources)
+
+        # ── Due-diligence checklist (2026-11-16) ──
+        if not climate_valid:
+            dd_rows = review_stage_mod.normalize_dd_checklist(data.get('dd_checklist'))
+            dd_note = str(data.get('dd_checklist_note') or '').strip()
+            if dd_rows:
+                column_label = str(data.get('dd_checklist_column') or '').strip()
+                _add_section_heading('Due-Diligence Checklist')
+                report.info_box(
+                    'The questions follow the FCV due-diligence review'
+                    + (f' ({column_label})' if column_label else '')
+                    + '. The notes say what the package shows on each question and where to look; '
+                    'they are not ratings.',
+                    size=9.5, keep=True,
+                )
+                report.data_table(
+                    ['#', 'Question', 'Notes'],
+                    [0.35, 2.75, CONTENT_W - 3.1],
+                    [[str(i), f"{row['element']}: {row['question']}", row['note']]
+                     for i, row in enumerate(dd_rows, start=1)],
+                    keep_together=False,
+                )
+            elif dd_note:
+                _add_single_para(dd_note, size=9, color=WB_GRAY)
 
         # ── Watch List for Supervision ──
         if mid_cycle_watch:

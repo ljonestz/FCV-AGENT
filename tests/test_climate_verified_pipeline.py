@@ -561,11 +561,13 @@ def test_semantic_review_with_unresolved_targets_fails_safe():
     assert result["priorities"] == []
     diagnostics = result["recommendation_diagnostics"]
     assert diagnostics["semantic_review_object_ids"] == ["REC-001"]
-    assert "SEMANTIC_REVIEW_TARGET_UNRESOLVED" in diagnostics["reason_codes"]
+    # 2026-11-17: a stray target ID is ignored; the unsupported core still withholds the action.
+    assert "SEMANTIC_REVIEW_TARGET_UNKNOWN_IGNORED" in diagnostics["reason_codes"]
 
 
-@pytest.mark.parametrize("verdict", ["revise", "block"])
-def test_negative_review_without_any_target_cannot_certify_core(verdict):
+@pytest.mark.parametrize("verdict", ["block"])
+def test_untargeted_block_with_every_core_passed_keeps_cores(verdict):
+    # 2026-11-17 user decision: like an untargeted revise, keep explicitly passed cores.
     review = {
         "verdict": verdict,
         "reason_codes": ["PROJECT_FACT_UNSUPPORTED"],
@@ -581,8 +583,52 @@ def test_negative_review_without_any_target_cannot_certify_core(verdict):
         ),
     )
 
+    assert [item["recommendation_id"] for item in result["priorities"]] == ["REC-001"]
+    assert "SEMANTIC_REVIEW_UNTARGETED_BLOCK" in result["validation"]["reason_codes"]
+
+
+def test_untargeted_revise_keeps_explicitly_passed_cores_and_withholds_drafting():
+    # 2026-11-17 AFG HCJ: five cores supported/qualified, verdict revise with one untargeted code.
+    responses = _responses()
+    candidates = []
+    for number in range(1, 6):
+        candidate = deepcopy(responses[3]["recommendation_candidates"][0])
+        candidate["recommendation_id"] = f"REC-{number:03}"
+        candidate["title"] = f"Confirm bounded site decision {number}"
+        candidates.append(candidate)
+    responses[3]["recommendation_candidates"] = candidates
+    identifiers = [candidate["recommendation_id"] for candidate in candidates]
+    review = {
+        "verdict": "revise", "reason_codes": ["PROJECT_FACT_UNSUPPORTED"], "object_ids": [], "issues": [],
+        "passed_core_ids": identifiers,
+        "core_reviews": [_core_review(identifier) for identifier in identifiers],
+    }
+    result = run_verified_climate_pipeline(
+        **_arguments(), clients=PipelineClients(FakeClient(responses, []), FakeClient([review], [])),
+    )
+
+    assert {item["recommendation_id"] for item in result["priorities"]} == set(identifiers)
+    assert all(item.get("current_document_drafting") is None
+               and item.get("operational_instrument_drafting") is None for item in result["priorities"])
+    reasons = result["validation"]["reason_codes"]
+    assert "SEMANTIC_REVIEW_UNTARGETED_REVISE" in reasons
+    assert "RECOMMENDATIONS_ALL_SUPPRESSED" not in reasons
+    assert result["validation"]["status"] == "attention"
+    assert result["manifest"]["suppressed_counts"]["recommendations"] == 0
+
+
+def test_untargeted_revise_with_an_unsupported_core_still_withholds():
+    review = {
+        "verdict": "revise", "reason_codes": ["PROJECT_FACT_UNSUPPORTED"], "object_ids": [], "issues": [],
+        "passed_core_ids": [],
+        "core_reviews": [{**_core_review(), "premise_verdict": "unsupported",
+                          "reason_codes": ["PROJECT_FACT_UNSUPPORTED"]}],
+    }
+    result = run_verified_climate_pipeline(
+        **_arguments(), clients=PipelineClients(FakeClient(_responses(), []), FakeClient([review], [])),
+    )
+    assert "SEMANTIC_REVIEW_UNTARGETED_REVISE" not in result["validation"]["reason_codes"]
     assert result["priorities"] == []
-    assert "SEMANTIC_REVIEW_TARGET_UNRESOLVED" in result["validation"]["reason_codes"]
 
 
 def test_empty_revise_preserves_explicit_core_passes_with_attention():
@@ -616,15 +662,13 @@ def test_empty_revise_preserves_explicit_core_passes_with_attention():
     assert len(assessment.calls) == 4 and len(reviewer.calls) == 1
 
 
-@pytest.mark.parametrize("change", ["block", "missing_issues", "missing_reasons", "unknown_core"])
+@pytest.mark.parametrize("change", ["missing_issues", "missing_reasons", "unknown_core"])
 def test_empty_negative_review_does_not_bypass_invalid_envelope(change):
     review = {
         "verdict": "revise", "reason_codes": [], "object_ids": [], "issues": [],
         "passed_core_ids": ["REC-001"], "core_reviews": [_core_review()],
     }
-    if change == "block":
-        review["verdict"] = "block"
-    elif change == "missing_issues":
+    if change == "missing_issues":
         del review["issues"]
     elif change == "missing_reasons":
         del review["reason_codes"]
@@ -835,7 +879,7 @@ def test_manifest_is_privacy_safe_and_scoped_to_the_run():
     )
     assert (
         first["manifest"]["prompt_versions"]["recommendation_compiler"]
-        == "climate-recommendations-v2.25"
+        == "climate-recommendations-v2.26"
     )
     assert (
         first["manifest"]["prompt_versions"]["conditional_review"]
@@ -1912,8 +1956,11 @@ def test_unresolved_review_targets_do_not_trigger_correction_even_with_issue_tex
         "passed_core_ids": [], "core_reviews": [_core_review("REC-001", "unsupported")]}], [])
     assessment = FakeClient(_responses(), [])
     result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(assessment, reviewer))
+    # 2026-11-17: the stray "unknown" ID no longer voids the review, so the explained issue gets
+    # the normal single correction attempt; the unsupported core stays withheld here.
     assert result["priorities"] == []
-    assert len(assessment.calls) == 4
+    assert len(assessment.calls) == 5
+    assert "SEMANTIC_REVIEW_TARGET_UNKNOWN_IGNORED" in result["validation"]["reason_codes"]
 
 
 def test_judgment_transports_narrative_findings_without_an_extra_call():

@@ -142,8 +142,10 @@ def test_core_questions_stay_internal_to_simplified_exports():
     normalized = [paragraph.strip().casefold() for paragraph in paragraphs]
     assert "core climate-fcv questions" not in text.casefold()
     assert any("how well does the project recognize and address interacting climate and fcv risks?" in item for item in normalized)
-    assert normalized.index("climate & fcv sensitivity") < normalized.index("strong")
-    assert any("scale: very limited / limited / moderate / strong / very strong." in item for item in normalized)
+    # 2026-11-16: the Word export shows judgments, not rating labels or the scale.
+    assert "climate & fcv sensitivity" in normalized
+    assert "strong" not in normalized
+    assert not any("scale: very limited" in item for item in normalized)
     assert "is infrastructure sized for future climate conditions?" not in text.casefold()
 
 

@@ -790,7 +790,7 @@ STAGE_OUTPUT_SCHEMAS['reader_compiler'] = _object({
     'assessment_narratives': {'type': 'array', 'items': _object({
         'object_id': _string('NARR-design, NARR-dividends or NARR-inclusion.'),
         'theme': _enum(('design', 'dividends', 'inclusion')),
-        'paragraphs': _strings('Two or three connected paragraphs targeting 180-240 words when supported; shorter for sparse evidence. Hard ceiling 400 words.'),
+        'paragraphs': _strings('Two or three connected paragraphs at the word target the prompt states (180-280 words when supported); shorter for sparse evidence. Hard ceiling 400 words.'),
         'evidence_ids': _strings('Exact supplied support IDs.'),
     })},
 })

@@ -197,7 +197,7 @@ for (const [state,copy] of Object.entries(expectedEvidence)) {{
 }}
 """
     result = subprocess.run(
-        ["node", "-"], input=script, capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, encoding="utf-8", check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -440,7 +440,7 @@ for (const forbidden of ['Indicative Climate-FCV Integration Readout','This AI-a
 }}
 """
     result = subprocess.run(
-        ["node", "-"], input=script, capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, encoding="utf-8", check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -463,7 +463,7 @@ for (const expected of ['Executive readout','Where the design is stronger','Wher
 if (html.includes('Where the design is weak')) throw new Error('old deficit language remains');
 """
     result = subprocess.run(
-        ["node", "-"], input=script, capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, encoding="utf-8", check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -518,7 +518,7 @@ const notApplicable = renderLensReadoutSections({{applicability:'not_applicable'
 if (!notApplicable.includes('Not material.') || notApplicable.includes('What the project may invest in') || notApplicable.includes('Other pathways considered')) throw new Error('not-applicable rendering expanded beyond materiality');
 """
     result = subprocess.run(
-        ["node", "-"], input=script, capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, encoding="utf-8", check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -601,7 +601,7 @@ const errorNotice=renderClimateModuleNotice(null,true);
 if(!errorNotice.includes('could not be produced')) throw new Error('safe failure missing');
 """
     result = subprocess.run(
-        ["node", "-"], input=script, capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, encoding="utf-8", check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -642,7 +642,7 @@ if(sharedHtml.includes('causal-strip')) throw new Error('causal-strip should be 
 if((sharedHtml.match(/climate-interaction-box/g)||[]).length<2) throw new Error('missing prose interaction boxes');
 """
     result = subprocess.run(
-        ["node", "-"], input=script, capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, encoding="utf-8", check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -689,7 +689,7 @@ if(!html.includes('No material dividend pathway identified')) throw new Error(ht
 if(html.includes('Climate, peace and social dividends</div>')) throw new Error(html);
 """
     result = subprocess.run(
-        ["node", "-"], input=script, capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, encoding="utf-8", check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -710,7 +710,7 @@ if(isClimateLensActive()) throw new Error('unselected climate active');
 if(climateLensEntry({{error:true}})!==null) throw new Error('invalid entry accepted');
 """
     result = subprocess.run(
-        ["node", "-"], input=script, capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, encoding="utf-8", check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -1244,7 +1244,7 @@ const errored = renderClimateModuleNotice(null,true);
 if (errored.includes(NOTICE)) throw new Error('hard error path must use its own message, not the partial notice');
 """
     result = subprocess.run(
-        ["node", "-"], input=script, capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, encoding="utf-8", check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -1312,7 +1312,7 @@ if (climate.includes('data-rating-key="sensitivity"') || climate.includes('data-
 if (climate.includes('<svg')) throw new Error('climate rating still renders a gauge SVG');
 """
     result = subprocess.run(
-        ["node", "-"], input=script, capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, encoding="utf-8", check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -1374,7 +1374,7 @@ if (legacy.fill.style.backgroundColor !== '#009FDA') throw new Error('partly int
 if (legacy.bar.attrs['aria-valuenow'] !== '66') throw new Error('legacy climate progress not updated');
 """
     result = subprocess.run(
-        ["node", "-"], input=script, capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, encoding="utf-8", check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -1597,7 +1597,7 @@ for (const url of rejected) {{
 }}
 """
     result = subprocess.run(
-        ["node", "-"], input=script, capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, encoding="utf-8", check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -1648,7 +1648,7 @@ for (const omitted of ['Most useful for following up on', 'FCV-Sensitive Climate
 }}
 """
     result = subprocess.run(
-        ["node", "-"], input=script, capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, encoding="utf-8", check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -1705,7 +1705,7 @@ const empty = renderClimateRelevantGuidance(reader);
 if (empty !== '') throw new Error('guidance must use canonical reader items only | '+empty);
 """
     result = subprocess.run(
-        ["node", "-"], input=script, capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, encoding="utf-8", check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -1805,7 +1805,7 @@ if (items[1].project_use !== 'A value.') {{
 }}
 """
     result = subprocess.run(
-        ["node", "-"], input=script, capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, encoding="utf-8", check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -1839,7 +1839,7 @@ if (items.map(item=>item.title).join(',') !== 'Source B,Source A') {{
 }}
 """
     result = subprocess.run(
-        ["node", "-"], input=script, capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, encoding="utf-8", check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -1896,7 +1896,7 @@ for (const testCase of cases) {{
 }}
 """
     result = subprocess.run(
-        ["node", "-"], input=script, capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, encoding="utf-8", check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -1935,7 +1935,7 @@ for (const expected of ['First practical value.','One useful field','Useful prac
 if (html.includes('First project use.')) throw new Error('project-specific guidance sentence leaked | '+html);
 """
     result = subprocess.run(
-        ["node", "-"], input=script, capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, encoding="utf-8", check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -2077,7 +2077,7 @@ if ((body.match(/<details/g)||[]).length !== 0) {{
 }}
 """
     result = subprocess.run(
-        ["node", "-"], input=script, capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, encoding="utf-8", check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -2117,7 +2117,7 @@ if (JSON.stringify(items).includes('long assessment paragraph')) {{
 }}
 """
     result = subprocess.run(
-        ["node", "-"], input=script, capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, encoding="utf-8", check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -2167,7 +2167,7 @@ if (renderPriorityProjectCycle({{ project_cycle: {{ primary_label:'Only label', 
 }}
 """
     result = subprocess.run(
-        ["node", "-"], input=script, capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, encoding="utf-8", check=False
     )
     assert result.returncode == 0, result.stderr
 

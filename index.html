@@ -1763,6 +1763,12 @@
   .pq-over{ font-size:11px; color:#fca5a5; margin:6px 0 0 22px; }
   .pq-src-note{ font-size:11px; color:#7dd3fc; margin:6px 0 0 22px; }
   .context-box-section{margin:16px 32px 0}
+  .review-stage-section{margin:0 32px 4px}
+  .review-stage-label{display:block;font-size:12px;font-weight:700;color:var(--wbg-navy);margin:0 0 6px 6px}
+  .review-stage-optional{font-weight:400;color:var(--muted);margin-left:4px}
+  .review-stage-select{width:100%;max-width:560px;font:inherit;font-size:13px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;color:var(--wbg-navy)}
+  .review-stage-select:focus{outline:2px solid var(--wbg-cyan);outline-offset:1px}
+  .review-stage-hint{font-size:12px;color:var(--muted);margin:6px 0 0 6px;line-height:1.5}
   .context-box-toggle{width:100%;display:flex;align-items:center;gap:8px;padding:10px 14px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;color:#0369a1;text-align:left;line-height:1;transition:background .15s,border-color .15s}
   .context-box-toggle:hover{background:#e0f2fe;border-color:#7dd3fc}
   .context-box-toggle.open{border-radius:6px 6px 0 0;border-bottom-color:transparent}
@@ -1959,6 +1965,12 @@
 .fr-readout .fr-sc-tile{padding:14px 16px 12px;border-right:1px solid var(--fr-border);display:flex;flex-direction:column}
 .fr-readout .fr-sc-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--fr-grey);margin-bottom:5px}
 .fr-readout .fr-sc-value{font-size:22px;font-weight:700;color:var(--fr-navy);line-height:1.25;margin-bottom:9px}
+.fr-readout .fr-sc-summary{font-size:14px;font-weight:400;color:var(--fr-navy);line-height:1.45;margin:0 0 9px}
+.fr-readout .fr-sc-summary strong{font-weight:700}
+.fr-readout .fr-resp-intro{font-style:italic;margin:0 0 8px}
+.fr-readout .fr-sc-summary+.fr-sc-def{margin-top:auto}
+.fr-readout .fr-dd-q{font-size:13px;font-style:italic;color:var(--fr-navy);margin:2px 0 6px}
+.fr-readout .fr-stage-notice{margin:0 0 10px}
 .fr-readout .fr-meter{display:flex;gap:2px;margin-bottom:5px}
 .fr-readout .fr-ms{flex:1;height:8px;background:#E5E7EB;border-radius:1px}
 .fr-readout .fr-ms.fr-c1{background:#cfe9f5}.fr-readout .fr-ms.fr-c2{background:#9fd0ea}.fr-readout .fr-ms.fr-c3{background:#5fb8e2}.fr-readout .fr-ms.fr-c4{background:#009FDA}.fr-readout .fr-ms.fr-c5{background:#0072BB}.fr-readout .fr-ms.fr-c6{background:#005f99}
@@ -2635,6 +2647,36 @@
       </div>
     </div>
 
+    <!-- ══ REVIEW STAGE (optional; no default, blank = detect) ══ -->
+    <div class="review-stage-section" id="review-stage-section">
+      <label for="review-stage" class="review-stage-label">Where is this operation in the review process?<span class="review-stage-optional">optional</span></label>
+      <select id="review-stage" class="review-stage-select" onchange="selectReviewStage(this.value)">
+        <option value="" selected>Choose a review stage, or leave blank to detect it from the documents</option>
+        <optgroup label="New operating model">
+          <option value="td">Technical Design review (two-step)</option>
+          <option value="ir">Implementation Readiness review (two-step)</option>
+          <option value="one_review">One Review (one-step)</option>
+        </optgroup>
+        <optgroup label="Legacy process">
+          <option value="concept">Concept (PCN / PID)</option>
+          <option value="appraisal">Appraisal / Decision Review (PAD)</option>
+        </optgroup>
+        <optgroup label="Operation already in implementation">
+          <option value="af_restructuring">Additional Financing OR Restructuring</option>
+        </optgroup>
+        <option value="auto">Not sure: detect automatically</option>
+      </select>
+      <p class="review-stage-hint">The note frames its advice, timing and due-diligence checklist for the review you choose. If you leave this blank, the stage is detected from the documents as before.</p>
+      <label for="instrument-choice" class="review-stage-label" style="margin-top:12px">Financing instrument<span class="review-stage-optional">optional</span></label>
+      <select id="instrument-choice" class="review-stage-select" onchange="selectInstrumentChoice(this.value, true)">
+        <option value="" selected>Not stated: use what the document says</option>
+        <option value="IPF">Investment Project Financing (IPF)</option>
+        <option value="PforR">Program-for-Results (PforR)</option>
+        <option value="DPF">Development Policy Financing (DPF)</option>
+      </select>
+      <p class="review-stage-hint" id="instrument-choice-hint">Filled in from the primary document when it states the instrument. Your choice is used only where the document is silent or unclear.</p>
+    </div>
+
     <!-- ══ OPTIONAL CONTEXT BOX ══ -->
     <div class="context-box-section" id="context-box-section">
       <button class="context-box-toggle" id="context-toggle" type="button" onclick="toggleContextBox()" aria-expanded="false" aria-controls="context-box-body">
@@ -3102,6 +3144,11 @@
     localStorage.setItem('fcv_analysis_mode',mode);
   }
 
+  // ── Review stage (optional user assertion; '' = detect automatically) ────
+  function selectReviewStage(value){
+    reviewStage=(value==='auto')?'':String(value||'');
+  }
+
   // ── Review type selection (Design vs Implementation) ─────────────────────
   function selectReviewMode(mode){
     reviewMode=mode;
@@ -3271,6 +3318,7 @@
       stageRiskExposure=savedLensState.stageRiskExposure||null;
       stageSensitivitySummary=typeof savedLensState.stageSensitivitySummary==='string'?savedLensState.stageSensitivitySummary:'';
       stageResponsivenessSummary=typeof savedLensState.stageResponsivenessSummary==='string'?savedLensState.stageResponsivenessSummary:'';
+      if(typeof stageDdState!=='undefined')stageDdState=(typeof ddStateFrom==='function'?ddStateFrom(savedLensState.stageDdState):null);
       fcvRating=savedLensState.fcvRating||'';
       fcvResponsivenessRating=savedLensState.fcvResponsivenessRating||'';
       midCycleWatch=Array.isArray(savedLensState.midCycleWatch)?savedLensState.midCycleWatch:(Array.isArray(savedLensState.mid_cycle_watch)?savedLensState.mid_cycle_watch:[]);
@@ -3386,6 +3434,7 @@
       stageRiskExposure: stageRiskExposure,
       stageSensitivitySummary: stageSensitivitySummary,
       stageResponsivenessSummary: stageResponsivenessSummary,
+      stageDdState: (typeof stageDdState!=='undefined'?stageDdState:null),
       fcvRating: fcvRating,
       fcvResponsivenessRating: fcvResponsivenessRating,
       midCycleWatch: midCycleWatch,
@@ -3452,6 +3501,7 @@
     const responsiveness=pick('stageResponsivenessSummary','responsiveness_summary');
     stageSensitivitySummary=typeof sensitivity==='string'?sensitivity:'';
     stageResponsivenessSummary=typeof responsiveness==='string'?responsiveness:'';
+    if(typeof stageDdState!=='undefined')stageDdState=(typeof ddStateFrom==='function'?ddStateFrom(pick('stageDdState')):null);
   }
 
   function loadSession(input){
@@ -3477,7 +3527,7 @@
           }
         }
         // A loaded session has names only; do not export names from a previous upload.
-        pF=[];pkF=[];cF=[];
+        pF=[];pkF=[];cF=[];if(typeof resetInstrumentChoice==='function')resetInstrumentChoice();
         ['ip','ipack','ic'].forEach(id=>{document.getElementById(id).value='';});
         const savedFiles=Array.isArray(state.fileNames)?{project:state.fileNames}:state.fileNames||{};
         restoredFileNames={
@@ -3705,6 +3755,7 @@
   }
 
   function renderChips() {
+    setTimeout(()=>{if(typeof detectInstrumentForPrimary==='function')detectInstrumentForPrimary();},0);
     const el = document.getElementById('chips');
     el.innerHTML = '';
     const all = [...pF.map(f => ({f, t:'p'})), ...pkF.map(f => ({f, t:'pack'})), ...cF.map(f => ({f, t:'c'}))];
@@ -3954,6 +4005,8 @@
           ...await Promise.all(cF.map(f=>readF(f,true,'context')))
         ],
         review_mode:reviewMode,
+        review_stage:reviewStage,
+        instrument_choice:instrumentChoice,
         user_context:(document.getElementById('user-context')?.value||'').trim(),
         priority_questions:(priorityQuestions=getPriorityQuestions()),
         active_lenses:activeLenses,
@@ -4139,7 +4192,7 @@
               stageGapTable=p.gap_table||null;
               stageRiskExposure=p.risk_exposure||null;
               stageSensitivitySummary=p.sensitivity_summary||'';
-              stageResponsivenessSummary=p.responsiveness_summary||'';
+              stageResponsivenessSummary=p.responsiveness_summary||'';if(typeof stageDdState!=='undefined')stageDdState=(typeof ddStateFrom==='function'?ddStateFrom(p):null);
               stageConciseReadout=p.concise_readout||null;
                             if(p.fcv_rating)fcvRating=p.fcv_rating;
               if(p.fcv_responsiveness_rating)fcvResponsivenessRating=p.fcv_responsiveness_rating;
@@ -4331,7 +4384,7 @@
     if(analysisMode!=='express')startSbsLoadingTimers(stage);
 
     try{
-      const payload={stage,history:hist,user_message:followOn||'',document_type:docType,instrument_type:instrumentType,temporal_context:temporalContext,change_types:changeTypes,country_scope:countryScope,is_mpa:isMpa,review_mode:reviewMode,process_type:processType,user_context:(document.getElementById('user-context')?.value||'').trim(),uploaded_doc_names:[...pF.map(f=>f.name),...pkF.map(f=>f.name),...cF.map(f=>f.name)],country_classification:countryClassification,context_flags:contextFlags,sector_context:sectorContext,priority_questions:(priorityQuestions=getPriorityQuestions()),active_lenses:activeLenses,lens_versions:lensVersions(),lens_diagnostic:lensDiagnostic,lens_context_sources:lensContextSources,climate_research:climateResearch,climate_grounding:climateGrounding};
+      const payload={stage,history:hist,user_message:followOn||'',document_type:docType,instrument_type:instrumentType,temporal_context:temporalContext,change_types:changeTypes,country_scope:countryScope,is_mpa:isMpa,review_mode:reviewMode,review_stage:reviewStage,instrument_choice:instrumentChoice,regime_context:regimeContext,process_type:processType,user_context:(document.getElementById('user-context')?.value||'').trim(),uploaded_doc_names:[...pF.map(f=>f.name),...pkF.map(f=>f.name),...cF.map(f=>f.name)],country_classification:countryClassification,context_flags:contextFlags,sector_context:sectorContext,priority_questions:(priorityQuestions=getPriorityQuestions()),active_lenses:activeLenses,lens_versions:lensVersions(),lens_diagnostic:lensDiagnostic,lens_context_sources:lensContextSources,climate_research:climateResearch,climate_grounding:climateGrounding};
       // Attach session prompt override if user has edited this stage's prompt
       if(sessionPrompts[stage]){
         payload.prompt_override = sessionPrompts[stage];
@@ -4464,7 +4517,7 @@
                 stageGapTable=p.gap_table||null;
                 stageRiskExposure=p.risk_exposure||null;
                 stageSensitivitySummary=p.sensitivity_summary||'';
-                stageResponsivenessSummary=p.responsiveness_summary||'';
+                stageResponsivenessSummary=p.responsiveness_summary||'';if(typeof stageDdState!=='undefined')stageDdState=(typeof ddStateFrom==='function'?ddStateFrom(p):null);
                 stageConciseReadout=p.concise_readout||null;
                                 midCycleWatch=Array.isArray(p.mid_cycle_watch)?p.mid_cycle_watch:[];dpfWatch=Array.isArray(p.dpf_watch)?p.dpf_watch:[];p4rWatch=Array.isArray(p.p4r_watch)?p.p4r_watch:[];regionalWatch=Array.isArray(p.regional_watch)?p.regional_watch:[];
                 horizonConsiderations=typeof p.horizon_considerations==='string'?p.horizon_considerations:'';
@@ -5170,7 +5223,7 @@
     if(String(r.evidence_status||'').toLowerCase()==='preview; not approved')notices.push('<div class="finalized-pad-notice"><div class="fpn-body"><strong>Candidate country evidence: preview; not approved.</strong></div></div>');
     if(!route.confirmed)notices.push('<p class="climate-route-warning">Suggested document wording is not shown because the document type or financing route could not be confirmed reliably.</p>');
     const hasPriorities=Array.isArray(r.priorities)&&r.priorities.length>0;
-    return frApi().renderClimate(r,{noticesHtml:notices.join(''),draftingAllowed:route.confirmed,advisoryText:hasPriorities?stage3AdvisoryText('climate'):'',fileNames:readoutFileNames(),researchBrief});
+    return frApi().renderClimate(r,{noticesHtml:notices.join(''),draftingAllowed:route.confirmed,advisoryText:hasPriorities?stage3AdvisoryText('climate'):'',fileNames:readoutFileNames(),researchBrief,ddChecklist:(typeof stageDdState!=='undefined'?stageDdState:null)});
   }
 
   // Blunt, upfront caveat shown above the Stage 3 readout. Sits in the #stage-disp
@@ -5710,7 +5763,7 @@
 
   // Stage 3-only state. Stage 2 ratings and the climate reader are owned by other stages.
   function resetStage3State(){
-    stageThreePriorities=[];stageConciseReadout=null;stageRiskExposure=null;stageSensitivitySummary='';stageResponsivenessSummary='';stageGapTable=null;
+    stageThreePriorities=[];stageConciseReadout=null;stageRiskExposure=null;stageSensitivitySummary='';stageResponsivenessSummary='';if(typeof stageDdState!=='undefined')stageDdState=null;stageGapTable=null;
     stageWiderFcvContext=null;climatePriorityUnlinked=0;climatePriorityTotal=0;stage3DetailedHtml='';
     midCycleWatch=[];dpfWatch=[];p4rWatch=[];regionalWatch=[];horizonConsiderations='';
   }
@@ -5724,7 +5777,7 @@
     if(stageHists[stage])hist=stageHists[stage].slice();
     curS=stage;
     for(let i=stage+1;i<=3;i++){delete stageOutputs[i];delete stageHists[i];}
-    stageThreePriorities=[];stageConciseReadout=null;stageRiskExposure=null;stageSensitivitySummary='';stageResponsivenessSummary='';fcvRating='';fcvResponsivenessRating='';stageWiderFcvContext=null;climatePriorityUnlinked=0;climatePriorityTotal=0;climateVerifiedAssessment=null;climateVerifiedFailure=null;climateVerifiedReader=null;stage3DetailedHtml='';
+    stageThreePriorities=[];stageConciseReadout=null;stageRiskExposure=null;stageSensitivitySummary='';stageResponsivenessSummary='';if(typeof stageDdState!=='undefined')stageDdState=null;fcvRating='';fcvResponsivenessRating='';stageWiderFcvContext=null;climatePriorityUnlinked=0;climatePriorityTotal=0;climateVerifiedAssessment=null;climateVerifiedFailure=null;climateVerifiedReader=null;stage3DetailedHtml='';
     midCycleWatch=[];dpfWatch=[];p4rWatch=[];regionalWatch=[];horizonConsiderations='';
     clearUI();renderOut(stage,stageOutputs[stage],false);
     if(stage===2&&stage2UnderHood){buildUnderHoodPanels(stage2UnderHood);updateSidebar();}
@@ -5769,7 +5822,7 @@
     try{localStorage.setItem('fcv_express_stageOutputs',JSON.stringify(outputs));}catch(e){}
     try{localStorage.setItem('fcv_express_stageHists',JSON.stringify(hists));}catch(e){}
     try{localStorage.setItem('fcv_express_curS',curStage);}catch(e){}
-    try{localStorage.setItem('fcv_express_lensState',JSON.stringify({researchBrief,researchCountry,activeLenses,lensVersions:lensVersions(),lensDiagnostic,lensContextSources,climateResearch,climateGrounding,climateVerifiedAssessment: climateVerifiedAssessment,climateVerifiedReader: climateVerifiedReader,stageConciseReadout,stageThreePriorities,stageRiskExposure,stageSensitivitySummary,stageResponsivenessSummary,fcvRating,fcvResponsivenessRating,midCycleWatch,dpfWatch,p4rWatch,regionalWatch,horizonConsiderations,docType,instrumentType,countryScope}));}catch(e){}
+    try{localStorage.setItem('fcv_express_lensState',JSON.stringify({researchBrief,researchCountry,activeLenses,lensVersions:lensVersions(),lensDiagnostic,lensContextSources,climateResearch,climateGrounding,climateVerifiedAssessment: climateVerifiedAssessment,climateVerifiedReader: climateVerifiedReader,stageConciseReadout,stageThreePriorities,stageRiskExposure,stageSensitivitySummary,stageResponsivenessSummary,stageDdState:(typeof stageDdState!=='undefined'?stageDdState:null),fcvRating,fcvResponsivenessRating,midCycleWatch,dpfWatch,p4rWatch,regionalWatch,horizonConsiderations,docType,instrumentType,countryScope}));}catch(e){}
   }
 
   function showExpressProgress(){
@@ -5979,6 +6032,7 @@
       priorities: stageThreePriorities,
       sensitivity_summary: stageSensitivitySummary || '',
       responsiveness_summary: stageResponsivenessSummary || '',
+      ...(stageDdState || {}),
       fcv_rating: fcvRating || '',
       fcv_responsiveness_rating: fcvResponsivenessRating || '',
       risk_exposure: stageRiskExposure || null,
@@ -6203,11 +6257,12 @@ ${climatePrintDisclosureScript()}
   function reset(){
     if(typeof setTabStatus==='function')setTabStatus('idle');
     restoredFileNames={project:[],context:[]};
+    if(typeof resetInstrumentChoice==='function')resetInstrumentChoice();
     pF=[];pkF=[];cF=[];fileMetadata={};hist=[];curS=0;sessionName='';busy=false;stageOutputs={};stageHists={};researchBrief='';researchCountry='';priorityQuestions=[];focusQuestionsResult=null;pqPanelEnabled=true;
     ['ip','ipack','ic'].forEach(id=>{document.getElementById(id).value='';});
     activeLenses=[];resolvedLensVersions={};lensSuggestions=[];lensDiagnostic={};lensContextSources=[];climateResearch={};climateGrounding={};climateIntegration=null;climateVerifiedAssessment=null;climateVerifiedFailure=null;climateVerifiedReader=null;lensSelectionTouched=false;lensSelectionLocked=false;renderLensSelector();
     midCycleWatch=[];dpfWatch=[];p4rWatch=[];regionalWatch=[];horizonConsiderations='';
-    stageThreePriorities=[];stageConciseReadout=null;stageRiskExposure=null;stageSensitivitySummary='';stageResponsivenessSummary='';fcvRating='';fcvResponsivenessRating='';stage3DetailedHtml='';
+    stageThreePriorities=[];stageConciseReadout=null;stageRiskExposure=null;stageSensitivitySummary='';stageResponsivenessSummary='';if(typeof stageDdState!=='undefined')stageDdState=null;fcvRating='';fcvResponsivenessRating='';stage3DetailedHtml='';
     { const _pc=document.getElementById('pq-confirm'); if(_pc){_pc.innerHTML='';_pc.style.display='none';} }
     ['stage2_timestamp','stage3_timestamp','stage3_consistency_dismissed'].forEach(k=>localStorage.removeItem(k));
     localStorage.removeItem('fcv_express_stageOutputs');
@@ -6389,6 +6444,66 @@ ${climatePrintDisclosureScript()}
   let stageRiskExposure = null;
   let stageSensitivitySummary = '';
   let stageResponsivenessSummary = '';
+  // Review stage + due-diligence checklist from the Stage 3 done event (2026-11-16).
+  let stageDdState = null;
+  let reviewStage = '';
+  // Optional Financing instrument choice (2026-11-17): pre-filled from the primary document.
+  let instrumentChoice = '';
+  let instrumentChoiceTouched = false;
+  let instrumentDetectedFor = '';
+  function selectInstrumentChoice(value, byUser){
+    instrumentChoice=['IPF','PforR','DPF'].includes(value)?value:'';
+    if(byUser)instrumentChoiceTouched=true;
+  }
+  const INSTRUMENT_LABELS={IPF:'Investment Project Financing (IPF)',PforR:'Program-for-Results (PforR)',DPF:'Development Policy Financing (DPF)'};
+  const INSTRUMENT_HINT_DEFAULT='Filled in from the primary document when it states the instrument. Your choice is used only where the document is silent or unclear.';
+  // A choice belongs to one primary document: never carry it to the next run or session.
+  function resetInstrumentChoice(){
+    instrumentChoice='';instrumentChoiceTouched=false;instrumentDetectedFor='';
+    const sel=document.getElementById('instrument-choice');if(sel)sel.value='';
+    const hint=document.getElementById('instrument-choice-hint');if(hint)hint.textContent=INSTRUMENT_HINT_DEFAULT;
+  }
+  function detectInstrumentForPrimary(){
+    const f=(typeof pF!=='undefined'&&pF.length)?pF[0]:null;
+    const sel=document.getElementById('instrument-choice');
+    const hint=document.getElementById('instrument-choice-hint');
+    if(!f){if(instrumentDetectedFor)resetInstrumentChoice();return;}
+    if(!sel||instrumentDetectedFor===f.name)return;
+    resetInstrumentChoice();
+    if(f.size>25*1024*1024)return;
+    instrumentDetectedFor=f.name;
+    const ft=detectFileType(f.name);
+    const r=new FileReader();
+    r.onload=e=>{
+      const content=isBinaryType(ft)?String(e.target.result).split(',')[1]:e.target.result;
+      fetch('/api/detect-instrument',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({document:{name:f.name,type:ft,content}})})
+        .then(res=>res.ok?res.json():{instrument:''})
+        .then(j=>{
+          if(instrumentDetectedFor!==f.name||instrumentChoiceTouched)return;
+          if(j&&INSTRUMENT_LABELS[j.instrument]){
+            sel.value=j.instrument;selectInstrumentChoice(j.instrument,false);
+            if(hint)hint.textContent='Assumed from the document: '+INSTRUMENT_LABELS[j.instrument]+'. Change it if this is wrong.';
+          }else{
+            sel.value='';selectInstrumentChoice('',false);
+            if(hint)hint.textContent='The document does not state its financing instrument. Choosing one is optional and helps target the suggested wording.';
+          }
+        }).catch(()=>{});
+    };
+    if(isBinaryType(ft))r.readAsDataURL(f);else r.readAsText(f);
+  }
+  function ddStateFrom(p){
+    if(!p||typeof p!=='object')return null;
+    const rows=Array.isArray(p.dd_checklist)?p.dd_checklist.filter(r=>r&&typeof r==='object'&&r.question&&r.note):[];
+    const state={
+      review_stage:String(p.review_stage||''),
+      review_stage_label:String(p.review_stage_label||''),
+      review_stage_notice:String(p.review_stage_notice||''),
+      dd_checklist:rows,
+      dd_checklist_column:String(p.dd_checklist_column||''),
+      dd_checklist_note:String(p.dd_checklist_note||'')
+    };
+    return (rows.length||state.dd_checklist_note||state.review_stage_notice||state.review_stage)?state:null;
+  }
 
   // ── Research brief state ───────────────────────────────────────────────────
   let researchBrief = '';
@@ -6656,7 +6771,7 @@ ${climatePrintDisclosureScript()}
     return frApi().renderNormal({
       advisoryText:hasPriorities?stage3AdvisoryText('normal'):'',
       stage3Markdown:markdownText,fcvRating,fcvResponsivenessRating,
-      sensitivitySummary:stageSensitivitySummary,responsivenessSummary:stageResponsivenessSummary,
+      sensitivitySummary:stageSensitivitySummary,responsivenessSummary:stageResponsivenessSummary,ddChecklist:stageDdState,
       riskExposure:stageRiskExposure,priorities:stageThreePriorities,
       watchHtml:renderNormalFcvWatchBody(),noticesHtml,tailHtml,
       smallerPoints:window.FcvReadout.parseSupplementaryPoints(stageOutputs[2]||''),

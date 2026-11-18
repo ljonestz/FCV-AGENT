@@ -149,7 +149,8 @@ def test_normal_readout_section_order_and_content():
     assert html.index("id='tail'") < html.index('fr-h1-txt">Limitations<')
     assert "fr-ptable" not in html and "Strategic Priorities" not in html
     assert "2 priority actions are identified by the FCV Screener." in html
-    assert html.count('class="fr-ms fr-c') == 4 + 3
+    # 2026-11-16: summary cards replace the rating meters.
+    assert html.count('class="fr-ms fr-c') == 0 and html.count('fr-sc-summary') == 2
     assert "Address before Decision Review (DM/ROC)" in html and "Required" not in html
     assert "Sensitivity + Responsiveness" in html[html.index('id="fr-priority-1"'):]
     assert 'id="fr-priority-1" data-fr-src-index="0" open>' in html and 'id="fr-priority-2" data-fr-src-index="1">' in html
@@ -218,7 +219,7 @@ def test_climate_readout_structure():
              'fr-h1-txt">Relevant WBG Guidance<', 'fr-h1-txt">Limitations<']
     positions = [html.index(marker) for marker in order]
     assert positions == sorted(positions)
-    assert html.count('class="fr-ms fr-c') == 3
+    assert html.count('class="fr-ms fr-c') == 0 and 'fr-sc-summary' in html
     assert "Not expected" in html
     assert html.count("Response ") == 4
     assert html.index('id="fr-priority-1"') < html.index('id="fr-priority-2"')
@@ -385,7 +386,7 @@ def test_ratings_section_has_no_advisory_note_and_ops_note_is_labelled():
     assert "Advisory judgments" not in normal({})
     chtml = climate(CLIMATE_READER)
     assert "Advisory judgments" not in chtml
-    assert chtml.index("Supporting judgments (not shown on the scorecard)") < chtml.index("Climate relevance: High.")
+    assert chtml.index("Supporting judgments (not shown in the summary)") < chtml.index("Climate relevance: High.")
 
 
 def test_closing_line_is_last_element_on_both_routes():
@@ -462,7 +463,7 @@ def test_jump_nav_links_every_numbered_section():
 def test_prose_and_titles_carry_dir_auto_and_copy_skip_markers():
     html = climate(CLIMATE_READER)
     assert '<p dir="auto" class="fr-p">' in html and '<p class="fr-p">' not in html
-    assert 'class="fr-sc-scale" data-copy-skip' in html and 'data-copy-skip>' in html
+    assert 'fr-sc-scale' not in html and 'data-copy-skip>' in html
     assert 'class="fr-pill fr-pill-conf fr-pill-conf-medium"' in html
 
 
@@ -590,11 +591,11 @@ def test_tag_justification_sentences_are_stripped_from_card_prose():
     assert "Tagged [" not in climate(reader)
 
 
-def test_meter_caption_and_climate_confidence_pills():
+def test_no_meter_caption_and_climate_confidence_pills():
     html = normal({})
-    assert '<span class="fr-sc-of">4 of 6</span>' in html and '<span class="fr-sc-of">3 of 6</span>' in html
+    assert 'fr-sc-of' not in html
     chtml = climate(CLIMATE_READER)
-    assert '<span class="fr-sc-of">3 of 5</span>' in chtml
+    assert 'fr-sc-of' not in chtml
     count = chtml[chtml.index('class="fr-sc-count fr-sc-count-link"'):chtml.index("</section>", chtml.index('class="fr-sc-count fr-sc-count-link"'))]
     assert ">1 medium confidence<" in count and ">1 low confidence<" in count and "Confidence:" not in count
     assert count.index(">1 medium confidence<") < count.index(">1 low confidence<")

@@ -40,3 +40,7 @@ docs/mockup_*
 
 # Git worktrees
 .worktrees/
+
+# Internal due-diligence drafts (not for circulation): keep local only
+docs/reference/*.docx
+docs/reference/*.pptx

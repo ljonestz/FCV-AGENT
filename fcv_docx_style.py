@@ -367,6 +367,58 @@ def _split_first_sentence(text):
     return lead + gap, rest
 
 
+_HEADLINE_ABBREVIATIONS = {
+    "dr", "mr", "mrs", "ms", "prof", "sr", "jr", "etc", "e.g", "i.e", "vs", "no",
+    "fig", "approx", "fcv", "wbg", "op", "u.s", "u.k",
+}
+
+
+# Set under the responsiveness sub-heading on both routes (browser text lives in fcv_readout.js).
+RESPONSIVENESS_INTRO = (
+    "Responsiveness is not required of every project. It is good practice where the context "
+    "and the project's objectives allow it, so read what follows as an opportunity to consider "
+    "rather than a gap to close."
+)
+
+
+def first_sentence(text):
+    """Return the first sentence of the first paragraph (summary-card headline).
+
+    Mirrors findVisibleSentenceEnd in index.html so the Word card and the browser
+    card show the same sentence: skips abbreviations, initials, decimals and URLs."""
+    para = re.split(r"\n\s*\n", str(text or "").replace("**", "").strip())[0].strip()
+    para = re.sub(r"\s+", " ", para)
+    for index, mark in enumerate(para):
+        if mark not in ".!?":
+            continue
+        end = index + 1
+        while end < len(para) and para[end] in "\"')]":
+            end += 1
+        after = para[end:]
+        if after and not after[0].isspace():
+            continue
+        before = para[:index]
+        if mark == "." and index > 0 and index + 1 < len(para) and before[-1].isdigit() and para[index + 1].isdigit():
+            continue
+        # Linear scans (no end-anchored regex on user text; CodeQL polynomial-redos).
+        last_word = before.rsplit(None, 1)[-1] if before.strip() else ""
+        if mark == "." and last_word.lower().startswith(("http://", "https://")) and not before[-1:].isspace():
+            continue
+        start = len(before)
+        while start > 0 and before[start - 1].isascii() and (before[start - 1].isalpha() or before[start - 1] == "."):
+            start -= 1
+        token = before[start:].lstrip(".")
+        normalized = token.lower().rstrip(".")
+        if mark == "." and (
+            normalized in _HEADLINE_ABBREVIATIONS
+            or re.fullmatch(r"(?:[a-z]\.)+[a-z]?", token, re.IGNORECASE)
+            or re.fullmatch(r"[A-Z]", token)
+        ):
+            continue
+        return para[:end].strip()
+    return para
+
+
 class Report:
     """lens: 'fcv' or 'climate'.  meta keys: title, project_line, running_label, date, classification,
     generator, disclaimer."""
@@ -650,7 +702,9 @@ class Report:
         add_run(p, "\t" + right_label, 6.5, color=GREY_TXT)
 
     def scorecard(self, tiles, count_tile, note=None):
-        """tiles: [{label, value, n, idx, lo, hi}] ; count_tile: {label, number, lines:[(text, pill_key|None)]}"""
+        """tiles: [{label, value, n, idx, lo, hi}] or [{label, summary}] ; count_tile: {label, number, lines:[(text, pill_key|None)]}
+
+        A tile carrying "summary" shows that one-sentence judgment instead of a rating value and meter."""
         w = [2.45, 2.45, CONTENT_W - 4.9]
         t = self.doc.add_table(rows=1, cols=3)
         bd = (4, GREY_LIGHT)
@@ -660,6 +714,16 @@ class Report:
             c = t.rows[0].cells[i]
             p = first_para(c); pfmt(p, after=1)
             add_run(p, tl["label"].upper(), 7.5, True, color=GREY_TXT, spacing=0.8)
+            if "summary" in tl:
+                p = c.add_paragraph(); pfmt(p, after=2)
+                p.paragraph_format.line_spacing = 1.15
+                if tl["summary"]:
+                    # "Snapshot:" label in bold, the one-sentence judgment in regular weight.
+                    add_run(p, "Snapshot: ", 9.5, True, color=NAVY)
+                    add_run(p, tl["summary"], 9.5, False, color=NAVY)
+                else:
+                    add_run(p, "See the assessment below.", 9.5, True, color=NAVY)
+                continue
             p = c.add_paragraph(); pfmt(p, after=5)
             add_run(p, tl["value"], 13.5, True, color=NAVY)
             self.meter(c, tl["n"], tl["idx"], w[i] - 0.3, tl["lo"], tl["hi"])
@@ -695,15 +759,23 @@ class Report:
         row_no_split(t.rows[0])
         self.spacer(6)
 
-    def rating_segment(self, label, value, meaning=(), why=(), notes=(), question="", scale="", first=False):
-        """Compact rating write-up for the body (no scale graphic - that lives in the page-1 scorecard)."""
+    def rating_segment(self, label, value, meaning=(), why=(), notes=(), question="", scale="", first=False,
+                       intro=""):
+        """Compact rating write-up for the body (no scale graphic - that lives in the page-1 scorecard).
+
+        An empty value omits the rating pill, leaving the label and the judgment. ``intro`` is a short
+        framing note set directly under the sub-heading (e.g. that responsiveness is not required)."""
         p = self.doc.add_paragraph(style="Heading 2")
         pfmt(p, before=4 if first else 12, after=4, keep_next=True)
         if not first:
             p_border(p, "top", 4, GREY_LIGHT, space=10)
         add_run(p, label.upper(), 8.5, True, color=GREY_TXT, spacing=0.8)
-        add_run(p, "   ")
-        add_run(p, f" {value} ", 9.5, True, color="FFFFFF", shade=NAVY)
+        if value:
+            add_run(p, "   ")
+            add_run(p, f" {value} ", 9.5, True, color="FFFFFF", shade=NAVY)
+        if intro:
+            q = self.doc.add_paragraph(); pfmt(q, after=4, keep_next=True)
+            add_run(q, intro, 9, italic=True, color=GREY_TXT)
         for m in meaning:
             q = self.doc.add_paragraph(); pfmt(q, after=3, keep_next=True)
             add_run(q, m, 9.5, True, color=NAVY)
@@ -775,11 +847,11 @@ class Report:
                     self.internal_link(p, v[1], v[0], 9)
                 else:
                     add_run(p, v, 9 if i == 1 else 8.5, color=BODY_TXT if i < 3 else GREY_TXT)
-        if keep_together:
-            for row in t.rows[:-1]:
-                for c in row.cells:
-                    for p in c.paragraphs:
-                        p.paragraph_format.keep_with_next = True
+        # A split table still keeps its header row with the first data row (no orphan header).
+        for row in (t.rows[:-1] if keep_together else t.rows[:1] if len(t.rows) > 1 else []):
+            for c in row.cells:
+                for p in c.paragraphs:
+                    p.paragraph_format.keep_with_next = True
         self.spacer(8)
 
     # ================================================================ links & bookmarks

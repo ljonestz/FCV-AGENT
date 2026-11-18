@@ -47,7 +47,7 @@ CALL_BUDGETS = {
     "bounded_analysis": CallBudget(20_000, 6_000, 180),
     "judgment_review": CallBudget(12_000, 9_000, 240),
     "recommendation_compiler": CallBudget(16_000, 9_000, 240),
-    "conditional_review": CallBudget(12_000, 2_500, 120),
+    "conditional_review": CallBudget(12_000, 4_000, 120),
     "drafting_compiler": CallBudget(16_000, 5_000, 240),
     "reader_compiler": CallBudget(18_000, 4_000, 180),
     "reader_review": CallBudget(18_000, 2_500, 120),

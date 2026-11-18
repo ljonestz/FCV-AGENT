@@ -342,6 +342,36 @@ def unsupported_numeric_tokens(
     return tuple(sorted(unsupported))[:12]
 
 
+def normalize_format_fields(
+    candidate: CandidateRecommendation,
+) -> tuple[CandidateRecommendation, tuple[str, ...]]:
+    """Coerce invalid enum values to their most conservative valid option (2026-11-17).
+
+    A misspelt or invented enum value used to suppress an otherwise valid action. Each
+    coercion only weakens a claim (no verified authority, analytical judgment, advisory
+    routing, team-defined evidence) and is recorded as a repair; a missing activation
+    condition drops the optional enhanced action instead."""
+
+    changes: dict[str, object] = {}
+    repairs: list[str] = []
+    if candidate.routing_status not in ROUTING_STATUSES:
+        changes["routing_status"] = "standard_document_advisory"
+        repairs.append("ROUTING_STATUS_COERCED")
+    if candidate.authority_basis not in AUTHORITY_BASES:
+        changes["authority_basis"] = "none_verified"
+        repairs.append("AUTHORITY_BASIS_COERCED")
+    if candidate.recommendation_basis not in RECOMMENDATION_BASES:
+        changes["recommendation_basis"] = "analytical_judgment"
+        repairs.append("RECOMMENDATION_BASIS_COERCED")
+    if candidate.completion_evidence_status not in COMPLETION_EVIDENCE_STATUSES:
+        changes["completion_evidence_status"] = "team_to_define"
+        repairs.append("COMPLETION_EVIDENCE_STATUS_COERCED")
+    if candidate.enhanced_action and not candidate.enhanced_activation:
+        changes["enhanced_action"] = None
+        repairs.append("ENHANCED_ACTION_WITHOUT_ACTIVATION_DROPPED")
+    return (replace(candidate, **changes) if changes else candidate), tuple(repairs)
+
+
 def normalize_optional_enhancement(
     candidate: CandidateRecommendation,
 ) -> tuple[CandidateRecommendation, tuple[str, ...]]:

@@ -9,7 +9,7 @@ from urllib.parse import urlsplit
 from pathlib import Path
 from typing import Any
 
-from fcv_docx_style import BE_AWARE, CONTENT_W, Report
+from fcv_docx_style import BE_AWARE, CONTENT_W, RESPONSIVENESS_INTRO, Report, first_sentence
 
 from fcv_presentation import priority_advisory_text
 
@@ -54,6 +54,11 @@ DIMENSIONS = (
         "Are these intentions turned into concrete requirements, roles, "
         "indicators, and triggers the team can act on?",
     ),
+)
+ROUTE_UNRESOLVED_NO_PRIORITY_MESSAGE = (
+    "No priority actions were produced, and the financing instrument or document type could "
+    "not be confirmed from the upload. Choose the financing instrument in the review panel, "
+    "or check the document's datasheet, and re-run."
 )
 NO_RECOMMENDATION_MESSAGE = (
     "No operational priorities were identified in this assessment. Review the "
@@ -915,9 +920,13 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
     )
     admitted_count = diagnostics.get("admitted_count", 0)
     inconclusive_review = bool(priorities) and (
-        diagnostics.get("reviewer_verdict") == "revise"
+        diagnostics.get("reviewer_verdict") in {"revise", "block"}
         and isinstance(diagnostic_reasons, (list, tuple))
-        and "SEMANTIC_REVIEW_VERDICT_INVALID" in diagnostic_reasons
+        and any(code in diagnostic_reasons for code in (
+            "SEMANTIC_REVIEW_VERDICT_INVALID",
+            "SEMANTIC_REVIEW_UNTARGETED_REVISE",
+            "SEMANTIC_REVIEW_UNTARGETED_BLOCK",
+        ))
     )
     partially_reviewed = bool(priorities) and (
         diagnostics.get("reviewer_verdict") in {"revise", "block"}
@@ -1045,6 +1054,11 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
             "Fewer than three priorities were validated despite several material findings. "
             "Review the uncovered findings before relying on this note; do not add actions just to meet a count."
         )
+    if (not reader_priorities and recommendation_status != "incomplete"
+            and "OPERATIONAL_GUIDANCE_WITHHELD" in codes):
+        # 2026-11-17: say why, and point to the fix, instead of a neutral "none identified".
+        recommendation_status = "partial"
+        recommendation_message = ROUTE_UNRESOLVED_NO_PRIORITY_MESSAGE
     return _scrub_placeholders({
         "assessment_themes": _assessment_themes(_summary_gap_items(assessment, reader_priorities, limit=12), core_questions, reader_priorities, minor_climate_points, assessment=assessment),
         "executive_readout": executive,
@@ -1826,8 +1840,12 @@ def write_reader_docx(
     *,
     snapshot_sha256: str | None = None,
     report_meta: dict[str, object] | None = None,
+    dd: dict[str, object] | None = None,
 ) -> Path:
-    """Write the canonical reader with the approved, branded Word components."""
+    """Write the canonical reader with the approved, branded Word components.
+
+    ``dd`` carries the review-stage notice and due-diligence checklist fields, which travel
+    alongside the reader (the reader must match its canonical rebuild exactly)."""
     output = path if hasattr(path, "write") else Path(path)
     defaults: dict[str, object] = {
         "title": "FCV Recommendations Note",
@@ -1846,15 +1864,10 @@ def write_reader_docx(
     minor_points = _records(model.get("minor_climate_points"))
     doc_flags = _records(model.get("review_readiness_flags"))
     cards = _rating_cards(model)
+    # Ratings stay in the reader model but are not displayed: each card carries
+    # the one-sentence opening judgment of its rationale, as on the normal route.
     tiles = [
-        {
-            "label": card["title"],
-            "value": card["label"],
-            "n": 5,
-            "idx": card["level"],
-            "lo": "Very limited",
-            "hi": "Very strong",
-        }
+        {"label": card["title"], "summary": first_sentence(card.get("rationale"))}
         for card in cards
     ]
     check_count = len(minor_points) + len(doc_flags)
@@ -1871,6 +1884,9 @@ def write_reader_docx(
         },
     )
     _docx_status_notices(report, model)
+    dd = dd if isinstance(dd, dict) else {}
+    if _text(dd.get("review_stage_notice")):
+        report.small(_text(dd.get("review_stage_notice")))
 
     # The Overview opens with the approved assessment text. Generic reader,
     # review, preparation-route, and draft-introduction notices stay out of it.
@@ -1932,18 +1948,13 @@ def write_reader_docx(
         rationale = [_text(card.get("rationale"))] if _text(card.get("rationale")) else []
         report.rating_segment(
             card["title"],
-            card["label"],
+            "",
             meaning=meaning,
             why=rationale,
             question=card["question"],
-            scale="Scale: Very limited / Limited / Moderate / Strong / Very strong.",
             first=index == 0,
+            intro=RESPONSIVENESS_INTRO if card["key"] == "responsiveness" else "",
         )
-    report.small(
-        "Not expected, Unclear and legacy Emerging are unscored. "
-        "Contributing to responsiveness is often a sign of going above and beyond. "
-        "The expected contribution depends on the project's scope."
-    )
     report.small(SENSITIVITY_RATING_CAVEAT)
 
     # Keep the full advisory alongside the priority introduction, and link the
@@ -2084,6 +2095,29 @@ def write_reader_docx(
                     for index, flag in enumerate(doc_flags, start=1)
                 ]
             )
+
+    # Due-diligence checklist (2026-11-17): same table as the normal route.
+    import review_stage as review_stage_mod
+    dd_rows = review_stage_mod.normalize_dd_checklist(dd.get("dd_checklist"))
+    if dd_rows:
+        column_label = _text(dd.get("dd_checklist_column"))
+        report.h1("Due-Diligence Checklist")
+        report.info_box(
+            "The questions follow the FCV due-diligence review"
+            + (f" ({column_label})" if column_label else "")
+            + ". The notes say what the package shows on each question and where to look; "
+            "they are not ratings.",
+            size=9.5, keep=True,
+        )
+        report.data_table(
+            ["#", "Question", "Notes"],
+            [0.35, 2.75, CONTENT_W - 3.1],
+            [[str(i), f"{row['element']}: {row['question']}", row["note"]]
+             for i, row in enumerate(dd_rows, start=1)],
+            keep_together=False,
+        )
+    elif _text(dd.get("dd_checklist_note")):
+        report.small(_text(dd.get("dd_checklist_note")))
 
     guidance_items = [
         {
