@@ -63,7 +63,7 @@ def _routing():
 def test_route_from_facts_and_reason_line():
     r = _routing()
     assert r["sectors"] == ["water"]
-    assert r["eligible"] and len(r["eligible"]) <= 6
+    assert r["eligible"] and len(r["eligible"]) <= 8
     assert r["reason_line"].startswith("Sector checks: Water (lead Practice Area)")
     json.dumps(r)
 

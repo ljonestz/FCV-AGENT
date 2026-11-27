@@ -196,7 +196,7 @@ def test_eligible_set_is_capped_and_overflow_is_traced():
                   ("rural_feeder_roads", "water_points_wash", "nrm_landscape_forest", "agri_inputs_pastoral",
                    "ews_hydromet", "local_funds_cdd", "land_acquisition_tenure"))
     res = route(ProjectFacts(instrument="IPF", fcv_setting="active_conflict", features=feats), CARDS)
-    assert len(res.eligible) == 6
+    assert len(res.eligible) == 8
     assert any("budget" in r["reason"] for r in res.rejected)
 
 
@@ -285,3 +285,12 @@ def test_tariff_feature_reaches_the_tariff_card_in_investment_projects():
     fe = FeatureEvidence("tariff_reform", named=True, mechanism_evidence=True)
     res = route(ProjectFacts(instrument="IPF", fcv_setting="institutional_fragility", features=(fe,)), CARDS)
     assert res.eligible_ids == ["mc-13"]
+
+
+def test_one_feature_cannot_fill_the_eligible_list():
+    ews = FeatureEvidence("ews_hydromet", financing_share=0.03, named=True, mechanism_evidence=True)
+    funds = FeatureEvidence("local_funds_cdd", named=True, mechanism_evidence=True)
+    res = route(ProjectFacts(instrument="IPF", pa_lead_parsed="Social Sustainability and Inclusion",
+                             fcv_setting="institutional_fragility", context=frozenset({"insecurity"}),
+                             features=(ews, funds)), CARDS)
+    assert "mc-21" in res.eligible_ids  # the local-funds benefit-sharing card is not crowded out

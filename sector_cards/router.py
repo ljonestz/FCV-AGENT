@@ -13,7 +13,8 @@ from .models import CardSet, MechanismCard
 MATERIAL_SHARE = 0.10          # feature route: share of financing that counts as material
 SECOND_SECTOR_SHARE = 0.30     # second sector: attributable financing share
 MAX_SECTORS = 2
-MAX_ELIGIBLE = 6               # keeps Stage 2 within the ~1,000-token card budget
+MAX_ELIGIBLE = 8               # ~1,500 tokens of cards in Stage 2; the model still selects 0-3
+MAX_PER_FEATURE = 2            # first pass: one feature cannot fill the list (paid run, Guinea governance)
 HIGH = "high"
 
 # Lead Practice Area -> pilot sector. EWS-type leads need the EWS check (ews_is_primary).
@@ -177,8 +178,17 @@ def route(facts: ProjectFacts, cards: CardSet) -> RoutingResult:
             res.rejected.append(decision)
 
     candidates.sort(key=lambda d: (-d["score"], d["card_id"]))
-    res.eligible = candidates[:MAX_ELIGIBLE]
-    for d in candidates[MAX_ELIGIBLE:]:
+    chosen, per_feature = [], {}
+    for d in candidates:  # first pass: variety across triggering features
+        key = d.get("feature", d["route"])
+        if len(chosen) < MAX_ELIGIBLE and per_feature.get(key, 0) < MAX_PER_FEATURE:
+            chosen.append(d)
+            per_feature[key] = per_feature.get(key, 0) + 1
+    for d in candidates:  # second pass: fill remaining slots by score
+        if len(chosen) < MAX_ELIGIBLE and d not in chosen:
+            chosen.append(d)
+    res.eligible = chosen
+    for d in [c for c in candidates if c not in chosen]:
         res.rejected.append({"card_id": d["card_id"], "reason": f"over the {MAX_ELIGIBLE}-card budget (score {d['score']:.2f})"})
     res.trace.append(f"eligible={res.eligible_ids}")
     return res
@@ -202,7 +212,7 @@ def _eligible_project_card(card: MechanismCard, f: ProjectFacts, by_feature, sec
         + 0.5 * min(best.financing_share or 0.0, 1.0)
     if in_sector and "sector" in card.routes:
         # A fired sector lowers the materiality bar but the feature must still be present.
-        return {"card_id": card.id, "route": "sector", "score": score + 1.0,
+        return {"card_id": card.id, "route": "sector", "score": score + 1.0, "feature": best.feature,
                     "reason": f"sector {min(set(card.sectors) & set(sectors))}; feature {best.feature}"
                            + (f" (p.{best.page})" if best.page else "")}
     if "feature" not in card.routes:
@@ -214,5 +224,5 @@ def _eligible_project_card(card: MechanismCard, f: ProjectFacts, by_feature, sec
         return {"card_id": card.id, "reason": f"feature {best.feature} not material or no mechanism evidence"}
     m = max(material, key=lambda fe: (fe.financing_share or 0.0, fe.named))
     share = f"{m.financing_share:.0%} of financing" if m.financing_share is not None else "named in design"
-    return {"card_id": card.id, "route": "feature", "score": score,
+    return {"card_id": card.id, "route": "feature", "score": score, "feature": m.feature,
                 "reason": f"material feature {m.feature} ({share})" + (f", {m.country}" if m.country else "")}
