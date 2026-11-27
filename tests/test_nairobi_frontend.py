@@ -229,7 +229,7 @@ let activeLenses=[],resolvedLensVersions={{}},lensDiagnostic={{}},lensContextSou
 let climateResearch={{}},climateGrounding={{}},climateVerifiedAssessment=null,climateVerifiedReader=null,climateVerifiedFailure=null;
 let stageConciseReadout=null,stageThreePriorities=[],fcvRating='',fcvResponsivenessRating='';
 let stageRiskExposure=null,stageSensitivitySummary='',stageResponsivenessSummary='';
-let midCycleWatch=[],dpfWatch=[],p4rWatch=[],regionalWatch=[],horizonConsiderations='';
+let midCycleWatch=[],dpfWatch=[],p4rWatch=[],regionalWatch=[],horizonConsiderations='',stageSectorProvenance='',stageSectorAdditional=[];
 let lensSelectionLocked=false,sessionName='',researchBrief='',researchCountry='';
 let restoredFileNames={{project:[],context:[]}},pF=[{{name:'unrelated.docx'}}],pkF=[],cF=[];
 let calls=[];

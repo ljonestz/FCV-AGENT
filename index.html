@@ -807,7 +807,8 @@
 
     /* ── Truncation warning banner ── */
     /* Research brief panel */
-    .research-brief-panel{margin-top:18px;border:2px solid var(--wbg-blue);border-radius:var(--radius);overflow:hidden;background:#fff;box-shadow:0 2px 12px rgba(0,159,218,.15)}
+    .sector-checks-panel{margin:10px 0;padding:8px 12px;border:1px solid #e2e8f0;border-radius:6px;background:#f8fafc;font-size:13px;color:#475569}.sector-checks-line{margin-bottom:4px}.sector-checks-toggle,.sector-checks-card{display:block;margin:2px 0}.sector-checks-why{color:#94a3b8}
+.research-brief-panel{margin-top:18px;border:2px solid var(--wbg-blue);border-radius:var(--radius);overflow:hidden;background:#fff;box-shadow:0 2px 12px rgba(0,159,218,.15)}
     .research-brief-toggle{width:100%;display:flex;align-items:center;gap:10px;padding:13px 18px;background:linear-gradient(135deg,rgba(0,159,218,.08) 0%,rgba(71,196,235,.06) 100%);border:none;cursor:pointer;font-size:13.5px;font-weight:600;color:var(--wbg-navy);text-align:left;transition:background .18s,box-shadow .18s;letter-spacing:.01em}
     .research-brief-toggle:hover{background:linear-gradient(135deg,rgba(0,159,218,.15) 0%,rgba(71,196,235,.12) 100%);box-shadow:inset 0 -2px 0 var(--wbg-blue)}
     .research-brief-toggle .rb-label{flex:1}
@@ -1986,6 +1987,7 @@
 .fr-readout .fr-sc-count-def{font-size:11px;font-style:italic;line-height:1.45;color:rgba(255,255,255,.88);margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.25)}
 .fr-readout .fr-sc-lead{font-size:12px;line-height:1.5;color:var(--fr-grey,#555);font-style:italic;margin:4px 0 8px}
 .fr-readout .fr-note{font-size:11px;color:var(--fr-grey);margin:4px 0 20px}
+.fr-readout .fr-sector-line{margin:14px 0 6px}.fr-readout .fr-sector-tag{display:inline-block;font-size:10px;padding:1px 6px;border:1px solid #cbd5e1;border-radius:9px;color:#475569}.fr-readout .fr-sector-list{margin:6px 0 4px 18px;padding:0}.fr-readout .fr-sector-list li{margin:4px 0}.fr-readout .fr-sector-ref{color:var(--fr-grey)}.fr-readout .fr-sector-src{display:block;font-size:11px;color:var(--fr-grey)}
 .fr-readout .fr-closing{margin:24px 0 4px;padding-top:10px;border-top:1px solid var(--fr-border)}
 .fr-readout .fr-toc{display:flex;flex-wrap:wrap;column-gap:20px;row-gap:6px;margin:14px 0 4px;font-size:12px}
 .fr-readout .fr-toc a{color:var(--fr-blue-text);text-decoration:none}.fr-readout .fr-toc a:hover{text-decoration:underline}
@@ -2738,6 +2740,7 @@
   let instrumentType='Unknown';
   let regimeContext=null;
   let horizonConsiderations='';
+  let stageSectorProvenance='',stageSectorAdditional=[];
   let temporalContext={};
 
   // New-model appraisal-document label per instrument (dual-regime). Legacy/unknown -> null.
@@ -2761,6 +2764,7 @@
   let countryClassification={};
   let contextFlags={};
   let sectorContext={};
+  let sectorFacts=null,sectorRouting=null,sectorOff=false,sectorCardsOff=[];
   let lensCatalogue=[],lensSuggestions=[],activeLenses=[],resolvedLensVersions={},lensDiagnostic={},lensContextSources=[],climateResearch={},climateGrounding={},lensSelectionTouched=false,lensSelectionLocked=false;
   let stageAppliedSnippets=[];
   let sbsTimerInterval=null,sbsMessageInterval=null,sbsStartTime=null,sbsMessageIdx=0;
@@ -3326,6 +3330,7 @@
       p4rWatch=Array.isArray(savedLensState.p4rWatch)?savedLensState.p4rWatch:(Array.isArray(savedLensState.p4r_watch)?savedLensState.p4r_watch:[]);
       regionalWatch=Array.isArray(savedLensState.regionalWatch)?savedLensState.regionalWatch:(Array.isArray(savedLensState.regional_watch)?savedLensState.regional_watch:[]);
       horizonConsiderations=typeof savedLensState.horizonConsiderations==='string'?savedLensState.horizonConsiderations:(typeof savedLensState.horizon_considerations==='string'?savedLensState.horizon_considerations:'');
+      stageSectorProvenance=typeof savedLensState.stageSectorProvenance==='string'?savedLensState.stageSectorProvenance:'';stageSectorAdditional=Array.isArray(savedLensState.stageSectorAdditional)?savedLensState.stageSectorAdditional:[];
       docType=savedLensState.docType||docType;
       instrumentType=savedLensState.instrumentType||instrumentType;
       countryScope=savedLensState.countryScope||countryScope;
@@ -3441,7 +3446,9 @@
       dpfWatch: dpfWatch,
       p4rWatch: p4rWatch,
       regionalWatch: regionalWatch,
-      horizonConsiderations: horizonConsiderations
+      horizonConsiderations: horizonConsiderations,
+      stageSectorProvenance: stageSectorProvenance,
+      stageSectorAdditional: stageSectorAdditional
     };
     const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
     const url = URL.createObjectURL(blob);
@@ -3567,6 +3574,8 @@
         p4rWatch = Array.isArray(state.p4rWatch) ? state.p4rWatch : (Array.isArray(state.p4r_watch) ? state.p4r_watch : []);
         regionalWatch = Array.isArray(state.regionalWatch) ? state.regionalWatch : (Array.isArray(state.regional_watch) ? state.regional_watch : []);
         horizonConsiderations = typeof state.horizonConsiderations === 'string' ? state.horizonConsiderations : (typeof state.horizon_considerations === 'string' ? state.horizon_considerations : '');
+        stageSectorProvenance = typeof state.stageSectorProvenance === 'string' ? state.stageSectorProvenance : '';
+        stageSectorAdditional = Array.isArray(state.stageSectorAdditional) ? state.stageSectorAdditional : [];
         if(supportsClimateVerifiedStage3View())stageThreePriorities=Array.isArray(climateVerifiedReader&&climateVerifiedReader.priorities)?climateVerifiedReader.priorities:[];
                 const currentVersions=Object.fromEntries(lensCatalogue.map(l=>[l.id,l.version]));
         const staleLens=state.version>=3&&state.currentStage<3&&activeLenses.some(id=>!state.lensVersions||!state.lensVersions[id]||currentVersions[id]!==state.lensVersions[id]);
@@ -4153,6 +4162,7 @@
               if(p.country_classification){countryClassification=p.country_classification;fcvSafeLocalStorageSet('country_classification',JSON.stringify(countryClassification));}
               if(p.context_flags)contextFlags=p.context_flags;
               if(p.sector_context)sectorContext=p.sector_context;
+              sectorFacts=p.sector_facts||null;sectorRouting=p.sector_routing||null;sectorOff=false;sectorCardsOff=[];
               if(p.change_types)changeTypes=p.change_types;
               if(Array.isArray(p.doc_checks))docChecks=p.doc_checks;
               if(p.active_lenses){activeLenses=p.active_lenses.map(l=>l.id);resolvedLensVersions=Object.fromEntries(p.active_lenses.map(l=>[l.id,l.version]));}
@@ -4205,7 +4215,7 @@
               dpfWatch=Array.isArray(p.dpf_watch)?p.dpf_watch:[];
               p4rWatch=Array.isArray(p.p4r_watch)?p.p4r_watch:[];
               regionalWatch=Array.isArray(p.regional_watch)?p.regional_watch:[];
-              horizonConsiderations=typeof p.horizon_considerations==='string'?p.horizon_considerations:'';
+              horizonConsiderations=typeof p.horizon_considerations==='string'?p.horizon_considerations:'';stageSectorProvenance=typeof p.sector_provenance==='string'?p.sector_provenance:'';stageSectorAdditional=Array.isArray(p.sector_additional)?p.sector_additional:[];
               if(p.applied_snippets)stageAppliedSnippets=p.applied_snippets;
               fcvSafeLocalStorageSet('stage3_timestamp',Date.now());
               if(stage3ParseError)showExpressError(3,stage3ParseError);
@@ -4384,7 +4394,7 @@
     if(analysisMode!=='express')startSbsLoadingTimers(stage);
 
     try{
-      const payload={stage,history:hist,user_message:followOn||'',document_type:docType,instrument_type:instrumentType,temporal_context:temporalContext,change_types:changeTypes,country_scope:countryScope,is_mpa:isMpa,review_mode:reviewMode,review_stage:reviewStage,instrument_choice:instrumentChoice,regime_context:regimeContext,process_type:processType,user_context:(document.getElementById('user-context')?.value||'').trim(),uploaded_doc_names:[...pF.map(f=>f.name),...pkF.map(f=>f.name),...cF.map(f=>f.name)],country_classification:countryClassification,context_flags:contextFlags,sector_context:sectorContext,priority_questions:(priorityQuestions=getPriorityQuestions()),active_lenses:activeLenses,lens_versions:lensVersions(),lens_diagnostic:lensDiagnostic,lens_context_sources:lensContextSources,climate_research:climateResearch,climate_grounding:climateGrounding};
+      const payload={stage,history:hist,user_message:followOn||'',document_type:docType,instrument_type:instrumentType,temporal_context:temporalContext,change_types:changeTypes,country_scope:countryScope,is_mpa:isMpa,review_mode:reviewMode,review_stage:reviewStage,instrument_choice:instrumentChoice,regime_context:regimeContext,process_type:processType,user_context:(document.getElementById('user-context')?.value||'').trim(),uploaded_doc_names:[...pF.map(f=>f.name),...pkF.map(f=>f.name),...cF.map(f=>f.name)],country_classification:countryClassification,context_flags:contextFlags,sector_context:sectorContext,sector_facts:sectorFacts,sector_off:sectorOff,sector_cards_off:sectorCardsOff,priority_questions:(priorityQuestions=getPriorityQuestions()),active_lenses:activeLenses,lens_versions:lensVersions(),lens_diagnostic:lensDiagnostic,lens_context_sources:lensContextSources,climate_research:climateResearch,climate_grounding:climateGrounding};
       // Attach session prompt override if user has edited this stage's prompt
       if(sessionPrompts[stage]){
         payload.prompt_override = sessionPrompts[stage];
@@ -4520,7 +4530,7 @@
                 stageResponsivenessSummary=p.responsiveness_summary||'';if(typeof stageDdState!=='undefined')stageDdState=(typeof ddStateFrom==='function'?ddStateFrom(p):null);
                 stageConciseReadout=p.concise_readout||null;
                                 midCycleWatch=Array.isArray(p.mid_cycle_watch)?p.mid_cycle_watch:[];dpfWatch=Array.isArray(p.dpf_watch)?p.dpf_watch:[];p4rWatch=Array.isArray(p.p4r_watch)?p.p4r_watch:[];regionalWatch=Array.isArray(p.regional_watch)?p.regional_watch:[];
-                horizonConsiderations=typeof p.horizon_considerations==='string'?p.horizon_considerations:'';
+                horizonConsiderations=typeof p.horizon_considerations==='string'?p.horizon_considerations:'';stageSectorProvenance=typeof p.sector_provenance==='string'?p.sector_provenance:'';stageSectorAdditional=Array.isArray(p.sector_additional)?p.sector_additional:[];
                 if(p.fcv_rating)fcvRating=p.fcv_rating;
                 if(p.fcv_responsiveness_rating)fcvResponsivenessRating=p.fcv_responsiveness_rating;
                 if(p.priorities)stageThreePriorities=p.priorities;
@@ -4549,6 +4559,7 @@
                 if(p.country_classification){countryClassification=p.country_classification;fcvSafeLocalStorageSet('country_classification',JSON.stringify(countryClassification));}
                 if(p.context_flags)contextFlags=p.context_flags;
                 if(p.sector_context)sectorContext=p.sector_context;
+                sectorFacts=p.sector_facts||null;sectorRouting=p.sector_routing||null;sectorOff=false;sectorCardsOff=[];
                 if(p.change_types)changeTypes=p.change_types;
                 if(Array.isArray(p.doc_checks))docChecks=p.doc_checks;
               }
@@ -4557,6 +4568,7 @@
               enableClickableStepper();
               // Research brief panel (step-by-step only — express skips rendering)
               if(stage===1&&researchBrief) injectResearchBriefPanel(researchBrief,researchCountry);
+              if(stage===1&&sectorRouting&&sectorRouting.reason_line) injectSectorChecksPanel(sectorRouting);
               if(stage===1&&countryClassification&&countryClassification.category&&analysisMode!=='express'){
                 renderClassificationWidget(countryClassification);
               }
@@ -4632,6 +4644,31 @@
       const _disp=document.getElementById('stage-disp');if(_disp)_disp.innerHTML='';
     }finally{
       busy=false;
+    }
+  }
+
+  // Mechanism cards (design v3): reason line + switch-off at Stage 1. The browser can only remove cards.
+  function injectSectorChecksPanel(routing) {
+    const existing = document.getElementById('sector-checks-panel');
+    if (existing) existing.remove();
+    const cards = (routing.eligible || []);
+    const panel = document.createElement('div');
+    panel.id = 'sector-checks-panel';
+    panel.className = 'sector-checks-panel ani';
+    panel.innerHTML = `
+      <div class="sector-checks-line">${esc(routing.reason_line)}</div>
+      <label class="sector-checks-toggle"><input type="checkbox" id="sector-checks-on" checked> Use sector checks in Stages 2 and 3</label>
+      <details class="sector-checks-cards"><summary>Cards that may be considered (${cards.length})</summary>
+        ${cards.map(c => `<label class="sector-checks-card"><input type="checkbox" data-card="${esc(c.card_id)}" checked> ${esc(c.mechanism)} <span class="sector-checks-why">(${esc(c.reason)})</span></label>`).join('')}
+      </details>`;
+    panel.querySelector('#sector-checks-on').addEventListener('change', e => { sectorOff = !e.target.checked; });
+    panel.querySelectorAll('input[data-card]').forEach(box => box.addEventListener('change', () => {
+      sectorCardsOff = [...panel.querySelectorAll('input[data-card]')].filter(b => !b.checked).map(b => b.dataset.card);
+    }));
+    const disp = document.getElementById('stage-disp');
+    if (disp) {
+      const anchor = document.getElementById('research-brief-panel') || disp.querySelector('.callout');
+      if (anchor) { anchor.insertAdjacentElement('afterend', panel); } else { disp.appendChild(panel); }
     }
   }
 
@@ -5765,7 +5802,7 @@
   function resetStage3State(){
     stageThreePriorities=[];stageConciseReadout=null;stageRiskExposure=null;stageSensitivitySummary='';stageResponsivenessSummary='';if(typeof stageDdState!=='undefined')stageDdState=null;stageGapTable=null;
     stageWiderFcvContext=null;climatePriorityUnlinked=0;climatePriorityTotal=0;stage3DetailedHtml='';
-    midCycleWatch=[];dpfWatch=[];p4rWatch=[];regionalWatch=[];horizonConsiderations='';
+    midCycleWatch=[];dpfWatch=[];p4rWatch=[];regionalWatch=[];horizonConsiderations='';stageSectorProvenance='';stageSectorAdditional=[];
   }
 
   function startRerun(stage){
@@ -5778,7 +5815,7 @@
     curS=stage;
     for(let i=stage+1;i<=3;i++){delete stageOutputs[i];delete stageHists[i];}
     stageThreePriorities=[];stageConciseReadout=null;stageRiskExposure=null;stageSensitivitySummary='';stageResponsivenessSummary='';if(typeof stageDdState!=='undefined')stageDdState=null;fcvRating='';fcvResponsivenessRating='';stageWiderFcvContext=null;climatePriorityUnlinked=0;climatePriorityTotal=0;climateVerifiedAssessment=null;climateVerifiedFailure=null;climateVerifiedReader=null;stage3DetailedHtml='';
-    midCycleWatch=[];dpfWatch=[];p4rWatch=[];regionalWatch=[];horizonConsiderations='';
+    midCycleWatch=[];dpfWatch=[];p4rWatch=[];regionalWatch=[];horizonConsiderations='';stageSectorProvenance='';stageSectorAdditional=[];
     clearUI();renderOut(stage,stageOutputs[stage],false);
     if(stage===2&&stage2UnderHood){buildUnderHoodPanels(stage2UnderHood);updateSidebar();}
     if(stage===2)renderLensDiagnostic();
@@ -5822,7 +5859,7 @@
     try{localStorage.setItem('fcv_express_stageOutputs',JSON.stringify(outputs));}catch(e){}
     try{localStorage.setItem('fcv_express_stageHists',JSON.stringify(hists));}catch(e){}
     try{localStorage.setItem('fcv_express_curS',curStage);}catch(e){}
-    try{localStorage.setItem('fcv_express_lensState',JSON.stringify({researchBrief,researchCountry,activeLenses,lensVersions:lensVersions(),lensDiagnostic,lensContextSources,climateResearch,climateGrounding,climateVerifiedAssessment: climateVerifiedAssessment,climateVerifiedReader: climateVerifiedReader,stageConciseReadout,stageThreePriorities,stageRiskExposure,stageSensitivitySummary,stageResponsivenessSummary,stageDdState:(typeof stageDdState!=='undefined'?stageDdState:null),fcvRating,fcvResponsivenessRating,midCycleWatch,dpfWatch,p4rWatch,regionalWatch,horizonConsiderations,docType,instrumentType,countryScope}));}catch(e){}
+    try{localStorage.setItem('fcv_express_lensState',JSON.stringify({researchBrief,researchCountry,activeLenses,lensVersions:lensVersions(),lensDiagnostic,lensContextSources,climateResearch,climateGrounding,climateVerifiedAssessment: climateVerifiedAssessment,climateVerifiedReader: climateVerifiedReader,stageConciseReadout,stageThreePriorities,stageRiskExposure,stageSensitivitySummary,stageResponsivenessSummary,stageDdState:(typeof stageDdState!=='undefined'?stageDdState:null),fcvRating,fcvResponsivenessRating,midCycleWatch,dpfWatch,p4rWatch,regionalWatch,horizonConsiderations,stageSectorProvenance,stageSectorAdditional,docType,instrumentType,countryScope}));}catch(e){}
   }
 
   function showExpressProgress(){
@@ -6041,6 +6078,8 @@
       p4r_watch: p4rWatch || [],
       regional_watch: regionalWatch || [],
       horizon_considerations: horizonConsiderations || '',
+      sector_provenance: stageSectorProvenance || '',
+      sector_additional: stageSectorAdditional || [],
       focus_questions: focusQuestionsResult || null,
       active_lenses: activeLenses.map((id,index)=>({id,version:lensVersions()[id]||'',position:index===0?'primary':'secondary'})),
       lens_diagnostic: lensDiagnostic || {},
@@ -6261,7 +6300,7 @@ ${climatePrintDisclosureScript()}
     pF=[];pkF=[];cF=[];fileMetadata={};hist=[];curS=0;sessionName='';busy=false;stageOutputs={};stageHists={};researchBrief='';researchCountry='';priorityQuestions=[];focusQuestionsResult=null;pqPanelEnabled=true;
     ['ip','ipack','ic'].forEach(id=>{document.getElementById(id).value='';});
     activeLenses=[];resolvedLensVersions={};lensSuggestions=[];lensDiagnostic={};lensContextSources=[];climateResearch={};climateGrounding={};climateIntegration=null;climateVerifiedAssessment=null;climateVerifiedFailure=null;climateVerifiedReader=null;lensSelectionTouched=false;lensSelectionLocked=false;renderLensSelector();
-    midCycleWatch=[];dpfWatch=[];p4rWatch=[];regionalWatch=[];horizonConsiderations='';
+    midCycleWatch=[];dpfWatch=[];p4rWatch=[];regionalWatch=[];horizonConsiderations='';stageSectorProvenance='';stageSectorAdditional=[];
     stageThreePriorities=[];stageConciseReadout=null;stageRiskExposure=null;stageSensitivitySummary='';stageResponsivenessSummary='';if(typeof stageDdState!=='undefined')stageDdState=null;fcvRating='';fcvResponsivenessRating='';stage3DetailedHtml='';
     { const _pc=document.getElementById('pq-confirm'); if(_pc){_pc.innerHTML='';_pc.style.display='none';} }
     ['stage2_timestamp','stage3_timestamp','stage3_consistency_dismissed'].forEach(k=>localStorage.removeItem(k));
@@ -6773,6 +6812,7 @@ ${climatePrintDisclosureScript()}
       stage3Markdown:markdownText,fcvRating,fcvResponsivenessRating,
       sensitivitySummary:stageSensitivitySummary,responsivenessSummary:stageResponsivenessSummary,ddChecklist:stageDdState,
       riskExposure:stageRiskExposure,priorities:stageThreePriorities,
+      sectorProvenance:stageSectorProvenance,sectorAdditional:stageSectorAdditional,
       watchHtml:renderNormalFcvWatchBody(),noticesHtml,tailHtml,
       smallerPoints:window.FcvReadout.parseSupplementaryPoints(stageOutputs[2]||''),
       fileNames:readoutFileNames(),researchBrief,partial:normalReadoutIsPartial(climate),researchHtml,
