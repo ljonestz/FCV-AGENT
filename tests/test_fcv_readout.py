@@ -152,7 +152,8 @@ def test_normal_readout_section_order_and_content():
     # 2026-11-16: summary cards replace the rating meters.
     assert html.count('class="fr-ms fr-c') == 0 and html.count('fr-sc-summary') == 2
     assert "Address before Decision Review (DM/ROC)" in html and "Required" not in html
-    assert "Sensitivity + Responsiveness" in html[html.index('id="fr-priority-1"'):]
+    # 2026-11-27: the legacy S/R focus label is no longer shown on priority cards.
+    assert "Sensitivity + Responsiveness" not in html[html.index('id="fr-priority-1"'):]
     assert 'id="fr-priority-1" data-fr-src-index="0" open>' in html and 'id="fr-priority-2" data-fr-src-index="1">' in html
     assert 'class="extra-0"' in html and 'class="extra-1"' in html
     assert "Priority 1 \u00b7 Embed" not in html
@@ -424,7 +425,8 @@ def test_priority_card_header_two_rows_with_title_and_chevron():
     html = normal({})
     card = html[html.index('id="fr-priority-1"'):html.index('id="fr-priority-2"')]
     summary = card[card.index("<summary"):card.index("</summary>")]
-    assert '<span class="fr-pc-meta"><span class="fr-meta-seg"><span class="fr-pill fr-pill-high">High priority</span></span><span class="fr-meta-seg"> &middot; Sensitivity' in summary
+    assert '<span class="fr-pc-meta"><span class="fr-meta-seg"><span class="fr-pill fr-pill-high">High priority</span></span>' in summary
+    assert "Sensitivity" not in summary  # legacy S/R label hidden (2026-11-27)
     assert '<span dir="auto" class="fr-pc-title-txt">Embed early warning indicators</span>' in summary
     assert "<h3" not in summary
     assert "Priority 1" not in summary and "<svg" in summary
@@ -907,14 +909,14 @@ def test_climate_lead_meta_is_shortened_and_full_lead_sits_in_card_body():
     assert len(out) <= 41 and out.endswith("\u2026") and not out[:-1].endswith(" ")
 
 
-def test_normal_card_shows_source_basis_from_authority_basis():
+def test_normal_card_hides_legacy_tag_and_authority_basis():
+    # 2026-11-27 (owner): the S/R focus tag and the authority basis stay in the JSON but are not shown.
     html = normal({"priorities": [{"title": "Priority 1 - Define triggers", "risk_level": "High", "tag": "[S]",
                                    "the_gap": "Gap.", "why_it_matters": "Why.", "actions": [],
                                    "authority_basis": "reviewer_judgment"}]})
-    assert "Source basis" in html and "Screener judgment, not a specific OPCS requirement" in html
-    plain = normal({"priorities": [{"title": "Priority 1 - X", "risk_level": "High", "tag": "[S]",
-                                    "the_gap": "Gap.", "why_it_matters": "Why.", "actions": []}]})
-    assert "Source basis" not in plain
+    card = html[html.index('id="fr-priority-1"'):]
+    assert "Source basis" not in card and "Screener judgment" not in card
+    assert ">Sensitivity<" not in card
 
 
 def test_verify_notes_drop_document_ids_and_dangling_connectors():

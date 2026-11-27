@@ -13703,9 +13703,6 @@ def download_report():
         'before-Board': 'Before Board',
         'during-implementation-support': 'During implementation support',
     }
-    tag_labels = {
-        '[S]': 'Sensitivity', '[R]': 'Responsiveness', '[S+R]': 'Sensitivity + Responsiveness'
-    }
 
     # ── Strip DO_NO_HARM_HEADER if still present (belt-and-suspenders) ──
     summary = re.sub(r'^---\s*\n[\s\S]*?---\s*\n+', '', summary).strip()
@@ -14436,19 +14433,15 @@ def download_report():
                 cycle = priority.get('project_cycle')
                 if not timing and isinstance(cycle, dict):
                     timing = cycle.get('primary_label') or ''
-                focus = tag_labels.get(
-                    priority.get('tag', ''), priority.get('tag', '')
-                )
                 overview_rows.append([
                     str(i),
                     (title, f'priority_{i}'),
                     str(priority.get('risk_level') or ''),
-                    str(focus or ''),
                     str(timing or ''),
                 ])
             report.data_table(
-                ['#', 'Priority Action', 'Priority Level', 'FCV Focus', 'Timing'],
-                [0.35, 3.05, 0.8, 1.2, CONTENT_W - 5.4],
+                ['#', 'Priority Action', 'Priority Level', 'Timing'],
+                [0.35, 4.25, 0.8, CONTENT_W - 5.4],
                 overview_rows,
                 pill_cols=(2,),
                 link_col=1,
@@ -14467,15 +14460,11 @@ def download_report():
                 cycle = priority.get('project_cycle')
                 if not timing and isinstance(cycle, dict):
                     timing = cycle.get('primary_label') or ''
-                focus = tag_labels.get(
-                    priority.get('tag', ''), priority.get('tag', '')
-                )
                 priority_meta = [
                     (label, str(value))
                     for label, value in (
                         ('Dimension', priority.get('fcv_dimension')),
                         ('Priority', priority.get('risk_level')),
-                        ('Focus', focus),
                         ('Timing', timing),
                         ('Scope', priority.get('priority_scope')),
                         # Mechanism cards (readout option C): same marker as the browser "Sector check" tag.
@@ -14521,19 +14510,15 @@ def download_report():
                         str(priority['implementation_note']),
                     ))
                 practical_notes.extend(add_priority_project_cycle(priority))
-                # cpf_alignment / rra_driver_alignment stay in the Stage 3 JSON (parity
-                # surface) but are no longer shown in Word (user request 2026-11-07).
+                # cpf_alignment / rra_driver_alignment (2026-11-07) and the S/R tag, refresh_shift and
+                # authority_basis (2026-11-27) stay in the Stage 3 JSON (parity surface) but are not shown.
                 for label, key in (
-                    ('FCV Strategy 2026-2030', 'refresh_shift'),
                     ('Change', 'change_type'),
                     ('Restructuring level', 'restructuring_level'),
                     ('Governance level', 'governance_level'),
-                    ('Authority basis', 'authority_basis'),
                 ):
                     value = priority.get(key)
                     if value:
-                        if key == 'authority_basis':
-                            value = str(value).replace('_', ' ')
                         practical_notes.append((label, str(value)))
                 if priority.get('lens_ids'):
                     practical_notes.append((
