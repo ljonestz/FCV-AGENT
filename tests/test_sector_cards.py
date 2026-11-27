@@ -248,3 +248,15 @@ def test_parser_on_real_documents(path, lead):
     doc = fitz.open(path)
     text = "\n".join(doc[i].get_text() for i in range(min(15, doc.page_count)))
     assert parse_practice_areas(text).lead == lead
+
+
+def test_cover_with_several_global_practices_and_old_names():
+    text = ("FIRST RESILIENCE AND RECOVERY EMERGENCY DEVELOPMENT POLICY FINANCING\n\n"
+            "Macroeconomics, Trade and Investment Global Practice\nTransport Global Practice\n"
+            "Social Protection Global Practice\nMiddle East and North Africa Region")
+    pa = parse_practice_areas(text)
+    assert pa.cover_gps == ("Macroeconomics, Trade and Investment", "Transport", "Social Protection & Jobs")
+    assert resolve_sectors(ProjectFacts(instrument="IPF", cover_gps=pa.cover_gps))[0] == []  # several GPs: no signal
+    old = parse_practice_areas("Practice Area (Lead) Transport and Digital Development Climate Change and Disaster Screening")
+    assert old.lead == "Transport and Digital Development"
+    assert resolve_sectors(ProjectFacts(instrument="IPF", pa_lead_parsed=old.lead))[0] == []

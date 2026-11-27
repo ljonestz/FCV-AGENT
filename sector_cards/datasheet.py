@@ -29,6 +29,13 @@ _ALIASES = {
     "Social Protection and Jobs": "Social Protection & Jobs",
     "Fragile, Conflict and Violence": "Fragile, Conflict & Violence",
     "Agriculture": "Agriculture and Food",
+    "Environment and Natural Resources": "Environment, Natural Resources & the Blue Economy",
+    "Social Protection and Labor": "Social Protection & Jobs",
+    "Social Protection": "Social Protection & Jobs",
+    "Finance and Markets": "Finance, Competitiveness and Innovation",
+    # Deliberately NOT aliased to a pilot sector: the 2016-19 "Transport and Digital Development" GP led digital
+    # operations too, so it stays a non-pilot name (no sector fires from it).
+    "Transport and Digital Development": "Transport and Digital Development",
 }
 _ALL = sorted(set(_CANON) | set(_ALIASES), key=len, reverse=True)  # longest first
 _NAME_RE = re.compile("|".join(re.escape(n) for n in _ALL))
