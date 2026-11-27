@@ -4660,7 +4660,7 @@
     panel.className = 'sector-checks-panel ani';
     panel.innerHTML = `
       <div class="sector-checks-line">${esc(routing.reason_line)}</div>
-      <label class="sector-checks-toggle"><input type="checkbox" id="sector-checks-on" checked> Use sector checks in Stages 2 and 3</label>
+      <label class="sector-checks-toggle"><input type="checkbox" id="sector-checks-on" checked> Use the sector lens in Stages 2 and 3</label>
       <details class="sector-checks-cards"><summary>Cards that may be considered (${cards.length})</summary>
         ${cards.map(c => `<label class="sector-checks-card"><input type="checkbox" data-card="${esc(c.card_id)}" checked> ${esc(c.mechanism)} <span class="sector-checks-why">(${esc(c.reason)})</span></label>`).join('')}
       </details>`;

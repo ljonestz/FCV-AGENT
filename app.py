@@ -14499,8 +14499,8 @@ def download_report():
                         ('Priority', priority.get('risk_level')),
                         ('Timing', timing),
                         ('Scope', priority.get('priority_scope')),
-                        # Mechanism cards (readout option C): same marker as the browser "Sector check" tag.
-                        ('Sector check', 'Yes' if priority.get('sector_cards') else ''),
+                        # Mechanism cards (readout option C): same marker as the browser tag.
+                        ('Sector lens', 'Informed by sector lens' if priority.get('sector_cards') else ''),
                     )
                     if value
                 ]

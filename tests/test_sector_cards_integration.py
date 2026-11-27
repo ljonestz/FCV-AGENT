@@ -64,7 +64,7 @@ def test_route_from_facts_and_reason_line():
     r = _routing()
     assert r["sectors"] == ["water"]
     assert r["eligible"] and len(r["eligible"]) <= 8
-    assert r["reason_line"].startswith("Sector checks: Water (lead Practice Area)")
+    assert r["reason_line"].startswith("Sector lens: Water (lead Practice Area)")
     json.dumps(r)
 
 
@@ -129,7 +129,7 @@ def test_stage3_slice_and_readout_fields_fold_and_overflow():
     apply_sector_cards(priorities, findings)
     assert priorities[0]["sector_cards"] == [ids[0]] and priorities[1]["sector_cards"] == []
     fields = build_readout_fields(r, findings, priorities)
-    assert fields["sector_provenance"].startswith("Sector checks: Water")
+    assert fields["sector_provenance"].startswith("Sector lens: Water")
     assert "Reflected in priority 1." in fields["sector_provenance"]
     assert len(fields["sector_additional"]) == min(2, len(findings) - 1)
     assert all(a["card_id"] != ids[0] for a in fields["sector_additional"])

@@ -214,7 +214,7 @@ def _reason_line(sectors: list, sector_reason: str, eligible: list) -> str:
         bits.append("material project features")
     if "dpf_prior_action" in routes:
         bits.append("prior actions")
-    return f"Sector checks: {'; '.join(bits)}. {len(eligible)} sector card(s) may be considered at Stage 2."
+    return f"Sector lens: {'; '.join(bits)}. {len(eligible)} sector card(s) may be considered at Stage 2."
 
 
 # --- Stage 2 ---------------------------------------------------------------------------------------------
@@ -342,7 +342,7 @@ def build_readout_fields(routing: dict | None, findings: list[dict], priorities:
         bits.append("; ".join(_pretty_feature(f) for f in feats[:2]))
     if any(e["route"] == "dpf_prior_action" for e in routing["eligible"]):
         bits.append("prior actions")
-    line = "Sector checks: " + "; ".join(bits) + "."
+    line = "Sector lens: " + "; ".join(bits) + "."
     shaped = sorted({i for ids in used.values() for i in ids})
     if shaped:
         line += " Reflected in " + ("priority " if len(shaped) == 1 else "priorities ") + \

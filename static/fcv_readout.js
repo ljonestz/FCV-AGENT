@@ -641,7 +641,7 @@
         const actionsHtml = actions.length ? `<ol class="fr-actions">${actions.map(a => `<li>${a.document_element ? `<strong>${k.esc(a.document_element)}:</strong> ` : ''}${k.esc(stripTagNotes(a.guidance))}</li>`).join('')}</ol>` : '';
         const cycleText = stripTagNotes(p.implementation_note || (p.project_cycle && p.project_cycle.primary_text) || '');
         const cycleLabel = p.implementation_note ? 'Implementation note' : ((p.project_cycle && p.project_cycle.primary_label) || 'When to address');
-        const sectorTag = Array.isArray(p.sector_cards) && p.sector_cards.length ? '<span class="fr-sector-tag">Sector check</span>' : '';
+        const sectorTag = Array.isArray(p.sector_cards) && p.sector_cards.length ? '<span class="fr-sector-tag">Informed by sector lens</span>' : '';
         const sup = k.metaSegments([[k.levelPill(p.risk_level)], [k.esc(p.fcv_dimension || ''), 'fr-meta-dim'], [k.esc(k.timingLabel(p.action_timing)), 'fr-meta-time'], [sectorTag]]);
         return k.priorityCard({
           id: `fr-priority-${i + 1}`, rank: i + 1, open: i === 0, supHtml: sup, title: priorityTitle(p.title), srcIndex: index,

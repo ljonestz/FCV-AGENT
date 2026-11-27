@@ -91,7 +91,7 @@ def test_flag_on_express_end_to_end(monkeypatch):
     assert "SECTOR_CARDS" not in (s2.get("display_text") or "") and "SECTOR_CARDS" not in (s2.get("result") or "")
     s3 = _stage(events, 3)
     assert s3["priorities"][0]["sector_cards"] == [ids[0]]
-    assert s3["sector_provenance"].startswith("Sector checks: Water (lead Practice Area)")
+    assert s3["sector_provenance"].startswith("Sector lens: Water (lead Practice Area)")
     assert "Reflected in priority 1." in s3["sector_provenance"]
     assert [a["card_id"] for a in s3["sector_additional"]] == [ids[1]]
 
@@ -173,15 +173,15 @@ def _normal_html(extra):
 
 def test_renderer_shows_line_tag_and_closed_panel_only_when_fields_present():
     plain = _normal_html({})
-    assert "fr-sector-line" not in plain and "Sector check" not in plain
-    extra = {"sectorProvenance": "Sector checks: Water (lead Practice Area). Reflected in priority 1.",
+    assert "fr-sector-line" not in plain and "Informed by sector lens" not in plain
+    extra = {"sectorProvenance": "Sector lens: Water (lead Practice Area). Reflected in priority 1.",
              "sectorAdditional": [{"card_id": "mc-12", "text": "Downstream allocation rules could be set out.",
                                    "page_ref": "25", "sources": ["Turbulent Waters (2017, p.35)"]}],
              "priorities": [dict(__import__("tests.test_fcv_readout", fromlist=["NORMAL_PRIORITY"]).NORMAL_PRIORITY,
                                  sector_cards=["mc-03"])]}
     html = _normal_html(extra)
     assert 'class="fr-note fr-sector-line"' in html and "Reflected in priority 1." in html
-    assert '<span class="fr-sector-tag">Sector check</span>' in html
+    assert '<span class="fr-sector-tag">Informed by sector lens</span>' in html
     panel = html[html.index("Additional sector considerations") - 200:]
     assert '<details class="fr-disc">' in panel and "<details class=\"fr-disc\" open" not in panel
     assert "Downstream allocation rules could be set out." in html and "(p.25)" in html
@@ -201,15 +201,15 @@ def test_word_export_adds_line_and_grey_box_only_when_fields_present():
     client = app.app.test_client()
     base = client.post("/api/download-report", json={"summary": "", "priorities": [priority], "metadata": {}})
     assert base.status_code == 200
-    assert "Sector checks" not in _docx_text(Document(BytesIO(base.data)))
+    assert "Sector lens" not in _docx_text(Document(BytesIO(base.data)))
     with_sector = client.post("/api/download-report", json={
         "summary": "", "priorities": [priority], "metadata": {},
-        "sector_provenance": "Sector checks: Water (lead Practice Area). Reflected in priority 1.",
+        "sector_provenance": "Sector lens: Water (lead Practice Area). Reflected in priority 1.",
         "sector_additional": [{"card_id": "mc-12", "text": "Downstream allocation rules could be set out.",
                                "page_ref": "25", "sources": ["Turbulent Waters (2017, p.35)"]}]})
     assert with_sector.status_code == 200
     text = _docx_text(Document(BytesIO(with_sector.data)))
-    assert "Sector checks: Water (lead Practice Area). Reflected in priority 1." in text
+    assert "Sector lens: Water (lead Practice Area). Reflected in priority 1." in text
     assert "ADDITIONAL SECTOR CONSIDERATIONS" in text
     assert "Downstream allocation rules could be set out. (p.25) Guidance: Turbulent Waters (2017, p.35)" in text
 
@@ -227,4 +227,4 @@ def test_word_priority_header_marks_sector_shaped_priorities():
                                       json={"summary": "", "priorities": [shaped, plain], "metadata": {}})
     assert resp.status_code == 200
     text = _docx_text(Document(BytesIO(resp.data)))
-    assert text.count("SECTOR CHECK") == 1
+    assert text.count("Informed by sector lens") == 1
