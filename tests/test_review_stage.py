@@ -249,7 +249,7 @@ def test_climate_readout_renders_checklist_snapshot_and_responsiveness_note():
     state = _dd_state()
     html = climate(CLIMATE_READER, {"draftingAllowed": True, "noticesHtml": "", "ddChecklist": state})
     assert "Due-Diligence Checklist" in html and "Have teams validated the FCV analysis" in html
-    assert "<strong>Snapshot:</strong>" in html
+    assert 'class="fr-sc-overview"' in html  # 2026-11-27: overview box replaces the snapshot tiles
     assert "Responsiveness is not required of every project." in html
     plain = climate(CLIMATE_READER)
     assert "Due-Diligence Checklist" not in plain
