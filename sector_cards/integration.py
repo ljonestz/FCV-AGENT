@@ -59,7 +59,8 @@ pumping), agri_inputs_pastoral (inputs, matching grants, livestock, pastoral or 
 food_security_reserves (food reserves, food-crisis monitoring), nrm_landscape_forest (protected areas, forests,
 landscapes, fisheries, restoration, mining areas), land_acquisition_tenure (land take, titling, resettlement, tenure
 reform), local_funds_cdd (community or local-government grants and funds), ews_hydromet (early warning, hydromet,
-hazard or conflict data systems). share = that feature's share of total financing where the cost table states it.
+hazard or conflict data systems), tariff_reform (tariff increases, metering, subsidy or cost-recovery reform financed
+or required by the project). share = that feature's share of total financing where the cost table states it.
 named = true if it is a named component or subcomponent, a PDO element or a results indicator. evidence = true only if
 the document itself describes the conflict-relevant context for that feature (for example competing user groups,
 insecurity, displacement, contested land or authority), not merely the asset. country = the country for multi-country
@@ -142,7 +143,21 @@ def extract_sector_facts(stage1_output: str, document_text: str = "", prior_acti
     return facts
 
 
-def _project_facts(facts: dict, instrument: str, prior_actions: list | None, multi_country: bool) -> ProjectFacts:
+def context_from(flags: dict | None, fcv_setting: str) -> frozenset[str]:
+    """Context conditions some cards require, from Stage 1 context flags and the FCV setting."""
+    flags = flags if isinstance(flags, dict) else {}
+    ctx = set()
+    if flags.get("displacement_context") or fcv_setting == "displacement_hosting":
+        ctx.add("displacement")
+    if flags.get("security_risks_noted") or flags.get("armed_forces_mentioned")             or fcv_setting in ("active_conflict", "criminal_violence"):
+        ctx.add("insecurity")
+    if flags.get("tpi_mentioned"):
+        ctx.add("parallel_delivery")
+    return frozenset(ctx)
+
+
+def _project_facts(facts: dict, instrument: str, prior_actions: list | None, multi_country: bool,
+                   context_flags: dict | None = None) -> ProjectFacts:
     feats = []
     for f in facts.get("features") or []:
         if isinstance(f, dict) and f.get("feature") in PROJECT_FEATURES:
@@ -158,12 +173,14 @@ def _project_facts(facts: dict, instrument: str, prior_actions: list | None, mul
         sector_financing_share=dict(facts.get("sector_shares") or {}),
         ews_is_primary=bool(facts.get("ews_is_primary")), fcv_setting=facts.get("fcv_setting") or "any",
         features=tuple(feats), prior_actions=tuple(str(p) for p in (prior_actions or [])),
+        context=context_from(context_flags if context_flags is not None else facts.get("context_flags"),
+                             facts.get("fcv_setting") or "any"),
     )
 
 
 def route_from_facts(facts: dict | None, instrument: str = "", prior_actions: list | None = None,
                      multi_country: bool = False, disabled: bool = False, disabled_cards: list | None = None,
-                     cards: CardSet | None = None) -> dict[str, Any]:
+                     cards: CardSet | None = None, context_flags: dict | None = None) -> dict[str, Any]:
     """Deterministic eligibility, serialised for the done event and for re-use at Stages 2 and 3."""
     cards = cards or load_cards()
     empty = {"sectors": [], "sector_reason": "", "eligible": [], "rejected": [], "trace": [], "reason_line": "",
@@ -174,7 +191,7 @@ def route_from_facts(facts: dict | None, instrument: str = "", prior_actions: li
     if prior_actions is None:
         prior_actions = facts.get("prior_actions") or []
     multi_country = bool(multi_country or facts.get("multi_country"))
-    res = route(_project_facts(facts, instrument, prior_actions, multi_country), cards)
+    res = route(_project_facts(facts, instrument, prior_actions, multi_country, context_flags), cards)
     off = set(disabled_cards or [])
     by_id = cards.by_id()
     eligible = [{**e, "mechanism": by_id[e["card_id"]].mechanism} for e in res.eligible if e["card_id"] not in off]

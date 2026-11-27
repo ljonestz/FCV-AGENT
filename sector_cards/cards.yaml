@@ -1,4 +1,4 @@
-version: 2026-11-27.1
+version: 2026-11-27.2
 source_register: Claude_Outputs/20261126_sector-gpn-corpus/20261127_mechanism-card-register-v3.xlsx
 note: Generated; edit the register and re-export. Advisory content only. Source PDFs are not in this repo.
 cards:
@@ -233,6 +233,8 @@ cards:
   - GAP-EXTORTION
   - TRN-10
   evidence_note: 'Still partly thin: no UN or IFI source on contractor extortion in Central America was found.'
+  requires_context:
+  - insecurity
 - id: mc-05
   mechanism: Displaced-host pressure on services and prices, including informal providers
   routes:
@@ -285,6 +287,8 @@ cards:
   - DRM-02
   - GAP-TANKER-VENDORS
   evidence_note: 'False'
+  requires_context:
+  - displacement
 - id: mc-06
   mechanism: Parallel humanitarian/non-state delivery, handover, and contested authority legitimacy
   routes:
@@ -339,6 +343,9 @@ cards:
   - DRM-07
   - DRM-10
   evidence_note: 'False'
+  requires_context:
+  - parallel_delivery
+  - insecurity
 - id: mc-07
   mechanism: Insecurity access constraints, site readiness, and adaptive phasing/supervision
   routes:
@@ -391,6 +398,8 @@ cards:
   - DRM-04
   - DRM-05
   evidence_note: 'False'
+  requires_context:
+  - insecurity
 - id: mc-08
   mechanism: Targeting, sabotage, or dual-use visibility risk to sector assets and responders
   routes:
@@ -436,6 +445,8 @@ cards:
   - WAT-10
   - DRM-08
   evidence_note: 'False'
+  requires_context:
+  - insecurity
 - id: mc-09
   mechanism: Civil-works 'local' labor delineation and contractor patronage alignment
   routes:
@@ -553,6 +564,7 @@ cards:
   features:
   - water_points_wash
   - pa_tariff_subsidy_reform
+  - tariff_reform
   sr_type: S+R
   core_mappings:
   - dnh:3
@@ -823,6 +835,9 @@ cards:
   member_questions:
   - DRM-12
   evidence_note: No (supplemented by external sources 2026-11-27)
+  requires_context:
+  - insecurity
+  - displacement
 - id: mc-29
   mechanism: Induced illegal extraction (logging, mining, poaching) after new physical access
   routes:

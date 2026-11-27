@@ -19,12 +19,14 @@ ROUTES = ("sector", "feature", "dpf_prior_action")
 FEATURES = (
     "rural_feeder_roads", "civil_works_contracts", "water_points_wash", "bulk_water_irrigation",
     "agri_inputs_pastoral", "food_security_reserves", "nrm_landscape_forest", "land_acquisition_tenure",
-    "local_funds_cdd", "ews_hydromet",
+    "local_funds_cdd", "ews_hydromet", "tariff_reform",
     # DPF prior-action reform types
     "pa_tariff_subsidy_reform", "pa_land_tenure_reform", "pa_resource_revenue_transfers",
     "pa_fossil_extractive_phaseout",
 )
 SR_TYPES = ("S", "R", "S+R")
+# Context conditions a card may require (any of), derived from Stage 1 flags and the FCV setting.
+CONTEXTS = ("displacement", "insecurity", "parallel_delivery")
 _CORE_RE = re.compile(r"^(ost:(?:[1-9]|1[0-2])|dnh:[1-9]|shift:[A-D])$")
 # Wording rule: cards ask whether the document identifies and manages a risk; never a requirement.
 _FORBIDDEN_WORDS = re.compile(r"\b(must|required|shall|mandatory)\b", re.IGNORECASE)
@@ -58,6 +60,7 @@ class MechanismCard:
     sources: tuple[CardSource, ...]
     member_questions: tuple[str, ...] = ()
     evidence_note: str = ""
+    requires_context: tuple[str, ...] = ()
 
     @property
     def user_citations(self) -> tuple[str, ...]:
@@ -94,8 +97,10 @@ def _parse_card(raw: dict) -> MechanismCard:
     sectors = _tuple(raw.get("sectors", []), "sectors", cid)
     features = _tuple(raw.get("features", []), "features", cid)
     core = _tuple(raw.get("core_mappings"), "core_mappings", cid)
+    needs = _tuple(raw.get("requires_context", []), "requires_context", cid)
     bad = [r for r in routes if r not in ROUTES] + [s for s in sectors if s not in PILOT_SECTORS] \
-        + [f for f in features if f not in FEATURES] + [m for m in core if not _CORE_RE.match(m)]
+        + [f for f in features if f not in FEATURES] + [m for m in core if not _CORE_RE.match(m)] \
+        + [n for n in needs if n not in CONTEXTS]
     if bad:
         raise CardError(f"{cid}: unknown values {bad}")
     if not routes or not core:
@@ -128,6 +133,7 @@ def _parse_card(raw: dict) -> MechanismCard:
         core_mappings=core, applicability=text["applicability"], sufficient_evidence=text["sufficient_evidence"],
         look_for=text["look_for"], prompt_text=text["prompt_text"], sources=tuple(srcs),
         member_questions=tuple(raw.get("member_questions") or ()), evidence_note=str(raw.get("evidence_note", "")),
+        requires_context=needs,
     )
     if card.est_tokens > MAX_CARD_TOKENS:
         raise CardError(f"{cid}: {card.est_tokens} tokens exceeds {MAX_CARD_TOKENS}")

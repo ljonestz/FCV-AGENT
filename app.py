@@ -1044,6 +1044,7 @@ def sector_routing_for_request(data: dict, instrument_type: str) -> dict:
     return sector_cards_mod.route_from_facts(
         data.get('sector_facts'), instrument=instrument_type or '',
         multi_country=data.get('country_scope') == 'multi',
+        context_flags=data.get('context_flags') if isinstance(data.get('context_flags'), dict) else None,
         disabled=bool(data.get('sector_off')),
         disabled_cards=[str(c) for c in (data.get('sector_cards_off') or []) if isinstance(c, str)],
     )
@@ -10873,6 +10874,7 @@ def run_stage():
                             prior_actions=(_prior_actions or {}).get('prior_actions'),
                             multi_country=bool(isinstance(_country_set, dict)
                                                and _country_set.get('is_multi_country')))
+                        _sector_facts['context_flags'] = _context_flags if isinstance(_context_flags, dict) else {}
                         _sector_routing = sector_cards_mod.route_from_facts(
                             _sector_facts, instrument=_instrument_type)
                     else:
@@ -11920,6 +11922,7 @@ def run_express():
                         next((dp['raw_text'] for dp in doc_parts if dp['label'] == 'PROJECT DOCUMENT'), ''),
                         prior_actions=(prior_actions or {}).get('prior_actions'),
                         multi_country=bool(country_set.get('is_multi_country')))
+                    sector_facts_x['context_flags'] = context_flags if isinstance(context_flags, dict) else {}
                     sector_routing_x = sector_cards_mod.route_from_facts(
                         sector_facts_x, instrument=instrument_type,
                         disabled=bool(data.get('sector_off')),

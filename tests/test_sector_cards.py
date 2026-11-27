@@ -159,6 +159,7 @@ def test_immaterial_feature_never_routes_a_card():
 
 def test_material_feature_routes_cards_without_a_sector():
     facts = ProjectFacts(instrument="IPF", pa_lead_parsed="Health, Nutrition & Population", fcv_setting="displacement_hosting",
+                         context=frozenset({"displacement"}),
                          features=(FeatureEvidence("water_points_wash", financing_share=0.14, mechanism_evidence=True,
                                                    page="22"),))
     res = route(facts, CARDS)
@@ -260,3 +261,27 @@ def test_cover_with_several_global_practices_and_old_names():
     old = parse_practice_areas("Practice Area (Lead) Transport and Digital Development Climate Change and Disaster Screening")
     assert old.lead == "Transport and Digital Development"
     assert resolve_sectors(ProjectFacts(instrument="IPF", pa_lead_parsed=old.lead))[0] == []
+
+
+def test_cards_needing_context_are_rejected_without_it():
+    fe = FeatureEvidence("water_points_wash", financing_share=0.5, named=True, mechanism_evidence=True)
+    base = {"instrument": "IPF", "pa_lead_parsed": "Water", "fcv_setting": "institutional_fragility", "features": (fe,)}
+    res = route(ProjectFacts(**base), CARDS)
+    assert "mc-05" not in res.eligible_ids and "mc-08" not in res.eligible_ids
+    assert any(r["card_id"] == "mc-05" and "displacement" in r["reason"] for r in res.rejected)
+    res = route(ProjectFacts(**base, context=frozenset({"displacement", "insecurity"})), CARDS)
+    assert {"mc-05", "mc-08"} <= set(res.eligible_ids)
+
+
+def test_ranking_prefers_evidence_over_financing_share():
+    big = FeatureEvidence("water_points_wash", financing_share=0.9, named=True, mechanism_evidence=False)
+    small = FeatureEvidence("nrm_landscape_forest", financing_share=0.02, named=True, mechanism_evidence=True)
+    res = route(ProjectFacts(instrument="IPF", pa_lead_parsed="Water", fcv_setting="institutional_fragility",
+                             features=(big, small)), CARDS)
+    assert "mc-23" in res.eligible_ids  # evidenced protected-area card is not crowded out by the big feature
+
+
+def test_tariff_feature_reaches_the_tariff_card_in_investment_projects():
+    fe = FeatureEvidence("tariff_reform", named=True, mechanism_evidence=True)
+    res = route(ProjectFacts(instrument="IPF", fcv_setting="institutional_fragility", features=(fe,)), CARDS)
+    assert res.eligible_ids == ["mc-13"]

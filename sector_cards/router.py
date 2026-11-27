@@ -63,6 +63,7 @@ class ProjectFacts:
     fcv_setting: str = "any"                # 'any' or a specific setting (active_conflict, criminal_violence, ...)
     features: tuple[FeatureEvidence, ...] = ()
     prior_actions: tuple[str, ...] = ()
+    context: frozenset[str] = frozenset()   # displacement / insecurity / parallel_delivery (from Stage 1 flags)
 
 
 @dataclass
@@ -192,8 +193,13 @@ def _eligible_project_card(card: MechanismCard, f: ProjectFacts, by_feature, sec
     in_sector = bool(set(card.sectors) & set(sectors))
     if not present:
         return {"card_id": card.id, "reason": "no relevant feature in the document"} if in_sector else {}
-    best = max(present, key=lambda fe: (fe.financing_share or 0.0, fe.named, fe.mechanism_evidence))
-    score = (best.financing_share or 0.0) + (0.5 if best.named else 0.0) + (0.5 if best.mechanism_evidence else 0.0)
+    if card.requires_context and not set(card.requires_context) & set(f.context):
+        return {"card_id": card.id, "reason": f"needs context: {' or '.join(card.requires_context)}"}
+    # Rank on evidence first (paid run 2026-11-27: share-led ranking let cards that merely shared a large
+    # feature crowd out the best-evidenced ones), then on being named in design, then on financing share.
+    best = max(present, key=lambda fe: (fe.mechanism_evidence, fe.named, fe.financing_share or 0.0))
+    score = (1.0 if best.mechanism_evidence else 0.0) + (0.5 if best.named else 0.0) \
+        + 0.5 * min(best.financing_share or 0.0, 1.0)
     if in_sector and "sector" in card.routes:
         # A fired sector lowers the materiality bar but the feature must still be present.
         return {"card_id": card.id, "route": "sector", "score": score + 1.0,

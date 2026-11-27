@@ -148,3 +148,12 @@ def test_dpf_end_to_end():
     r = route_from_facts(facts, "DPF", prior_actions=["The Recipient adopted a new electricity tariff schedule"])
     assert r["sectors"] == [] and [e["card_id"] for e in r["eligible"]] == ["mc-13"]
     assert "prior actions" in r["reason_line"]
+
+
+def test_context_from_flags_and_setting():
+    from sector_cards.integration import context_from
+    assert context_from({"displacement_context": True}, "any") == frozenset({"displacement"})
+    assert context_from({}, "criminal_violence") == frozenset({"insecurity"})
+    assert context_from({"tpi_mentioned": True, "security_risks_noted": True}, "any") == \
+        frozenset({"parallel_delivery", "insecurity"})
+    assert context_from(None, "institutional_fragility") == frozenset()
