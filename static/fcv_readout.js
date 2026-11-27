@@ -24,15 +24,8 @@
   // Self-contained handlers (no model text) so they also work in the Share .html export.
   const COPY_DRAFT_HANDLER = "navigator.clipboard&&navigator.clipboard.writeText(this.closest('.fr-draft').querySelector('.fr-draft-text').innerText);this.textContent='Copied'";
   const EXPAND_ALL_HANDLER = "var d=Array.prototype.slice.call(this.closest('.fr-section').querySelectorAll('details.fr-pc')),o=d.some(function(x){return !x.open});d.forEach(function(x){x.open=o});this.textContent=o?'Collapse all':'Expand all'";
-  // Strength of the underlying OPCS source (authority_basis), worded for a task team reader.
-  const AUTHORITY_LABELS = {
-    policy: 'Bank policy', directive: 'Bank directive', procedure: 'Bank procedure', guidance: 'Bank guidance',
-    reviewer_judgment: 'Screener judgment, not a specific OPCS requirement', none_verified: 'No verified OPCS source',
-  };
-  function authorityLine(value) {
-    const label = AUTHORITY_LABELS[String(value || '').trim().toLowerCase().replace(/\s+/g, '_')];
-    return label ? [{ label: 'Source basis', text: label }] : [];
-  }
+  // The S/R focus tag, FCV Strategy shift and authority basis stay in the Stage 3 JSON but are not shown
+  // (legacy labels, owner request 2026-11-27).
   const PRIORITIES_HREF = '__fr_priorities__';
   // Points the count tile at the rendered priorities section (numbers vary when sections are skipped).
   function linkPriorities(html, list) {
@@ -621,13 +614,12 @@
         const actionsHtml = actions.length ? `<ol class="fr-actions">${actions.map(a => `<li>${a.document_element ? `<strong>${k.esc(a.document_element)}:</strong> ` : ''}${k.esc(stripTagNotes(a.guidance))}</li>`).join('')}</ol>` : '';
         const cycleText = stripTagNotes(p.implementation_note || (p.project_cycle && p.project_cycle.primary_text) || '');
         const cycleLabel = p.implementation_note ? 'Implementation note' : ((p.project_cycle && p.project_cycle.primary_label) || 'When to address');
-        const sup = k.metaSegments([[k.levelPill(p.risk_level)], [k.esc(FOCUS_LABELS[p.tag] || p.tag || '')], [k.esc(p.fcv_dimension || ''), 'fr-meta-dim'], [k.esc(k.timingLabel(p.action_timing)), 'fr-meta-time']]);
+        const sup = k.metaSegments([[k.levelPill(p.risk_level)], [k.esc(p.fcv_dimension || ''), 'fr-meta-dim'], [k.esc(k.timingLabel(p.action_timing)), 'fr-meta-time']]);
         return k.priorityCard({
           id: `fr-priority-${i + 1}`, rank: i + 1, open: i === 0, supHtml: sup, title: priorityTitle(p.title), srcIndex: index,
           zones: [{ label: 'The gap', html: k.prose(stripTagNotes(p.the_gap)) }, { label: 'Why it matters', html: k.prose(stripTagNotes(p.why_it_matters)) },
             { label: 'Suggested actions', html: actionsHtml }],
           drafts: actions.map(a => ({ label: 'Suggested Text', forText: a.document_element || '', text: a.suggested_language || '' })),
-          lines: authorityLine(p.authority_basis),
           cycle: { label: cycleLabel, text: cycleText },
           extraHtml: typeof d.priorityExtras === 'function' ? d.priorityExtras(p, index) : '',
         });

@@ -36,7 +36,8 @@ def test_authority_basis_in_schema_ui_and_docx():
     root = Path(__file__).resolve().parent.parent
     # The browser readout (screen, Copy and Share .html) renders it from the shared renderer.
     readout = (root / "static" / "fcv_readout.js").read_text(encoding="utf-8")
-    assert "p.authority_basis" in readout and "Source basis" in readout
+    # 2026-11-27: kept in the JSON, no longer shown in the browser readout.
+    assert "Source basis" not in readout
     appsrc = (root / "app.py").read_text(encoding="utf-8")
     # validation + Stage 3 schema + DOCX export = at least 3 references
     assert appsrc.count("authority_basis") >= 3
