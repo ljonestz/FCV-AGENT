@@ -212,3 +212,19 @@ def test_word_export_adds_line_and_grey_box_only_when_fields_present():
     assert "Sector checks: Water (lead Practice Area). Reflected in priority 1." in text
     assert "ADDITIONAL SECTOR CONSIDERATIONS" in text
     assert "Downstream allocation rules could be set out. (p.25) Guidance: Turbulent Waters (2017, p.35)" in text
+
+
+def test_word_priority_header_marks_sector_shaped_priorities():
+    from io import BytesIO
+
+    from docx import Document
+
+    from tests.test_fcv_priority_advisory_exports import _docx_text
+    base = {"the_gap": "Gap.", "why_it_matters": "Why.", "risk_level": "High", "actions": []}
+    shaped = dict(base, title="Priority 1 · Sequence tariffs", sector_cards=["mc-13"])
+    plain = dict(base, title="Priority 2 · Monitor context", sector_cards=[])
+    resp = app.app.test_client().post("/api/download-report",
+                                      json={"summary": "", "priorities": [shaped, plain], "metadata": {}})
+    assert resp.status_code == 200
+    text = _docx_text(Document(BytesIO(resp.data)))
+    assert text.count("SECTOR CHECK") == 1

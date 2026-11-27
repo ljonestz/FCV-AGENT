@@ -14478,6 +14478,8 @@ def download_report():
                         ('Focus', focus),
                         ('Timing', timing),
                         ('Scope', priority.get('priority_scope')),
+                        # Mechanism cards (readout option C): same marker as the browser "Sector check" tag.
+                        ('Sector check', 'Yes' if priority.get('sector_cards') else ''),
                     )
                     if value
                 ]
