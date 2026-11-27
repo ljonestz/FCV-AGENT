@@ -819,14 +819,15 @@ def test_withheld_climate_summary_leaves_overview_without_a_substitute():
     assert word in html and "Where relevant, each lists the priority actions" in html
 
 
-def test_climate_snapshot_is_two_sentences_rest_is_context():
+def test_climate_box_holds_first_paragraph_with_bold_judgment():
     reader = dict(CLIMATE_READER, summary_overview_status="generated",
                   summary_overview=["First point. Second point. Third point. Fourth point."])
     html = climate(reader)
     snap = html[html.index('class="fr-sc-ov-text"'):]
     snap = snap[:snap.index("</p>")]
-    assert "First point. Second point." in snap and "Third point" not in snap
-    assert "Third point." in html and "Fourth point." in html
+    # 2026-11-27: bold judgment (two sentences), then the rest of the first paragraph in regular weight.
+    assert snap.index("First point. Second point.") < snap.index('<span class="fr-sc-ov-rest">Third point. Fourth point.</span>')
+    assert html.count("Third point.") == 1
 
 
 def test_count_tile_links_to_rendered_priorities_section():
