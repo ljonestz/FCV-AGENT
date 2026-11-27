@@ -778,6 +778,8 @@ class Report:
         p = c.add_paragraph(); pfmt(p)
         p.paragraph_format.line_spacing = 1.2
         add_run(p, tile["overview"], 10.5, True, color=NAVY)
+        if tile.get("overview_rest"):
+            add_run(p, " " + tile["overview_rest"], 10, False, color=NAVY)
         c = t.rows[0].cells[1]; shade_cell(c, NAVY)
         p = first_para(c); pfmt(p, after=1)
         add_run(p, count_tile["label"].upper(), 7.5, True, color="FFFFFF", spacing=0.8)

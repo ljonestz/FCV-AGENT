@@ -1878,15 +1878,17 @@ def write_reader_docx(
     elif not isinstance(overview, (list, tuple)) or not overview:
         overview = [model.get("overview_summary", "")]
     overview = [_text(paragraph) for paragraph in overview if _text(paragraph)]
-    # 2026-11-27 (owner, parity with the normal route and the browser): a generated summary's first two
-    # sentences fill one overview box at the top instead of the two S/R tiles; the Overview section keeps
-    # the rest. Fallback or withheld summaries keep the tiles.
-    snapshot = ""
+    # 2026-11-27 (owner, parity with the normal route and the browser): a generated summary's whole first
+    # paragraph fills one overview box at the top instead of the two S/R tiles (first two sentences in bold),
+    # and the Overview section starts at the second paragraph under "Main remaining risk", so it never opens
+    # mid-thought. Fallback or withheld summaries keep the tiles.
+    remaining_risk = False
     if model.get("summary_overview_status") == "generated" and overview:
         snapshot, remainder = take_sentences(overview[0], 2)
         if snapshot:
-            overview = ([remainder] if remainder else []) + overview[1:]
-            tiles = [{"label": "Overview", "overview": snapshot}]
+            tiles = [{"label": "Overview", "overview": snapshot, "overview_rest": remainder}]
+            overview = overview[1:]
+            remaining_risk = bool(overview)
 
     report = Report("climate", meta)
     report.banner()
@@ -1907,6 +1909,8 @@ def write_reader_docx(
     # The Overview opens with the approved assessment text. Generic reader,
     # review, preparation-route, and draft-introduction notices stay out of it.
     report.h1("Overview")
+    if remaining_risk:
+        report.h2_caps("Main remaining risk")
     for paragraph in overview:
         if _text(paragraph):
             report.body(_text(paragraph))

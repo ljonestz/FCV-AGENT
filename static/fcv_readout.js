@@ -415,7 +415,8 @@
     // An `overview` tile (normal route, 2026-11-27) carries the Opening assessment in one coloured box.
     function scoreTile(t) {
       if (t.overview !== undefined) {
-        return `<div class="fr-sc-overview" data-fr-rating="overview"><div class="fr-sc-label">${esc(t.label || 'Overview')}</div><p class="fr-sc-ov-text" dir="auto">${esc(t.overview)}</p></div>`;
+        const rest = t.overviewRest ? ` <span class="fr-sc-ov-rest">${esc(t.overviewRest)}</span>` : '';
+        return `<div class="fr-sc-overview" data-fr-rating="overview"><div class="fr-sc-label">${esc(t.label || 'Overview')}</div><p class="fr-sc-ov-text" dir="auto">${esc(t.overview)}${rest}</p></div>`;
       }
       if (t.summary !== undefined) {
         const body = String(t.summary || '').trim();
@@ -783,13 +784,18 @@
     const overview = (Array.isArray(r.summary_overview) ? r.summary_overview : [r.summary_overview]).map(t => String(t || '').trim()).filter(Boolean)
       .map(t => LEGACY_FALLBACK_OVERVIEW.includes(t) ? FALLBACK_OVERVIEW : t).filter((t, i, list) => list.indexOf(t) === i);
     let snapshot = '';
+    let snapshotRest = '';
     let contextHtml = '';
     let fallbackNote = '';
     if (r.summary_overview_status === 'generated' && overview.length) {
-      // Keep the snapshot to two sentences; the rest reads as normal context, as on the normal route.
+      // 2026-11-27 (owner): the box holds the whole first paragraph (central tension, then how hazards and
+      // fragility interact), judgment in bold, so the Overview section never opens mid-thought. The section
+      // starts at the second paragraph (main remaining risk) under its own sub-heading.
       const split = k.takeSentences(overview[0], 2);
       snapshot = split.head;
-      contextHtml = k.paragraphs([split.rest, ...overview.slice(1, 3)].filter(Boolean));
+      snapshotRest = split.rest;
+      const later = overview.slice(1, 3);
+      contextHtml = later.length ? k.sub('Main remaining risk') + k.paragraphs(later) : '';
     } else if (r.reader_contract === 'final-reader-v1') {
       // Fallback text explains why no summary is shown; it opens the Limitations box, not the Overview.
       // Placed inside Limitations at the end of the note, so it must not point "below".
@@ -804,7 +810,7 @@
     // box at the top instead of the two climate S/R tiles, and is not repeated in the Overview section.
     // Without a generated snapshot (fallback or withheld summary) the S/R tiles stay as before.
     const overviewTop = Boolean(snapshot);
-    head += k.scorecard(overviewTop ? [{ key: 'overview', label: 'Overview', overview: snapshot }] : [
+    head += k.scorecard(overviewTop ? [{ key: 'overview', label: 'Overview', overview: snapshot, overviewRest: snapshotRest }] : [
       { key: 'climate-sensitivity', label: 'Climate-FCV sensitivity', summary: headline(k, sens.rationale), def: DEFINITIONS.climateSensitivity },
       { key: 'climate-responsiveness', label: 'Climate-FCV responsiveness', summary: headline(k, resp.rationale), def: DEFINITIONS.climateResponsiveness },
     ], { label: 'Priority actions', number: priorities.length, def: countDef(priorities.length, 'priority action', 'priority actions'), pills: confPills });
