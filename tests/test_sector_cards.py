@@ -294,3 +294,11 @@ def test_one_feature_cannot_fill_the_eligible_list():
                              fcv_setting="institutional_fragility", context=frozenset({"insecurity"}),
                              features=(ews, funds)), CARDS)
     assert "mc-21" in res.eligible_ids  # the local-funds benefit-sharing card is not crowded out
+
+
+@pytest.mark.parametrize("name", ["DPF", "DPO", "dpo", "DPL"])
+def test_development_policy_aliases_use_the_dpf_rules(name):
+    assert resolve_sectors(ProjectFacts(instrument=name, pa_lead_parsed="Water"))[0] == []
+    res = route(ProjectFacts(instrument=name, fcv_setting="post_conflict",
+                             prior_actions=("Adopted a new water tariff schedule",)), CARDS)
+    assert res.eligible_ids == ["mc-13"]

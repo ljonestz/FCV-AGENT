@@ -16,6 +16,8 @@ MAX_SECTORS = 2
 MAX_ELIGIBLE = 8               # ~1,500 tokens of cards in Stage 2; the model still selects 0-3
 MAX_PER_FEATURE = 2            # first pass: one feature cannot fill the list (paid run, Guinea governance)
 HIGH = "high"
+# Stage 1 reports development policy operations as DPO (paid run, Tunisia, 2026-11-27); treat all as DPF.
+DPF_NAMES = ("DPF", "DPO", "DPL", "DPC")
 
 # Lead Practice Area -> pilot sector. EWS-type leads need the EWS check (ews_is_primary).
 PA_TO_SECTOR = {
@@ -97,7 +99,7 @@ def resolve_sectors(f: ProjectFacts) -> tuple[list[str], str, list[str]]:
     instrument = (f.instrument or "").upper()
     if f.cerc_only:
         return [], "CERC-only or contingent instrument: nothing fires", ["step5: cerc_only"]
-    if instrument == "DPF":
+    if instrument in DPF_NAMES:
         return [], "DPF: no sector (prior-action route only)", ["step5: dpf"]
     if f.pa_lead_parsed and f.pa_lead_model and f.pa_lead_parsed != f.pa_lead_model:
         return [], "datasheet parse and model disagree on the lead Practice Area: nothing fires", [
@@ -158,7 +160,7 @@ def route(facts: ProjectFacts, cards: CardSet) -> RoutingResult:
     by_feature: dict[str, list[FeatureEvidence]] = {}
     for fe in facts.features:
         by_feature.setdefault(fe.feature, []).append(fe)
-    dpf = (facts.instrument or "").upper() == "DPF"
+    dpf = (facts.instrument or "").upper() in DPF_NAMES
     pa_feats = _prior_action_features(facts.prior_actions) if dpf else set()
 
     candidates: list[dict] = []
