@@ -13429,6 +13429,23 @@ def _word_report_meta(data, title='FCV Recommendations Note'):
     return report_meta
 
 
+_OPENING_HEADING_RE = re.compile(r'^#{2,6}\s*\**\s*opening assessment\s*:?\s*\**\s*$', re.IGNORECASE)
+
+
+def split_opening_assessment(summary):
+    """Return (opening assessment text, summary without that block). ('', summary) when there is none."""
+    lines = str(summary or '').splitlines()
+    start = next((i for i, line in enumerate(lines) if _OPENING_HEADING_RE.match(line.strip())), None)
+    if start is None:
+        return '', summary
+    end = next((i for i in range(start + 1, len(lines)) if lines[i].lstrip().startswith('#')), len(lines))
+    text = ' '.join(line.strip() for line in lines[start + 1:end] if line.strip())
+    text = re.sub(r'[*_]{1,3}([^*_]+)[*_]{1,3}', r'\1', text).strip()
+    if not text:
+        return '', summary
+    return text, '\n'.join(lines[:start] + lines[end:])
+
+
 @app.route('/api/download-report', methods=['POST'])
 def download_report():
     """Generate a DOCX mirroring the full Stage 3 web output structure."""
@@ -13794,7 +13811,22 @@ def download_report():
         str(text or '').strip() for _, _, text in rating_rows
     )
 
+    # 2026-11-27 (owner): on the normal route the Opening assessment moves from the Executive Summary
+    # into one overview box at the top, replacing the two S/R snapshot tiles (browser: fcv_readout.js).
+    overview_text = ''
+    if not climate_active:
+        overview_text, summary = split_opening_assessment(summary)
+
     def add_rating_scorecard():
+        if overview_text:
+            risk_levels = [str(priority.get('risk_level') or '').strip() for priority in priorities]
+            report.scorecard(
+                [{'label': 'Overview', 'overview': overview_text}],
+                {'label': 'Priority actions', 'number': len(priorities),
+                 'lines': [(f'{risk_levels.count(level)} {level}', level)
+                           for level in ('High', 'Medium', 'Low') if risk_levels.count(level)]},
+            )
+            return
         if not rating_values_present and not rating_summaries_present:
             return
         if not (rating_summaries_present or priorities):

@@ -139,7 +139,8 @@ def normal(extra: dict) -> str:
 
 def test_normal_readout_section_order_and_content():
     html = normal({})
-    order = ["id='n'", "fr-scorecard", 'fr-h1-txt">Executive Summary<', "Assessment snapshot", 'fr-h1-txt">FCV Risk Exposure<',
+    # 2026-11-27: the Opening assessment sits in the top overview box, not in the Executive Summary.
+    order = ["id='n'", "fr-sc-overview", 'fr-h1-txt">Executive Summary<', 'fr-h1-txt">FCV Risk Exposure<',
              'fr-h1-txt">FCV Sensitivity and Responsiveness<', 'fr-h1-txt">Priority Actions for the Task Team<',
              "priority actions have been identified", 'id="fr-priority-1"', 'fr-h1-txt">Watch List for Supervision<', "id='tail'"]
     positions = [html.index(marker) for marker in order]
@@ -149,8 +150,8 @@ def test_normal_readout_section_order_and_content():
     assert html.index("id='tail'") < html.index('fr-h1-txt">Limitations<')
     assert "fr-ptable" not in html and "Strategic Priorities" not in html
     assert "2 priority actions are identified by the FCV Screener." in html
-    # 2026-11-16: summary cards replace the rating meters.
-    assert html.count('class="fr-ms fr-c') == 0 and html.count('fr-sc-summary') == 2
+    # 2026-11-16: summary cards replace the rating meters; 2026-11-27: one overview box replaces the cards.
+    assert html.count('class="fr-ms fr-c') == 0 and html.count('fr-sc-summary') == 0 and html.count('fr-sc-overview') == 1
     assert "Address before Decision Review (DM/ROC)" in html and "Required" not in html
     # 2026-11-27: the legacy S/R focus label is no longer shown on priority cards.
     assert "Sensitivity + Responsiveness" not in html[html.index('id="fr-priority-1"'):]
@@ -214,13 +215,14 @@ def climate(reader: dict, opts: dict | None = None) -> str:
 
 def test_climate_readout_structure():
     html = climate(CLIMATE_READER)
-    order = ["id=cn", "fr-scorecard", 'fr-h1-txt">Overview<', "Snapshot sentence from overview.", "What the design already provides",
+    # 2026-11-27: the generated snapshot sits in the top overview box, before the Overview section.
+    order = ["id=cn", "fr-sc-overview", "Snapshot sentence from overview.", 'fr-h1-txt">Overview<', "What the design already provides",
              'fr-h1-txt">Assessment Findings<', 'fr-h1-txt">Climate-FCV Sensitivity and Responsiveness<',
              'fr-h1-txt">Priority Actions for the Task Team<', 'id="fr-priority-1"', 'fr-h1-txt">Smaller Points to Check During Preparation<',
              'fr-h1-txt">Relevant WBG Guidance<', 'fr-h1-txt">Limitations<']
     positions = [html.index(marker) for marker in order]
     assert positions == sorted(positions)
-    assert html.count('class="fr-ms fr-c') == 0 and 'fr-sc-summary' in html
+    assert html.count('class="fr-ms fr-c') == 0 and 'fr-sc-summary' not in html
     assert "Not expected" in html
     assert html.count("Response ") == 4
     assert html.index('id="fr-priority-1"') < html.index('id="fr-priority-2"')
@@ -367,7 +369,8 @@ def test_lead_rest_renders_after_snapshot_before_context():
     md_text = ("## Executive Summary\n\n**Verdict sentence.** Supporting lead detail.\n\n"
                "### Operational Context\n\nContext body.\n\n### Gaps\n\nGap body.")
     html = normal({"stage3Markdown": md_text})
-    assert html.index("Assessment snapshot") < html.index("Supporting lead detail.") < html.index("Context body.")
+    # 2026-11-27: the verdict now sits in the top overview box, ahead of the lead detail.
+    assert html.index("fr-sc-overview") < html.index("Supporting lead detail.") < html.index("Context body.")
     assert html.index("Supporting lead detail.") < html.index("Gap body.")
 
 
@@ -375,12 +378,13 @@ def test_dimension_definitions_identical_on_tile_and_row():
     html = normal({})
     for d in ["How well does the project design fit its FCV context, avoiding harm and accounting for conflict and fragility dynamics?",
               "Does the project actively contribute to addressing FCV drivers? Not expected for every project."]:
-        assert html.count(d) == 2, d
+        assert html.count(d) == 1, d  # 2026-11-27: rating rows only; the top tiles became the overview box
     chtml = climate(CLIMATE_READER)
     for d in ["How well does the design recognize and manage interacting climate and FCV risks, and avoid doing harm?",
               "Does the project use relevant opportunities to generate wider peace and social dividends? Not expected for every project."]:
-        assert chtml.count(d) == 2, d
-    assert ">Climate-FCV sensitivity<" in chtml and ">Climate-FCV responsiveness<" in chtml
+        assert chtml.count(d) == 1, d
+    fallback = climate(dict(CLIMATE_READER, reader_contract="final-reader-v1", summary_overview_status="fallback"))
+    assert ">Climate-FCV sensitivity<" in fallback and ">Climate-FCV responsiveness<" in fallback
 
 
 def test_ratings_section_has_no_advisory_note_and_ops_note_is_labelled():
@@ -705,8 +709,8 @@ def test_verify_notes_leave_prose_and_list_once_in_limitations():
                                       "priority_ranks": [1]}])
     html = climate(reader)
     assert "Verify before sharing:" not in html and "PF-0" not in html and "46ab9ca6aba6" not in html and "28ef88b92d85" not in html
-    info = html[html.index("Assessment snapshot"):html.index("</div></div>", html.index("Assessment snapshot"))]
-    assert "<strong>Snapshot sentence.</strong>" in info
+    info = html[html.index('class="fr-sc-overview"'):html.index("</div>", html.index('class="fr-sc-ov-text"'))]
+    assert ">Snapshot sentence.</p>" in info
     limits = html[html.index('class="fr-limits"'):]
     assert ">Points to verify before sharing<" in limits
     items = limits[limits.index("<ul"):limits.index("</ul>")]
@@ -819,8 +823,8 @@ def test_climate_snapshot_is_two_sentences_rest_is_context():
     reader = dict(CLIMATE_READER, summary_overview_status="generated",
                   summary_overview=["First point. Second point. Third point. Fourth point."])
     html = climate(reader)
-    snap = html[html.index("Assessment snapshot"):]
-    snap = snap[:snap.index("</strong>")]
+    snap = html[html.index('class="fr-sc-ov-text"'):]
+    snap = snap[:snap.index("</p>")]
     assert "First point. Second point." in snap and "Third point" not in snap
     assert "Third point." in html and "Fourth point." in html
 
