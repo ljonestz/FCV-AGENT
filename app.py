@@ -199,7 +199,10 @@ STAGE_STREAM_TIMEOUTS = {
 # 20k→32k) to keep thinking from truncating the trailing %%% delimiter / JSON
 # blocks. Ceilings, not targets — the prompts still bound output length.
 STAGE_MAX_TOKENS = {
-    1: 8000,
+    # 16k (from 8k, 2026-11-27): Sonnet thinking plus Part A/B prose used the whole 8k on a long PAD (Guinea
+    # water, paid run), cutting off CONTEXT_FLAGS mid-block so every flag silently defaulted to false and the
+    # later classifier blocks were lost. Ceiling only; reservation cost +~USD0.08 per run.
+    1: 16000,
     2: 32000,
     # 48k (from 32k, 2026-11-08): the analytical prose layer plus Opus thinking cut the
     # narrative off at 32k in a benchmark replay; 48k completed every run.
