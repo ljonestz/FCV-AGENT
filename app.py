@@ -30,6 +30,7 @@ import regime_router
 import review_stage as review_stage_mod
 from fcv_snapshot_rules import SNAPSHOT_RULES
 import stage3_prose
+from sector_cards import integration as sector_cards_mod
 from sector_lenses.climate_native import (
     build_climate_repair_prompt,
     climate_missing_fields,
@@ -199,7 +200,10 @@ STAGE_STREAM_TIMEOUTS = {
 # 20k→32k) to keep thinking from truncating the trailing %%% delimiter / JSON
 # blocks. Ceilings, not targets — the prompts still bound output length.
 STAGE_MAX_TOKENS = {
-    1: 8000,
+    # 16k (from 8k, 2026-11-27): Sonnet thinking plus Part A/B prose used the whole 8k on a long PAD (Guinea
+    # water, paid run), cutting off CONTEXT_FLAGS mid-block so every flag silently defaulted to false and the
+    # later classifier blocks were lost. Ceiling only; reservation cost +~USD0.08 per run.
+    1: 16000,
     2: 32000,
     # 48k (from 32k, 2026-11-08): the analytical prose layer plus Opus thinking cut the
     # narrative off at 32k in a benchmark replay; 48k completed every run.
@@ -1026,6 +1030,25 @@ def _climate_project_signals(state, *text_parts, max_chars: int = 3000) -> str:
 def climate_active(state: AnalysisState) -> bool:
     """Return whether the resolved analysis state selects Climate-FCV."""
     return "climate" in (getattr(state, "active_lenses", None) or [])
+
+
+def sector_cards_enabled(state: AnalysisState, is_impl: bool) -> bool:
+    """Mechanism cards (design v3) run only when SECTOR_CARDS_ENABLED is set, on design-stage reviews, and
+    not alongside the Climate-FCV lens (which has its own pipeline). Off by default: no behaviour change."""
+    flag = os.environ.get("SECTOR_CARDS_ENABLED", "").strip().lower() in ("1", "true", "yes", "on")
+    return flag and not is_impl and not climate_active(state)
+
+
+def sector_routing_for_request(data: dict, instrument_type: str) -> dict:
+    """Recompute card eligibility from the Stage 1 facts the browser echoes back (deterministic), applying the
+    user's switch-off choices. The browser can only remove cards, never add them."""
+    return sector_cards_mod.route_from_facts(
+        data.get('sector_facts'), instrument=instrument_type or '',
+        multi_country=data.get('country_scope') == 'multi',
+        context_flags=data.get('context_flags') if isinstance(data.get('context_flags'), dict) else None,
+        disabled=bool(data.get('sector_off')),
+        disabled_cards=[str(c) for c in (data.get('sector_cards_off') or []) if isinstance(c, str)],
+    )
 
 
 def _is_verified_climate_express(
@@ -6739,6 +6762,7 @@ def clean_stage1_output(text):
     text = re.sub(r'%%%SECTOR_CONTEXT_START%%%.*?%%%SECTOR_CONTEXT_END%%%\n?', '', text, flags=re.DOTALL)
     text = re.sub(r'%%%CONTEXT_FLAGS_START%%%.*?%%%CONTEXT_FLAGS_END%%%\n?', '', text, flags=re.DOTALL)
     text = re.sub(r'%%%DOC_CHECKS_START%%%.*?%%%DOC_CHECKS_END%%%\n?', '', text, flags=re.DOTALL)
+    text = sector_cards_mod.strip_sector_blocks(text)
     # Clean up extra blank lines left by removal
     text = re.sub(r'\n{3,}', '\n\n', text).strip()
     return text
@@ -6746,6 +6770,7 @@ def clean_stage1_output(text):
 
 def clean_stage2_output(text):
     """Strip delimiter blocks from Stage 2 output for display."""
+    text = sector_cards_mod.strip_sector_blocks(text)
     text = re.sub(r'%%%RATING_REASONING_START%%%.*?%%%RATING_REASONING_END%%%', '', text, flags=re.DOTALL)
     text = re.sub(r'%%%STAGE2_RATINGS_START%%%.*?%%%STAGE2_RATINGS_END%%%', '', text, flags=re.DOTALL)
     text = re.sub(r'%%%UNDER_HOOD_START%%%.*?%%%UNDER_HOOD_END%%%', '', text, flags=re.DOTALL)
@@ -9895,6 +9920,11 @@ def run_stage():
                 mid_cycle_slice = get_mid_cycle_slice(document_type)
                 if mid_cycle_slice:
                     stage_prompt = stage_prompt + mid_cycle_slice
+                if sector_cards_enabled(analysis_state, is_impl):
+                    stage_prompt = stage_prompt + (
+                        "\n\nAlso append this sector-facts block after the classifier blocks:\n"
+                        + sector_cards_mod.SECTOR_FACTS_PROMPT
+                    )
             else:
                 # For Implementation Review Stage 1, append both MTR and ISR process guides
                 # (process type detected by LLM; specific slice injected in Stage 2/3)
@@ -10072,6 +10102,11 @@ def run_stage():
                         snippets_text += f"### {snip['title']}\nSource: {snip['source']}\n\n{snip['content']}\n\n---\n"
                     stage_prompt = stage_prompt + snippets_text
 
+                # Mechanism cards (design v3): own selector and budget, never the shared snippet cap.
+                if sector_cards_enabled(analysis_state, is_impl):
+                    stage_prompt = stage_prompt + sector_cards_mod.build_stage2_card_slice(
+                        sector_routing_for_request(data, instrument_type))
+
                 # Require category lens output block
                 stage_prompt = stage_prompt + (
                     "\n\n**REQUIRED: After your thematic analysis and ratings blocks, append this block:**\n"
@@ -10234,6 +10269,12 @@ def run_stage():
                     for snip in secondary_snippets_s3:
                         snippets_text_s3 += f"### {snip['title']}\nSource: {snip['source']}\n\n{snip['content']}\n\n---\n"
                     stage_prompt = stage_prompt + snippets_text_s3
+
+                if sector_cards_enabled(analysis_state, is_impl):
+                    _s3_routing = sector_routing_for_request(data, instrument_type)
+                    _s3_findings = sector_cards_mod.extract_sector_cards(
+                        _prior_stage_outputs(conversation_history).get(2, ''), _s3_routing)
+                    stage_prompt = stage_prompt + sector_cards_mod.build_stage3_card_slice(_s3_findings)
 
             # ── IMPLEMENTATION REVIEW: Stage 3 injection ─────────────────────
             elif is_impl and stage == 3:
@@ -10838,6 +10879,19 @@ def run_stage():
                     _country_set = extract_country_set(full_text)
                     _mpa_context = extract_mpa_context(full_text)
                     _doc_checks = extract_doc_checks(full_text)
+                    if sector_cards_enabled(analysis_state, is_impl):
+                        _project_text = next((dp['raw_text'] for dp in doc_parts
+                                              if dp['label'] == 'PROJECT DOCUMENT'), '')
+                        _sector_facts = sector_cards_mod.extract_sector_facts(
+                            full_text, _project_text,
+                            prior_actions=(_prior_actions or {}).get('prior_actions'),
+                            multi_country=bool(isinstance(_country_set, dict)
+                                               and _country_set.get('is_multi_country')))
+                        _sector_facts['context_flags'] = _context_flags if isinstance(_context_flags, dict) else {}
+                        _sector_routing = sector_cards_mod.route_from_facts(
+                            _sector_facts, instrument=_instrument_type)
+                    else:
+                        _sector_facts, _sector_routing = None, None
                     _s1_primary_names = [dp['name'] for dp in doc_parts if dp['label'] == 'PROJECT DOCUMENT']
                     _s1_package_names = [dp['name'] for dp in doc_parts if dp['label'] == 'PACKAGE INSTRUMENT']
                     _s1_context_names = [dp['name'] for dp in doc_parts if dp['label'] == 'CONTEXT DOCUMENT']
@@ -10877,7 +10931,7 @@ def run_stage():
                 # history retains the raw output so downstream stages can re-parse.
                 display_full_text = (
                     strip_lens_blocks(clean_stage1_output(full_text))
-                    if stage == 1 else strip_lens_blocks(full_text)
+                    if stage == 1 else strip_lens_blocks(sector_cards_mod.strip_sector_blocks(full_text))
                 )
                 done_data = {
                     'done': True,
@@ -10899,6 +10953,8 @@ def run_stage():
                     'country_classification': _country_classification if stage == 1 else None,
                     'context_flags': _context_flags if stage == 1 else None,
                     'sector_context': _sector_context if stage == 1 else None,
+                    'sector_facts': _sector_facts if stage == 1 else None,
+                    'sector_routing': _sector_routing if stage == 1 else None,
                     'change_types': _change_types if stage == 1 else None,
                     'prior_actions': _prior_actions if stage == 1 else None,
                     'dlis': _dlis if stage == 1 else None,
@@ -10947,6 +11003,13 @@ def run_stage():
 
                 elif stage == 3:
                     # Stage 3: include priorities, ratings, summaries, risk exposure
+                    if sector_cards_enabled(analysis_state, is_impl) and isinstance(priorities, list):
+                        _s3_routing_done = sector_routing_for_request(data, data.get('instrument_type') or '')
+                        _s3_findings_done = sector_cards_mod.extract_sector_cards(
+                            _prior_stage_outputs(conversation_history).get(2, ''), _s3_routing_done)
+                        sector_cards_mod.apply_sector_cards(priorities, _s3_findings_done)
+                        done_data.update(sector_cards_mod.build_readout_fields(
+                            _s3_routing_done, _s3_findings_done, priorities))
                     done_data['priorities'] = priorities
                     done_data['concise_readout'] = parsed.get('concise_readout')
                     done_data['fcv_rating'] = fcv_rating
@@ -11336,6 +11399,7 @@ def run_express():
             # ── Variables that persist across stages ──
             stage1_output = ''
             stage2_output = ''
+            sector_facts_x = sector_routing_x = None  # mechanism cards; set after Stage 1 when enabled
             doc_type = _effective_document_type(
                 data.get('doc_type'), data.get('document_type'), analysis_state.doc_type
             )
@@ -11800,6 +11864,11 @@ def run_express():
                     mid_cycle_slice = get_mid_cycle_slice(doc_type)
                     if mid_cycle_slice:
                         stage1_prompt = stage1_prompt + mid_cycle_slice
+                    if sector_cards_enabled(analysis_state, is_impl):
+                        stage1_prompt = stage1_prompt + (
+                            "\n\nAlso append this sector-facts block after the classifier blocks:\n"
+                            + sector_cards_mod.SECTOR_FACTS_PROMPT
+                        )
                 if is_impl:
                     stage1_prompt = (
                         stage1_prompt +
@@ -11858,6 +11927,20 @@ def run_express():
                 doc_checks = extract_doc_checks(stage1_output)
                 _cscope_x = 'multi' if country_set.get('is_multi_country') else 'single'
                 _is_mpa_x = mpa_context.get('is_mpa', False)
+                # Mechanism cards: Express keeps the facts server-side between stages (no echo needed).
+                sector_facts_x = sector_routing_x = None
+                if sector_cards_enabled(analysis_state, is_impl):
+                    sector_facts_x = sector_cards_mod.extract_sector_facts(
+                        stage1_output,
+                        next((dp['raw_text'] for dp in doc_parts if dp['label'] == 'PROJECT DOCUMENT'), ''),
+                        prior_actions=(prior_actions or {}).get('prior_actions'),
+                        multi_country=bool(country_set.get('is_multi_country')))
+                    sector_facts_x['context_flags'] = context_flags if isinstance(context_flags, dict) else {}
+                    sector_routing_x = sector_cards_mod.route_from_facts(
+                        sector_facts_x, instrument=instrument_type,
+                        disabled=bool(data.get('sector_off')),
+                        disabled_cards=[str(c) for c in (data.get('sector_cards_off') or []) if isinstance(c, str)],
+                    )
                 if is_impl:
                     process_type = extract_process_type(stage1_output)
                     doc_type = process_type  # Use process type as doc_type label for impl mode
@@ -11886,7 +11969,7 @@ def run_express():
                 lens_evidence_s1 = extract_lens_evidence(
                     stage1_output, [item['id'] for item in lens_context_s1['active_lenses']]
                 ) if lens_context_s1['active_lenses'] else {}
-                yield f"data: {json.dumps({'stage_done': 1, 'result': stage1_display, 'history': conversation_history, 'research_brief': research_brief_text, 'research_country': research_country, 'climate_research': climate_research, 'climate_grounding': climate_grounding_envelope(climate_grounding), 'doc_type': doc_type, 'instrument_type': instrument_type, 'temporal_context': temporal_context, 'regime_context': regime_context, 'process_type': process_type if is_impl else None, 'country_classification': country_classification, 'context_flags': context_flags, 'sector_context': sector_context, 'change_types': change_types, 'prior_actions': prior_actions, 'dlis': dlis, 'country_set': country_set, 'mpa_context': mpa_context, 'doc_checks': doc_checks, 'country_scope': _cscope_x, 'is_mpa': _is_mpa_x, 'review_mode': review_mode, 'active_lenses': lens_context_s1['active_lenses'], 'lens_warnings': lens_context_s1['warnings'], 'lens_evidence': lens_evidence_s1, 'lens_context_sources': lens_context_sources})}\n\n"
+                yield f"data: {json.dumps({'stage_done': 1, 'result': stage1_display, 'history': conversation_history, 'research_brief': research_brief_text, 'research_country': research_country, 'climate_research': climate_research, 'climate_grounding': climate_grounding_envelope(climate_grounding), 'doc_type': doc_type, 'instrument_type': instrument_type, 'temporal_context': temporal_context, 'regime_context': regime_context, 'process_type': process_type if is_impl else None, 'country_classification': country_classification, 'context_flags': context_flags, 'sector_context': sector_context, 'sector_facts': sector_facts_x, 'sector_routing': sector_routing_x, 'change_types': change_types, 'prior_actions': prior_actions, 'dlis': dlis, 'country_set': country_set, 'mpa_context': mpa_context, 'doc_checks': doc_checks, 'country_scope': _cscope_x, 'is_mpa': _is_mpa_x, 'review_mode': review_mode, 'active_lenses': lens_context_s1['active_lenses'], 'lens_warnings': lens_context_s1['warnings'], 'lens_evidence': lens_evidence_s1, 'lens_context_sources': lens_context_sources})}\n\n"
 
                 # ════════════════════════════════════════════════════════════
                 # STAGE 2 — FCV Assessment
@@ -12056,6 +12139,8 @@ def run_express():
                         for snip in secondary_snippets_e2:
                             snippets_text_e2 += f"### {snip['title']}\nSource: {snip['source']}\n\n{snip['content']}\n\n---\n"
                         stage2_prompt = stage2_prompt + snippets_text_e2
+                    if sector_routing_x:
+                        stage2_prompt = stage2_prompt + sector_cards_mod.build_stage2_card_slice(sector_routing_x)
                     stage2_prompt = stage2_prompt + (
                         "\n\n**REQUIRED: After your thematic analysis and ratings blocks, append this block:**\n"
                         "%%%CATEGORY_LENS_START%%%\n"
@@ -12197,10 +12282,10 @@ def run_express():
                     _stage2_under_hood = {}
                     _stage2_category_lens = {}
                 else:
-                    _stage2_result = strip_lens_blocks(stage2_output)
-                    _stage2_display = strip_lens_blocks(
+                    _stage2_result = strip_lens_blocks(sector_cards_mod.strip_sector_blocks(stage2_output))
+                    _stage2_display = strip_lens_blocks(sector_cards_mod.strip_sector_blocks(
                         under_hood.get('display_text', stage2_output)
-                    )
+                    ))
                     _stage2_under_hood = {
                         'recs_table': under_hood.get('recs_table', ''),
                         'dnh_checklist': under_hood.get('dnh_checklist', ''),
@@ -12404,6 +12489,9 @@ def run_express():
                         for snip in secondary_snippets_s3e:
                             snippets_text_s3e += f"### {snip['title']}\nSource: {snip['source']}\n\n{snip['content']}\n\n---\n"
                         stage3_prompt = stage3_prompt + snippets_text_s3e
+                    if sector_routing_x:
+                        sector_findings_x = sector_cards_mod.extract_sector_cards(stage2_output, sector_routing_x)
+                        stage3_prompt = stage3_prompt + sector_cards_mod.build_stage3_card_slice(sector_findings_x)
 
                 if not _native_climate_s3:
                     pq_block = build_priority_questions_block(priority_questions, 3)
@@ -12555,6 +12643,11 @@ def run_express():
                 # ── Stage 3 done event ──
                 _stage3_done = {'stage_done': 3, 'result': stage3_output_clean, 'history': conversation_history, 'priorities': parsed.get('priorities', []), 'fcv_rating': parsed.get('fcv_rating', ''), 'fcv_responsiveness_rating': parsed.get('fcv_responsiveness_rating', ''), 'sensitivity_summary': parsed.get('sensitivity_summary', ''), 'responsiveness_summary': parsed.get('responsiveness_summary', ''), 'risk_exposure': parsed.get('risk_exposure'), 'mid_cycle_watch': parsed.get('mid_cycle_watch', []), 'dpf_watch': parsed.get('dpf_watch', []), 'p4r_watch': parsed.get('p4r_watch', []), 'regional_watch': parsed.get('regional_watch', []), 'gap_table': extract_gap_table(stage3_output), 'parse_error': parsed.get('error', False), 'parse_error_message': parsed.get('message', ''), 'horizon_considerations': horizon, 'wider_fcv_context': parsed.get('wider_fcv_context'), 'lens_context_sources': lens_context_s3['lens_context_sources'], 'active_lenses': lens_context_s3['active_lenses'], 'lens_warnings': lens_context_s3['warnings'], 'applied_snippets': [{'id': s['id'], 'title': s['title'], 'source': s['source']} for s in secondary_snippets_s3e], 'climate_unlinked': parsed.get('climate_unlinked', 0), 'climate_total': parsed.get('climate_total', 0)}
                 _stage3_done['concise_readout'] = parsed.get('concise_readout')
+                if sector_routing_x and isinstance(_stage3_done.get('priorities'), list):
+                    _sector_findings_done_x = sector_cards_mod.extract_sector_cards(stage2_output, sector_routing_x)
+                    sector_cards_mod.apply_sector_cards(_stage3_done['priorities'], _sector_findings_done_x)
+                    _stage3_done.update(sector_cards_mod.build_readout_fields(
+                        sector_routing_x, _sector_findings_done_x, _stage3_done['priorities']))
                 if _native_climate_s3:
                     _stage3_done['lens_diagnostic'] = lens_diagnostic
                 else:
@@ -14438,6 +14531,8 @@ def download_report():
                         ('Priority', priority.get('risk_level')),
                         ('Timing', timing),
                         ('Scope', priority.get('priority_scope')),
+                        # Mechanism cards (readout option C): same marker as the browser tag.
+                        ('Informed by', 'Sector lens' if priority.get('sector_cards') else ''),
                     )
                     if value
                 ]
@@ -14510,6 +14605,21 @@ def download_report():
                 ]
                 if who_when_resources:
                     report.who_strip(who_when_resources)
+
+        # ── Sector checks (mechanism cards, readout option C): one small line, plus a grey box of at most
+        # two considerations that did not fold into a priority. Absent fields (flag off) render nothing.
+        _sector_line = str(data.get('sector_provenance') or '').strip()
+        if not climate_valid and priorities and _sector_line:
+            report.small(_sector_line, italic=False)
+            _sector_extra = [a for a in (data.get('sector_additional') or [])
+                             if isinstance(a, dict) and str(a.get('text') or '').strip()][:2]
+            if _sector_extra:
+                report.grey_box('Additional sector considerations', [
+                    str(a['text']).strip()
+                    + (f" (p.{a.get('page_ref')})" if a.get('page_ref') else '')
+                    + (f" Guidance: {a['sources'][0]}" if isinstance(a.get('sources'), list) and a['sources'] else '')
+                    for a in _sector_extra
+                ])
 
         # ── Due-diligence checklist (2026-11-16) ──
         if not climate_valid:

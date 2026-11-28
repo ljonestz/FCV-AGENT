@@ -105,6 +105,7 @@ let stageSensitivitySummary = 'sensitivity';
 let stageResponsivenessSummary = 'responsiveness';
 let midCycleWatch = [], dpfWatch = [], p4rWatch = [], regionalWatch = [];
 let horizonConsiderations = '';
+let stageSectorProvenance = '', stageSectorAdditional = [];
 let docType = 'PAD', instrumentType = 'IPF', countryScope = 'single';
 const lensVersions = () => ({{}});
 const syncClimateCountryScope=()=>{{}};

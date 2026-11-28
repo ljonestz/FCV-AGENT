@@ -1,0 +1,919 @@
+version: 2026-11-27.2
+source_register: Claude_Outputs/20261126_sector-gpn-corpus/20261127_mechanism-card-register-v3.xlsx
+note: Generated; edit the register and re-export. Advisory content only. Source PDFs are not in this repo.
+cards:
+- id: mc-01
+  mechanism: Siting and geographic alignment across divided communities or jurisdictions
+  routes:
+  - sector
+  - feature
+  sectors:
+  - agriculture
+  - enrm
+  - transport
+  - water
+  features:
+  - rural_feeder_roads
+  - water_points_wash
+  - nrm_landscape_forest
+  sr_type: S
+  core_mappings:
+  - dnh:1
+  - dnh:3
+  - dnh:4
+  - ost:2
+  applicability: New/upgraded roads, water points, irrigation, markets, or protective works across divided jurisdictions
+    or resource co-users (IPF/PforR; concept/appraisal).
+  sufficient_evidence: Document names multiple candidate locations/corridors or shared-resource siting AND establishes
+    subnational, group, or urban-rural allocation divides.
+  look_for: 'Transport: stated technical vs political segment-selection criteria and boundary consultations. Water:
+    baseline mapping of water points/standposts and equity testing across host/displaced or rival wards. Agri/ENRM:
+    consultation of unserved neighbouring/transit co-users and risk-transfer checks on protective works.'
+  prompt_text: Assess whether the document explains how physical assets, segments, or protective works are sited
+    across communities and jurisdictions using transparent criteria, and whether it accounts for non-beneficiary
+    co-users or perceptions of favouritism.
+  sources:
+  - citation: 'Violent Conflict and the Road Sector: Points of Interaction (Rebosio & Wam, World Bank 2011) (p.17
+      covering insecure areas; p.19 road selection and distributional impacts)'
+    kind: wbg_public
+    cite_to_user: true
+  - citation: Turbulent Waters (2017, p.29-30)
+    kind: wbg_public
+    cite_to_user: true
+  - citation: Water Supply Transition (2017, p.20)
+    kind: wbg_public
+    cite_to_user: true
+  - citation: Defueling Conflict (2022, p.42)
+    kind: wbg_public
+    cite_to_user: true
+  member_questions:
+  - TRN-01
+  - TRN-02
+  - WAT-01
+  - AGR-11
+  - CLI-04
+  evidence_note: 'False'
+- id: mc-02
+  mechanism: Land acquisition, customary/secondary tenure loss, and value-uplift disputes
+  routes:
+  - sector
+  - feature
+  - dpf_prior_action
+  sectors:
+  - agriculture
+  - enrm
+  - ews_hydromet
+  - transport
+  features:
+  - land_acquisition_tenure
+  - rural_feeder_roads
+  - nrm_landscape_forest
+  - pa_land_tenure_reform
+  sr_type: S
+  core_mappings:
+  - dnh:1
+  - dnh:2
+  - dnh:3
+  - dnh:5
+  - dnh:7
+  applicability: 'Civil works land take, land registration/titling, restoration/PES, or post-disaster reconstruction
+    in areas with contested, informal, or customary tenure (IPF/PforR/DPF; concept/appraisal). | DPF: prior actions
+    on land registration, titling, expropriation or concession law.'
+  sufficient_evidence: Document involves land acquisition (ESS5/RAP), tenure/concession reform, restoration/PES,
+    or housing relocation AND notes contested/customary tenure, displacement, or resettlement capacity risks.
+  look_for: 'Transport: corridor land-value inflation, unregistered/displaced-owner land, and RAP preparation timelines.
+    Agri/ENRM: customary, seasonal, or common-use grazing rights extinguished by titling, concessions, restoration,
+    or PES value uplift. DRM: post-disaster housing/relocation land disputes and secondary displacement.'
+  prompt_text: Assess whether the document identifies and manages risks that land acquisition, tenure formalization,
+    resource value uplift, or relocation could extinguish customary or displaced-owner rights or trigger land disputes.
+  sources:
+  - citation: 'Violent Conflict and the Road Sector: Points of Interaction (Rebosio & Wam, World Bank 2011) (p.24
+      land acquisition and natural resources)'
+    kind: wbg_public
+    cite_to_user: true
+  - citation: Land & Conflict Notes 02 (2018, p.12) & 03 (2018, p.20-21)
+    kind: wbg_public
+    cite_to_user: true
+  - citation: Defueling Conflict (2022, p.42, p.54)
+    kind: wbg_public
+    cite_to_user: true
+  - citation: Future of Food (2021, p.36)
+    kind: wbg_public
+    cite_to_user: true
+  - citation: NRM CCDR Note (2024, p.20, p.23)
+    kind: wbg_public
+    cite_to_user: true
+  member_questions:
+  - TRN-03
+  - AGR-04
+  - CLI-01
+  - CLI-02
+  - DRM-09
+  evidence_note: 'False'
+- id: mc-03
+  mechanism: Capture and exclusion in local resource/user committees and dispute bodies
+  routes:
+  - sector
+  - feature
+  sectors:
+  - agriculture
+  - enrm
+  - water
+  features:
+  - local_funds_cdd
+  - water_points_wash
+  - nrm_landscape_forest
+  sr_type: S+R
+  core_mappings:
+  - dnh:2
+  - dnh:5
+  - dnh:8
+  - ost:2
+  - ost:3
+  applicability: Operations creating, strengthening, or handing assets/funds to WUAs, water committees, landscape/pasture
+    boards, or commune planning committees (IPF/PforR; appraisal/implementation).
+  sufficient_evidence: Document establishes or relies on local user/governance committees or participatory resource
+    management AND notes exclusion, elite capture, or local resource-dispute risks.
+  look_for: 'Water: WUA/water-committee composition, internal audit/dispute roles, and user-fee fairness. Agri/ENRM:
+    representation of women, pastoralists, migrants, and secondary users on landscape/pasture committees; clear
+    customary-vs-state referral rules; shared-resource agreements as cooperation entry points.'
+  prompt_text: Assess whether the document defines transparent membership, inclusion of marginalized or secondary
+    users, internal accountability, and customary-state dispute referral for local resource or user committees.
+  sources:
+  - citation: Turbulent Waters (2017, p.51)
+    kind: wbg_public
+    cite_to_user: true
+  - citation: Water Supply Transition (2017, p.53)
+    kind: wbg_public
+    cite_to_user: true
+  - citation: Pastoralism in the Sahel (2016, p.42-44)
+    kind: wbg_public
+    cite_to_user: true
+  - citation: Framework for Climate Action in FCV (2025, p.17)
+    kind: wbg_public
+    cite_to_user: true
+  - citation: CCC Report (2022, p.13)
+    kind: wbg_public
+    cite_to_user: true
+  member_questions:
+  - WAT-02
+  - AGR-02
+  - AGR-03
+  - CLI-05
+  - CLI-11
+  evidence_note: 'False'
+- id: mc-04
+  mechanism: Control, taxation or extortion of routes, markets, works sites and resource chains
+  routes:
+  - sector
+  - feature
+  sectors:
+  - agriculture
+  - enrm
+  - transport
+  features:
+  - rural_feeder_roads
+  - civil_works_contracts
+  - agri_inputs_pastoral
+  - nrm_landscape_forest
+  sr_type: S
+  core_mappings:
+  - dnh:2
+  - dnh:6
+  - dnh:7
+  - ost:1
+  - shift:C
+  applicability: Corridors, border crossings, markets, large civil-works contracts or resource value chains, ONLY
+    where the document records illicit activity, extortion, checkpoints or non-state territorial control (IPF/PforR;
+    concept to implementation).
+  sufficient_evidence: The document itself cites illicit activity, extortion, checkpoints/informal taxation, smuggling
+    or territorial control by non-state or criminal actors in the project area.
+  look_for: 'Transport: checkpoints, informal taxation and armed or criminal control of corridors; extortion of
+    contractors and works sites; border crossings and enclaves. Agriculture: informal taxation along market and
+    livestock routes; value-chain intermediaries. ENRM: illegal logging, charcoal, poaching or artisanal mining
+    economies where documented.'
+  prompt_text: Where the document identifies illicit economies, extortion, checkpoints or contested territorial
+    control in project areas, consider whether it examines how improved routes, markets, works sites or resource
+    chains could be captured, taxed or diverted, and what procurement, security and incident-reporting arrangements
+    apply.
+  sources:
+  - citation: Road Investment and Violence in DRC (World Bank working paper) (p.8 checkpoints; p.30 armed-group
+      taxation of traffic)
+    kind: wbg_public
+    cite_to_user: true
+  - citation: 'Violent Conflict and the Road Sector: Points of Interaction (Rebosio & Wam, World Bank 2011) (p.30
+      procurement risk to contractors; p.32 roads used by state and armed groups)'
+    kind: wbg_public
+    cite_to_user: true
+  - citation: Pastoralism in the Sahel (2016, p.34-35)
+    kind: wbg_public
+    cite_to_user: true
+  - citation: NRM CCDR Note (2024, p.25)
+    kind: wbg_public
+    cite_to_user: true
+  - citation: 'Jobs Notes 11 (2020, p.2: businesses face extortion)'
+    kind: wbg_public
+    cite_to_user: true
+  - citation: 'FIU Gordon Institute, Extortion: The Backbone of Criminal Activity in Latin America (c.2020), p.6,
+      p.14 (extortion highest in construction, Peru survey)'
+    kind: external_public
+    cite_to_user: true
+  - citation: DFID, Supporting Infrastructure Development in FCAS (c.2016), p.34 (illegal-payments declaration at
+      contract award)
+    kind: external_public
+    cite_to_user: true
+  - citation: UNOPS, Infrastructure for Peacebuilding (c.2017), p.16 (assets used for extortion, roadblocks)
+    kind: external_public
+    cite_to_user: true
+  member_questions:
+  - TRN-07
+  - AGR-06
+  - AGR-07
+  - CLI-07
+  - GAP-EXTORTION
+  - TRN-10
+  evidence_note: 'Still partly thin: no UN or IFI source on contractor extortion in Central America was found.'
+  requires_context:
+  - insecurity
+- id: mc-05
+  mechanism: Displaced-host pressure on services and prices, including informal providers
+  routes:
+  - sector
+  - feature
+  sectors:
+  - ews_hydromet
+  - transport
+  - water
+  features:
+  - water_points_wash
+  - rural_feeder_roads
+  - ews_hydromet
+  sr_type: S+R
+  core_mappings:
+  - dnh:1
+  - dnh:3
+  - dnh:4
+  - ost:2
+  - shift:B
+  applicability: Projects operating in areas hosting refugees, IDPs, or returnees alongside host communities (IPF/PforR;
+    concept/appraisal/implementation).
+  sufficient_evidence: Document explicitly notes IDPs, refugees, returnees, or camps in the project footprint AND
+    links project services/assets to host-displaced demand or access gaps.
+  look_for: 'Water: demand surges in host areas, tanker and vendor price spikes, perceived permanence of camp boreholes,
+    equal standards, and transition plans for informal tankers or vendors. Transport: physical isolation of camps
+    and informal settlements. EWS: warning channels and realistic shelter advice for displaced people.'
+  prompt_text: Consider whether the document accounts for displaced people's demand and mobility alongside host
+    communities, including risks of price rises, uneven standards, resistance from informal providers, or protective
+    advice that does not reach them.
+  sources:
+  - citation: Turbulent Waters (2017, p.29)
+    kind: wbg_public
+    cite_to_user: true
+  - citation: Water Management MENA (2018, p.36-37)
+    kind: wbg_public
+    cite_to_user: true
+  - citation: Yemen Water Diagnostic (2023, p.20)
+    kind: wbg_public
+    cite_to_user: true
+  - citation: EWS White Paper (2024, p.24, p.40)
+    kind: wbg_public
+    cite_to_user: true
+  - citation: Myanmar Nexus Diagnostic (2026, p.28)
+    kind: wbg_public
+    cite_to_user: true
+  member_questions:
+  - TRN-09
+  - WAT-09
+  - DRM-02
+  - GAP-TANKER-VENDORS
+  evidence_note: 'False'
+  requires_context:
+  - displacement
+- id: mc-06
+  mechanism: Parallel humanitarian/non-state delivery, handover, and contested authority legitimacy
+  routes:
+  - sector
+  - feature
+  sectors:
+  - ews_hydromet
+  - water
+  features:
+  - water_points_wash
+  - ews_hydromet
+  - local_funds_cdd
+  sr_type: S+R
+  core_mappings:
+  - ost:2
+  - ost:9
+  - ost:10
+  - dnh:2
+  - dnh:5
+  - shift:B
+  - shift:D
+  applicability: Protracted-crisis, post-conflict, or contested-authority settings where UN, NGO, community, or
+    non-state actors deliver services or preparedness (IPF/PforR; concept/appraisal/implementation).
+  sufficient_evidence: Document uses UN/NGO/TPI or non-state delivery channels OR operates where public authority
+    is contested, transitional, or absent in parts of the project footprint.
+  look_for: 'Water: inventory of NGO/UN/informal providers, O&M handover to public oversight, credit attribution,
+    and de facto authority control maps. DRM/EWS: pre-agreed UN/NGO delivery channels for unreachable zones, partner
+    accountability screening, and avoiding erosion of state capacity or undue legitimation.'
+  prompt_text: Assess whether the document clarifies coordination, accountability, visibility, and eventual handover
+    between public institutions and humanitarian, community, or non-state delivery partners without entrenching
+    parallel systems or heightening legitimacy risks.
+  sources:
+  - citation: Water Supply Transition (2017, p.8-9, p.25-26)
+    kind: wbg_public
+    cite_to_user: true
+  - citation: Turbulent Waters (2017, p.27-31, p.54)
+    kind: wbg_public
+    cite_to_user: true
+  - citation: Yemen Water Diagnostic (2023, p.14)
+    kind: wbg_public
+    cite_to_user: true
+  - citation: EWS White Paper (2024, p.27, p.44)
+    kind: wbg_public
+    cite_to_user: true
+  - citation: Myanmar Nexus Diagnostic (2026, p.14, p.27)
+    kind: wbg_public
+    cite_to_user: true
+  member_questions:
+  - WAT-07
+  - WAT-08
+  - WAT-11
+  - DRM-07
+  - DRM-10
+  evidence_note: 'False'
+  requires_context:
+  - parallel_delivery
+  - insecurity
+- id: mc-07
+  mechanism: Insecurity access constraints, site readiness, and adaptive phasing/supervision
+  routes:
+  - sector
+  - feature
+  sectors:
+  - ews_hydromet
+  - transport
+  features:
+  - rural_feeder_roads
+  - ews_hydromet
+  sr_type: S
+  core_mappings:
+  - dnh:6
+  - ost:4
+  - ost:5
+  - ost:6
+  - ost:10
+  - shift:A
+  - shift:B
+  applicability: Multi-site physical works or observation networks in active-conflict or volatile-access zones (IPF/PforR;
+    appraisal/implementation/restructuring).
+  sufficient_evidence: Document builds/rehabilitates field assets or hydromet stations across areas with documented
+    insecurity, access restrictions, or volatile control.
+  look_for: 'Transport: segment-level access/security screening, remote/TPM engineering supervision, and pre-agreed
+    rules to swap/re-phase segments without reopening allocation disputes. DRM/EWS: matching EWS ambition to conflict
+    tier (minimum viable network vs new stations), verified site readiness (access, custodian, O&M), and indicators
+    verifiable if access collapses.'
+  prompt_text: Assess whether the document matches physical investment scope to documented security and access constraints,
+    sets pre-agreed readiness and re-phasing rules, and ensures supervision and results indicators remain viable
+    if field access deteriorates.
+  sources:
+  - citation: 'Violent Conflict and the Road Sector: Points of Interaction (Rebosio & Wam, World Bank 2011) (p.17
+      insecure areas; p.33 security personnel perceived as partisan)'
+    kind: wbg_public
+    cite_to_user: true
+  - citation: EWS White Paper (2024, p.23-24)
+    kind: wbg_public
+    cite_to_user: true
+  - citation: DRM in FCV FY12-22 (2023, p.23)
+    kind: wbg_public
+    cite_to_user: true
+  - citation: Myanmar Nexus Diagnostic (2026, p.27)
+    kind: wbg_public
+    cite_to_user: true
+  member_questions:
+  - TRN-06
+  - TRN-11
+  - DRM-03
+  - DRM-04
+  - DRM-05
+  evidence_note: 'False'
+  requires_context:
+  - insecurity
+- id: mc-08
+  mechanism: Targeting, sabotage, or dual-use visibility risk to sector assets and responders
+  routes:
+  - sector
+  - feature
+  sectors:
+  - ews_hydromet
+  - water
+  features:
+  - water_points_wash
+  - ews_hydromet
+  sr_type: S+R
+  core_mappings:
+  - dnh:6
+  - dnh:4
+  - ost:4
+  - shift:A
+  applicability: Bulk water/pumping assets, civil protection, shelters, or alerting hardware in active-conflict
+    or contested areas (IPF/PforR; concept/appraisal).
+  sufficient_evidence: Document finances bulk water/power-dependent assets, civil protection, or alerting hardware
+    in areas with documented active violence or contesting armed actors.
+  look_for: 'Water: vulnerability of dams, pumping stations, treatment plants, and power/fuel supply to damage or
+    shutoff; decentralized redundancy and neutral operation. DRM/EWS: avoiding visible sirens/towers or uniforms
+    mistaken for security forces; discreet, non-dual-use response kits with clear custodianship.'
+  prompt_text: Where the document indicates active insecurity in the project footprint, assess whether it evaluates
+    risks that water, power, or civil-protection assets could be targeted, diverted, or mistaken for security infrastructure,
+    and whether siting, visibility, or redundancy measures address this.
+  sources:
+  - citation: 'Violent Conflict and the Road Sector: Points of Interaction (Rebosio & Wam, World Bank 2011) (p.32
+      roads used by government forces and armed groups)'
+    kind: wbg_public
+    cite_to_user: true
+  - citation: Water Management MENA (2018, p.37-39)
+    kind: wbg_public
+    cite_to_user: true
+  - citation: Yemen Water Diagnostic (2023, p.14, p.20)
+    kind: wbg_public
+    cite_to_user: true
+  - citation: EWS White Paper (2024, p.46)
+    kind: wbg_public
+    cite_to_user: true
+  member_questions:
+  - WAT-10
+  - DRM-08
+  evidence_note: 'False'
+  requires_context:
+  - insecurity
+- id: mc-09
+  mechanism: Civil-works 'local' labor delineation and contractor patronage alignment
+  routes:
+  - sector
+  - feature
+  sectors:
+  - transport
+  - water
+  features:
+  - rural_feeder_roads
+  - civil_works_contracts
+  sr_type: S+R
+  core_mappings:
+  - dnh:1
+  - dnh:2
+  - dnh:5
+  - shift:C
+  applicability: Large or labor-intensive linear or civil works spanning multiple communities in divided or high-patronage
+    settings (IPF/PforR; appraisal/implementation).
+  sufficient_evidence: Document finances major civil works with local employment/worker camps AND notes labor-influx,
+    SEA/SH, procurement-integrity, or inter-community hiring risks.
+  look_for: Clear definition of 'local' hiring along multi-community corridors, fair allocation across host/displaced/women
+    workers, labor-influx/SEA-SH monitoring, and contractor/subcontractor market checks against patronage concentration.
+  prompt_text: Assess whether the document defines local recruitment boundaries across corridor communities, monitors
+    fair job allocation and labor-influx/SEA-SH risks, and mitigates patronage concentration in civil-works contracting
+    and subcontracting.
+  sources:
+  - citation: 'Violent Conflict and the Road Sector: Points of Interaction (Rebosio & Wam, World Bank 2011) (p.22-23
+      local employment and construction method; p.30 contractor procurement risk)'
+    kind: wbg_public
+    cite_to_user: true
+  member_questions:
+  - TRN-04
+  - TRN-05
+  evidence_note: 'False'
+- id: mc-10
+  mechanism: Build-neglect-rebuild political bias in transport asset maintenance
+  routes:
+  - sector
+  - feature
+  sectors:
+  - transport
+  features:
+  - rural_feeder_roads
+  sr_type: R
+  core_mappings:
+  - ost:3
+  - ost:4
+  applicability: New or rehabilitated road networks where maintenance funding is weak or vulnerable to political-cycle
+    neglect (IPF/PforR; appraisal/implementation).
+  sufficient_evidence: Document finances road construction/rehabilitation AND flags weak road-maintenance funding,
+    fiscal stress, or political-cycle continuity risks.
+  look_for: Ring-fenced maintenance budgets, multi-year performance-based road maintenance contracts (PBCs), microenterprise
+    upkeep, and institutional continuity across elections.
+  prompt_text: Assess whether the document addresses the risk that political or fiscal pressures favour new road
+    construction over maintenance, through ring-fenced upkeep financing, multi-year maintenance contracts, or local
+    maintenance arrangements.
+  sources:
+  - citation: 'Violent Conflict and the Road Sector: Points of Interaction (Rebosio & Wam, World Bank 2011) (p.29
+      community road maintenance, Burundi; p.31 local maintenance participation)'
+    kind: wbg_public
+    cite_to_user: true
+  member_questions:
+  - TRN-08
+  evidence_note: 'No (public WBG source added: Rebosio & Wam 2011, p.29, p.31)'
+- id: mc-12
+  mechanism: 'Allocation of shared water: downstream users, transboundary basins and groundwater capture'
+  routes:
+  - sector
+  - feature
+  sectors:
+  - water
+  features:
+  - water_points_wash
+  - bulk_water_irrigation
+  - agri_inputs_pastoral
+  sr_type: S
+  core_mappings:
+  - dnh:2
+  - dnh:3
+  - ost:1
+  - ost:4
+  - shift:A
+  applicability: Bulk abstraction, dams, reservoirs, canals, or groundwater works on shared basins or international
+    waterways (IPF/DPF; concept/appraisal).
+  sufficient_evidence: Document increases water abstraction/storage or touches a shared river/aquifer AND identifies
+    downstream users, seasonal scarcity, or international riparian states.
+  look_for: Upstream-downstream user mapping (e.g. urban intake vs downstream farmers), seasonal shortage rules,
+    shared hydrological data, basin committees, riparian notification on international waterways; distribution of
+    well and pump ownership, abstraction licensing and aquifer monitoring where pumping or irrigation is subsidised.
+  prompt_text: Consider whether the document assesses how new abstraction, storage, pumping or irrigation changes
+    water available to downstream, neighbouring or smaller users, and whether allocation rules, shared data, licensing
+    and consultation arrangements are in place.
+  sources:
+  - citation: Turbulent Waters (2017, p.35, p.49, p.51-52, p.55)
+    kind: wbg_public
+    cite_to_user: true
+  - citation: Water Management MENA (2018, p.41-42)
+    kind: wbg_public
+    cite_to_user: true
+  - citation: Yemen Water Diagnostic (2023, p.14)
+    kind: wbg_public
+    cite_to_user: true
+  member_questions:
+  - WAT-03
+  - WAT-04
+  - WAT-12
+  evidence_note: 'False'
+- id: mc-13
+  mechanism: Water tariff hikes, prepaid metering, and disconnection affordability shock
+  routes:
+  - sector
+  - feature
+  - dpf_prior_action
+  sectors:
+  - water
+  features:
+  - water_points_wash
+  - pa_tariff_subsidy_reform
+  - tariff_reform
+  sr_type: S+R
+  core_mappings:
+  - dnh:3
+  - dnh:7
+  - ost:4
+  applicability: 'Water/sanitation projects introducing or raising tariffs, metering, collection enforcement, or
+    subsidy reform in fragile or tense urban contexts (IPF/PforR/DPF; appraisal/implementation). | DPF: prior actions
+    raise utility tariffs, cut subsidies or introduce metering or cost recovery.'
+  sufficient_evidence: Document includes tariff adjustments, PBCs on tariff reform, prepaid metering, or NRW billing
+    enforcement AND notes affordability burdens, political fragility, or social resistance risks.
+  look_for: Lifeline/social tariff blocks, phased cost-recovery sequencing relative to economic/political fragility,
+    prepaid-meter vandalism or rejection risks, and affordability compared with informal tanker water.
+  prompt_text: Assess whether the document evaluates how tariff increases, prepaid metering, or billing enforcement
+    affect low-income, displaced, or tense urban households, and whether lifeline protections and communication
+    are phased appropriately.
+  sources:
+  - citation: Water Supply Transition (2017, p.10-11)
+    kind: wbg_public
+    cite_to_user: true
+  - citation: Turbulent Waters (2017, p.50)
+    kind: wbg_public
+    cite_to_user: true
+  - citation: NRM CCDR Note (2024, p.23)
+    kind: wbg_public
+    cite_to_user: true
+  member_questions:
+  - WAT-05
+  evidence_note: 'False'
+- id: mc-16
+  mechanism: Pastoral mobility, seasonal access and post-conflict restocking
+  routes:
+  - sector
+  - feature
+  sectors:
+  - agriculture
+  features:
+  - agri_inputs_pastoral
+  - nrm_landscape_forest
+  sr_type: S+R
+  core_mappings:
+  - dnh:3
+  - dnh:4
+  - ost:1
+  applicability: Agriculture, landscape, rangeland, water, or rural-infrastructure projects in regions with seasonal
+    transhumance or mobile pastoralism (IPF/PforR; concept/appraisal).
+  sufficient_evidence: Document operates in pastoral/agro-pastoral zones (e.g., Sahel, Horn, Lake Chad) AND modifies
+    land use, landscapes, water points, or rural infrastructure.
+  look_for: Mapping of transhumance corridors and dry-season water and grazing access; easements before fencing
+    or zoning; consultation with mobile and transit herders; where restocking is financed, raiding risk and renegotiated
+    grazing and water agreements with hosts.
+  prompt_text: Consider whether the document identifies seasonal transhumance corridors and dry-season water and
+    grazing access in the project area, shows how siting and land-use planning keep them open, and, where herds
+    are restocked, how raiding risk and grazing agreements are handled.
+  sources:
+  - citation: Pastoralism in the Sahel (2016, p.35, p.42-43)
+    kind: wbg_public
+    cite_to_user: true
+  - citation: Land & Conflict Note 03 (2018, p.20-21)
+    kind: wbg_public
+    cite_to_user: true
+  member_questions:
+  - AGR-01
+  - AGR-09
+  evidence_note: 'False'
+- id: mc-17
+  mechanism: Targeting capture and diversion of subsidized agricultural inputs, matching grants, or food reserves
+  routes:
+  - sector
+  - feature
+  sectors:
+  - agriculture
+  features:
+  - agri_inputs_pastoral
+  - local_funds_cdd
+  sr_type: S
+  core_mappings:
+  - dnh:1
+  - dnh:4
+  - dnh:5
+  applicability: Operations distributing seeds, fertilizer, matching grants, productive-alliance subsidies, vouchers,
+    or food-reserve releases in divided or fragile contexts (IPF/PforR/DPF; appraisal/implementation).
+  sufficient_evidence: Document finances matching grants, input subsidies, vouchers, or food reserves AND operates
+    in regions with documented exclusion, governance weakness, or subnational conflict.
+  look_for: Transparent eligibility validation across identity/regional lines, digital/e-voucher leakage controls,
+    predictable delivery timing, coverage of remote/insecure zones, and independent audit/complaint channels.
+  prompt_text: Assess whether the document establishes transparent eligibility, delivery-channel controls, and geographic
+    coverage safeguards so subsidized agricultural inputs, matching grants, or food reserves reach underserved groups
+    without elite capture or diversion.
+  sources:
+  - citation: Future of Food (2021, p.21)
+    kind: wbg_public
+    cite_to_user: true
+  - citation: Pastoralism in the Sahel (2016, p.44)
+    kind: wbg_public
+    cite_to_user: true
+  member_questions:
+  - AGR-05
+  evidence_note: 'False'
+- id: mc-21
+  mechanism: Benefit sharing and routing of resource, carbon and local-development funds
+  routes:
+  - sector
+  - feature
+  - dpf_prior_action
+  sectors:
+  - enrm
+  features:
+  - nrm_landscape_forest
+  - local_funds_cdd
+  - pa_resource_revenue_transfers
+  sr_type: S+R
+  core_mappings:
+  - dnh:2
+  - dnh:3
+  - dnh:4
+  - dnh:5
+  applicability: 'Forestry, carbon/REDD+, renewable energy, fishery, mining-fund, or landscape projects generating
+    resource revenues or marketable credits (IPF/PforR/DPF; concept/appraisal). | DPF: prior actions on resource-revenue
+    sharing, extractive funds or fiscal transfers to local government.'
+  sufficient_evidence: The document creates or manages a revenue- or credit-bearing resource or a local fund (e.g.
+    a mining-revenue fund, REDD+, concessions) or routes such funds through subnational bodies or intermediaries.
+  look_for: Explicit benefit-sharing rules; carbon or resource-revenue rights where applicable; local share of revenue
+    and jobs; who allocates; verification and complaint channels where funds pass through transitional or contested
+    local authorities or intermediaries.
+  prompt_text: Consider whether the document sets out how resource, carbon or local-development revenues are shared
+    and allocated, how host communities take part in those decisions, and what verification and complaint channels
+    apply where funds pass through local authorities or intermediaries.
+  sources:
+  - citation: NRM CCDR Note (2024, p.20)
+    kind: wbg_public
+    cite_to_user: true
+  - citation: Defueling Conflict Notes (2025, p.17, p.33, p.169)
+    kind: wbg_public
+    cite_to_user: true
+  - citation: Unlocking NbS (2024, p.37)
+    kind: wbg_public
+    cite_to_user: true
+  - citation: Defueling Conflict (2022, p.59)
+    kind: wbg_public
+    cite_to_user: true
+  member_questions:
+  - CLI-03
+  - CLI-06
+  evidence_note: 'False'
+- id: mc-23
+  mechanism: Conservation access restrictions, protected-area closures, and enforcement accountability
+  routes:
+  - sector
+  - feature
+  sectors:
+  - enrm
+  - water
+  features:
+  - nrm_landscape_forest
+  sr_type: S
+  core_mappings:
+  - dnh:1
+  - dnh:6
+  - dnh:8
+  applicability: Protected-area creation/expansion, grazing/forest closures, borehole protection perimeters, or
+    ranger patrols (IPF/PforR; concept/appraisal/implementation).
+  sufficient_evidence: Document establishes or expands protected areas, ranger patrols, easements/protection perimeters,
+    or resource-use closures affecting local users.
+  look_for: Process Framework / livelihood substitution for restricted forest/pasture/water access, ranger/park-guard
+    conduct rules, and community grievance routes.
+  prompt_text: Where the document introduces protected-area boundaries, resource closures, or enforcement patrols,
+    assess whether it provides livelihood substitutes or compensation for affected users and accountability rules
+    for enforcement personnel.
+  sources:
+  - citation: Defueling Conflict (2022, p.42)
+    kind: wbg_public
+    cite_to_user: true
+  - citation: Independent Panel for WWF (Pillay), Embedding Human Rights in Nature Conservation (2020), p.6, p.8,
+      p.9, p.12 (ecoguard abuses, oversight, Bayanga grievance centre, accountability measures)
+    kind: external_public
+    cite_to_user: true
+  - citation: IUCN, State of Protected and Conserved Areas Part 3 (2024), p.11 (biased law enforcement, access restrictions)
+    kind: external_public
+    cite_to_user: true
+  member_questions:
+  - CLI-08
+  evidence_note: No (supplemented by external sources 2026-11-27)
+- id: mc-26
+  mechanism: Credibility, reach and early action of warning systems (hazard and food crisis)
+  routes:
+  - sector
+  - feature
+  sectors:
+  - agriculture
+  - ews_hydromet
+  features:
+  - ews_hydromet
+  - food_security_reserves
+  sr_type: S+R
+  core_mappings:
+  - dnh:2
+  - dnh:3
+  - ost:2
+  applicability: Hazard, food-crisis, or conflict early warning systems and agro-advisories in low-trust, contested,
+    or outage-prone environments (IPF/PforR; concept/appraisal/implementation).
+  sufficient_evidence: Document finances an early warning, hydromet, or agro-advisory dissemination system in an
+    area with low state trust, fragmented authority, or telecom/access limits.
+  look_for: Trusted co-issuers to protect neutrality and counter misinformation; warning roles across agencies and
+    control zones; low-tech fallbacks for telecom outages; food-price and lean-season triggers linked to early action
+    that reaches remote, mobile and displaced households.
+  prompt_text: Consider whether the document clarifies who issues warnings across institutions and areas of control,
+    how credibility is maintained with trusted local intermediaries, what fallback channels exist for outages, and
+    whether warnings and food-crisis triggers lead to timely action for remote and mobile households.
+  sources:
+  - citation: EWS White Paper (2024, p.23, p.27, p.31, p.40, p.42 [misinformation])
+    kind: wbg_public
+    cite_to_user: true
+  - citation: Myanmar Nexus Diagnostic (2026, p.14 [telecom outages], p.17, p.28)
+    kind: wbg_public
+    cite_to_user: true
+  - citation: Digital Hotspots in FCV (2022, p.101)
+    kind: wbg_public
+    cite_to_user: true
+  member_questions:
+  - DRM-01
+  - DRM-06
+  - AGR-10
+  evidence_note: 'False'
+- id: mc-27
+  mechanism: Safeguarding sensitive damage, conflict, and displacement geolocation data
+  routes:
+  - sector
+  - feature
+  sectors:
+  - ews_hydromet
+  features:
+  - ews_hydromet
+  sr_type: S
+  core_mappings:
+  - dnh:6
+  - dnh:7
+  - ost:6
+  applicability: Damage/needs assessments, conflict EWRS, displacement tracking, or digital risk mapping in active-conflict
+    or politically sensitive settings (IPF/PforR; appraisal/implementation).
+  sufficient_evidence: Document collects granular conflict, damage, or displacement data (e.g., EWRS, KoboToolbox,
+    drones, IDP registries) in a sensitive FCV environment.
+  look_for: Data-protection protocols for IDP/conflict locations, aggregated-only reporting, trusted ground-truthing,
+    and preventing misuse of beneficiary/alert registries.
+  prompt_text: Where the document finances granular damage, conflict, or displacement data collection (including
+    mobile or drone tools), assess whether data-protection protocols and trusted ground-truthing safeguard at-risk
+    individuals from exposure or misuse.
+  sources:
+  - citation: Myanmar Nexus Diagnostic (2026, p.15, p.22)
+    kind: wbg_public
+    cite_to_user: true
+  - citation: ICRC/Brussels Privacy Hub, Handbook on Data Protection in Humanitarian Action, 3rd ed. (2022), p.85,
+      p.145, p.165
+    kind: external_public
+    cite_to_user: true
+  - citation: IASC Operational Guidance on Data Responsibility (2021), p.8, p.14
+    kind: external_public
+    cite_to_user: true
+  - citation: OCHA Data Responsibility Guidelines (2019 working draft), p.8 (facility locations expose people to
+      risk)
+    kind: external_public
+    cite_to_user: true
+  member_questions:
+  - DRM-12
+  evidence_note: No (supplemented by external sources 2026-11-27)
+  requires_context:
+  - insecurity
+  - displacement
+- id: mc-29
+  mechanism: Induced illegal extraction (logging, mining, poaching) after new physical access
+  routes:
+  - sector
+  - feature
+  sectors:
+  - enrm
+  - transport
+  features:
+  - rural_feeder_roads
+  - nrm_landscape_forest
+  sr_type: S
+  core_mappings:
+  - dnh:7
+  - ost:1
+  - ost:4
+  applicability: New or upgraded roads, corridors, or access infrastructure passing near forests, protected areas,
+    or extractive zones with weak enforcement (IPF; concept/appraisal).
+  sufficient_evidence: Document constructs/upgrades a road corridor near protected areas, forests, or indigenous
+    territories AND notes habitat fragmentation, deforestation, or weak enforcement.
+  look_for: Cumulative-impact assessment of induced deforestation, land clearing, illegal logging, or poaching along
+    new greenfield corridors near protected areas/forests; proportionate and timely landscape-protection financing.
+  prompt_text: Where new or upgraded transport access approaches forests, protected areas, or extractive zones,
+    assess whether the document evaluates induced illegal logging, land clearing, or poaching risks and matches
+    protective measures to the corridor's scale and timeline.
+  sources:
+  - citation: 'Violent Conflict and the Road Sector: Points of Interaction (Rebosio & Wam, World Bank 2011) (p.24
+      road effects on land and natural resources)'
+    kind: wbg_public
+    cite_to_user: true
+  - citation: Road Investment and Violence in DRC (World Bank working paper) (p.29 artisanal gold revenues and violence
+      near roads)
+    kind: wbg_public
+    cite_to_user: true
+  - citation: Unlocking NbS in FCS (2024, p.23)
+    kind: wbg_public
+    cite_to_user: true
+  - citation: CCC Report (2022, p.47)
+    kind: wbg_public
+    cite_to_user: true
+  - citation: Defueling Conflict Notes (2025, p.150)
+    kind: wbg_public
+    cite_to_user: true
+  - citation: Laurance et al., A global strategy for road building, Nature (2014), p.1, p.3 (roads promote deforestation,
+      poaching, land speculation)
+    kind: external_public
+    cite_to_user: true
+  - citation: Kleinschroth et al., Road expansion and persistence in forests of the Congo Basin, Nature Sustainability
+      (2019), p.1, p.3 (bushmeat hunting, informal logging)
+    kind: external_public
+    cite_to_user: true
+  member_questions:
+  - GAP-INDUCED-EXTRACTION
+  evidence_note: 'Partly: the link from induced extraction to conflict or criminal economies rests on the DRC road
+    study.'
+- id: mc-24
+  mechanism: Just-transition job and local-fiscal losses from fossil, mining, or charcoal phase-down
+  routes:
+  - dpf_prior_action
+  sectors:
+  - enrm
+  features:
+  - pa_fossil_extractive_phaseout
+  sr_type: S+R
+  core_mappings:
+  - shift:C
+  - dnh:4
+  - ost:2
+  applicability: DPF prior actions phasing down fossil-fuel subsidies, coal, charcoal or extractive activity (DPF;
+    concept/appraisal).
+  sufficient_evidence: Document explicitly finances decarbonization, fossil/coal exit, extractive subsidy reform,
+    or charcoal-economy transition.
+  look_for: Identification of affected workers, subnational fiscal/royalty losses, retraining/diversification support,
+    and consultation with dependent regions.
+  prompt_text: Where the document supports phasing down fossil-fuel, mining, or charcoal activities, assess whether
+    it identifies affected workers and local fiscal revenues and provides targeted transition support.
+  sources:
+  - citation: NRM CCDR Note (2024, p.21-22)
+    kind: wbg_public
+    cite_to_user: true
+  member_questions:
+  - CLI-09
+  evidence_note: 'True'

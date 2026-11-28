@@ -564,6 +564,23 @@
     return k.section('fr-dd', h('Due-Diligence Checklist') + k.disclosure('Due-diligence checklist for this review', intro + items, rows.length));
   }
 
+  // Sector content (design v3, readout option C): one grey provenance line, plus a closed panel of at most two
+  // considerations that did not fold into a priority. Nothing renders when the fields are absent (flag off).
+  function sectorChecksHtml(k, d) {
+    const line = String(d.sectorProvenance || '').trim();
+    if (!line) return '';
+    const extra = (Array.isArray(d.sectorAdditional) ? d.sectorAdditional : []).filter(a => a && a.text).slice(0, 2);
+    let out = `<p class="fr-note fr-sector-line" dir="auto">${k.esc(line)}</p>`;
+    if (extra.length) {
+      const items = extra.map(a => {
+        const src = Array.isArray(a.sources) && a.sources.length ? `<span class="fr-sector-src">Guidance: ${k.esc(a.sources[0])}</span>` : '';
+        return `<li dir="auto">${k.esc(a.text)}${a.page_ref ? ` <span class="fr-sector-ref">(p.${k.esc(a.page_ref)})</span>` : ''}${src}</li>`;
+      }).join('');
+      out += k.disclosure('Additional sector considerations', `<ul class="fr-sector-list">${items}</ul>`, extra.length);
+    }
+    return out;
+  }
+
   function renderNormal(k, data) {
     const verifyNotes = [];
     const d = scrubDeep(data || {}, verifyNotes);
@@ -628,7 +645,8 @@
         const actionsHtml = actions.length ? `<ol class="fr-actions">${actions.map(a => `<li>${a.document_element ? `<strong>${k.esc(a.document_element)}:</strong> ` : ''}${k.esc(stripTagNotes(a.guidance))}</li>`).join('')}</ol>` : '';
         const cycleText = stripTagNotes(p.implementation_note || (p.project_cycle && p.project_cycle.primary_text) || '');
         const cycleLabel = p.implementation_note ? 'Implementation note' : ((p.project_cycle && p.project_cycle.primary_label) || 'When to address');
-        const sup = k.metaSegments([[k.levelPill(p.risk_level)], [k.esc(p.fcv_dimension || ''), 'fr-meta-dim'], [k.esc(k.timingLabel(p.action_timing)), 'fr-meta-time']]);
+        const sectorTag = Array.isArray(p.sector_cards) && p.sector_cards.length ? '<span class="fr-sector-tag">Informed by sector lens</span>' : '';
+        const sup = k.metaSegments([[k.levelPill(p.risk_level)], [k.esc(p.fcv_dimension || ''), 'fr-meta-dim'], [k.esc(k.timingLabel(p.action_timing)), 'fr-meta-time'], [sectorTag]]);
         return k.priorityCard({
           id: `fr-priority-${i + 1}`, rank: i + 1, open: i === 0, supHtml: sup, title: priorityTitle(p.title), srcIndex: index,
           zones: [{ label: 'The gap', html: k.prose(stripTagNotes(p.the_gap)) }, { label: 'Why it matters', html: k.prose(stripTagNotes(p.why_it_matters)) },
@@ -638,7 +656,7 @@
           extraHtml: typeof d.priorityExtras === 'function' ? d.priorityExtras(p, index) : '',
         });
       }).join('');
-      html += k.section('fr-cards-sec', h('Priority Actions for the Task Team') + intro + (s.framing ? k.prose(s.framing) : '') + k.cards(cards, n));
+      html += k.section('fr-cards-sec', h('Priority Actions for the Task Team') + intro + (s.framing ? k.prose(s.framing) : '') + k.cards(cards, n) + sectorChecksHtml(k, d));
     }
 
     html += ddChecklistSection(k, h, dd);
