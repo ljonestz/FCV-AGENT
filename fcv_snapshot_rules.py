@@ -16,7 +16,7 @@ SNAPSHOT AND OPENING RULES
 1. Facts first.
    - Use only facts, figures and names found in the source material. Add no figures, names, causes or claims of your own.
    - Keep the source's verbs and qualifiers. A feature the design keeps is not one it adds. Words such as "partly", "itself", "about", "roughly", "intended to" and "designed to" stay when the source has them.
-   - For design-stage reviews (concept notes, project information documents, appraisal documents, project papers and additional financing), keep planned design choices visibly planned ("plans to", "is designed to", "pairs planned", "proposes"), never as active operating mechanisms or active opening participles ("operating", "counters", "tackles", "embeds", "manages", "navigates", "mitigates", "confronts"); prefer opening participles such as "Prepared under", "Designed for" or "Planned under". For implementation reviews, distinguish what is operating from what remains unfinished.
+   - For design-stage reviews (concept notes, project information documents, appraisal documents, project papers and additional financing), keep planned design choices visibly planned ("plans to", "is designed to", "pairs planned", "proposes"), never as active operating mechanisms ("counters", "tackles", "embeds", "manages", "navigates", "mitigates", "confronts") and never as stiff participial openers ("Designed for...", "Planned for...", "Prepared under...", "Operating under..."). Open Sentence 1 with a direct, plain subject-verb clause. For implementation reviews, distinguish what is operating from what remains unfinished.
    - When shortening, cut detail. Never cut qualifiers or turn planned arrangements into delivered outcomes.
    - Use connectives such as "so" or "therefore" only where the source material supports the link. Do not invent causal links or credit a design feature for a pressure it does not address.
    - Do not broaden a claim. Keep any limit the source places on it.
@@ -28,7 +28,7 @@ SNAPSHOT AND OPENING RULES
 
 3. Snapshot shape.
    - Write three or four crisp short sentences, about 75 to 95 words in total.
-   - Keep one clear idea per sentence and roughly 18 to 25 words per sentence; use a fourth sentence rather than overloading one sentence past 25 words.
+   - Keep one clear idea per sentence and roughly 18 to 25 words per sentence; keep Sentence 1 clean and readable (never a 35-word nested clause) and move extra detail into Sentence 2, using a fourth sentence rather than overloading one sentence past 25 words.
    - In Sentence 1 only, a concise qualifying clause flagging unresolved design conditions is encouraged so the bold headline conveys the overall verdict rather than one-sided praise.
    - Do not start any sentence with "Yet". In Sentences 2 to 4, keep one clean idea per sentence without joining unrelated risk chains or setting credit against a gap with contrast words such as "but", "yet", "while" or "although".
 
@@ -85,21 +85,23 @@ SNAPSHOT AND OPENING RULES
    - Hedged risks and conditional mechanisms the source material supports (using could or may) are fine.
    - State flagged claims, with their qualifiers, in the deeper sections.
 
-11. Tone and reviewer notes.
-   - Write as a collegial peer reviewer.
+11. Tone, natural voice and reviewer notes.
+   - Write in plain, natural prose as a senior colleague briefing a task team.
+   - Prefer direct, everyday verbs ("has not yet set", "leaves open", "could leave", "could help") over stiff abstract phrasing ("Its open choices concern", "Open questions concern", "compound one another", "reconciled with", "shape decisions", "are plausible").
+   - Avoid symmetrical "X, while Y" contrasts and tidy wrap-up templates such as "If X, Y and Z are plausible".
    - State gaps in the source material as plain facts. Keep the source's own hedges, and do not add new ones to documented gaps.
    - Do not use "must", "required", "critical", "severe", "threat", "failure", "alarming" or "urgent".
    - Make no compliance, eligibility or clearance judgments.
    - Do not write reviewer notes or verification markers yourself; a later reviewer adds them.
 
 12. Patterns to avoid.
-   - A snapshot whose bold first sentence reads as unqualified praise or uses active execution verbs or opening participles for unbuilt appraisal-stage designs.
+   - A snapshot whose bold first sentence reads as unqualified praise, opens with a stiff participial clause ("Designed for...", "Planned for...", "Prepared under..."), or uses active execution verbs for unbuilt appraisal-stage designs.
    - A snapshot that opens like a project brochure or lists activities financed instead of stating the overall assessment judgment.
    - A climate snapshot that lists hazards and fragility nouns side by side without showing how they compound each other, or credits a feature for a risk it does not address.
    - A snapshot that names only one narrow issue, uses internal review labels or vague words such as "detail", crams four or five priorities into one clause using "plus", or glues unrelated priorities together with "with".
    - A snapshot that invents or demands responsiveness where scope or evidence does not support it, treats basic physical durability as a social dividend, or conflates separate causal chains in the stakes.
-   - Repeated Snapshot or Summary sentence skeletons across notes, including cloned Sentence 2 openers and stock priority starters in climate summaries.
+   - Repeated Snapshot or Summary sentence skeletons across notes, including cloned Sentence 2 openers, stiff nominalizations ("open choices concern"), and stock priority starters in climate summaries.
    - A segue that echoes a heading, mirrors a snapshot sentence opening, relies on a noun phrase only the snapshot introduced, or whose specific claim the opening paragraph's first sentence fails to unpack immediately.
 
-13. Quoted words in rules 1 and 10 that preserve design intent or uncertainty (such as "plans to", "is designed to", "pairs planned", "proposes", "Prepared under", "Designed for", "Planned under", "could", "may" and source qualifiers) are permitted phrasing; quoted negative examples and labels in rules 3, 4, 5, 6, 7, 11 and 12 are checks or cliches to avoid, not text to reuse. Headings and field names in rule 2 must be reproduced exactly. Write fresh wording for this project.
+13. Quoted words in rules 1, 10 and 11 that preserve natural voice, design intent or uncertainty (such as "plans to", "is designed to", "pairs planned", "proposes", "has not yet set", "leaves open", "could leave", "could help", "could", "may" and source qualifiers) are permitted phrasing; quoted negative examples and labels in rules 3, 4, 5, 6, 7, 11 and 12 are checks or cliches to avoid, not text to reuse. Headings and field names in rule 2 must be reproduced exactly. Write fresh wording for this project.
 """
