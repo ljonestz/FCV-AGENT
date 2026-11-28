@@ -3,7 +3,7 @@
 Agreed by a writing editor and a critical reviewer over seven rounds on eight real examples
 (output/20261127_snapshot-style-review/). The normal-route Stage 3 prompt and the climate reader
 compiler both append SNAPSHOT_RULES, so the two routes write the snapshot box and the opening of the
-main text in one house style. Code checks the lengths; the model is told the caps loosely.
+main text in one house style. Lengths are prompt targets only (no code check or retry).
 """
 
 SNAPSHOT_RULES = """
@@ -20,9 +20,9 @@ SNAPSHOT AND OPENING RULES
    - Do not broaden a claim. Keep any limit the source places on it.
 
 2. Where this text goes.
-   - Normal route: write the "### Opening Assessment" section as the SNAPSHOT. Begin "### Operational Context" with a bold segue sentence, followed by the opening paragraph. The rest of Operational Context follows the opening paragraph in the usual way. The deeper sections are the rest of Operational Context, Strengths, Gaps and FCV Risk Exposure.
-   - Climate route: write summary paragraph SUM-001 as the SNAPSHOT. Begin SUM-002 with the segue sentence, followed by the opening paragraph. SUM-002 consists of the segue and the opening paragraph and nothing more. SUM-002 appears under the readout sub-heading "Where the design is least settled". The deeper sections are the design, dividends and inclusion narratives and the priorities.
-   - Formatting: do not bold the snapshot or SUM-002; the display formats them. On the normal route, bold only the segue sentence.
+   - Normal route: write the "### Opening Assessment" section as the SNAPSHOT. Begin "### Operational Context" (in implementation reviews, "### Implementation Context") with a bold segue sentence, followed by the opening paragraph. The rest of that section follows the opening paragraph in the usual way. The deeper sections are the rest of that section, Strengths, Gaps and FCV Risk Exposure.
+   - Climate route: write summary paragraph SUM-001 as the SNAPSHOT. Begin SUM-002 with the segue sentence, followed by the opening paragraph. SUM-002 consists of the segue and the opening paragraph and nothing more. The display adds a sub-heading above SUM-002; do not write a heading yourself. The deeper sections are the design, dividends and inclusion narratives and the priorities.
+   - Formatting: do not bold the snapshot or SUM-002; the display formats them. On the normal route, bold the segue sentence; later paragraphs keep their usual formatting.
 
 3. Snapshot shape.
    - Write two or three short sentences, no more than about 55 words in total.
@@ -31,10 +31,10 @@ SNAPSHOT AND OPENING RULES
    - Do not start a sentence with "Yet".
 
 4. Snapshot content.
-   - In the first or second sentence, say where the project is and what it does, in the source material's own words.
-   - State one main issue that is specific to this project, so a reader could repeat it in a line.
-   - State the stakes once.
-   - Where the source material credits the design, include one short credit clause. Never invent credit.
+   - In the first or second sentence, say where the project is (name the country, or the region if the documents name no single country) and what it does, in the source material's own words.
+   - State one main issue that is specific to this project, so a reader could repeat it in a line. Name what is unsettled specifically; avoid vague words such as "detail".
+   - State the stakes once, as a consequence the source material supports. Use "could" or "may" unless the source states it flatly.
+   - Where the source material credits the design, include one short clause on what the design does well; a list of what the project finances is not credit. Never invent credit.
    - Put the issue, the credit and the stakes in whatever order reads most naturally for this project.
    - Vary how the first sentence opens. Lead with whatever subject fits: the place, a responsible body, the financing, an asset, the main pressure or the activity itself.
    - Never use stock openers such as "The project's central tension is", "At its core" or "Overall".
@@ -45,7 +45,7 @@ SNAPSHOT AND OPENING RULES
    - document IDs;
    - risk ratings;
    - a second figure;
-   - any list of more than three items;
+   - any list of more than three items (name the three that matter most and move the rest);
    - references to the priority actions;
    - caveats.
 
@@ -58,10 +58,11 @@ SNAPSHOT AND OPENING RULES
    - It makes sense to a reader who skipped the snapshot. Do not start it with a noun phrase that only the snapshot introduced.
    - Do not use "this", "these", "that", "those" or "such" as pointing words that refer back to the snapshot. Relative "that" is fine.
    - Keep it to about 20 words or fewer.
-   - Climate route: do not repeat the sub-heading's wording.
+   - Do not echo the wording of any section heading or sub-heading.
+   - Do not promise a list (for example "one of several") unless the paragraph gives the items.
 
 7. Opening paragraph.
-   - Write up to six short sentences, about 120 words at most.
+   - Write up to six short sentences of about 20 words each, about 110 words at most.
    - The first sentence develops the segue's topic. If the segue opens a list, the first sentence gives the first item.
    - Put causes before consequences.
    - Do not restate the segue later in the paragraph.
@@ -72,14 +73,14 @@ SNAPSHOT AND OPENING RULES
 
 9. Names and plain language.
    - Keep proper names exactly. You may use a short form that the source material itself uses.
-   - If the opening needs an acronym, spell it out there.
+   - If the opening needs an acronym, spell it out there. Give a short form in brackets only if you use it again.
    - Use a plainer word only when its meaning is identical.
    - Explain a technical term only in words the source material supports. Otherwise leave the term as it is.
    - Once you choose a term, use it throughout.
    - Do not use em dashes or en dashes.
 
 10. Uncertain claims.
-   - Keep out of the snapshot and the opening any statement of the project's purpose, novelty or stakes that the documents do not state in so many words, any label for the project that the documents do not use, and any claim the documents themselves flag as unconfirmed.
+   - Keep out of the snapshot and the opening any statement of what the project is meant to do, or of its novelty, that the documents do not state in so many words, any label for the project that the documents do not use, and any claim the documents themselves flag as unconfirmed.
    - Hedged risks the source material supports ("could", "may") are fine.
    - State flagged claims, with their qualifiers, in the deeper sections.
 
@@ -92,7 +93,7 @@ SNAPSHOT AND OPENING RULES
 
 12. Patterns to avoid.
    - A snapshot that states the same stakes twice in different words.
-   - A sentence that sets credit against a problem with a contrast word.
+   - In the snapshot, a sentence that sets credit against a problem with a contrast word.
    - A segue that relies on a noun phrase only the snapshot introduced. Name the idea in full instead.
    - A segue whose topic the opening paragraph does not take up in its first sentence.
    - The same first-sentence shape as a standard template, used regardless of the project.

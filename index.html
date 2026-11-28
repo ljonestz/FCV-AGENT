@@ -4787,7 +4787,8 @@
   // 2026-11-27 (owner): Stage 2 no longer shows the legacy S/R tags or FCV Strategy shift notes. The model
   // still writes them (prompt unchanged, ITS parity); they are removed here for display, including the
   // "S/R Tag" and "Shift(s)" columns of the under-the-hood standards table.
-  const STAGE2_LEGACY_COL_RE = /^(?:S\s*\/\s*R(?:\s*Tag)?|Tag|Type|Shifts?(?:\s*\(s\))?|FCV Strategy Shifts?)$/i;
+  // Only the legacy S/R and shift columns; generic headers such as 'Type' (evidence trail) stay.
+  const STAGE2_LEGACY_COL_RE = /^(?:S\s*\/\s*R(?:\s*Tag)?|Shifts?\s*\(s\)|Shifts?|FCV Strategy Shifts?)$/i;
   function dropLegacyTableColumns(text) {
     const lines = String(text || '').split('\n');
     let drop = null;
@@ -4806,7 +4807,9 @@
     return dropLegacyTableColumns(String(text || '')
       .replace(/[ \t]*Tagged \[(?:S|R|S\+R)\][^.\n]*\./g, '')
       .replace(/[ \t]*\*{0,2}\[(?:S|R|S\+R)\]\*{0,2}/g, '')
-      .replace(/[ \t]*\*{0,2}_?FCV Strategy Shifts?:[^*\n]*_?\*{0,2}/g, ''));
+      // Shift notes only when emphasised or bracketed, so analysis after a bare mention is never cut.
+      .replace(/[ \t]*(?:\*{1,2}|_)FCV Strategy Shifts?:[^*_\n]*(?:\*{1,2}|_)/g, '')
+      .replace(/[ \t]*\(FCV Strategy Shifts?:[^)\n]*\)/g, ''));
   }
 
   // Wraps "FCV Sensitivity" and "FCV Responsiveness" in tooltip spans wherever they appear in rendered HTML
@@ -7136,7 +7139,7 @@ ${climatePrintDisclosureScript()}
 
     // Filter operational standards table
     if (underHood.recs_table) {
-      const lines = underHood.recs_table.trim().split('\n');
+      const lines = dropLegacyTableColumns(underHood.recs_table).trim().split('\n');  // no S/R or shift columns (2026-11-27)
       const header = lines.slice(0, 2);
       const dataRows = lines.slice(2).filter(matchesRow);
       if (dataRows.length) {

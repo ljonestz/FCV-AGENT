@@ -78,7 +78,7 @@
         if (body && block !== leadBlock) sections.other.push({ heading: block.level === 2 ? block.heading : '', body });
         return;
       }
-      if (/^opening assessment/.test(key)) sections.snapshot = body;
+      if (/^opening assessment/.test(key)) { sections.snapshot = body; sections.snapshotHeading = true; }
       else if (/^operational context/.test(key)) sections.context = body;
       else if (/^strengths?$/.test(key)) sections.strengths = body;
       else if (/^(potential |key )?gaps$/.test(key)) sections.gaps = body;
@@ -593,7 +593,8 @@
     if (dd && dd.review_stage_notice) head += `<p class="fr-note fr-stage-notice" dir="auto">${k.esc(dd.review_stage_notice)}</p>`;
     // 2026-11-27 (owner): the Opening assessment replaces the two S/R snapshot tiles and appears once, at the top.
     // Without an Opening assessment the S/R tiles stay as before.
-    const overviewTop = Boolean(s.found && s.snapshot);
+    // Same test as the Word export (split_opening_assessment): only an Opening Assessment heading fills the box.
+    const overviewTop = Boolean(s.found && s.snapshot && s.snapshotHeading);
     // Parity with the climate box: opening sentence bold, the rest regular.
     const snapSplit = overviewTop ? k.takeSentences(s.snapshot, 1) : { head: '', rest: '' };
     head += k.scorecard(overviewTop ? [{ key: 'overview', label: 'Snapshot', overview: snapSplit.head, overviewRest: snapSplit.rest }] : [
@@ -811,7 +812,8 @@
     // 2026-11-27 (owner, parity with the normal route): the approved two-sentence snapshot fills one overview
     // box at the top instead of the two climate S/R tiles, and is not repeated in the Overview section.
     // Without a generated snapshot (fallback or withheld summary) the S/R tiles stay as before.
-    const overviewTop = Boolean(snapshot);
+    // Same test as write_reader_docx: only a generated summary fills the box; legacy readers keep the tiles.
+    const overviewTop = Boolean(snapshot) && r.summary_overview_status === 'generated';
     head += k.scorecard(overviewTop ? [{ key: 'overview', label: 'Snapshot', overview: snapshot, overviewRest: snapshotRest }] : [
       { key: 'climate-sensitivity', label: 'Climate-FCV sensitivity', summary: headline(k, sens.rationale), def: DEFINITIONS.climateSensitivity },
       { key: 'climate-responsiveness', label: 'Climate-FCV responsiveness', summary: headline(k, resp.rationale), def: DEFINITIONS.climateResponsiveness },

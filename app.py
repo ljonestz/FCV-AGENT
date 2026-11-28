@@ -3354,6 +3354,14 @@ _STAGE3_SECTION_SPECS = [
     ("### Gaps (100-130 words, prose)", "### Gaps (150-220 words, ONE OR TWO PARAGRAPHS of prose)"),
 ]
 
+# Implementation-review template (en-dash ranges): same snapshot shape (2026-11-27).
+_STAGE3_IMPL_SECTION_SPECS = [
+    ("### Opening Assessment (ONE BOLD SENTENCE, 25–35 words)\nSummarise the project's current FCV integration status during implementation.",
+     "### Opening Assessment (SNAPSHOT: two or three short sentences, about 55 words in total, not bold)\nThe snapshot of the project's current FCV integration status during implementation; follow the SNAPSHOT AND OPENING RULES."),
+    ("### Implementation Context (150–200 words, ONE PARAGRAPH)\nSynthesise the 3–4 key FCV dynamics that have shaped implementation to date and that the remaining period must navigate.",
+     "### Implementation Context (a bold segue sentence and a short opening paragraph, then one further paragraph of 100-160 words)\nOpen with the segue and opening paragraph set out in the SNAPSHOT AND OPENING RULES. Then synthesise the remaining key FCV dynamics that have shaped implementation to date and that the remaining period must navigate."),
+]
+
 
 def _stage3_prose_layer_enabled() -> bool:
     return os.environ.get("FCV_STAGE3_PROSE_STYLE", "analytical").strip().lower() != "legacy"
@@ -3396,7 +3404,7 @@ FINAL FORMAT CHECK BEFORE WRITING THE NARRATIVE:
 def _stage3_apply_section_specs(stage_prompt: str) -> str:
     if not _stage3_prose_layer_enabled():
         return stage_prompt
-    for old, new in _STAGE3_SECTION_SPECS:
+    for old, new in _STAGE3_SECTION_SPECS + _STAGE3_IMPL_SECTION_SPECS:
         stage_prompt = stage_prompt.replace(old, new, 1)
     return stage_prompt
 
@@ -13524,7 +13532,8 @@ def _word_report_meta(data, title='FCV Recommendations Note'):
     return report_meta
 
 
-_OPENING_HEADING_RE = re.compile(r'^#{2,6}\s*\**\s*opening assessment\s*:?\s*\**\s*$', re.IGNORECASE)
+# Same test as parseStage3Sections in static/fcv_readout.js: a heading that starts with 'Opening Assessment'.
+_OPENING_HEADING_RE = re.compile(r'^#{2,6}\s*[*_]*\s*opening assessment\b', re.IGNORECASE)
 
 
 def split_opening_assessment(summary):
@@ -13910,7 +13919,10 @@ def download_report():
     # into one overview box at the top, replacing the two S/R snapshot tiles (browser: fcv_readout.js).
     overview_text = ''
     if not climate_active:
-        overview_text, summary = split_opening_assessment(summary)
+        split_text, split_rest = split_opening_assessment(summary)
+        # A body that is only a reviewer note stays in the Executive Summary; the S/R tiles show.
+        if VERIFY_RE.sub('', split_text).strip():
+            overview_text, summary = split_text, split_rest
 
     def add_rating_scorecard():
         if overview_text:
@@ -13920,6 +13932,7 @@ def download_report():
             notes = VERIFY_RE.findall(overview_text)
             lead, rest = take_sentences(VERIFY_RE.sub('', overview_text).strip(), 1)
             rest = ' '.join(part for part in [rest, *notes] if part).strip()
+        if overview_text and lead:
             report.scorecard(
                 [{'label': 'Snapshot', 'overview': lead, 'overview_rest': rest}],
                 {'label': 'Priority actions', 'number': len(priorities),
