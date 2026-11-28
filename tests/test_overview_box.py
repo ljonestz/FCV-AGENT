@@ -5,6 +5,8 @@ from io import BytesIO
 
 from docx import Document
 
+from pathlib import Path
+
 import app
 from tests.test_fcv_priority_advisory_exports import _docx_text
 from tests.test_fcv_readout import normal
@@ -83,3 +85,38 @@ def test_snapshot_rules_in_both_route_prompts():
     for prompt in (normal_prompt, climate_prompt):
         assert "SNAPSHOT AND OPENING RULES" in prompt and "Write fresh wording for this project." in prompt
     assert "ONE BOLD SENTENCE, 35-60" not in normal_prompt and "100-115 words each" not in climate_prompt
+
+
+def test_word_and_browser_agree_when_no_opening_assessment_heading():
+    md = "## Executive Summary\n\n**Verdict sentence.** Supporting lead detail.\n\n### Operational Context\n\nContext body."
+    assert "fr-sc-overview" not in normal({"stage3Markdown": md})
+    resp = app.app.test_client().post("/api/download-report", json={
+        "summary": md, "priorities": [], "metadata": {},
+        "sensitivity_summary": "Sens.", "responsiveness_summary": "Resp."})
+    doc = Document(BytesIO(resp.data))
+    assert not any(t.rows[0].cells[0].text.startswith("SNAPSHOT") for t in doc.tables)
+
+
+def test_opening_assessment_heading_with_suffix_still_fills_box():
+    md = "## Executive Summary\n\n### Opening Assessment (snapshot)\n\nShort verdict here.\n\n### Operational Context\n\nCtx."
+    assert app.split_opening_assessment(md)[0] == "Short verdict here."
+    assert "fr-sc-overview" in normal({"stage3Markdown": md})
+
+
+def test_word_keeps_note_only_opening_in_body():
+    md = "## Executive Summary\n\n### Opening Assessment\n\n[Verify before sharing: confirm dates.]\n\n### Operational Context\n\nCtx."
+    resp = app.app.test_client().post("/api/download-report", json={
+        "summary": md, "priorities": [], "metadata": {}, "sensitivity_summary": "S.", "responsiveness_summary": "R."})
+    doc = Document(BytesIO(resp.data))
+    assert not any(t.rows[0].cells[0].text.startswith("SNAPSHOT") for t in doc.tables)
+    assert "confirm dates" in _docx_text(doc)
+
+
+def test_implementation_review_prompt_has_no_conflicting_opening_spec():
+    src = Path(app.__file__).read_text(encoding="utf-8")
+    assert "### Opening Assessment (ONE BOLD SENTENCE, 25\u201335 words)\nSummarise the project's current FCV integration status during implementation." in src
+    sample = ("### Opening Assessment (ONE BOLD SENTENCE, 25\u201335 words)\nSummarise the project's current FCV integration "
+              "status during implementation.\n\n### Implementation Context (150\u2013200 words, ONE PARAGRAPH)\nSynthesise the "
+              "3\u20134 key FCV dynamics that have shaped implementation to date and that the remaining period must navigate.")
+    out = app._stage3_apply_section_specs(sample)
+    assert "ONE BOLD SENTENCE" not in out and "SNAPSHOT AND OPENING RULES" in out and "bold segue sentence" in out

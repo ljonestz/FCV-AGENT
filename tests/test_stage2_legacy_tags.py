@@ -40,3 +40,17 @@ def test_strip_drops_sr_and_shift_table_columns():
     assert rows[0] == "| # | Operational Standard | Status |"
     assert re.fullmatch(r"\|\s*-+\s*\|\s*-+\s*\|\s*-+\s*\|", rows[1])
     assert rows[2] == "| 1 | Use DRRs | Weakly addressed |"
+
+
+def test_strip_keeps_generic_type_column_and_bare_shift_mentions():
+    trail = "| Source | Type | Used For |\n|---|---|---|\n| PAD | Project document | Context |"
+    assert _strip(trail).splitlines()[0] == "| Source | Type | Used For |"
+    text = "Partially addressed (FCV Strategy Shift: Anticipate). The PAD lacks triggers for scaling up the CERC."
+    out = _strip(text)
+    assert out == "Partially addressed. The PAD lacks triggers for scaling up the CERC."
+    bare = "The strategy refers to FCV Strategy Shift: Anticipate as a priority, and the PAD lacks triggers."
+    assert _strip(bare) == bare
+
+
+def test_analytical_trail_table_drops_legacy_columns():
+    assert "dropLegacyTableColumns(underHood.recs_table)" in INDEX

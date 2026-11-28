@@ -369,8 +369,9 @@ def test_lead_rest_renders_after_snapshot_before_context():
     md_text = ("## Executive Summary\n\n**Verdict sentence.** Supporting lead detail.\n\n"
                "### Operational Context\n\nContext body.\n\n### Gaps\n\nGap body.")
     html = normal({"stage3Markdown": md_text})
-    # 2026-11-27: the verdict now sits in the top overview box, ahead of the lead detail.
-    assert html.index("fr-sc-overview") < html.index("Supporting lead detail.") < html.index("Context body.")
+    # No Opening Assessment heading: the box is not used (same as Word), so the snapshot stays in place.
+    assert "fr-sc-overview" not in html
+    assert html.index("Assessment snapshot") < html.index("Supporting lead detail.") < html.index("Context body.")
     assert html.index("Supporting lead detail.") < html.index("Gap body.")
 
 
