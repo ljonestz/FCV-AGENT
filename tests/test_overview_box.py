@@ -119,3 +119,20 @@ def test_implementation_review_prompt_has_no_conflicting_opening_spec():
               "3\u20134 key FCV dynamics that have shaped implementation to date and that the remaining period must navigate.")
     out = app._stage3_apply_section_specs(sample)
     assert "ONE BOLD SENTENCE" not in out and "SNAPSHOT AND OPENING RULES" in out and "bold segue sentence" in out
+
+
+def test_verify_and_heading_helpers_are_linear_and_correct():
+    import time
+
+    from fcv_docx_style import split_verify_notes
+    assert split_verify_notes("A. [Verify before sharing: x.] B.") == ("A. B.", ["[Verify before sharing: x.]"])
+    hostile = "[Verify before sharing:" * 20000
+    started = time.perf_counter()
+    assert split_verify_notes(hostile)[1] == []
+    assert time.perf_counter() - started < 1.0
+    assert app._is_opening_heading("### **Opening Assessment** (snapshot)")
+    assert not app._is_opening_heading("## Opening assessments")
+    assert not app._is_opening_heading("# Opening Assessment")
+    started = time.perf_counter()
+    app.split_opening_assessment("##" + " " * 50000 + "x")
+    assert time.perf_counter() - started < 1.0

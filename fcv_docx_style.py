@@ -381,6 +381,30 @@ RESPONSIVENESS_INTRO = (
 )
 
 
+_VERIFY_OPEN = "[Verify before sharing:"
+
+
+def split_verify_notes(text):
+    """Return (text without reviewer notes, [notes]) with a linear scan.
+
+    A note is "[Verify before sharing: ...]"; an unterminated marker is left in the text.
+    Linear on purpose (no backtracking regex on user text; CodeQL polynomial-redos)."""
+    text = str(text or "")
+    kept, notes, pos = [], [], 0
+    while True:
+        start = text.find(_VERIFY_OPEN, pos)
+        if start < 0:
+            break
+        end = text.find("]", start + len(_VERIFY_OPEN))
+        if end < 0:
+            break
+        kept.append(text[pos:start])
+        notes.append(text[start:end + 1])
+        pos = end + 1
+    kept.append(text[pos:])
+    return " ".join(" ".join(kept).split()), notes
+
+
 def take_sentences(text, count):
     """Return (first `count` sentences of the first paragraph, remaining text). Mirrors takeSentences in
     static/fcv_readout.js, using the first_sentence rules for each sentence end."""
