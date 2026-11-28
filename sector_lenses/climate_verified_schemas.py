@@ -155,7 +155,8 @@ def validate_summary_overview(
     paragraphs = [_summary_normalize(item) for item in raw]
     # Native prose uses editorial targets, with a separate runaway-output ceiling.
     # Strict callers retain their existing length contract.
-    minimum_words, maximum_words = (1, 500) if semantic_review_required else (160, 230)
+    # 2026-11-27: the snapshot rules shorten the summary (about 170-190 words); allow 100-230.
+    minimum_words, maximum_words = (1, 500) if semantic_review_required else (100, 230)
     if not minimum_words <= sum(len(item.split()) for item in paragraphs) <= maximum_words:
         return reject("SUMMARY_WORD_COUNT")
     if any(_SUMMARY_MARKUP_RE.search(item) for item in paragraphs):

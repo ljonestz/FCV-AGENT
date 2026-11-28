@@ -774,7 +774,7 @@ class Report:
                     borders={"top": bd, "bottom": bd, "left": (24, BLUE), "right": bd, "insideV": bd})
         c = t.rows[0].cells[0]; shade_cell(c, TINT)
         p = first_para(c); pfmt(p, after=2)
-        add_run(p, tile.get("label", "Overview").upper(), 7.5, True, color=GREY_TXT, spacing=0.8)
+        add_run(p, tile.get("label", "Snapshot").upper(), 7.5, True, color=GREY_TXT, spacing=0.8)
         p = c.add_paragraph(); pfmt(p)
         p.paragraph_format.line_spacing = 1.2
         # Same highlighting as body text, so a reviewer note in the overview stays visible.

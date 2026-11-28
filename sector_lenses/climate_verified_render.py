@@ -1879,7 +1879,7 @@ def write_reader_docx(
         overview = [model.get("overview_summary", "")]
     overview = [_text(paragraph) for paragraph in overview if _text(paragraph)]
     # 2026-11-27 (owner, parity with the normal route and the browser): a generated summary's whole first
-    # paragraph fills one overview box at the top instead of the two S/R tiles (first two sentences in bold),
+    # paragraph fills one overview box at the top instead of the two S/R tiles (opening sentence in bold),
     # and the Overview section starts at the second paragraph under "Main remaining risk", so it never opens
     # mid-thought. Fallback or withheld summaries keep the tiles.
     remaining_risk = False
@@ -1887,10 +1887,10 @@ def write_reader_docx(
         # Reviewer notes are lifted out before the split and kept after the explanation, so a sentence
         # split can never cut a "[Verify before sharing: ...]" marker in two.
         notes = VERIFY_RE.findall(overview[0])
-        snapshot, remainder = take_sentences(VERIFY_RE.sub("", overview[0]).strip(), 2)
+        snapshot, remainder = take_sentences(VERIFY_RE.sub("", overview[0]).strip(), 1)
         remainder = " ".join(part for part in [remainder, *notes] if part).strip()
         if snapshot:
-            tiles = [{"label": "Overview", "overview": snapshot, "overview_rest": remainder}]
+            tiles = [{"label": "Snapshot", "overview": snapshot, "overview_rest": remainder}]
             overview = overview[1:]
             remaining_risk = bool(overview)
 

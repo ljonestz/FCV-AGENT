@@ -587,8 +587,9 @@ def test_native_judgment_defers_prose_to_final_reader_schema():
 def test_final_reader_prompt_default_opens_with_analytical_judgment(monkeypatch):
     monkeypatch.delenv("CLIMATE_PROSE_STYLE", raising=False)
     prompt = build_verified_stage_prompt('reader_compiler', {}).lower()
-    for expected in ('crafted analytical judgment', 'central climate-fcv tension',
-                     'editorial target 160-230', 'accepted_recommendation_ids',
+    # 2026-11-27: the snapshot rules replace the tension/judgment opener and the 160-230 target.
+    for expected in ('snapshot and opening rules', 'write summary paragraph sum-001 as the snapshot',
+                     'about 180 summary words', 'accepted_recommendation_ids',
                      'connected paragraphs', 'planned/completed', 'reader register and wording'):
         assert expected in prompt
 

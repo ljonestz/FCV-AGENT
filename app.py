@@ -28,6 +28,7 @@ from fcv_distillation import distill_doc_parts_stream
 from live_source_policy import extract_project_ids
 import regime_router
 import review_stage as review_stage_mod
+from fcv_snapshot_rules import SNAPSHOT_RULES
 import stage3_prose
 from sector_cards import integration as sector_cards_mod
 from sector_lenses.climate_native import (
@@ -3292,10 +3293,11 @@ any earlier instruction that places the JSON block after the narrative.
 # FCV_STAGE3_PROSE_STYLE=legacy to restore the previous management style.
 _STANDARD_STYLE_PARAGRAPH_START = "Write the narrative in a clear technical report style for management."
 _STANDARD_STYLE_PARAGRAPH_END = "repeating the why text of each priority.\n"
-_STAGE3_PROSE_STYLE_PARAGRAPH = """NARRATIVE STYLE FOR THE DETAILED NOTE: Write the Opening Assessment, Operational
+_STAGE3_PROSE_STYLE_PARAGRAPH = """NARRATIVE STYLE FOR THE DETAILED NOTE: The Opening Assessment and the start of
+Operational Context follow the SNAPSHOT AND OPENING RULES below. Write the rest of Operational
 Context, Strengths, Gaps, FCV Risk Exposure and the two Summary paragraphs as connected
 analytical prose for an experienced FCV and operations reader, in the register of a senior
-peer reviewer. Each paragraph opens with a bold first sentence, a topic sentence that states
+peer reviewer. Each of these paragraphs opens with a bold first sentence, a topic sentence that states
 an analytical judgment, then develops it through linked sentences that explain mechanisms, causes and
 consequences and show how the points relate to one another. Do not use bullet lists,
 numbered lists or bold lead-in labels in these sections; integrate the points into the
@@ -3317,12 +3319,10 @@ Keep the concise Summary from repeating the why text of each priority.
 # A description (no sample text) of how strong openings are built.
 _STAGE3_PROSE_QUALITIES = """
 HOW A STRONG OPENING IS BUILT (a description of qualities, not text to imitate):
-- Opening Assessment: write it as its own crafted judgment, not a summary of the gaps. In one
-  sentence of 35-60 words and plain words, name the project's single central tension (for
-  instance, what the design depends on that its context may not sustain), then the areas that
-  need strengthening and what is at stake. Spell out any acronym or use the plain term.
-- Operational Context: opens with a thesis about the direction and character of the
-  operating environment, not a list of facts. Each following sentence adds one dynamic and
+- Opening Assessment and the start of Operational Context: follow the SNAPSHOT AND OPENING
+  RULES below (2026-11-27: short snapshot, then a segue sentence and a short opening paragraph).
+- Operational Context, after its opening paragraph: continues with the direction and character
+  of the operating environment, not a list of facts. Each following sentence adds one dynamic and
   ties it to this project's footprint, components, delivery channels or beneficiaries,
   with figures where the record supplies them. Explain how at least two of the dynamics
   compound one another or the project's design assumptions. Close by setting the design's
@@ -3335,8 +3335,8 @@ HOW A STRONG OPENING IS BUILT (a description of qualities, not text to imitate):
   delivery, name the project element exposed, and say whether it can be closed within
   existing instruments. Write the gaps as two or three connected paragraphs, never as a run
   of one- or two-sentence paragraphs.
-- Sentences in these sections typically run 25 to 45 words and use subordinate clauses to
-  carry cause and consequence. Ordinal ranking ("the most consequential", "the second") is
+- Outside the snapshot and the opening paragraph, sentences in these sections typically run
+  25 to 45 words and use subordinate clauses to carry cause and consequence. Ordinal ranking ("the most consequential", "the second") is
   fine; scaffolding that turns a paragraph into a list is not.
 - Write fresh prose for this project. Do not reuse wording from any example sentence that
   appears elsewhere in these instructions.
@@ -3345,9 +3345,11 @@ HOW A STRONG OPENING IS BUILT (a description of qualities, not text to imitate):
 # Section specifications aligned with the target style.
 _STAGE3_SECTION_SPECS = [
     ("### Opening Assessment (ONE BOLD SENTENCE, 25-35 words)\nA single bolded sentence summarising the project's overall FCV integration status.",
-     "### Opening Assessment (ONE BOLD SENTENCE, 35-60 words)\nA single bolded sentence giving the overall verdict on the project's FCV integration, the areas that need strengthening, and what is at stake."),
+     "### Opening Assessment (SNAPSHOT: two or three short sentences, about 55 words in total, not bold)\nThe snapshot shown at the top of the note; follow the SNAPSHOT AND OPENING RULES."),
     ("### Operational Context (150-200 words, ONE PARAGRAPH)\nSynthesise 3-4 converging FCV risks creating a uniquely challenging operating environment for THIS project.",
-     "### Operational Context (180-240 words, ONE PARAGRAPH)\nSynthesise 3-4 converging FCV risks creating a uniquely challenging operating environment for THIS project, and explain how they compound one another and the design's assumptions."),
+     "### Operational Context (a bold segue sentence and a short opening paragraph, then one further paragraph of 100-160 words)\nOpen with the segue and opening paragraph set out in the SNAPSHOT AND OPENING RULES. Then synthesise the remaining converging FCV risks for THIS project and explain how they compound one another and the design's assumptions."),
+    ("- Opening Assessment: 25-35 words\n", "- Opening Assessment: about 55 words, two or three short sentences (snapshot rules)\n"),
+    ("- Operational Context: 150-200 words\n", "- Operational Context: segue and opening paragraph (about 140 words), then 100-160 words\n"),
     ("### Strengths (80-150 words, prose)", "### Strengths (150-220 words, ONE OR TWO PARAGRAPHS of prose)"),
     ("### Gaps (100-130 words, prose)", "### Gaps (150-220 words, ONE OR TWO PARAGRAPHS of prose)"),
 ]
@@ -3366,7 +3368,7 @@ def _stage3_contract_text() -> str:
     end = contract.find(_STANDARD_STYLE_PARAGRAPH_END, start)
     if start < 0 or end < 0:
         return contract
-    paragraph = _STAGE3_PROSE_STYLE_PARAGRAPH + _STAGE3_PROSE_QUALITIES
+    paragraph = _STAGE3_PROSE_STYLE_PARAGRAPH + _STAGE3_PROSE_QUALITIES + SNAPSHOT_RULES
     return contract[:start] + paragraph + contract[end + len(_STANDARD_STYLE_PARAGRAPH_END):]
 
 
@@ -13547,7 +13549,7 @@ def download_report():
     from docx.oxml import OxmlElement
     from docx.oxml.ns import qn
     from docx.text.run import Run
-    from fcv_docx_style import AMBER_TXT, BE_AWARE, CONTENT_W, Report, VERIFY_BG, put
+    from fcv_docx_style import AMBER_TXT, BE_AWARE, CONTENT_W, VERIFY_BG, VERIFY_RE, Report, put, take_sentences
     from fcv_word_style import _bold_first_sentence
     import io
     from copy import deepcopy
@@ -13913,8 +13915,13 @@ def download_report():
     def add_rating_scorecard():
         if overview_text:
             risk_levels = [str(priority.get('risk_level') or '').strip() for priority in priorities]
+            # Parity with the climate box: opening sentence bold, the rest regular. Reviewer notes are
+            # lifted out before the split and kept at the end, so a split never cuts one in two.
+            notes = VERIFY_RE.findall(overview_text)
+            lead, rest = take_sentences(VERIFY_RE.sub('', overview_text).strip(), 1)
+            rest = ' '.join(part for part in [rest, *notes] if part).strip()
             report.scorecard(
-                [{'label': 'Overview', 'overview': overview_text}],
+                [{'label': 'Snapshot', 'overview': lead, 'overview_rest': rest}],
                 {'label': 'Priority actions', 'number': len(priorities),
                  'lines': [(f'{risk_levels.count(level)} {level}', level)
                            for level in ('High', 'Medium', 'Low') if risk_levels.count(level)]},

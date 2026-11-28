@@ -45,8 +45,41 @@ def test_word_overview_box_replaces_sr_tiles():
     assert resp.status_code == 200
     doc = Document(BytesIO(resp.data))
     tables = ["\n".join(c.text for c in t.rows[0].cells) for t in doc.tables]
-    box = next(t for t in tables if t.startswith("OVERVIEW"))
+    box = next(t for t in tables if t.startswith("SNAPSHOT"))
     text = _docx_text(doc)
     assert VERDICT in box and "PRIORITY ACTIONS" in box and "Snapshot" not in text
     assert text.count(VERDICT) == 1 and "OPENING ASSESSMENT" not in text.upper()
     assert "Sensitivity judgment." in text
+
+
+def test_box_is_labelled_snapshot_on_both_routes():
+    from tests.test_fcv_readout import CLIMATE_READER, climate
+    for html in (normal({}), climate(CLIMATE_READER)):
+        box = html[html.index('class="fr-sc-overview"'):]
+        assert box.startswith('class="fr-sc-overview" data-fr-rating="overview"><div class="fr-sc-label">Snapshot</div>')
+        assert "This snapshot is a high-level AI reading" in html
+
+
+def test_normal_box_bolds_only_the_opening_sentence_in_browser_and_word():
+    md = ("## Executive Summary\n\n### Opening Assessment\n\nGuinea's water project depends on tariff decisions. "
+          "Its procurement design is strong. Affordability safeguards would help.\n\n### Operational Context\n\nCrime.")
+    html = normal({"stage3Markdown": md})
+    assert ('>Guinea\'s water project depends on tariff decisions. <span class="fr-sc-ov-rest">Its procurement design '
+            'is strong. Affordability safeguards would help.</span>') in html
+    resp = app.app.test_client().post("/api/download-report", json={
+        "summary": md, "priorities": [{"title": "Priority 1 · Act", "risk_level": "High", "the_gap": "G.",
+                                       "why_it_matters": "W.", "actions": []}], "metadata": {}})
+    doc = Document(BytesIO(resp.data))
+    cell = next(t.rows[0].cells[0] for t in doc.tables if t.rows[0].cells[0].text.startswith("SNAPSHOT"))
+    runs = [r for p in cell.paragraphs for r in p.runs]
+    bold = "".join(r.text for r in runs if r.bold)
+    assert "depends on tariff decisions." in bold and "procurement design" not in bold
+
+
+def test_snapshot_rules_in_both_route_prompts():
+    from sector_lenses.climate_verified_prompts import build_verified_stage_prompt
+    normal_prompt = app._stage3_apply_section_specs(app.DEFAULT_PROMPTS["3"]) + app._stage3_contract_text()
+    climate_prompt = build_verified_stage_prompt("reader_compiler", {})
+    for prompt in (normal_prompt, climate_prompt):
+        assert "SNAPSHOT AND OPENING RULES" in prompt and "Write fresh wording for this project." in prompt
+    assert "ONE BOLD SENTENCE, 35-60" not in normal_prompt and "100-115 words each" not in climate_prompt
