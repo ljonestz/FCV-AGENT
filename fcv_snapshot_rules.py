@@ -21,7 +21,7 @@ SNAPSHOT AND OPENING RULES
 
 2. Where this text goes.
    - Normal route: write the "### Opening Assessment" section as the SNAPSHOT. Begin "### Operational Context" with a bold segue sentence, followed by the opening paragraph. The rest of Operational Context follows the opening paragraph in the usual way. The deeper sections are the rest of Operational Context, Strengths, Gaps and FCV Risk Exposure.
-   - Climate route: write summary paragraph SUM-001 as the SNAPSHOT. Begin SUM-002 with the segue sentence, followed by the opening paragraph. SUM-002 consists of the segue and the opening paragraph and nothing more. SUM-002 appears under the readout sub-heading "Main remaining risk". The deeper sections are the design, dividends and inclusion narratives and the priorities.
+   - Climate route: write summary paragraph SUM-001 as the SNAPSHOT. Begin SUM-002 with the segue sentence, followed by the opening paragraph. SUM-002 consists of the segue and the opening paragraph and nothing more. SUM-002 appears under the readout sub-heading "Where the design is least settled". The deeper sections are the design, dividends and inclusion narratives and the priorities.
    - Formatting: do not bold the snapshot or SUM-002; the display formats them. On the normal route, bold only the segue sentence.
 
 3. Snapshot shape.
