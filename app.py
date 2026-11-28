@@ -14500,7 +14500,7 @@ def download_report():
                         ('Timing', timing),
                         ('Scope', priority.get('priority_scope')),
                         # Mechanism cards (readout option C): same marker as the browser tag.
-                        ('Sector lens', 'Informed by sector lens' if priority.get('sector_cards') else ''),
+                        ('Informed by', 'Sector lens' if priority.get('sector_cards') else ''),
                     )
                     if value
                 ]

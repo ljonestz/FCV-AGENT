@@ -227,4 +227,4 @@ def test_word_priority_header_marks_sector_shaped_priorities():
                                       json={"summary": "", "priorities": [shaped, plain], "metadata": {}})
     assert resp.status_code == 200
     text = _docx_text(Document(BytesIO(resp.data)))
-    assert text.count("Informed by sector lens") == 1
+    assert text.count("INFORMED BY") == 1 and text.count("Sector lens") == 1
