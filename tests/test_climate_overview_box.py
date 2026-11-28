@@ -71,3 +71,12 @@ def test_climate_word_box_keeps_verify_note_highlighted():
     note = next(r for r in runs if "Confirm the dates" in r.text)
     assert note._r.find(".//{http://schemas.openxmlformats.org/wordprocessingml/2006/main}shd") is not None
     assert "Alpha one. Beta two." in "".join(r.text for r in runs if r.bold)
+
+
+def test_reader_compiler_prompt_keeps_sum001_and_sum002_to_one_role_each():
+    # SUM-001 fills the overview box on its own; delivery risks belong to SUM-002 (owner, 2026-11-27).
+    from sector_lenses.climate_verified_prompts import build_verified_stage_prompt
+    prompt = " ".join(build_verified_stage_prompt("reader_compiler", {}).split())
+    assert "SUM-001 is shown on its own as the note's headline overview" in prompt
+    assert "keep delivery risks, constraints and obstacles" in prompt and "place them in SUM-002" in prompt
+    assert "never with a word that points back to SUM-001" in prompt

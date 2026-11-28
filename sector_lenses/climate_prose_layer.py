@@ -20,14 +20,22 @@ _REPLACEMENTS: dict[str, list[tuple[str, str]]] = {
             "Begin with a clear overall assessment of what the project already recognizes and\n"
             "addresses. Explain the material remaining challenge and\n"
             "bridge to categories of accepted priorities without enumerating every action.",
+            # 2026-11-27 (owner): SUM-001 is shown alone in the readout's top overview box and
+            # SUM-002 under "Main remaining risk", so each paragraph keeps to one role.
             "Open SUM-001 with a crafted analytical judgment, not an inventory: in one or two\n"
             "sentences name the project's central climate-FCV tension (what the design depends\n"
             "on that its climate and fragility context may not sustain) and what is at stake.\n"
             "Then explain how the main climate hazards and fragility dynamics interact with the\n"
-            "design, crediting what the design provides together with the condition on which\n"
-            "its value depends. Use SUM-002 for the most consequential remaining risk, why it\n"
-            "matters for people and delivery, and how the priority actions in this note respond,\n"
-            "by category and without enumerating every action.",
+            "design, crediting what the design provides, and end SUM-001 on the condition on\n"
+            "which its value depends. SUM-001 is shown on its own as the note's headline\n"
+            "overview, so it must read as one complete judgment: keep delivery risks,\n"
+            "constraints and obstacles (access, contamination, fiduciary, staffing, institutional\n"
+            "set-up, timing) out of SUM-001 and place them in SUM-002. Open SUM-002 with the\n"
+            "most consequential remaining risk, fold in the delivery constraints that drive it,\n"
+            "say why it matters for people and delivery, and how the priority actions in this\n"
+            "note respond, by category and without enumerating every action. SUM-002 is read\n"
+            "under its own heading, so open it with its own subject, never with a word that\n"
+            "points back to SUM-001 (this, these, such, that).",
         ),
         (
             "Explain the causal connection in ordinary words.",
