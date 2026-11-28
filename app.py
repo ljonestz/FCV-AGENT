@@ -3297,7 +3297,7 @@ Keep the concise Summary from repeating the why text of each priority.
 _STAGE3_PROSE_QUALITIES = """
 HOW A STRONG OPENING IS BUILT (a description of qualities, not text to imitate):
 - Opening Assessment and the start of Operational Context: follow the SNAPSHOT AND OPENING
-  RULES below (2026-11-27: short snapshot, then a segue sentence and a short opening paragraph).
+  RULES below (snapshot, then a segue sentence and a short opening paragraph).
 - Operational Context, after its opening paragraph: continues with the direction and character
   of the operating environment, not a list of facts. Each following sentence adds one dynamic and
   ties it to this project's footprint, components, delivery channels or beneficiaries,
@@ -3322,19 +3322,19 @@ HOW A STRONG OPENING IS BUILT (a description of qualities, not text to imitate):
 # Section specifications aligned with the target style.
 _STAGE3_SECTION_SPECS = [
     ("### Opening Assessment (ONE BOLD SENTENCE, 25-35 words)\nA single bolded sentence summarising the project's overall FCV integration status.",
-     "### Opening Assessment (SNAPSHOT: two or three short sentences, about 55 words in total, not bold)\nThe snapshot shown at the top of the note; follow the SNAPSHOT AND OPENING RULES."),
+     "### Opening Assessment (SNAPSHOT: three or four short sentences, about 75-95 words in total, not bold)\nThe snapshot shown at the top of the note; follow the SNAPSHOT AND OPENING RULES."),
     ("### Operational Context (150-200 words, ONE PARAGRAPH)\nSynthesise 3-4 converging FCV risks creating a uniquely challenging operating environment for THIS project.",
      "### Operational Context (a bold segue sentence and a short opening paragraph, then one further paragraph of 100-160 words)\nOpen with the segue and opening paragraph set out in the SNAPSHOT AND OPENING RULES. Then synthesise the remaining converging FCV risks for THIS project and explain how they compound one another and the design's assumptions."),
-    ("- Opening Assessment: 25-35 words\n", "- Opening Assessment: about 55 words, two or three short sentences (snapshot rules)\n"),
-    ("- Operational Context: 150-200 words\n", "- Operational Context: segue and opening paragraph (about 140 words), then 100-160 words\n"),
+    ("- Opening Assessment: 25-35 words\n", "- Opening Assessment: about 75-95 words, three or four short sentences (snapshot rules)\n"),
+    ("- Operational Context: 150-200 words\n", "- Operational Context: segue and opening paragraph (about 95-120 words), then 100-160 words\n"),
     ("### Strengths (80-150 words, prose)", "### Strengths (150-220 words, ONE OR TWO PARAGRAPHS of prose)"),
     ("### Gaps (100-130 words, prose)", "### Gaps (150-220 words, ONE OR TWO PARAGRAPHS of prose)"),
 ]
 
-# Implementation-review template (en-dash ranges): same snapshot shape (2026-11-27).
+# Implementation-review template (en-dash ranges): same snapshot shape (2026-11-27; revised 2026-11-28).
 _STAGE3_IMPL_SECTION_SPECS = [
     ("### Opening Assessment (ONE BOLD SENTENCE, 25–35 words)\nSummarise the project's current FCV integration status during implementation.",
-     "### Opening Assessment (SNAPSHOT: two or three short sentences, about 55 words in total, not bold)\nThe snapshot of the project's current FCV integration status during implementation; follow the SNAPSHOT AND OPENING RULES."),
+     "### Opening Assessment (SNAPSHOT: three or four short sentences, about 75-95 words in total, not bold)\nThe snapshot of the project's current FCV integration status during implementation; follow the SNAPSHOT AND OPENING RULES."),
     ("### Implementation Context (150–200 words, ONE PARAGRAPH)\nSynthesise the 3–4 key FCV dynamics that have shaped implementation to date and that the remaining period must navigate.",
      "### Implementation Context (a bold segue sentence and a short opening paragraph, then one further paragraph of 100-160 words)\nOpen with the segue and opening paragraph set out in the SNAPSHOT AND OPENING RULES. Then synthesise the remaining key FCV dynamics that have shaped implementation to date and that the remaining period must navigate."),
 ]

@@ -78,12 +78,21 @@ def test_normal_box_bolds_only_the_opening_sentence_in_browser_and_word():
 
 
 def test_snapshot_rules_in_both_route_prompts():
+    from fcv_snapshot_rules import SNAPSHOT_RULES
     from sector_lenses.climate_verified_prompts import build_verified_stage_prompt
     normal_prompt = app._stage3_apply_section_specs(app.DEFAULT_PROMPTS["3"]) + app._stage3_contract_text()
     climate_prompt = build_verified_stage_prompt("reader_compiler", {})
     for prompt in (normal_prompt, climate_prompt):
         assert "SNAPSHOT AND OPENING RULES" in prompt and "Write fresh wording for this project." in prompt
+        assert "overall assessment verdict, never as a plain-language project brochure" in prompt
+        assert "75 to 95 words" in prompt
     assert "ONE BOLD SENTENCE, 35-60" not in normal_prompt and "100-115 words each" not in climate_prompt
+    assert "about 75-95 words" in normal_prompt and "about 95-120 words" in normal_prompt
+    assert "175-210 words overall" in climate_prompt and "about 195 summary words" in climate_prompt
+    assert "least settled" not in SNAPSHOT_RULES.lower()
+    assert "least settled" not in climate_prompt.lower()
+    assert "{" not in SNAPSHOT_RULES and "}" not in SNAPSHOT_RULES
+    assert "\u2014" not in SNAPSHOT_RULES and "\u2013" not in SNAPSHOT_RULES
 
 
 def test_word_and_browser_agree_when_no_opening_assessment_heading():

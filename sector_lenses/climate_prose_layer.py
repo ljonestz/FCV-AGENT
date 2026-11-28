@@ -38,10 +38,10 @@ _REPLACEMENTS: dict[str, list[tuple[str, str]]] = {
         # 2026-11-16 paragraph shape: fewer, fuller paragraphs (same hard ceilings).
         (
             "Summary: prefer two connected paragraphs of about 90-100 words each, targeting 190 words overall (editorial target 160-230); use a third only if essential.",
-            # 2026-11-27 (owner): short snapshot and opening, shared with the normal route.
+            # 2026-11-28 (owner): assessment-verdict snapshot (75-95w) + segue/opening (95-115w), shared with normal route.
             "Summary: write SUM-001 as the snapshot and SUM-002 as the segue plus opening paragraph,\n"
             "following the SNAPSHOT AND OPENING RULES at the end of these instructions; about\n"
-            "170-190 words overall. Do not add a third paragraph.",
+            "175-210 words overall. Do not add a third paragraph.",
         ),
         (
             "Assessment narratives: three short question-led answers,",
@@ -60,7 +60,7 @@ _REPLACEMENTS: dict[str, list[tuple[str, str]]] = {
         ),
         (
             "Aim for about 190 summary words.",
-            "Aim for about 180 summary words.",
+            "Aim for about 195 summary words.",
         ),
     ],
     "bounded_analysis": [
@@ -123,7 +123,7 @@ READER REGISTER AND WORDING:
   main remaining challenge is"; write a judgment specific to this project.
 - Never use internal terms in reader prose: accepted priorities, accepted actions,
   accepted recommendations, admitted, support records, residual gap, pathway, or any
-  ID. Refer to "the priority actions in this note" instead.
+  ID. Refer to "the priority actions in this note" as proposed options instead.
 - Describe planned or designed features as planned (is designed to, is intended to,
   will), never as already delivered or working.
 - Avoid repeating the same point across the Summary and the three findings; each
@@ -132,8 +132,9 @@ READER REGISTER AND WORDING:
   what is weak and why). Keep uncertainty where it is real, but do not stack could,
   may and depends on in one sentence until the judgment disappears.
 - Spell out every acronym on first use in each record.
-- Refer to the priority actions in your own words; do not end the Summary with a stock
-  formula such as "The priority actions in this note respond by".
+- Refer to the priority actions in your own words as proposed suggestions, never as
+  enacted changes; do not end the Summary with a stock formula such as "The priority
+  actions in this note respond by" or "The priority actions in this note clarify".
 - Do not comment on document extraction, headings or file processing, and never write
   placeholder role or office names.
 """
