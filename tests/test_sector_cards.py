@@ -302,3 +302,16 @@ def test_development_policy_aliases_use_the_dpf_rules(name):
     res = route(ProjectFacts(instrument=name, fcv_setting="post_conflict",
                              prior_actions=("Adopted a new water tariff schedule",)), CARDS)
     assert res.eligible_ids == ["mc-13"]
+
+
+def test_feature_reason_names_country_only_for_multi_country():
+    from sector_cards.models import load_cards
+    from sector_cards.router import FeatureEvidence, ProjectFacts, route
+    fe = FeatureEvidence("water_points_wash", None, named=True, mechanism_evidence=True, country="Chad", page="12")
+    single = route(ProjectFacts(instrument="IPF", fcv_setting="active_conflict", features=(fe,),
+                                context=frozenset({"displacement", "insecurity"})), load_cards())
+    reasons = [e["reason"] for e in single.eligible if e["route"] == "feature"]
+    assert reasons and all("Chad" not in r and "named in the design" in r for r in reasons)
+    multi = route(ProjectFacts(instrument="IPF", fcv_setting="active_conflict", features=(fe,), multi_country=True,
+                               context=frozenset({"displacement", "insecurity"})), load_cards())
+    assert any(r["reason"].endswith(", Chad") for r in multi.eligible if r["route"] == "feature")

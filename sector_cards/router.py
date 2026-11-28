@@ -225,6 +225,7 @@ def _eligible_project_card(card: MechanismCard, f: ProjectFacts, by_feature, sec
     if not material:
         return {"card_id": card.id, "reason": f"feature {best.feature} not material or no mechanism evidence"}
     m = max(material, key=lambda fe: (fe.financing_share or 0.0, fe.named))
-    share = f"{m.financing_share:.0%} of financing" if m.financing_share is not None else "named in design"
+    share = f"{m.financing_share:.0%} of financing" if m.financing_share is not None else "named in the design"
     return {"card_id": card.id, "route": "feature", "score": score, "feature": m.feature,
-                "reason": f"material feature {m.feature} ({share})" + (f", {m.country}" if m.country else "")}
+                # The country is named only for multi-country operations (single-country readouts read cleaner).
+                "reason": f"material feature {m.feature} ({share})" + (f", {m.country}" if m.country and f.multi_country else "")}
