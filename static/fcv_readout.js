@@ -771,9 +771,9 @@
     let fallbackNote = '';
     if (r.summary_overview_status === 'generated' && overview.length) {
       // 2026-11-27 (owner): the box holds the whole first paragraph (central tension, then how hazards and
-      // fragility interact), judgment in bold, so the Overview section never opens mid-thought. The section
-      // starts at the second paragraph (main remaining risk) under its own sub-heading.
-      const split = k.takeSentences(overview[0], 2);
+      // fragility interact), opening sentence in bold (house style), so the Overview section never opens
+      // mid-thought. The section starts at the second paragraph (main remaining risk) under its own sub-heading.
+      const split = k.takeSentences(overview[0], 1);
       snapshot = split.head;
       snapshotRest = split.rest;
       const later = overview.slice(1, 3);

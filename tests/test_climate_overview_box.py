@@ -16,8 +16,7 @@ def test_climate_browser_overview_box_when_summary_generated():
                                                     "The most consequential remaining risk is X."])
     html = climate(reader)
     top = html[:html.index("fr-exec")]
-    assert "fr-sc-overview" in top and "First sentence here. Second sentence here." in top
-    assert '<span class="fr-sc-ov-rest">Third explains.</span>' in top
+    assert "fr-sc-overview" in top and '>First sentence here. <span class="fr-sc-ov-rest">Second sentence here. Third explains.</span>' in top
     assert "fr-sc-tile-summary" not in top and "Assessment snapshot" not in html
     section = html[html.index("fr-exec"):]
     assert "First sentence here." not in section and "Third explains." not in section
@@ -70,7 +69,8 @@ def test_climate_word_box_keeps_verify_note_highlighted():
     runs = [r for p in cell.paragraphs for r in p.runs]
     note = next(r for r in runs if "Confirm the dates" in r.text)
     assert note._r.find(".//{http://schemas.openxmlformats.org/wordprocessingml/2006/main}shd") is not None
-    assert "Alpha one. Beta two." in "".join(r.text for r in runs if r.bold)
+    bold = "".join(r.text for r in runs if r.bold and not r._r.find(".//{http://schemas.openxmlformats.org/wordprocessingml/2006/main}shd") is not None)
+    assert "Alpha one." in bold and "Beta two." not in bold
 
 
 def test_reader_compiler_prompt_keeps_sum001_and_sum002_to_one_role_each():

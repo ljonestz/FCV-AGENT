@@ -825,8 +825,8 @@ def test_climate_box_holds_first_paragraph_with_bold_judgment():
     html = climate(reader)
     snap = html[html.index('class="fr-sc-ov-text"'):]
     snap = snap[:snap.index("</p>")]
-    # 2026-11-27: bold judgment (two sentences), then the rest of the first paragraph in regular weight.
-    assert snap.index("First point. Second point.") < snap.index('<span class="fr-sc-ov-rest">Third point. Fourth point.</span>')
+    # 2026-11-27: opening sentence bold, then the rest of the first paragraph in regular weight.
+    assert 'First point. <span class="fr-sc-ov-rest">Second point. Third point. Fourth point.</span>' in snap
     assert html.count("Third point.") == 1
 
 
