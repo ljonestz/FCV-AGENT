@@ -9,7 +9,7 @@ from urllib.parse import urlsplit
 from pathlib import Path
 from typing import Any
 
-from fcv_docx_style import BE_AWARE, CONTENT_W, RESPONSIVENESS_INTRO, Report, first_sentence, take_sentences
+from fcv_docx_style import BE_AWARE, CONTENT_W, RESPONSIVENESS_INTRO, VERIFY_RE, Report, first_sentence, take_sentences
 
 from fcv_presentation import priority_advisory_text
 
@@ -1884,7 +1884,11 @@ def write_reader_docx(
     # mid-thought. Fallback or withheld summaries keep the tiles.
     remaining_risk = False
     if model.get("summary_overview_status") == "generated" and overview:
-        snapshot, remainder = take_sentences(overview[0], 2)
+        # Reviewer notes are lifted out before the split and kept after the explanation, so a sentence
+        # split can never cut a "[Verify before sharing: ...]" marker in two.
+        notes = VERIFY_RE.findall(overview[0])
+        snapshot, remainder = take_sentences(VERIFY_RE.sub("", overview[0]).strip(), 2)
+        remainder = " ".join(part for part in [remainder, *notes] if part).strip()
         if snapshot:
             tiles = [{"label": "Overview", "overview": snapshot, "overview_rest": remainder}]
             overview = overview[1:]
