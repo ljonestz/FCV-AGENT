@@ -92,6 +92,21 @@ These are mirrored in Claude Code's auto-mode rules by
 `~/.claude/tools/20261118_add-standing-authorisations.py`. If the auto-mode check
 still blocks an action, stop, name it and give the owner the one-line `!` command.
 
+## Test documents (owner's folders, outside the repo)
+
+Real project documents for offline replay, parser checks and paid validation batches:
+
+- `C:\Users\wb559324\OneDrive - WBG\fcv-project-screener\FCV_Screener_test_cases\`:
+  - **Country cases:** AFG HCJ (PID), AFG Private (PCN), Guinea Gov and Guinea Water (BOSIB PDFs), Honduras (PCN + PAD), each with its CPF/PLR and RRA.
+  - **Moz Resil:** a climate and FCV assessment.
+  - **Synthetic Project Paper:** `20260727_SYNTHETIC_new-model_project-paper_chad-lac-health.docx`.
+  - **`Sector_ENRM_EWS_2026-11\`:** early-warning, ENRM and water/agriculture PADs fetched from the public WDS API, with a README.
+- `C:\Users\wb559324\OneDrive - WBG\Documents\Cowork\Tasks\wbg-project-documents-access-through-2026-06-22\output\WBG_Appraisal_TestCases\`:
+  - Organised by instrument: DPF, IPF, MPA, multi-country MPA, PforR and closed projects.
+  - Each folder has a README.
+- **Syria STAR PAD (climate benchmark):** `C:\Users\wb559324\OneDrive - WBG\Attachments\P515346 Syria STAR PAD ROC.docx`.
+- **Finding more documents:** use the public WDS API (`search.worldbank.org/api/v2/wds?format=json&proid=P...`). Internal Databricks `pdf_urls` redirect to SSO.
+
 ## Known gotchas
 
 - **Climate route (instrument routing).** Instrument routing feeds
