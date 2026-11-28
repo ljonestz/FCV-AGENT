@@ -12,7 +12,7 @@ def _strip(text: str) -> str:
     start = INDEX.index("  const STAGE2_LEGACY_COL_RE")
     end = INDEX.index("  // Wraps \"FCV Sensitivity\"", start)
     script = INDEX[start:end] + f"\nprocess.stdout.write(stripStage2LegacyTags({json.dumps(text)}));"
-    res = subprocess.run(["node", "-"], input=script, capture_output=True, text=True, encoding="utf-8")
+    res = subprocess.run(["node", "-"], input=script, capture_output=True, text=True, encoding="utf-8", check=False)
     assert res.returncode == 0, res.stderr
     return res.stdout
 
