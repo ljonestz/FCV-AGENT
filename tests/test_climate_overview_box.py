@@ -55,3 +55,19 @@ def test_climate_word_keeps_tiles_for_fallback_summary():
     model["summary_overview_status"] = "fallback"
     tables, _ = _docx(model)
     assert not any(t.startswith("OVERVIEW") for t in tables)
+
+
+def test_climate_word_box_keeps_verify_note_highlighted():
+    model = build_reader_model({"executive_readout": "", "judgments": {}, "priorities": []})
+    model["summary_overview"] = ["Alpha one. Beta two. Gamma three. [Verify before sharing: Confirm the dates.]",
+                                 "Next paragraph."]
+    model["summary_overview_status"] = "generated"
+    stream = BytesIO()
+    write_reader_docx(model, stream)
+    stream.seek(0)
+    doc = Document(stream)
+    cell = next(t.rows[0].cells[0] for t in doc.tables if t.rows[0].cells[0].text.startswith("OVERVIEW"))
+    runs = [r for p in cell.paragraphs for r in p.runs]
+    note = next(r for r in runs if "Confirm the dates" in r.text)
+    assert note._r.find(".//{http://schemas.openxmlformats.org/wordprocessingml/2006/main}shd") is not None
+    assert "Alpha one. Beta two." in "".join(r.text for r in runs if r.bold)

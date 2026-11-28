@@ -19,7 +19,10 @@ def test_uncertainty_retained_with_local_note(assessment, identifier, tmp_path):
     model = build_reader_model(assessment)
     note = 'Verify before sharing: Confirm whether the activity is planned or underway.'
     assert note in render_reader_html(model)
-    assert note in '\n'.join(p.text for p in Document(write_reader_docx(model, tmp_path/'notes.docx')).paragraphs)
+    doc = Document(write_reader_docx(model, tmp_path/'notes.docx'))
+    # 2026-11-27: SUM-001 sits in the top overview box (a table cell), so read table text too.
+    cells = [cell.text for table in doc.tables for row in table.rows for cell in row.cells]
+    assert note in '\n'.join([p.text for p in doc.paragraphs] + cells)
     assert review['verdict'] == 'revise'
     assert 'withheld' not in model['reader_review_notice']
 

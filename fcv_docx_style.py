@@ -777,9 +777,10 @@ class Report:
         add_run(p, tile.get("label", "Overview").upper(), 7.5, True, color=GREY_TXT, spacing=0.8)
         p = c.add_paragraph(); pfmt(p)
         p.paragraph_format.line_spacing = 1.2
-        add_run(p, tile["overview"], 10.5, True, color=NAVY)
+        # Same highlighting as body text, so a reviewer note in the overview stays visible.
+        self._runs_with_verify(p, tile["overview"], 10.5, NAVY, bold=True)
         if tile.get("overview_rest"):
-            add_run(p, " " + tile["overview_rest"], 10, False, color=NAVY)
+            self._runs_with_verify(p, " " + tile["overview_rest"], 10, NAVY)
         c = t.rows[0].cells[1]; shade_cell(c, NAVY)
         p = first_para(c); pfmt(p, after=1)
         add_run(p, count_tile["label"].upper(), 7.5, True, color="FFFFFF", spacing=0.8)
