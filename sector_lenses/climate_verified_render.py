@@ -1880,7 +1880,7 @@ def write_reader_docx(
     overview = [_text(paragraph) for paragraph in overview if _text(paragraph)]
     # 2026-11-27 (owner, parity with the normal route and the browser): a generated summary's whole first
     # paragraph fills one overview box at the top instead of the two S/R tiles (opening sentence in bold),
-    # and the Overview section starts at the second paragraph under "Main remaining risk", so it never opens
+    # and the Overview section starts at the second paragraph under "Where the design is least settled", so it never opens
     # mid-thought. Fallback or withheld summaries keep the tiles.
     remaining_risk = False
     if model.get("summary_overview_status") == "generated" and overview:
@@ -1914,7 +1914,7 @@ def write_reader_docx(
     # review, preparation-route, and draft-introduction notices stay out of it.
     report.h1("Overview")
     if remaining_risk:
-        report.h2_caps("Main remaining risk")
+        report.h2_caps("Where the design is least settled")
     for paragraph in overview:
         if _text(paragraph):
             report.body(_text(paragraph))

@@ -797,7 +797,7 @@
       snapshot = split.head;
       snapshotRest = split.rest;
       const later = overview.slice(1, 3);
-      contextHtml = later.length ? k.sub('Main remaining risk') + k.paragraphs(later) : '';
+      contextHtml = later.length ? k.sub('Where the design is least settled') + k.paragraphs(later) : '';
     } else if (r.reader_contract === 'final-reader-v1') {
       // Fallback text explains why no summary is shown; it opens the Limitations box, not the Overview.
       // Placed inside Limitations at the end of the note, so it must not point "below".
