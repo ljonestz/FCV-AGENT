@@ -40,7 +40,8 @@ def test_reader_layer_bans_internal_terms_and_formula_openers(monkeypatch):
     assert "READER REGISTER AND WORDING" in p
     assert "accepted priorities, accepted actions" in p
     assert 'The project already builds' in p  # named as a formula to avoid
-    assert "crafted analytical judgment" in p
+    # 2026-11-27: the shared snapshot rules replace the "crafted analytical judgment" opener wording.
+    assert "SNAPSHOT AND OPENING RULES" in p
 
 
 def test_fact_checking_contracts_unchanged(monkeypatch):

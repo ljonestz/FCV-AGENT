@@ -1962,6 +1962,10 @@
 .fr-readout a{color:var(--fr-blue-text)}
 .fr-readout summary:focus-visible,.fr-readout a:focus-visible,.fr-readout button:focus-visible{outline:2px solid #002244;outline-offset:2px}
 .fr-readout .fr-scorecard{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 170px;border:1px solid var(--fr-border);margin:4px 0 4px}
+.fr-readout .fr-scorecard.fr-scorecard-ov{grid-template-columns:minmax(0,1fr) 180px}
+.fr-readout .fr-sc-overview{padding:16px 20px 14px;background:var(--fr-tint);border-left:4px solid var(--fr-blue);border-right:1px solid var(--fr-border)}
+.fr-readout .fr-sc-ov-text{margin:6px 0 0;font-size:15px;line-height:1.6;font-weight:600;color:var(--fr-navy)}
+.fr-readout .fr-sc-ov-rest{font-weight:400}
 .fr-readout .fr-sc-tile{padding:14px 16px 12px;border-right:1px solid var(--fr-border);display:flex;flex-direction:column}
 .fr-readout .fr-sc-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--fr-grey);margin-bottom:5px}
 .fr-readout .fr-sc-value{font-size:22px;font-weight:700;color:var(--fr-navy);line-height:1.25;margin-bottom:9px}
@@ -2068,7 +2072,7 @@
 .fr-readout .fr-research-intro{font-style:italic;color:var(--fr-grey)}
 .fr-readout .fr-research-list{margin:0;padding-left:18px}.fr-readout .fr-research-list li{margin-bottom:8px;line-height:1.5}
 .fr-readout .fr-research-ex{display:block;font-size:12px;color:var(--fr-grey)}
-@media(max-width:760px){.fr-readout .fr-pc-meta .fr-meta-dim{display:none}.fr-readout .fr-scorecard{grid-template-columns:minmax(0,1fr)}.fr-readout .fr-sc-tile{border-right:0;border-bottom:1px solid var(--fr-border)}.fr-readout .fr-pair{grid-template-columns:minmax(0,1fr)}.fr-readout .fr-col+.fr-col{border-left:0;border-top:1px solid var(--fr-border)}.fr-readout .fr-rating-row{flex-direction:column}.fr-readout .fr-rating-meta{width:auto;border-right:0;padding:0 0 10px}.fr-readout .fr-rating-why{padding-left:0}.fr-readout .fr-pc-body{padding:14px}.fr-readout .fr-draft{margin-left:0}}
+@media(max-width:760px){.fr-readout .fr-pc-meta .fr-meta-dim{display:none}.fr-readout .fr-scorecard,.fr-readout .fr-scorecard.fr-scorecard-ov{grid-template-columns:minmax(0,1fr)}.fr-readout .fr-sc-overview{border-right:0;border-bottom:1px solid var(--fr-border)}.fr-readout .fr-sc-tile{border-right:0;border-bottom:1px solid var(--fr-border)}.fr-readout .fr-pair{grid-template-columns:minmax(0,1fr)}.fr-readout .fr-col+.fr-col{border-left:0;border-top:1px solid var(--fr-border)}.fr-readout .fr-rating-row{flex-direction:column}.fr-readout .fr-rating-meta{width:auto;border-right:0;padding:0 0 10px}.fr-readout .fr-rating-why{padding-left:0}.fr-readout .fr-pc-body{padding:14px}.fr-readout .fr-draft{margin-left:0}}
 /* Phones: the session bar is static, so only the 56px top bar is sticky. */
 @media(max-width:640px){.fr-readout .fr-h1,.fr-readout .fr-pc{scroll-margin-top:72px}}
 /* Full width: 15px body text. */
@@ -4724,19 +4728,6 @@
     '</div>';
   }
 
-  function buildTagLegend() {
-    return '<div class="tag-legend">' +
-      '<div class="tag-legend-header">Reading this assessment</div>' +
-      '<div class="tag-legend-body">' +
-        '<div class="tag-legend-item"><span class="sr-tag sensitivity">S</span> <span class="tag-legend-text">= Sensitivity finding</span></div>' +
-        '<div class="tag-legend-item"><span class="sr-tag responsiveness">R</span> <span class="tag-legend-text">= Responsiveness finding</span></div>' +
-        '<div class="tag-legend-item"><span class="sr-tag both">S+R</span> <span class="tag-legend-text">= Both</span></div>' +
-        '<div class="tag-legend-sep"></div>' +
-        '<div class="tag-legend-item"><span class="shift-badge-legend">FCV Strategy Shift</span> <span class="tag-legend-text">= Linked strategic direction from the WBG FCV Strategy 2026-2030</span></div>' +
-      '</div>' +
-    '</div>';
-  }
-
   function buildUnderHoodPanels(underHood) {
     var panels = [
         { key: 'recs_table', title: 'How well does the project integrate FCV considerations?', subtitle: '12 operational standards drawn from the OST Manual, FCV Strategy 2026-2030, and FCV Playbook' },
@@ -4750,10 +4741,38 @@
             var content = (underHood && underHood[p.key]) ? underHood[p.key] : 'No data available.';
             return '<details class="under-hood-panel">' +
                 '<summary>' + esc(p.title) + '<span class="under-hood-subtitle"> \u2014 ' + esc(p.subtitle) + '</span></summary>' +
-                '<div class="under-hood-content out-body">' + md(content) + '</div>' +
+                '<div class="under-hood-content out-body">' + md(stripStage2LegacyTags(content)) + '</div>' +
                 '</details>';
         }).join('') +
         '</div>';
+  }
+
+  // 2026-11-27 (owner): Stage 2 no longer shows the legacy S/R tags or FCV Strategy shift notes. The model
+  // still writes them (prompt unchanged, ITS parity); they are removed here for display, including the
+  // "S/R Tag" and "Shift(s)" columns of the under-the-hood standards table.
+  // Only the legacy S/R and shift columns; generic headers such as 'Type' (evidence trail) stay.
+  const STAGE2_LEGACY_COL_RE = /^(?:S\s*\/\s*R(?:\s*Tag)?|Shifts?\s*\(s\)|Shifts?|FCV Strategy Shifts?)$/i;
+  function dropLegacyTableColumns(text) {
+    const lines = String(text || '').split('\n');
+    let drop = null;
+    return lines.map(line => {
+      if (!/^\s*\|.*\|\s*$/.test(line)) { drop = null; return line; }
+      const cells = line.trim().replace(/^\||\|$/g, '').split('|');
+      if (drop === null) {
+        drop = cells.map(c => STAGE2_LEGACY_COL_RE.test(c.trim()));
+        if (!drop.some(Boolean)) drop = cells.map(() => false);
+      }
+      const kept = cells.filter((_, i) => !drop[i]);
+      return kept.length === cells.length ? line : '| ' + kept.map(c => c.trim()).join(' | ') + ' |';
+    }).join('\n');
+  }
+  function stripStage2LegacyTags(text) {
+    return dropLegacyTableColumns(String(text || '')
+      .replace(/[ \t]*Tagged \[(?:S|R|S\+R)\][^.\n]*\./g, '')
+      .replace(/[ \t]*\*{0,2}\[(?:S|R|S\+R)\]\*{0,2}/g, '')
+      // Shift notes only when emphasised or bracketed, so analysis after a bare mention is never cut.
+      .replace(/[ \t]*(?:\*{1,2}|_)FCV Strategy Shifts?:[^*_\n]*(?:\*{1,2}|_)/g, '')
+      .replace(/[ \t]*\(FCV Strategy Shifts?:[^)\n]*\)/g, ''));
   }
 
   // Wraps "FCV Sensitivity" and "FCV Responsiveness" in tooltip spans wherever they appear in rendered HTML
@@ -5334,13 +5353,13 @@
       if(stage===1){
         _outBodyContent = wrapSRTerms(renderStage1(cleanResult, pkF.length > 0));
       }else{
-        const srDefPrefix = stage===2 ? buildSRDefinitionBox() + buildTagLegend() : '';
+        const srDefPrefix = stage===2 ? buildSRDefinitionBox() : '';
         let catBadge = '';
         if(stage===2){
           const cat=countryClassification.category;
           catBadge=cat&&cat!=='General'?`<div class="category-lens-badge">Analysis calibrated for: <strong>${esc(cat)}</strong> context <span class="clb-help" title="The screening lens, rating calibration, and recommendation framing have been adjusted for this country category per the FCV Strategy's differentiated approach.">\u24d8</span></div>`:'';
         }
-        _outBodyContent = wrapSRTerms(catBadge + srDefPrefix + md(cleanResult));
+        _outBodyContent = wrapSRTerms(catBadge + srDefPrefix + md(stage===2 ? stripStage2LegacyTags(cleanResult) : cleanResult));
       }
     }
     if(isLast)stage3DetailedHtml=_outBodyContent;
@@ -6205,7 +6224,7 @@
     if(uh && (uh.recs_table || uh.dnh_checklist || uh.questions_map)){
       body += `<div class="exp-annex-break"></div><h1 class="exp-section-hdr" style="font-size:18px">Annex: Stage 2 Assessment Tables</h1>
         <p style="font-size:12px;color:#666;font-style:italic;margin-bottom:16px">Internal analytical framework used to produce the Stage 2 assessment. Provided for transparency and peer review.</p>`;
-      if(uh.recs_table){ body += `<h2 class="exp-section-hdr">FCV Operational Standards Assessment (12 Recommendations)</h2><div class="out-body">${md(uh.recs_table)}</div>`; }
+      if(uh.recs_table){ body += `<h2 class="exp-section-hdr">FCV Operational Standards Assessment (12 Recommendations)</h2><div class="out-body">${md(stripStage2LegacyTags(uh.recs_table))}</div>`; }
       if(uh.dnh_checklist){ body += `<h2 class="exp-section-hdr">Do No Harm Checklist (9 Principles)</h2><div class="out-body">${md(uh.dnh_checklist)}</div>`; }
       if(uh.questions_map){ body += `<h2 class="exp-section-hdr">Diagnostic Questions Assessment</h2><div class="out-body">${md(uh.questions_map)}</div>`; }
     }
@@ -7080,7 +7099,7 @@ ${climatePrintDisclosureScript()}
 
     // Filter operational standards table
     if (underHood.recs_table) {
-      const lines = underHood.recs_table.trim().split('\n');
+      const lines = dropLegacyTableColumns(underHood.recs_table).trim().split('\n');  // no S/R or shift columns (2026-11-27)
       const header = lines.slice(0, 2);
       const dataRows = lines.slice(2).filter(matchesRow);
       if (dataRows.length) {

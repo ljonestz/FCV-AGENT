@@ -12,6 +12,8 @@ from __future__ import annotations
 
 import os
 
+from fcv_snapshot_rules import SNAPSHOT_RULES
+
 # (old, new) pairs per stage. Each old string must exist exactly once in that
 # stage's prompt; tests assert this so wording drift is caught.
 _REPLACEMENTS: dict[str, list[tuple[str, str]]] = {
@@ -20,14 +22,9 @@ _REPLACEMENTS: dict[str, list[tuple[str, str]]] = {
             "Begin with a clear overall assessment of what the project already recognizes and\n"
             "addresses. Explain the material remaining challenge and\n"
             "bridge to categories of accepted priorities without enumerating every action.",
-            "Open SUM-001 with a crafted analytical judgment, not an inventory: in one or two\n"
-            "sentences name the project's central climate-FCV tension (what the design depends\n"
-            "on that its climate and fragility context may not sustain) and what is at stake.\n"
-            "Then explain how the main climate hazards and fragility dynamics interact with the\n"
-            "design, crediting what the design provides together with the condition on which\n"
-            "its value depends. Use SUM-002 for the most consequential remaining risk, why it\n"
-            "matters for people and delivery, and how the priority actions in this note respond,\n"
-            "by category and without enumerating every action.",
+            # 2026-11-27 (owner): SUM-001 fills the readout's snapshot box; SUM-002 opens the main text.
+            "Write SUM-001 and SUM-002 following the SNAPSHOT AND OPENING RULES at the end of\n"
+            "these instructions.",
         ),
         (
             "Explain the causal connection in ordinary words.",
@@ -41,9 +38,10 @@ _REPLACEMENTS: dict[str, list[tuple[str, str]]] = {
         # 2026-11-16 paragraph shape: fewer, fuller paragraphs (same hard ceilings).
         (
             "Summary: prefer two connected paragraphs of about 90-100 words each, targeting 190 words overall (editorial target 160-230); use a third only if essential.",
-            "Summary: write two connected paragraphs of about 100-115 words each, each carrying one\n"
-            "line of reasoning over four to six sentences, targeting about 210 words overall\n"
-            "(editorial target 160-230); use a third only if essential.",
+            # 2026-11-28 (owner): assessment-verdict snapshot (75-95w) + segue/opening (95-115w), shared with normal route.
+            "Summary: write SUM-001 as the snapshot and SUM-002 as the segue plus opening paragraph,\n"
+            "following the SNAPSHOT AND OPENING RULES at the end of these instructions; about\n"
+            "175-210 words overall. Do not add a third paragraph.",
         ),
         (
             "Assessment narratives: three short question-led answers,",
@@ -62,7 +60,7 @@ _REPLACEMENTS: dict[str, list[tuple[str, str]]] = {
         ),
         (
             "Aim for about 190 summary words.",
-            "Aim for about 210 summary words.",
+            "Aim for about 195 summary words.",
         ),
     ],
     "bounded_analysis": [
@@ -113,6 +111,8 @@ _REPLACEMENTS: dict[str, list[tuple[str, str]]] = {
 _READER_ADDITION = """
 
 READER REGISTER AND WORDING:
+- SUM-001 and SUM-002 follow the SNAPSHOT AND OPENING RULES below, not the next two
+  points.
 - Write for an experienced FCV and operations reader in the register of a senior peer
   reviewer: connected sentences that carry cause and consequence, typically 25 to 40
   words, with no list-like run of one-fact sentences.
@@ -123,7 +123,7 @@ READER REGISTER AND WORDING:
   main remaining challenge is"; write a judgment specific to this project.
 - Never use internal terms in reader prose: accepted priorities, accepted actions,
   accepted recommendations, admitted, support records, residual gap, pathway, or any
-  ID. Refer to "the priority actions in this note" instead.
+  ID. Refer to "the priority actions in this note" as proposed options instead.
 - Describe planned or designed features as planned (is designed to, is intended to,
   will), never as already delivered or working.
 - Avoid repeating the same point across the Summary and the three findings; each
@@ -132,8 +132,9 @@ READER REGISTER AND WORDING:
   what is weak and why). Keep uncertainty where it is real, but do not stack could,
   may and depends on in one sentence until the judgment disappears.
 - Spell out every acronym on first use in each record.
-- Refer to the priority actions in your own words; do not end the Summary with a stock
-  formula such as "The priority actions in this note respond by".
+- Refer to the priority actions in your own words as proposed suggestions, never as
+  enacted changes; do not end the Summary with a stock formula such as "The priority
+  actions in this note respond by" or "The priority actions in this note clarify".
 - Do not comment on document extraction, headings or file processing, and never write
   placeholder role or office names.
 """
@@ -151,5 +152,6 @@ def apply(stage: str, prompt: str) -> str:
     for old, new in _REPLACEMENTS.get(stage, []):
         prompt = prompt.replace(old, new, 1)
     if stage == "reader_compiler":
-        prompt += _READER_ADDITION
+        # The fact-checking contracts (reader_correction, reviewer) stay unchanged by design.
+        prompt += _READER_ADDITION + SNAPSHOT_RULES
     return prompt

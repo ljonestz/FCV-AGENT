@@ -1499,10 +1499,11 @@ for (const expected of [
 ]) {
   if (!text.includes(expected) && !html.includes(expected)) throw new Error('missing preserved reader detail: ' + expected + ' | ' + html);
 }
-if (!html.includes('data-fr-rating="climate-sensitivity"') || !html.includes('data-fr-rating="climate-responsiveness"')) {
+// 2026-11-27: a generated summary fills the overview box; otherwise the two climate S/R tiles show.
+if (!html.includes('data-fr-rating="overview"') && (!html.includes('data-fr-rating="climate-sensitivity"') || !html.includes('data-fr-rating="climate-responsiveness"'))) {
   throw new Error('scorecard missing | ' + html);
 }
-if ((html.match(/class="fr-scorecard"/g) || []).length !== 1) throw new Error('one scorecard expected');
+if ((html.match(/class="fr-scorecard[" ]/g) || []).length !== 1) throw new Error('one scorecard expected');
 if (!html.includes('class="fr-sc-count-num">4<')) throw new Error('priority count missing');
 if ((html.match(/<details class="fr-pc"/g) || []).length !== 4) throw new Error('all priorities must be native disclosures | ' + html);
 if ((html.match(/<details class="fr-pc" id="fr-priority-\d" open>/g) || []).length !== 1 || !html.includes('<details class="fr-pc" id="fr-priority-1" open>')) {

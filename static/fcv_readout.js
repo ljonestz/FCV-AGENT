@@ -24,15 +24,8 @@
   // Self-contained handlers (no model text) so they also work in the Share .html export.
   const COPY_DRAFT_HANDLER = "navigator.clipboard&&navigator.clipboard.writeText(this.closest('.fr-draft').querySelector('.fr-draft-text').innerText);this.textContent='Copied'";
   const EXPAND_ALL_HANDLER = "var d=Array.prototype.slice.call(this.closest('.fr-section').querySelectorAll('details.fr-pc')),o=d.some(function(x){return !x.open});d.forEach(function(x){x.open=o});this.textContent=o?'Collapse all':'Expand all'";
-  // Strength of the underlying OPCS source (authority_basis), worded for a task team reader.
-  const AUTHORITY_LABELS = {
-    policy: 'Bank policy', directive: 'Bank directive', procedure: 'Bank procedure', guidance: 'Bank guidance',
-    reviewer_judgment: 'Screener judgment, not a specific OPCS requirement', none_verified: 'No verified OPCS source',
-  };
-  function authorityLine(value) {
-    const label = AUTHORITY_LABELS[String(value || '').trim().toLowerCase().replace(/\s+/g, '_')];
-    return label ? [{ label: 'Source basis', text: label }] : [];
-  }
+  // The S/R focus tag, FCV Strategy shift and authority basis stay in the Stage 3 JSON but are not shown
+  // (legacy labels, owner request 2026-11-27).
   const PRIORITIES_HREF = '__fr_priorities__';
   // Points the count tile at the rendered priorities section (numbers vary when sections are skipped).
   function linkPriorities(html, list) {
@@ -85,7 +78,7 @@
         if (body && block !== leadBlock) sections.other.push({ heading: block.level === 2 ? block.heading : '', body });
         return;
       }
-      if (/^opening assessment/.test(key)) sections.snapshot = body;
+      if (/^opening assessment/.test(key)) { sections.snapshot = body; sections.snapshotHeading = true; }
       else if (/^operational context/.test(key)) sections.context = body;
       else if (/^strengths?$/.test(key)) sections.strengths = body;
       else if (/^(potential |key )?gaps$/.test(key)) sections.gaps = body;
@@ -419,7 +412,12 @@
     }
 
     // A tile with a `summary` shows that one-sentence judgment instead of a rating label and meter.
+    // An `overview` tile (normal route, 2026-11-27) carries the Opening assessment in one coloured box.
     function scoreTile(t) {
+      if (t.overview !== undefined) {
+        const rest = t.overviewRest ? ` <span class="fr-sc-ov-rest">${esc(t.overviewRest)}</span>` : '';
+        return `<div class="fr-sc-overview" data-fr-rating="overview"><div class="fr-sc-label">${esc(t.label || 'Snapshot')}</div><p class="fr-sc-ov-text" dir="auto">${esc(t.overview)}${rest}</p></div>`;
+      }
       if (t.summary !== undefined) {
         const body = String(t.summary || '').trim();
         return `<div class="fr-sc-tile fr-sc-tile-summary" data-fr-rating="${esc(t.key)}"><div class="fr-sc-label">${esc(t.label)}</div>${body ? `<p class="fr-sc-summary" dir="auto"><strong>Snapshot:</strong> ${esc(body)}</p>` : ''}<div class="fr-sc-def">${esc(t.def)}</div></div>`;
@@ -430,12 +428,14 @@
     function scorecard(tiles, count) {
       const tileHtml = tiles.map(scoreTile).join('');
       const summaryMode = tiles.some(t => t.summary !== undefined);
+      const overviewMode = tiles.some(t => t.overview !== undefined);
       const pills = (count.pills || []).map(p => `<span class="fr-pill ${p.cls}">${esc(p.text)}</span>`).join('');
       // With priorities, the tile is a jump link to them; the route fills in the section id at the end.
       const linked = Number(count.number) > 0;
       const countTag = linked ? `<a class="fr-sc-count fr-sc-count-link" href="#${PRIORITIES_HREF}" aria-label="Go to the priority actions">` : '<div class="fr-sc-count">';
       const countEnd = linked ? '</a>' : '</div>';
-      return `<p class="fr-sc-lead">${esc(summaryMode ? SUMMARY_CARD_LEAD : SCORECARD_LEAD)}</p><section class="fr-scorecard" aria-label="${summaryMode ? 'Assessment summary' : 'Assessment ratings'}">${tileHtml}${countTag}<div class="fr-sc-count-lbl">${esc(count.label)}</div><div class="fr-sc-count-num">${Number(count.number) || 0}</div>${pills ? `<div class="fr-sc-pills">${pills}</div>` : ''}${count.def ? `<div class="fr-sc-count-def">${esc(count.def)}</div>` : ''}${countEnd}</section>`;
+      const lead = overviewMode ? OVERVIEW_LEAD : (summaryMode ? SUMMARY_CARD_LEAD : SCORECARD_LEAD);
+      return `<p class="fr-sc-lead">${esc(lead)}</p><section class="fr-scorecard${overviewMode ? ' fr-scorecard-ov' : ''}" aria-label="${overviewMode || summaryMode ? 'Assessment summary' : 'Assessment ratings'}">${tileHtml}${countTag}<div class="fr-sc-count-lbl">${esc(count.label)}</div><div class="fr-sc-count-num">${Number(count.number) || 0}</div>${pills ? `<div class="fr-sc-pills">${pills}</div>` : ''}${count.def ? `<div class="fr-sc-count-def">${esc(count.def)}</div>` : ''}${countEnd}</section>`;
     }
 
     // Rows without a `value` key show the judgment only (no rating pill).
@@ -528,6 +528,7 @@
   const NORMAL_LIMITATION = 'Findings are based on the text of the project documents and may miss arrangements described elsewhere. Ratings and priorities are advisory and should be confirmed through project and country expertise.';
 
   const SCORECARD_LEAD = 'The ratings below are a high-level AI assessment based on insights from the project package. They do not reflect a formal WBG or FCV Group designation. Read them as a general guide, alongside the more detailed overview and assessment that follows.';
+  const OVERVIEW_LEAD = 'This snapshot is a high-level AI reading of the project package. It does not reflect a formal WBG or FCV Group designation. The full sensitivity and responsiveness assessment follows below.';
   const SUMMARY_CARD_LEAD = 'The summaries below are a high-level AI reading of the project package. They do not reflect a formal WBG or FCV Group designation. Read them as a general guide, alongside the more detailed overview and assessment that follows.';
 
   // One-sentence headline for a summary card: the first sentence of the full judgment.
@@ -573,7 +574,13 @@
     let head = d.noticesHtml || '';
     const dd = d.ddChecklist && typeof d.ddChecklist === 'object' ? d.ddChecklist : null;
     if (dd && dd.review_stage_notice) head += `<p class="fr-note fr-stage-notice" dir="auto">${k.esc(dd.review_stage_notice)}</p>`;
-    head += k.scorecard([
+    // 2026-11-27 (owner): the Opening assessment replaces the two S/R snapshot tiles and appears once, at the top.
+    // Without an Opening assessment the S/R tiles stay as before.
+    // Same test as the Word export (split_opening_assessment): only an Opening Assessment heading fills the box.
+    const overviewTop = Boolean(s.found && s.snapshot && s.snapshotHeading);
+    // Parity with the climate box: opening sentence bold, the rest regular.
+    const snapSplit = overviewTop ? k.takeSentences(s.snapshot, 1) : { head: '', rest: '' };
+    head += k.scorecard(overviewTop ? [{ key: 'overview', label: 'Snapshot', overview: snapSplit.head, overviewRest: snapSplit.rest }] : [
       { key: 'sensitivity', label: 'FCV Sensitivity', summary: headline(k, d.sensitivitySummary), def: DEFINITIONS.sensitivity },
       { key: 'responsiveness', label: 'FCV Responsiveness', summary: headline(k, d.responsivenessSummary), def: DEFINITIONS.responsiveness },
     ], { label: 'Priority actions', number: priorities.length, def: countDef(priorities.length, 'priority action', 'priority actions'), pills: countPills(priorities, p => String(p.risk_level || '').toLowerCase(), [
@@ -582,7 +589,7 @@
     let html = '';
     if (s.found) {
       html += k.section('fr-exec', h('Executive Summary')
-        + (s.snapshot ? k.infoBox('Assessment snapshot', `<strong>${k.esc(s.snapshot)}</strong>`) : '')
+        + (s.snapshot && !overviewTop ? k.infoBox('Assessment snapshot', `<strong>${k.esc(s.snapshot)}</strong>`) : '')
         + (s.leadRest ? k.prose(s.leadRest) : '')
         + (s.context ? k.sub('Operational context') + k.prose(s.context) : '')
         + (s.strengths ? k.sub('Strengths') + k.prose(s.strengths) : '')
@@ -621,13 +628,12 @@
         const actionsHtml = actions.length ? `<ol class="fr-actions">${actions.map(a => `<li>${a.document_element ? `<strong>${k.esc(a.document_element)}:</strong> ` : ''}${k.esc(stripTagNotes(a.guidance))}</li>`).join('')}</ol>` : '';
         const cycleText = stripTagNotes(p.implementation_note || (p.project_cycle && p.project_cycle.primary_text) || '');
         const cycleLabel = p.implementation_note ? 'Implementation note' : ((p.project_cycle && p.project_cycle.primary_label) || 'When to address');
-        const sup = k.metaSegments([[k.levelPill(p.risk_level)], [k.esc(FOCUS_LABELS[p.tag] || p.tag || '')], [k.esc(p.fcv_dimension || ''), 'fr-meta-dim'], [k.esc(k.timingLabel(p.action_timing)), 'fr-meta-time']]);
+        const sup = k.metaSegments([[k.levelPill(p.risk_level)], [k.esc(p.fcv_dimension || ''), 'fr-meta-dim'], [k.esc(k.timingLabel(p.action_timing)), 'fr-meta-time']]);
         return k.priorityCard({
           id: `fr-priority-${i + 1}`, rank: i + 1, open: i === 0, supHtml: sup, title: priorityTitle(p.title), srcIndex: index,
           zones: [{ label: 'The gap', html: k.prose(stripTagNotes(p.the_gap)) }, { label: 'Why it matters', html: k.prose(stripTagNotes(p.why_it_matters)) },
             { label: 'Suggested actions', html: actionsHtml }],
           drafts: actions.map(a => ({ label: 'Suggested Text', forText: a.document_element || '', text: a.suggested_language || '' })),
-          lines: authorityLine(p.authority_basis),
           cycle: { label: cycleLabel, text: cycleText },
           extraHtml: typeof d.priorityExtras === 'function' ? d.priorityExtras(p, index) : '',
         });
@@ -760,22 +766,21 @@
 
     let head = o.noticesHtml || '';
     if (o.ddChecklist && o.ddChecklist.review_stage_notice) head += `<p class="fr-note fr-stage-notice" dir="auto">${k.esc(o.ddChecklist.review_stage_notice)}</p>`;
-    // As on the normal route: ratings stay in the reader data but each card shows a one-sentence judgment.
-    head += k.scorecard([
-      { key: 'climate-sensitivity', label: 'Climate-FCV sensitivity', summary: headline(k, sens.rationale), def: DEFINITIONS.climateSensitivity },
-      { key: 'climate-responsiveness', label: 'Climate-FCV responsiveness', summary: headline(k, resp.rationale), def: DEFINITIONS.climateResponsiveness },
-    ], { label: 'Priority actions', number: priorities.length, def: countDef(priorities.length, 'priority action', 'priority actions'), pills: confPills });
-
     const overview = (Array.isArray(r.summary_overview) ? r.summary_overview : [r.summary_overview]).map(t => String(t || '').trim()).filter(Boolean)
       .map(t => LEGACY_FALLBACK_OVERVIEW.includes(t) ? FALLBACK_OVERVIEW : t).filter((t, i, list) => list.indexOf(t) === i);
     let snapshot = '';
+    let snapshotRest = '';
     let contextHtml = '';
     let fallbackNote = '';
     if (r.summary_overview_status === 'generated' && overview.length) {
-      // Keep the snapshot to two sentences; the rest reads as normal context, as on the normal route.
-      const split = k.takeSentences(overview[0], 2);
+      // 2026-11-27 (owner): the box holds the whole first paragraph (central tension, then how hazards and
+      // fragility interact), opening sentence in bold (house style), so the Overview section never opens
+      // mid-thought. The section starts at the second paragraph (main remaining risk) under its own sub-heading.
+      const split = k.takeSentences(overview[0], 1);
       snapshot = split.head;
-      contextHtml = k.paragraphs([split.rest, ...overview.slice(1, 3)].filter(Boolean));
+      snapshotRest = split.rest;
+      const later = overview.slice(1, 3);
+      contextHtml = later.length ? k.sub('Where the design is least settled') + k.paragraphs(later) : '';
     } else if (r.reader_contract === 'final-reader-v1') {
       // Fallback text explains why no summary is shown; it opens the Limitations box, not the Overview.
       // Placed inside Limitations at the end of the note, so it must not point "below".
@@ -786,6 +791,15 @@
       snapshot = split.head;
       contextHtml = k.paragraphs([split.rest, paras[1]].filter(Boolean));
     }
+    // 2026-11-27 (owner, parity with the normal route): the approved two-sentence snapshot fills one overview
+    // box at the top instead of the two climate S/R tiles, and is not repeated in the Overview section.
+    // Without a generated snapshot (fallback or withheld summary) the S/R tiles stay as before.
+    // Same test as write_reader_docx: only a generated summary fills the box; legacy readers keep the tiles.
+    const overviewTop = Boolean(snapshot) && r.summary_overview_status === 'generated';
+    head += k.scorecard(overviewTop ? [{ key: 'overview', label: 'Snapshot', overview: snapshot, overviewRest: snapshotRest }] : [
+      { key: 'climate-sensitivity', label: 'Climate-FCV sensitivity', summary: headline(k, sens.rationale), def: DEFINITIONS.climateSensitivity },
+      { key: 'climate-responsiveness', label: 'Climate-FCV responsiveness', summary: headline(k, resp.rationale), def: DEFINITIONS.climateResponsiveness },
+    ], { label: 'Priority actions', number: priorities.length, def: countDef(priorities.length, 'priority action', 'priority actions'), pills: confPills });
     const working = (Array.isArray(r.existing_responses) ? r.existing_responses : []).map(x => x && x.description).filter(Boolean).slice(0, 4);
     const gaps = (Array.isArray(r.summary_gaps) ? r.summary_gaps : []).map(x => x && x.text).filter(Boolean).slice(0, 5);
     const themeList = Array.isArray(r.assessment_themes) ? r.assessment_themes : [];
@@ -794,7 +808,7 @@
     // Findings and priorities carry the gaps; the Overview lists them only when no findings render.
     const showGaps = gaps.length && !themeList.length;
     let html = k.section('fr-exec', h('Overview')
-      + (snapshot ? k.infoBox('Assessment snapshot', `<strong>${k.esc(snapshot)}</strong>`) : '')
+      + (snapshot && !overviewTop ? k.infoBox('Assessment snapshot', `<strong>${k.esc(snapshot)}</strong>`) : '')
       + contextHtml
       + (working.length ? k.sub('What the design already provides') + k.paragraphs(working) : '')
       + (showGaps ? k.sub('Key gaps at this stage') + k.paragraphs(gaps) : ''));

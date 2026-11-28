@@ -28,6 +28,7 @@ from fcv_distillation import distill_doc_parts_stream
 from live_source_policy import extract_project_ids
 import regime_router
 import review_stage as review_stage_mod
+from fcv_snapshot_rules import SNAPSHOT_RULES
 import stage3_prose
 from sector_lenses.climate_native import (
     build_climate_repair_prompt,
@@ -3269,10 +3270,11 @@ any earlier instruction that places the JSON block after the narrative.
 # FCV_STAGE3_PROSE_STYLE=legacy to restore the previous management style.
 _STANDARD_STYLE_PARAGRAPH_START = "Write the narrative in a clear technical report style for management."
 _STANDARD_STYLE_PARAGRAPH_END = "repeating the why text of each priority.\n"
-_STAGE3_PROSE_STYLE_PARAGRAPH = """NARRATIVE STYLE FOR THE DETAILED NOTE: Write the Opening Assessment, Operational
+_STAGE3_PROSE_STYLE_PARAGRAPH = """NARRATIVE STYLE FOR THE DETAILED NOTE: The Opening Assessment and the start of
+Operational Context follow the SNAPSHOT AND OPENING RULES below. Write the rest of Operational
 Context, Strengths, Gaps, FCV Risk Exposure and the two Summary paragraphs as connected
 analytical prose for an experienced FCV and operations reader, in the register of a senior
-peer reviewer. Each paragraph opens with a bold first sentence, a topic sentence that states
+peer reviewer. Each of these paragraphs opens with a bold first sentence, a topic sentence that states
 an analytical judgment, then develops it through linked sentences that explain mechanisms, causes and
 consequences and show how the points relate to one another. Do not use bullet lists,
 numbered lists or bold lead-in labels in these sections; integrate the points into the
@@ -3294,12 +3296,10 @@ Keep the concise Summary from repeating the why text of each priority.
 # A description (no sample text) of how strong openings are built.
 _STAGE3_PROSE_QUALITIES = """
 HOW A STRONG OPENING IS BUILT (a description of qualities, not text to imitate):
-- Opening Assessment: write it as its own crafted judgment, not a summary of the gaps. In one
-  sentence of 35-60 words and plain words, name the project's single central tension (for
-  instance, what the design depends on that its context may not sustain), then the areas that
-  need strengthening and what is at stake. Spell out any acronym or use the plain term.
-- Operational Context: opens with a thesis about the direction and character of the
-  operating environment, not a list of facts. Each following sentence adds one dynamic and
+- Opening Assessment and the start of Operational Context: follow the SNAPSHOT AND OPENING
+  RULES below (snapshot, then a segue sentence and a short opening paragraph).
+- Operational Context, after its opening paragraph: continues with the direction and character
+  of the operating environment, not a list of facts. Each following sentence adds one dynamic and
   ties it to this project's footprint, components, delivery channels or beneficiaries,
   with figures where the record supplies them. Explain how at least two of the dynamics
   compound one another or the project's design assumptions. Close by setting the design's
@@ -3312,8 +3312,8 @@ HOW A STRONG OPENING IS BUILT (a description of qualities, not text to imitate):
   delivery, name the project element exposed, and say whether it can be closed within
   existing instruments. Write the gaps as two or three connected paragraphs, never as a run
   of one- or two-sentence paragraphs.
-- Sentences in these sections typically run 25 to 45 words and use subordinate clauses to
-  carry cause and consequence. Ordinal ranking ("the most consequential", "the second") is
+- Outside the snapshot and the opening paragraph, sentences in these sections typically run
+  25 to 45 words and use subordinate clauses to carry cause and consequence. Ordinal ranking ("the most consequential", "the second") is
   fine; scaffolding that turns a paragraph into a list is not.
 - Write fresh prose for this project. Do not reuse wording from any example sentence that
   appears elsewhere in these instructions.
@@ -3322,11 +3322,21 @@ HOW A STRONG OPENING IS BUILT (a description of qualities, not text to imitate):
 # Section specifications aligned with the target style.
 _STAGE3_SECTION_SPECS = [
     ("### Opening Assessment (ONE BOLD SENTENCE, 25-35 words)\nA single bolded sentence summarising the project's overall FCV integration status.",
-     "### Opening Assessment (ONE BOLD SENTENCE, 35-60 words)\nA single bolded sentence giving the overall verdict on the project's FCV integration, the areas that need strengthening, and what is at stake."),
+     "### Opening Assessment (SNAPSHOT: three or four short sentences, about 75-95 words in total, not bold)\nThe snapshot shown at the top of the note; follow the SNAPSHOT AND OPENING RULES."),
     ("### Operational Context (150-200 words, ONE PARAGRAPH)\nSynthesise 3-4 converging FCV risks creating a uniquely challenging operating environment for THIS project.",
-     "### Operational Context (180-240 words, ONE PARAGRAPH)\nSynthesise 3-4 converging FCV risks creating a uniquely challenging operating environment for THIS project, and explain how they compound one another and the design's assumptions."),
+     "### Operational Context (a bold segue sentence and a short opening paragraph, then one further paragraph of 100-160 words)\nOpen with the segue and opening paragraph set out in the SNAPSHOT AND OPENING RULES. Then synthesise the remaining converging FCV risks for THIS project and explain how they compound one another and the design's assumptions."),
+    ("- Opening Assessment: 25-35 words\n", "- Opening Assessment: about 75-95 words, three or four short sentences (snapshot rules)\n"),
+    ("- Operational Context: 150-200 words\n", "- Operational Context: segue and opening paragraph (about 95-120 words), then 100-160 words\n"),
     ("### Strengths (80-150 words, prose)", "### Strengths (150-220 words, ONE OR TWO PARAGRAPHS of prose)"),
     ("### Gaps (100-130 words, prose)", "### Gaps (150-220 words, ONE OR TWO PARAGRAPHS of prose)"),
+]
+
+# Implementation-review template (en-dash ranges): same snapshot shape (2026-11-27; revised 2026-11-28).
+_STAGE3_IMPL_SECTION_SPECS = [
+    ("### Opening Assessment (ONE BOLD SENTENCE, 25–35 words)\nSummarise the project's current FCV integration status during implementation.",
+     "### Opening Assessment (SNAPSHOT: three or four short sentences, about 75-95 words in total, not bold)\nThe snapshot of the project's current FCV integration status during implementation; follow the SNAPSHOT AND OPENING RULES."),
+    ("### Implementation Context (150–200 words, ONE PARAGRAPH)\nSynthesise the 3–4 key FCV dynamics that have shaped implementation to date and that the remaining period must navigate.",
+     "### Implementation Context (a bold segue sentence and a short opening paragraph, then one further paragraph of 100-160 words)\nOpen with the segue and opening paragraph set out in the SNAPSHOT AND OPENING RULES. Then synthesise the remaining key FCV dynamics that have shaped implementation to date and that the remaining period must navigate."),
 ]
 
 
@@ -3343,7 +3353,7 @@ def _stage3_contract_text() -> str:
     end = contract.find(_STANDARD_STYLE_PARAGRAPH_END, start)
     if start < 0 or end < 0:
         return contract
-    paragraph = _STAGE3_PROSE_STYLE_PARAGRAPH + _STAGE3_PROSE_QUALITIES
+    paragraph = _STAGE3_PROSE_STYLE_PARAGRAPH + _STAGE3_PROSE_QUALITIES + SNAPSHOT_RULES
     return contract[:start] + paragraph + contract[end + len(_STANDARD_STYLE_PARAGRAPH_END):]
 
 
@@ -3371,7 +3381,7 @@ FINAL FORMAT CHECK BEFORE WRITING THE NARRATIVE:
 def _stage3_apply_section_specs(stage_prompt: str) -> str:
     if not _stage3_prose_layer_enabled():
         return stage_prompt
-    for old, new in _STAGE3_SECTION_SPECS:
+    for old, new in _STAGE3_SECTION_SPECS + _STAGE3_IMPL_SECTION_SPECS:
         stage_prompt = stage_prompt.replace(old, new, 1)
     return stage_prompt
 
@@ -13432,6 +13442,33 @@ def _word_report_meta(data, title='FCV Recommendations Note'):
     return report_meta
 
 
+def _is_opening_heading(line):
+    """Same test as parseStage3Sections in static/fcv_readout.js: a level 2-6 heading that starts with
+    'Opening Assessment'. Linear string checks (no regex on user text; CodeQL polynomial-redos)."""
+    stripped = line.strip()
+    hashes = len(stripped) - len(stripped.lstrip('#'))
+    if not 2 <= hashes <= 6:
+        return False
+    title = stripped[hashes:].strip().lstrip('*_').strip().lower()
+    head = 'opening assessment'
+    return title.startswith(head) and not title[len(head):len(head) + 1].isalnum()
+
+
+def split_opening_assessment(summary):
+    """Return (opening assessment text, summary without that block). ('', summary) when there is none."""
+    lines = str(summary or '').splitlines()
+    start = next((i for i, line in enumerate(lines) if _is_opening_heading(line)), None)
+    if start is None:
+        return '', summary
+    end = next((i for i in range(start + 1, len(lines)) if lines[i].lstrip().startswith('#')), len(lines))
+    text = ' '.join(line.strip() for line in lines[start + 1:end] if line.strip())
+    # Drop Markdown emphasis markers with plain replacement (no regex on user text; CodeQL).
+    text = text.replace('***', '').replace('**', '').replace('__', '').strip().strip('*_').strip()
+    if not text:
+        return '', summary
+    return text, '\n'.join(lines[:start] + lines[end:])
+
+
 @app.route('/api/download-report', methods=['POST'])
 def download_report():
     """Generate a DOCX mirroring the full Stage 3 web output structure."""
@@ -13440,7 +13477,7 @@ def download_report():
     from docx.oxml import OxmlElement
     from docx.oxml.ns import qn
     from docx.text.run import Run
-    from fcv_docx_style import AMBER_TXT, BE_AWARE, CONTENT_W, Report, VERIFY_BG, put
+    from fcv_docx_style import AMBER_TXT, BE_AWARE, CONTENT_W, VERIFY_BG, Report, put, split_verify_notes, take_sentences
     from fcv_word_style import _bold_first_sentence
     import io
     from copy import deepcopy
@@ -13612,9 +13649,6 @@ def download_report():
         'before-negotiations': 'Before negotiations',
         'before-Board': 'Before Board',
         'during-implementation-support': 'During implementation support',
-    }
-    tag_labels = {
-        '[S]': 'Sensitivity', '[R]': 'Responsiveness', '[S+R]': 'Sensitivity + Responsiveness'
     }
 
     # ── Strip DO_NO_HARM_HEADER if still present (belt-and-suspenders) ──
@@ -13800,7 +13834,31 @@ def download_report():
         str(text or '').strip() for _, _, text in rating_rows
     )
 
+    # 2026-11-27 (owner): on the normal route the Opening assessment moves from the Executive Summary
+    # into one overview box at the top, replacing the two S/R snapshot tiles (browser: fcv_readout.js).
+    overview_text = ''
+    if not climate_active:
+        split_text, split_rest = split_opening_assessment(summary)
+        # A body that is only a reviewer note stays in the Executive Summary; the S/R tiles show.
+        if split_verify_notes(split_text)[0]:
+            overview_text, summary = split_text, split_rest
+
     def add_rating_scorecard():
+        if overview_text:
+            risk_levels = [str(priority.get('risk_level') or '').strip() for priority in priorities]
+            # Parity with the climate box: opening sentence bold, the rest regular. Reviewer notes are
+            # lifted out before the split and kept at the end, so a split never cuts one in two.
+            clean, notes = split_verify_notes(overview_text)
+            lead, rest = take_sentences(clean, 1)
+            rest = ' '.join(part for part in [rest, *notes] if part).strip()
+        if overview_text and lead:
+            report.scorecard(
+                [{'label': 'Snapshot', 'overview': lead, 'overview_rest': rest}],
+                {'label': 'Priority actions', 'number': len(priorities),
+                 'lines': [(f'{risk_levels.count(level)} {level}', level)
+                           for level in ('High', 'Medium', 'Low') if risk_levels.count(level)]},
+            )
+            return
         if not rating_values_present and not rating_summaries_present:
             return
         if not (rating_summaries_present or priorities):
@@ -14346,19 +14404,15 @@ def download_report():
                 cycle = priority.get('project_cycle')
                 if not timing and isinstance(cycle, dict):
                     timing = cycle.get('primary_label') or ''
-                focus = tag_labels.get(
-                    priority.get('tag', ''), priority.get('tag', '')
-                )
                 overview_rows.append([
                     str(i),
                     (title, f'priority_{i}'),
                     str(priority.get('risk_level') or ''),
-                    str(focus or ''),
                     str(timing or ''),
                 ])
             report.data_table(
-                ['#', 'Priority Action', 'Priority Level', 'FCV Focus', 'Timing'],
-                [0.35, 3.05, 0.8, 1.2, CONTENT_W - 5.4],
+                ['#', 'Priority Action', 'Priority Level', 'Timing'],
+                [0.35, 4.25, 0.8, CONTENT_W - 5.4],
                 overview_rows,
                 pill_cols=(2,),
                 link_col=1,
@@ -14377,15 +14431,11 @@ def download_report():
                 cycle = priority.get('project_cycle')
                 if not timing and isinstance(cycle, dict):
                     timing = cycle.get('primary_label') or ''
-                focus = tag_labels.get(
-                    priority.get('tag', ''), priority.get('tag', '')
-                )
                 priority_meta = [
                     (label, str(value))
                     for label, value in (
                         ('Dimension', priority.get('fcv_dimension')),
                         ('Priority', priority.get('risk_level')),
-                        ('Focus', focus),
                         ('Timing', timing),
                         ('Scope', priority.get('priority_scope')),
                     )
@@ -14429,19 +14479,15 @@ def download_report():
                         str(priority['implementation_note']),
                     ))
                 practical_notes.extend(add_priority_project_cycle(priority))
-                # cpf_alignment / rra_driver_alignment stay in the Stage 3 JSON (parity
-                # surface) but are no longer shown in Word (user request 2026-11-07).
+                # cpf_alignment / rra_driver_alignment (2026-11-07) and the S/R tag, refresh_shift and
+                # authority_basis (2026-11-27) stay in the Stage 3 JSON (parity surface) but are not shown.
                 for label, key in (
-                    ('FCV Strategy 2026-2030', 'refresh_shift'),
                     ('Change', 'change_type'),
                     ('Restructuring level', 'restructuring_level'),
                     ('Governance level', 'governance_level'),
-                    ('Authority basis', 'authority_basis'),
                 ):
                     value = priority.get(key)
                     if value:
-                        if key == 'authority_basis':
-                            value = str(value).replace('_', ' ')
                         practical_notes.append((label, str(value)))
                 if priority.get('lens_ids'):
                     practical_notes.append((

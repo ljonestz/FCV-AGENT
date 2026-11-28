@@ -9,7 +9,7 @@ from urllib.parse import urlsplit
 from pathlib import Path
 from typing import Any
 
-from fcv_docx_style import BE_AWARE, CONTENT_W, RESPONSIVENESS_INTRO, Report, first_sentence
+from fcv_docx_style import BE_AWARE, CONTENT_W, RESPONSIVENESS_INTRO, Report, first_sentence, split_verify_notes, take_sentences
 
 from fcv_presentation import priority_advisory_text
 
@@ -1872,6 +1872,28 @@ def write_reader_docx(
     ]
     check_count = len(minor_points) + len(doc_flags)
 
+    overview = model.get("summary_overview") or [model.get("overview_summary", "")]
+    if isinstance(overview, str):
+        overview = [overview]
+    elif not isinstance(overview, (list, tuple)) or not overview:
+        overview = [model.get("overview_summary", "")]
+    overview = [_text(paragraph) for paragraph in overview if _text(paragraph)]
+    # 2026-11-27 (owner, parity with the normal route and the browser): a generated summary's whole first
+    # paragraph fills one overview box at the top instead of the two S/R tiles (opening sentence in bold),
+    # and the Overview section starts at the second paragraph under "Where the design is least settled", so it never opens
+    # mid-thought. Fallback or withheld summaries keep the tiles.
+    remaining_risk = False
+    if model.get("summary_overview_status") == "generated" and overview:
+        # Reviewer notes are lifted out before the split and kept after the explanation, so a sentence
+        # split can never cut a "[Verify before sharing: ...]" marker in two.
+        clean, notes = split_verify_notes(overview[0])
+        snapshot, remainder = take_sentences(clean, 1)
+        remainder = " ".join(part for part in [remainder, *notes] if part).strip()
+        if snapshot:
+            tiles = [{"label": "Snapshot", "overview": snapshot, "overview_rest": remainder}]
+            overview = overview[1:]
+            remaining_risk = bool(overview)
+
     report = Report("climate", meta)
     report.banner()
     report.be_aware(BE_AWARE)
@@ -1891,11 +1913,8 @@ def write_reader_docx(
     # The Overview opens with the approved assessment text. Generic reader,
     # review, preparation-route, and draft-introduction notices stay out of it.
     report.h1("Overview")
-    overview = model.get("summary_overview") or [model.get("overview_summary", "")]
-    if isinstance(overview, str):
-        overview = [overview]
-    elif not isinstance(overview, (list, tuple)) or not overview:
-        overview = [model.get("overview_summary", "")]
+    if remaining_risk:
+        report.h2_caps("Where the design is least settled")
     for paragraph in overview:
         if _text(paragraph):
             report.body(_text(paragraph))

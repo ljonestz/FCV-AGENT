@@ -381,6 +381,49 @@ RESPONSIVENESS_INTRO = (
 )
 
 
+_VERIFY_OPEN = "[Verify before sharing:"
+
+
+def split_verify_notes(text):
+    """Return (text without reviewer notes, [notes]) with a linear scan.
+
+    A note is "[Verify before sharing: ...]"; an unterminated marker is left in the text.
+    Linear on purpose (no backtracking regex on user text; CodeQL polynomial-redos)."""
+    text = str(text or "")
+    kept, notes, pos = [], [], 0
+    while True:
+        start = text.find(_VERIFY_OPEN, pos)
+        if start < 0:
+            break
+        end = text.find("]", start + len(_VERIFY_OPEN))
+        if end < 0:
+            break
+        kept.append(text[pos:start])
+        notes.append(text[start:end + 1])
+        pos = end + 1
+    kept.append(text[pos:])
+    return " ".join(" ".join(kept).split()), notes
+
+
+def take_sentences(text, count):
+    """Return (first `count` sentences of the first paragraph, remaining text). Mirrors takeSentences in
+    static/fcv_readout.js, using the first_sentence rules for each sentence end."""
+    paras = [p.strip() for p in re.split(r"\n\s*\n", str(text or "").replace("**", "").strip()) if p.strip()]
+    if not paras:
+        return "", ""
+    rest = re.sub(r"\s+", " ", paras[0])
+    out = []
+    while rest and len(out) < count:
+        sentence = first_sentence(rest)
+        if not sentence or not rest.startswith(sentence):
+            out.append(rest)
+            rest = ""
+            break
+        out.append(sentence)
+        rest = rest[len(sentence):].strip()
+    return " ".join(out), "\n\n".join([rest] + paras[1:] if rest else paras[1:])
+
+
 def first_sentence(text):
     """Return the first sentence of the first paragraph (summary-card headline).
 
@@ -704,7 +747,11 @@ class Report:
     def scorecard(self, tiles, count_tile, note=None):
         """tiles: [{label, value, n, idx, lo, hi}] or [{label, summary}] ; count_tile: {label, number, lines:[(text, pill_key|None)]}
 
-        A tile carrying "summary" shows that one-sentence judgment instead of a rating value and meter."""
+        A tile carrying "summary" shows that one-sentence judgment instead of a rating value and meter.
+        A single tile carrying "overview" (normal route, 2026-11-27) fills one wide tinted box instead."""
+        if len(tiles) == 1 and "overview" in tiles[0]:
+            self._overview_scorecard(tiles[0], count_tile, note)
+            return
         w = [2.45, 2.45, CONTENT_W - 4.9]
         t = self.doc.add_table(rows=1, cols=3)
         bd = (4, GREY_LIGHT)
@@ -739,6 +786,36 @@ class Report:
             else:
                 add_run(p, text, 8, color="D6E2EC")
             add_run(p, "  ")
+        row_no_split(t.rows[0])
+        if note:
+            self.small(note, before=3, after=4)
+
+    def _overview_scorecard(self, tile, count_tile, note=None):
+        w = [CONTENT_W - 1.75, 1.75]
+        t = self.doc.add_table(rows=1, cols=2)
+        bd = (4, GREY_LIGHT)
+        table_setup(t, w, cell_pad=(0.1, 0.12, 0.16, 0.14),
+                    borders={"top": bd, "bottom": bd, "left": (24, BLUE), "right": bd, "insideV": bd})
+        c = t.rows[0].cells[0]; shade_cell(c, TINT)
+        p = first_para(c); pfmt(p, after=2)
+        add_run(p, tile.get("label", "Snapshot").upper(), 7.5, True, color=GREY_TXT, spacing=0.8)
+        p = c.add_paragraph(); pfmt(p)
+        p.paragraph_format.line_spacing = 1.2
+        # Same highlighting as body text, so a reviewer note in the overview stays visible.
+        self._runs_with_verify(p, tile["overview"], 10.5, NAVY, bold=True)
+        if tile.get("overview_rest"):
+            self._runs_with_verify(p, " " + tile["overview_rest"], 10, NAVY)
+        c = t.rows[0].cells[1]; shade_cell(c, NAVY)
+        p = first_para(c); pfmt(p, after=1)
+        add_run(p, count_tile["label"].upper(), 7.5, True, color="FFFFFF", spacing=0.8)
+        p = c.add_paragraph(); pfmt(p, after=2)
+        add_run(p, str(count_tile["number"]), 22, True, color="FFFFFF")
+        for text, key in count_tile["lines"]:
+            p = c.add_paragraph(); pfmt(p, after=1)
+            if key:
+                bg, fg = PILL[key]; add_run(p, f" {text} ", 8, True, color=fg, shade=bg)
+            else:
+                add_run(p, text, 8, color="D6E2EC")
         row_no_split(t.rows[0])
         if note:
             self.small(note, before=3, after=4)

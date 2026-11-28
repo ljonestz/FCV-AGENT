@@ -2443,3 +2443,31 @@ Honduras P181166 PCN, climate: 5 priorities, IPF, partial (DRAFTING_TARGET_UNVER
 process, correct); Chad Project Paper, normal, IR: 5 priorities, no parse error, IR checklist 6 rows. One
 earlier AFG attempt was cut at 69 s in Stage 2 by a service restart (env save), not by the app; it was
 rerun under a new label. Spec: docs/superpowers/specs/2026-11-17-zero-priority-holistic-plan.md (local).
+
+### 2026-11-28 Snapshot box, shared snapshot rules, legacy labels hidden (branch fix/readout-drop-legacy-tags, PR #105)
+
+**Owner review of the sector-card readouts led to a readout clean-up.**
+
+Legacy labels:
+- The S/R focus, FCV Strategy shift and authority basis are hidden on priorities in the browser and Word.
+- Stage 2 [S]/[R] tags, shift notes and S/R or shift table columns are stripped at display, and the "Reading this assessment" legend is removed.
+- The JSON fields and the Stage 2 prompt are unchanged.
+
+Snapshot box:
+- One tinted Snapshot box replaces the two S/R summary tiles on both routes.
+- The owner then found the box text too long and not coherent. A writing-editor subagent and a critical-reviewer subagent agreed 13 shared rules over 7 rounds on 8 real examples (`fcv_snapshot_rules.py`).
+- The rules: a snapshot of two or three short sentences, then a new segue sentence and a short opening paragraph. Only source facts, qualifiers kept, uncertain claims and reviewer notes out of the box, and the same style on both routes.
+- The rules are appended to the normal Stage 3 contract and the climate reader compiler. The fact-checking stages are unchanged.
+- The climate Overview opens under "Where the design is least settled" (owner choice).
+
+Validation on fcv-agent-1, within the USD 15 cap, blocker restored:
+- **Normal Chad:** approved.
+- **Climate Syria:** the segue echoed the sub-heading. The rules no longer name it, and the editor and reviewer re-approved offline.
+- **Earlier climate-summary runs:** Syria cost about USD 4-6. The Afghanistan attempt never reached the server (Stage 1 page timeout, spend about USD 0.01); the likely cause was an instance switch just after a deploy, so now wait about 2 minutes after a deploy goes live.
+
+Checks:
+- `/code-review medium`: 8 findings fixed. The browser and Word box rules now match; Stage 2 stripping is narrowed so the evidence-trail Type column stays; the implementation template is aligned.
+- CodeQL polynomial-ReDoS alerts were replaced with linear scans (`split_verify_notes`, `_is_opening_heading`).
+- Full suite: 2394 passed, plus the 32 worktree-data baseline failures.
+
+Not merged: awaiting the owner's go for the merge and the production deploy.
