@@ -166,6 +166,26 @@ secondary_sectors: health, community development
         result = extract_sector_context("No sector block.")
         assert result['primary_sector'] == 'Unknown'
 
+    def test_blank_primary_does_not_read_next_line(self):
+        from app import extract_sector_context
+        text = """%%%SECTOR_CONTEXT_START%%%
+primary_sector:
+secondary_sectors: health, community development
+%%%SECTOR_CONTEXT_END%%%"""
+        result = extract_sector_context(text)
+        assert result['primary_sector'] == 'Unknown'
+        assert result['secondary_sectors'] == ['health', 'community development']
+
+    def test_blank_secondary_gives_empty_list(self):
+        from app import extract_sector_context
+        text = """%%%SECTOR_CONTEXT_START%%%
+primary_sector: transport
+secondary_sectors:
+%%%SECTOR_CONTEXT_END%%%"""
+        result = extract_sector_context(text)
+        assert result['primary_sector'] == 'transport'
+        assert result['secondary_sectors'] == []
+
 
 class TestSelectSecondaryKnowledge:
 
@@ -173,6 +193,29 @@ class TestSelectSecondaryKnowledge:
         from app import select_secondary_knowledge
         result = select_secondary_knowledge('In Crisis', 'IPF', 'PAD', 'water', {})
         assert isinstance(result, list)
+
+    def test_missing_sector_never_matches_sector_triggers(self):
+        from app import select_secondary_knowledge
+        from background_docs import SECONDARY_KNOWLEDGE
+        sector_triggered = [sid for sid, s in SECONDARY_KNOWLEDGE.items() if s['triggers']['sector']]
+        assert sector_triggered, "fixture assumption: at least one snippet has sector triggers"
+        saved = {sid: SECONDARY_KNOWLEDGE[sid]['content'] for sid in SECONDARY_KNOWLEDGE}
+        try:
+            for sid in SECONDARY_KNOWLEDGE:
+                SECONDARY_KNOWLEDGE[sid]['content'] = 'x' * 100
+            # Satisfy every non-sector trigger of the sector-triggered snippets, so only the
+            # sector field decides whether they match.
+            flags = {f: True for sid in sector_triggered for f in SECONDARY_KNOWLEDGE[sid]['triggers']['flags']}
+            for missing in ('', '   ', None, 'Unknown', 'unknown', 'N/A', 'none'):
+                result = select_secondary_knowledge('In Crisis', 'IPF', 'PAD', missing, flags)
+                ids = {r['id'] for r in result}
+                assert not ids & set(sector_triggered), (missing, ids & set(sector_triggered))
+            # Control: a real matching sector still selects them.
+            result = select_secondary_knowledge('In Crisis', 'IPF', 'PAD', 'social protection', flags)
+            assert set(sector_triggered) <= {r['id'] for r in result}
+        finally:
+            for sid, content in saved.items():
+                SECONDARY_KNOWLEDGE[sid]['content'] = content
 
     def test_in_crisis_triggers_op730_snippet(self):
         from app import select_secondary_knowledge

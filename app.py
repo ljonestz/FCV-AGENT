@@ -4581,9 +4581,10 @@ def extract_sector_context(stage1_output: str) -> dict:
     if not m:
         return {'primary_sector': 'Unknown', 'secondary_sectors': [], 'error': True}
     block = m.group(1).strip()
-    pm = re.search(r'primary_sector:\s*(.+)', block)
-    sm = re.search(r'secondary_sectors:\s*(.+)', block)
-    primary = pm.group(1).strip() if pm else 'Unknown'
+    # Read each field from its own line only: a blank value must not pick up the next line.
+    pm = re.search(r'^[ \t]*primary_sector:[ \t]*(.*)$', block, re.MULTILINE)
+    sm = re.search(r'^[ \t]*secondary_sectors:[ \t]*(.*)$', block, re.MULTILINE)
+    primary = (pm.group(1).strip() if pm else '') or 'Unknown'
     secondary_raw = sm.group(1).strip() if sm else ''
     secondary = [s.strip() for s in secondary_raw.split(',') if s.strip()] if secondary_raw else []
     return {'primary_sector': primary, 'secondary_sectors': secondary, 'error': False}
@@ -4610,7 +4611,9 @@ def select_secondary_knowledge(
     MAX_SNIPPETS = 5
     MAX_TOKENS_ESTIMATE = 5000
 
-    sector_lower = (sector or '').lower()
+    sector_lower = (sector or '').strip().lower()
+    # A missing sector must not match sector triggers: '' is a substring of every trigger string.
+    sector_known = sector_lower not in ('', 'unknown', 'n/a', 'na', 'none')
     cat = (country_category or 'General').strip()
 
     scored = []
@@ -4637,8 +4640,8 @@ def select_secondary_knowledge(
                 match = False
 
         if match and triggers['sector']:
-            if any(s.lower() in sector_lower or sector_lower in s.lower()
-                   for s in triggers['sector']):
+            if sector_known and any(s.lower() in sector_lower or sector_lower in s.lower()
+                                    for s in triggers['sector']):
                 score += 1
             else:
                 match = False
