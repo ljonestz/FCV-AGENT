@@ -157,3 +157,36 @@ def test_context_from_flags_and_setting():
     assert context_from({"tpi_mentioned": True, "security_risks_noted": True}, "any") == \
         frozenset({"parallel_delivery", "insecurity"})
     assert context_from(None, "institutional_fragility") == frozenset()
+
+
+def test_cards_have_no_internal_notes_in_user_citations_or_look_for():
+    from sector_cards.models import load_cards
+    for card in load_cards().cards:
+        for cite in card.user_citations:
+            low = cite.lower()
+            assert "ouo" not in low and "[note:" not in low and "[internal" not in low, f"{card.id}: {cite}"
+        assert "internal sources only" not in card.look_for.lower(), card.id
+
+
+def test_every_project_feature_has_a_human_label():
+    from sector_cards.integration import FEATURE_LABELS, PROJECT_FEATURES
+    missing = [f for f in PROJECT_FEATURES if f not in FEATURE_LABELS]
+    assert not missing, f"Missing FEATURE_LABELS entries: {missing}"
+
+
+def test_extract_rejects_required_and_stage3_normalizes_page_ref():
+    from sector_cards.integration import build_stage3_card_slice, extract_sector_cards
+    routing = {"eligible": [{"card_id": "mc-01"}], "disabled": False}
+    raw = (
+        '%%%SECTOR_CARDS_START%%%\n'
+        '{"cards": [{"card_id": "mc-01", "finding": "The team is required to add rules.", "page_ref": "14"}]}\n'
+        '%%%SECTOR_CARDS_END%%%'
+    )
+    assert extract_sector_cards(raw, routing) == []
+    slice_text = build_stage3_card_slice([
+        {"card_id": "mc-01", "finding": "Check siting.", "page_ref": "p.14"},
+        {"card_id": "mc-02", "finding": "Check tenure.", "page_ref": "22"},
+        {"card_id": "mc-03", "finding": "Check committees.", "page_ref": "PAD para 58"},
+    ])
+    assert "(p.p." not in slice_text
+    assert "(p.14)" in slice_text and "(p.22)" in slice_text and "(PAD para 58)" in slice_text

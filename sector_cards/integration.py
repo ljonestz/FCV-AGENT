@@ -35,7 +35,7 @@ FEATURE_LABELS = {
     "food_security_reserves": "food reserves and food-crisis monitoring",
     "nrm_landscape_forest": "forests, landscapes, fisheries or protected areas",
     "land_acquisition_tenure": "land acquisition or tenure", "local_funds_cdd": "local or community funds",
-    "ews_hydromet": "early warning and hydromet",
+    "ews_hydromet": "early warning and hydromet", "tariff_reform": "tariff, metering or subsidy reform",
 }
 
 SECTOR_FACTS_PROMPT = """
@@ -271,7 +271,7 @@ def extract_sector_cards(stage2_output: str, routing: dict | None) -> list[dict]
         cid = str(item.get("card_id", "")).strip().lower()
         finding = " ".join(str(item.get("finding", "")).split())
         page = str(item.get("page_ref", "")).strip()
-        if cid not in allowed or cid in seen or not finding or not page or re.search(r"\bmust\b", finding, re.IGNORECASE):
+        if cid not in allowed or cid in seen or not finding or not page or re.search(r"\b(must|required)\b", finding, re.IGNORECASE):
             continue
         seen.add(cid)
         out.append({"card_id": cid, "finding": finding, "page_ref": page,
@@ -297,6 +297,15 @@ def strip_sector_blocks(text: str) -> str:
 
 # --- Stage 3 ---------------------------------------------------------------------------------------------
 
+def _format_page_ref(ref: str) -> str:
+    s = " ".join(str(ref or "").split()).strip()
+    if not s:
+        return ""
+    if re.match(r"^(?:p{1,2}\.|page\b|para\b|pad\b|section\b|annex\b)", s, re.IGNORECASE):
+        return s
+    return f"p.{s}"
+
+
 def build_stage3_card_slice(findings: list[dict]) -> str:
     if not findings:
         return ""
@@ -305,7 +314,7 @@ def build_stage3_card_slice(findings: list[dict]) -> str:
              "card id to that priority's optional \"sector_cards\" list (e.g. \"sector_cards\": [\"mc-03\"]). Do not "
              "create a priority only to carry a sector finding unless it is among the most important issues. Do not "
              "repeat findings verbatim.")]
-    lines += [f"[{f['card_id']}] {f['finding']} (p.{f['page_ref']})" for f in findings]
+    lines += [f"[{f['card_id']}] {f['finding']} ({_format_page_ref(f['page_ref'])})" for f in findings]
     return "\n".join(lines)
 
 

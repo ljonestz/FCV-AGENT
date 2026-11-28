@@ -189,9 +189,9 @@ cards:
   sufficient_evidence: The document itself cites illicit activity, extortion, checkpoints/informal taxation, smuggling
     or territorial control by non-state or criminal actors in the project area.
   look_for: 'Transport: checkpoints, informal taxation and armed or criminal control of corridors; extortion of
-    contractors and works sites; border crossings and enclaves (cross-border look-for rests on internal sources
-    only). Agriculture: informal taxation along market and livestock routes; value-chain intermediaries. ENRM: illegal
-    logging, charcoal, poaching or artisanal mining economies where documented.'
+    contractors and works sites; border crossings and enclaves. Agriculture: informal taxation along market and
+    livestock routes; value-chain intermediaries. ENRM: illegal logging, charcoal, poaching or artisanal mining
+    economies where documented.'
   prompt_text: Where the document identifies illicit economies, extortion, checkpoints or contested territorial
     control in project areas, consider whether it examines how improved routes, markets, works sites or resource
     chains could be captured, taxed or diverted, and what procurement, security and incident-reporting arrangements
@@ -454,15 +454,17 @@ cards:
   - feature
   sectors:
   - transport
+  - water
   features:
   - rural_feeder_roads
+  - civil_works_contracts
   sr_type: S+R
   core_mappings:
   - dnh:1
   - dnh:2
   - dnh:5
   - shift:C
-  applicability: Large or labor-intensive linear civil works spanning multiple communities in divided or high-patronage
+  applicability: Large or labor-intensive linear or civil works spanning multiple communities in divided or high-patronage
     settings (IPF/PforR; appraisal/implementation).
   sufficient_evidence: Document finances major civil works with local employment/worker camps AND notes labor-influx,
     SEA/SH, procurement-integrity, or inter-community hiring risks.
@@ -815,12 +817,6 @@ cards:
   - citation: Myanmar Nexus Diagnostic (2026, p.15, p.22)
     kind: wbg_public
     cite_to_user: true
-  - citation: '[Note: DRM-FCV2012-2022 p.33 is only indirect'
-    kind: wbg_public
-    cite_to_user: true
-  - citation: EWS decision trees are OUO]
-    kind: wbg_public
-    cite_to_user: true
   - citation: ICRC/Brussels Privacy Hub, Handbook on Data Protection in Humanitarian Action, 3rd ed. (2022), p.85,
       p.145, p.165
     kind: external_public
@@ -878,8 +874,7 @@ cards:
   - citation: CCC Report (2022, p.47)
     kind: wbg_public
     cite_to_user: true
-  - citation: Defueling Conflict Notes (2025, p.150) [Internal transport note p.2 also flags illegal logging/crime
-      externalities]
+  - citation: Defueling Conflict Notes (2025, p.150)
     kind: wbg_public
     cite_to_user: true
   - citation: Laurance et al., A global strategy for road building, Nature (2014), p.1, p.3 (roads promote deforestation,
@@ -907,8 +902,8 @@ cards:
   - shift:C
   - dnh:4
   - ost:2
-  applicability: 'Operations or DPFs explicitly phasing down fossil fuels, mining, or charcoal economies (IPF/DPF;
-    concept/appraisal). | DPF: prior actions phasing down fossil-fuel subsidies, coal, charcoal or extractive activity.'
+  applicability: DPF prior actions phasing down fossil-fuel subsidies, coal, charcoal or extractive activity (DPF;
+    concept/appraisal).
   sufficient_evidence: Document explicitly finances decarbonization, fossil/coal exit, extractive subsidy reform,
     or charcoal-economy transition.
   look_for: Identification of affected workers, subnational fiscal/royalty losses, retraining/diversification support,
