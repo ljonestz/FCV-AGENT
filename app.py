@@ -13532,19 +13532,28 @@ def _word_report_meta(data, title='FCV Recommendations Note'):
     return report_meta
 
 
-# Same test as parseStage3Sections in static/fcv_readout.js: a heading that starts with 'Opening Assessment'.
-_OPENING_HEADING_RE = re.compile(r'^#{2,6}\s*[*_]*\s*opening assessment\b', re.IGNORECASE)
+def _is_opening_heading(line):
+    """Same test as parseStage3Sections in static/fcv_readout.js: a level 2-6 heading that starts with
+    'Opening Assessment'. Linear string checks (no regex on user text; CodeQL polynomial-redos)."""
+    stripped = line.strip()
+    hashes = len(stripped) - len(stripped.lstrip('#'))
+    if not 2 <= hashes <= 6:
+        return False
+    title = stripped[hashes:].strip().lstrip('*_').strip().lower()
+    head = 'opening assessment'
+    return title.startswith(head) and not title[len(head):len(head) + 1].isalnum()
 
 
 def split_opening_assessment(summary):
     """Return (opening assessment text, summary without that block). ('', summary) when there is none."""
     lines = str(summary or '').splitlines()
-    start = next((i for i, line in enumerate(lines) if _OPENING_HEADING_RE.match(line.strip())), None)
+    start = next((i for i, line in enumerate(lines) if _is_opening_heading(line)), None)
     if start is None:
         return '', summary
     end = next((i for i in range(start + 1, len(lines)) if lines[i].lstrip().startswith('#')), len(lines))
     text = ' '.join(line.strip() for line in lines[start + 1:end] if line.strip())
-    text = re.sub(r'[*_]{1,3}([^*_]+)[*_]{1,3}', r'\1', text).strip()
+    # Drop Markdown emphasis markers with plain replacement (no regex on user text; CodeQL).
+    text = text.replace('***', '').replace('**', '').replace('__', '').strip().strip('*_').strip()
     if not text:
         return '', summary
     return text, '\n'.join(lines[:start] + lines[end:])
@@ -13558,7 +13567,7 @@ def download_report():
     from docx.oxml import OxmlElement
     from docx.oxml.ns import qn
     from docx.text.run import Run
-    from fcv_docx_style import AMBER_TXT, BE_AWARE, CONTENT_W, VERIFY_BG, VERIFY_RE, Report, put, take_sentences
+    from fcv_docx_style import AMBER_TXT, BE_AWARE, CONTENT_W, VERIFY_BG, Report, put, split_verify_notes, take_sentences
     from fcv_word_style import _bold_first_sentence
     import io
     from copy import deepcopy
@@ -13921,7 +13930,7 @@ def download_report():
     if not climate_active:
         split_text, split_rest = split_opening_assessment(summary)
         # A body that is only a reviewer note stays in the Executive Summary; the S/R tiles show.
-        if VERIFY_RE.sub('', split_text).strip():
+        if split_verify_notes(split_text)[0]:
             overview_text, summary = split_text, split_rest
 
     def add_rating_scorecard():
@@ -13929,8 +13938,8 @@ def download_report():
             risk_levels = [str(priority.get('risk_level') or '').strip() for priority in priorities]
             # Parity with the climate box: opening sentence bold, the rest regular. Reviewer notes are
             # lifted out before the split and kept at the end, so a split never cuts one in two.
-            notes = VERIFY_RE.findall(overview_text)
-            lead, rest = take_sentences(VERIFY_RE.sub('', overview_text).strip(), 1)
+            clean, notes = split_verify_notes(overview_text)
+            lead, rest = take_sentences(clean, 1)
             rest = ' '.join(part for part in [rest, *notes] if part).strip()
         if overview_text and lead:
             report.scorecard(
