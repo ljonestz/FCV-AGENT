@@ -69,6 +69,44 @@ Full-width navy running banner is a single header paragraph (shading, negative
 horizontal indents, zero header distance, 42.5 pt exact line height, white text,
 teal border). Default header only — do not create a separate even-page header.
 
+## Standing authorisations (given by the project owner, 2026-11-18)
+
+Act on these without asking again; report what was done.
+
+- **GitHub (`ljonestz/FCV-AGENT` only):** push feature branches, open and edit PRs,
+  mark them ready, and merge a PR into `main` (merge commit) once its checks pass and
+  the owner has asked for that work to be merged, shipped or made production ready.
+  Still never commit directly to `main`, force-push or rewrite history.
+- **Production deploy (`fcv-agent.onrender.com`, `srv-d6de99jh46gs73d0jjrg`):** trigger
+  Manual Deploy of the latest `main` commit, and roll back on request, once the work is
+  merged and the owner has asked to ship it. Verify `/health` shows the new build.
+  Production env vars, secrets, plans and billing remain the owner's.
+- **Test service (`fcv-agent-1.onrender.com`, `srv-d6gsivcr85hc73a2833g`):** change
+  branch, deploy, set `CLIMATE_RESEARCH_MODE` and the spend-guard variables, and restore
+  the blocker (`FCV_PILOT_BUDGET_MICROUSD=1`) after paid runs.
+- **Paid runs:** a chat authorisation naming a run count or cost cap covers that batch.
+  Record each run in the ledger before it starts, never reuse a consumed slot, keep to
+  the cap, prefer `bank_only` research, and run only against `fcv-agent-1`.
+
+These are mirrored in Claude Code's auto-mode rules by
+`~/.claude/tools/20261118_add-standing-authorisations.py`. If the auto-mode check
+still blocks an action, stop, name it and give the owner the one-line `!` command.
+
+## Test documents (owner's folders, outside the repo)
+
+Real project documents for offline replay, parser checks and paid validation batches:
+
+- `C:\Users\wb559324\OneDrive - WBG\fcv-project-screener\FCV_Screener_test_cases\`:
+  - **Country cases:** AFG HCJ (PID), AFG Private (PCN), Guinea Gov and Guinea Water (BOSIB PDFs), Honduras (PCN + PAD), each with its CPF/PLR and RRA.
+  - **Moz Resil:** a climate and FCV assessment.
+  - **Synthetic Project Paper:** `20260727_SYNTHETIC_new-model_project-paper_chad-lac-health.docx`.
+  - **`Sector_ENRM_EWS_2026-11\`:** early-warning, ENRM and water/agriculture PADs fetched from the public WDS API, with a README.
+- `C:\Users\wb559324\OneDrive - WBG\Documents\Cowork\Tasks\wbg-project-documents-access-through-2026-06-22\output\WBG_Appraisal_TestCases\`:
+  - Organised by instrument: DPF, IPF, MPA, multi-country MPA, PforR and closed projects.
+  - Each folder has a README.
+- **Syria STAR PAD (climate benchmark):** `C:\Users\wb559324\OneDrive - WBG\Attachments\P515346 Syria STAR PAD ROC.docx`.
+- **Finding more documents:** use the public WDS API (`search.worldbank.org/api/v2/wds?format=json&proid=P...`). Internal Databricks `pdf_urls` redirect to SSO.
+
 ## Known gotchas
 
 - **Climate route (instrument routing).** Instrument routing feeds
