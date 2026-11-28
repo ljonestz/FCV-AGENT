@@ -1890,7 +1890,7 @@ def write_reader_docx(
         snapshot, remainder = take_sentences(VERIFY_RE.sub("", overview[0]).strip(), 1)
         remainder = " ".join(part for part in [remainder, *notes] if part).strip()
         if snapshot:
-            tiles = [{"label": "Overview", "overview": snapshot, "overview_rest": remainder}]
+            tiles = [{"label": "Snapshot", "overview": snapshot, "overview_rest": remainder}]
             overview = overview[1:]
             remaining_risk = bool(overview)
 

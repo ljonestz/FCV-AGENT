@@ -12,6 +12,8 @@ from __future__ import annotations
 
 import os
 
+from fcv_snapshot_rules import SNAPSHOT_RULES
+
 # (old, new) pairs per stage. Each old string must exist exactly once in that
 # stage's prompt; tests assert this so wording drift is caught.
 _REPLACEMENTS: dict[str, list[tuple[str, str]]] = {
@@ -20,22 +22,9 @@ _REPLACEMENTS: dict[str, list[tuple[str, str]]] = {
             "Begin with a clear overall assessment of what the project already recognizes and\n"
             "addresses. Explain the material remaining challenge and\n"
             "bridge to categories of accepted priorities without enumerating every action.",
-            # 2026-11-27 (owner): SUM-001 is shown alone in the readout's top overview box and
-            # SUM-002 under "Main remaining risk", so each paragraph keeps to one role.
-            "Open SUM-001 with a crafted analytical judgment, not an inventory: in one or two\n"
-            "sentences name the project's central climate-FCV tension (what the design depends\n"
-            "on that its climate and fragility context may not sustain) and what is at stake.\n"
-            "Then explain how the main climate hazards and fragility dynamics interact with the\n"
-            "design, crediting what the design provides, and end SUM-001 on the condition on\n"
-            "which its value depends. SUM-001 is shown on its own as the note's headline\n"
-            "overview, so it must read as one complete judgment: keep delivery risks,\n"
-            "constraints and obstacles (access, contamination, fiduciary, staffing, institutional\n"
-            "set-up, timing) out of SUM-001 and place them in SUM-002. Open SUM-002 with the\n"
-            "most consequential remaining risk, fold in the delivery constraints that drive it,\n"
-            "say why it matters for people and delivery, and how the priority actions in this\n"
-            "note respond, by category and without enumerating every action. SUM-002 is read\n"
-            "under its own heading, so open it with its own subject, never with a word that\n"
-            "points back to SUM-001 (this, these, such, that).",
+            # 2026-11-27 (owner): SUM-001 fills the readout's snapshot box; SUM-002 opens the main text.
+            "Write SUM-001 and SUM-002 following the SNAPSHOT AND OPENING RULES at the end of\n"
+            "these instructions.",
         ),
         (
             "Explain the causal connection in ordinary words.",
@@ -49,9 +38,10 @@ _REPLACEMENTS: dict[str, list[tuple[str, str]]] = {
         # 2026-11-16 paragraph shape: fewer, fuller paragraphs (same hard ceilings).
         (
             "Summary: prefer two connected paragraphs of about 90-100 words each, targeting 190 words overall (editorial target 160-230); use a third only if essential.",
-            "Summary: write two connected paragraphs of about 100-115 words each, each carrying one\n"
-            "line of reasoning over four to six sentences, targeting about 210 words overall\n"
-            "(editorial target 160-230); use a third only if essential.",
+            # 2026-11-27 (owner): short snapshot and opening, shared with the normal route.
+            "Summary: write SUM-001 as the snapshot and SUM-002 as the segue plus opening paragraph,\n"
+            "following the SNAPSHOT AND OPENING RULES at the end of these instructions; about\n"
+            "170-190 words overall. Do not add a third paragraph.",
         ),
         (
             "Assessment narratives: three short question-led answers,",
@@ -70,7 +60,7 @@ _REPLACEMENTS: dict[str, list[tuple[str, str]]] = {
         ),
         (
             "Aim for about 190 summary words.",
-            "Aim for about 210 summary words.",
+            "Aim for about 180 summary words.",
         ),
     ],
     "bounded_analysis": [
@@ -121,6 +111,8 @@ _REPLACEMENTS: dict[str, list[tuple[str, str]]] = {
 _READER_ADDITION = """
 
 READER REGISTER AND WORDING:
+- SUM-001 and SUM-002 follow the SNAPSHOT AND OPENING RULES below, not the next two
+  points.
 - Write for an experienced FCV and operations reader in the register of a senior peer
   reviewer: connected sentences that carry cause and consequence, typically 25 to 40
   words, with no list-like run of one-fact sentences.
@@ -159,5 +151,6 @@ def apply(stage: str, prompt: str) -> str:
     for old, new in _REPLACEMENTS.get(stage, []):
         prompt = prompt.replace(old, new, 1)
     if stage == "reader_compiler":
-        prompt += _READER_ADDITION
+        # The fact-checking contracts (reader_correction, reviewer) stay unchanged by design.
+        prompt += _READER_ADDITION + SNAPSHOT_RULES
     return prompt

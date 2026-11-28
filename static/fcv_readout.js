@@ -416,7 +416,7 @@
     function scoreTile(t) {
       if (t.overview !== undefined) {
         const rest = t.overviewRest ? ` <span class="fr-sc-ov-rest">${esc(t.overviewRest)}</span>` : '';
-        return `<div class="fr-sc-overview" data-fr-rating="overview"><div class="fr-sc-label">${esc(t.label || 'Overview')}</div><p class="fr-sc-ov-text" dir="auto">${esc(t.overview)}${rest}</p></div>`;
+        return `<div class="fr-sc-overview" data-fr-rating="overview"><div class="fr-sc-label">${esc(t.label || 'Snapshot')}</div><p class="fr-sc-ov-text" dir="auto">${esc(t.overview)}${rest}</p></div>`;
       }
       if (t.summary !== undefined) {
         const body = String(t.summary || '').trim();
@@ -528,7 +528,7 @@
   const NORMAL_LIMITATION = 'Findings are based on the text of the project documents and may miss arrangements described elsewhere. Ratings and priorities are advisory and should be confirmed through project and country expertise.';
 
   const SCORECARD_LEAD = 'The ratings below are a high-level AI assessment based on insights from the project package. They do not reflect a formal WBG or FCV Group designation. Read them as a general guide, alongside the more detailed overview and assessment that follows.';
-  const OVERVIEW_LEAD = 'This overview is a high-level AI reading of the project package. It does not reflect a formal WBG or FCV Group designation. The full sensitivity and responsiveness assessment follows below.';
+  const OVERVIEW_LEAD = 'This snapshot is a high-level AI reading of the project package. It does not reflect a formal WBG or FCV Group designation. The full sensitivity and responsiveness assessment follows below.';
   const SUMMARY_CARD_LEAD = 'The summaries below are a high-level AI reading of the project package. They do not reflect a formal WBG or FCV Group designation. Read them as a general guide, alongside the more detailed overview and assessment that follows.';
 
   // One-sentence headline for a summary card: the first sentence of the full judgment.
@@ -577,7 +577,9 @@
     // 2026-11-27 (owner): the Opening assessment replaces the two S/R snapshot tiles and appears once, at the top.
     // Without an Opening assessment the S/R tiles stay as before.
     const overviewTop = Boolean(s.found && s.snapshot);
-    head += k.scorecard(overviewTop ? [{ key: 'overview', label: 'Overview', overview: s.snapshot }] : [
+    // Parity with the climate box: opening sentence bold, the rest regular.
+    const snapSplit = overviewTop ? k.takeSentences(s.snapshot, 1) : { head: '', rest: '' };
+    head += k.scorecard(overviewTop ? [{ key: 'overview', label: 'Snapshot', overview: snapSplit.head, overviewRest: snapSplit.rest }] : [
       { key: 'sensitivity', label: 'FCV Sensitivity', summary: headline(k, d.sensitivitySummary), def: DEFINITIONS.sensitivity },
       { key: 'responsiveness', label: 'FCV Responsiveness', summary: headline(k, d.responsivenessSummary), def: DEFINITIONS.responsiveness },
     ], { label: 'Priority actions', number: priorities.length, def: countDef(priorities.length, 'priority action', 'priority actions'), pills: countPills(priorities, p => String(p.risk_level || '').toLowerCase(), [
@@ -792,7 +794,7 @@
     // box at the top instead of the two climate S/R tiles, and is not repeated in the Overview section.
     // Without a generated snapshot (fallback or withheld summary) the S/R tiles stay as before.
     const overviewTop = Boolean(snapshot);
-    head += k.scorecard(overviewTop ? [{ key: 'overview', label: 'Overview', overview: snapshot, overviewRest: snapshotRest }] : [
+    head += k.scorecard(overviewTop ? [{ key: 'overview', label: 'Snapshot', overview: snapshot, overviewRest: snapshotRest }] : [
       { key: 'climate-sensitivity', label: 'Climate-FCV sensitivity', summary: headline(k, sens.rationale), def: DEFINITIONS.climateSensitivity },
       { key: 'climate-responsiveness', label: 'Climate-FCV responsiveness', summary: headline(k, resp.rationale), def: DEFINITIONS.climateResponsiveness },
     ], { label: 'Priority actions', number: priorities.length, def: countDef(priorities.length, 'priority action', 'priority actions'), pills: confPills });
