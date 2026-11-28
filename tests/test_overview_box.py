@@ -2,10 +2,9 @@
 top (one coloured overview box, priority count on the right) and no longer repeats in the Executive Summary.
 The S/R summaries still drive the full FCV Sensitivity and Responsiveness section below."""
 from io import BytesIO
+from pathlib import Path
 
 from docx import Document
-
-from pathlib import Path
 
 import app
 from tests.test_fcv_priority_advisory_exports import _docx_text
